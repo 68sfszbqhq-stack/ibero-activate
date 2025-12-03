@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- PDF Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <h2>IBERO ACTÍVATE</h2>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="attendance.html" class="nav-link">
+                        <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="employees.html" class="nav-link">
+                        <i class="fa-solid fa-user-plus"></i> Empleados
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="reports.html" class="nav-link active">
+                        <i class="fa-solid fa-file-pdf"></i> Reportes
+                    </a>
+                </li>
+            </ul>
+
+            <button id="logout-btn" onclick="auth.signOut()" class="nav-link logout-btn">
+                <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="page-header">
+                <div>
+                    <h1>Reportes y Exportación</h1>
+                    <p style="color: #666;">Genera listas completas y expórtalas a PDF</p>
+                </div>
+            </header>
+
+            <!-- Tabs -->
+            <div class="tabs-container"
+                style="margin-bottom: 2rem; border-bottom: 1px solid #e5e7eb; display: flex; gap: 2rem;">
+                <button class="tab-btn active" data-target="employees-tab"
+                    style="padding: 1rem; border: none; background: none; font-weight: 600; color: var(--primary); border-bottom: 2px solid var(--primary); cursor: pointer;">
+                    <i class="fa-solid fa-users"></i> Lista de Empleados
+                </button>
+                <button class="tab-btn" data-target="attendance-tab"
+                    style="padding: 1rem; border: none; background: none; font-weight: 500; color: #666; cursor: pointer;">
+                    <i class="fa-solid fa-calendar-days"></i> Bitácora de Asistencias
+                </button>
+            </div>
+
+            <!-- Employees Tab -->
+            <div id="employees-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-header"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2>Empleados Registrados</h2>
+                        <button id="export-employees" class="btn-primary">
+                            <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+                        </button>
+                    </div>
+                    <div class="table-container" style="overflow-x: auto;">
+                        <table id="employees-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f9fafb; text-align: left;">
+                                    <th style="padding: 1rem;">Nombre</th>
+                                    <th style="padding: 1rem;">No. Cuenta</th>
+                                    <th style="padding: 1rem;">Área</th>
+                                    <th style="padding: 1rem;">Puesto</th>
+                                    <th style="padding: 1rem;">Puntos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JS Load -->
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 2rem;">Cargando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Tab -->
+            <div id="attendance-tab" class="tab-content hidden">
+                <div class="card">
+                    <div class="card-header"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2>Historial de Asistencias</h2>
+                        <div style="display: flex; gap: 1rem;">
+                            <input type="date" id="filter-date"
+                                style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 8px;">
+                            <button id="export-attendance" class="btn-primary">
+                                <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-container" style="overflow-x: auto;">
+                        <table id="attendance-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f9fafb; text-align: left;">
+                                    <th style="padding: 1rem;">Fecha</th>
+                                    <th style="padding: 1rem;">Hora</th>
+                                    <th style="padding: 1rem;">Empleado</th>
+                                    <th style="padding: 1rem;">Área</th>
+                                    <th style="padding: 1rem;">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JS Load -->
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 2rem;">Cargando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/reports.js"></script>
+</body>
+
+</html>
