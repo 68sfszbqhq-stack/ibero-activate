@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Empleados - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase SDKs (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <h2>IBERO ACTÍVATE</h2>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="attendance.html" class="nav-link">
+                        <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="employees.html" class="nav-link active">
+                        <i class="fa-solid fa-user-plus"></i> Empleados
+                    </a>
+                </li>
+            </ul>
+
+            <button id="logout-btn" onclick="auth.signOut()" class="nav-link logout-btn">
+                <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="page-header">
+                <div>
+                    <h1>Registro de Empleados</h1>
+                    <p>Agrega nuevos colaboradores a la base de datos</p>
+                </div>
+            </header>
+
+            <div class="content-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+
+                <!-- Formulario de Registro -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-user-plus"></i> Nuevo Empleado</h2>
+                    </div>
+                    <form id="employee-form" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div class="form-group">
+                            <label for="fullName">Nombre Completo</label>
+                            <input type="text" id="fullName" class="form-input" placeholder="Ej. Juan Pérez" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="accountNumber">Número de Cuenta / ID</label>
+                            <input type="number" id="accountNumber" class="form-input" placeholder="Ej. 123456"
+                                required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="areaId">Área / Departamento</label>
+                            <select id="areaId" class="form-input" required>
+                                <option value="">Cargando áreas...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="position">Puesto (Opcional)</label>
+                            <input type="text" id="position" class="form-input" placeholder="Ej. Analista">
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="margin-top: 1rem;">
+                            <i class="fa-solid fa-save"></i> Guardar Empleado
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Lista Reciente -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-clock-rotate-left"></i> Agregados Recientemente</h2>
+                    </div>
+                    <div id="recent-list" class="recent-list"
+                        style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <p style="color: #666; font-style: italic;">Aquí aparecerán los empleados que agregues hoy.</p>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast"
+        style="position: fixed; bottom: 20px; right: 20px; background: var(--secondary); color: white; padding: 1rem 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; opacity: 0; transition: opacity 0.3s;">
+        Mensaje
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/employees.js"></script>
+</body>
+
+</html>

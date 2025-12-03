@@ -1,0 +1,114 @@
+// Lógica de Registro de Empleados
+document.addEventListener('DOMContentLoaded', () => {
+    // Verificar autenticación
+    auth.onAuthStateChanged(user => {
+        if (!user) {
+            window.location.href = 'login.html';
+        }
+    });
+
+    const form = document.getElementById('employee-form');
+    const areaSelect = document.getElementById('areaId');
+    const recentList = document.getElementById('recent-list');
+
+    // Cargar Áreas al iniciar
+    loadAreas();
+
+    // Manejar Envío del Formulario
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const fullName = document.getElementById('fullName').value.trim();
+        const accountNumber = document.getElementById('accountNumber').value.trim();
+        const areaId = document.getElementById('areaId').value;
+        const position = document.getElementById('position').value.trim();
+
+        if (!areaId) {
+            showToast('Por favor selecciona un área');
+            return;
+        }
+
+        try {
+            // 1. Verificar duplicados (por número de cuenta)
+            const duplicateCheck = await db.collection('employees')
+                .where('accountNumber', '==', accountNumber)
+                .get();
+
+            if (!duplicateCheck.empty) {
+                showToast('⚠️ Error: Ya existe un empleado con ese número de cuenta.');
+                return;
+            }
+
+            // 2. Guardar en Firestore
+            const newEmployee = {
+                fullName,
+                accountNumber,
+                areaId,
+                position: position || 'No especificado',
+                email: `${accountNumber}@iberopuebla.mx`, // Generado automáticamente
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            await db.collection('employees').add(newEmployee);
+
+            // 3. Feedback y Limpieza
+            showToast('✅ Empleado registrado correctamente');
+            form.reset();
+            addToRecentList(newEmployee);
+
+        } catch (error) {
+            console.error('Error al guardar:', error);
+            showToast('❌ Error al guardar en la base de datos');
+        }
+    });
+
+    async function loadAreas() {
+        try {
+            const snapshot = await db.collection('areas').orderBy('name').get();
+            areaSelect.innerHTML = '<option value="">-- Selecciona un Área --</option>';
+
+            snapshot.forEach(doc => {
+                const area = doc.data();
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = area.name;
+                areaSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error cargando áreas:', error);
+            areaSelect.innerHTML = '<option value="">Error al cargar</option>';
+        }
+    }
+
+    function addToRecentList(emp) {
+        // Remover mensaje de "vacío" si existe
+        const emptyMsg = recentList.querySelector('p');
+        if (emptyMsg) emptyMsg.remove();
+
+        const item = document.createElement('div');
+        item.className = 'recent-item';
+        item.style.cssText = `
+            padding: 0.8rem;
+            background: #f8fafc;
+            border-left: 4px solid var(--primary);
+            border-radius: 4px;
+            animation: slideIn 0.3s ease-out;
+        `;
+
+        item.innerHTML = `
+            <div style="font-weight: bold;">${emp.fullName}</div>
+            <div style="font-size: 0.9rem; color: #666;">
+                #${emp.accountNumber} • ${emp.position}
+            </div>
+        `;
+
+        recentList.prepend(item);
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.style.opacity = '1';
+        setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+    }
+});
