@@ -10,7 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Elementos DOM
     const employeesTableBody = document.getElementById('employees-table').querySelector('tbody');
     const attendanceTableBody = document.getElementById('attendance-table').querySelector('tbody');
+
+    const filterTypeSelect = document.getElementById('filter-type');
     const filterDateInput = document.getElementById('filter-date');
+    const filterWeekInput = document.getElementById('filter-week');
+    const filterMonthInput = document.getElementById('filter-month');
+
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
 
@@ -21,7 +26,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inicializar
     loadAreas().then(() => {
         loadEmployees();
+        // Set default date to today
+        filterDateInput.value = new Date().toISOString().split('T')[0];
         loadAttendance();
+    });
+
+    // --- Lógica de UI Filtros ---
+    filterTypeSelect.addEventListener('change', (e) => {
+        const type = e.target.value;
+
+        // Ocultar todos
+        filterDateInput.classList.add('hidden');
+        filterWeekInput.classList.add('hidden');
+        filterMonthInput.classList.add('hidden');
+
+        // Mostrar seleccionado
+        if (type === 'day') filterDateInput.classList.remove('hidden');
+        if (type === 'week') filterWeekInput.classList.remove('hidden');
+        if (type === 'month') filterMonthInput.classList.remove('hidden');
+
+        loadAttendance();
+    });
+
+    [filterDateInput, filterWeekInput, filterMonthInput].forEach(input => {
+        input.addEventListener('change', loadAttendance);
     });
 
     // --- Lógica de Tabs ---
@@ -83,32 +111,77 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function getDateRange() {
+        const type = filterTypeSelect.value;
+        let start = null;
+        let end = null;
+        let label = '';
+
+        if (type === 'day' && filterDateInput.value) {
+            start = filterDateInput.value;
+            end = filterDateInput.value;
+            label = `Día: ${start}`;
+        } else if (type === 'week' && filterWeekInput.value) {
+            // value is "2023-W10"
+            const [year, week] = filterWeekInput.value.split('-W');
+            const simpleDate = new Date(year, 0, 1 + (week - 1) * 7);
+            const dayOfWeek = simpleDate.getDay();
+            const weekStart = simpleDate;
+            if (dayOfWeek <= 4) weekStart.setDate(simpleDate.getDate() - simpleDate.getDay() + 1);
+            else weekStart.setDate(simpleDate.getDate() + 8 - simpleDate.getDay());
+
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+
+            start = weekStart.toISOString().split('T')[0];
+            end = weekEnd.toISOString().split('T')[0];
+            label = `Semana: ${start} al ${end}`;
+        } else if (type === 'month' && filterMonthInput.value) {
+            // value is "2023-05"
+            const [year, month] = filterMonthInput.value.split('-');
+            start = `${year}-${month}-01`;
+            // Last day of month
+            const lastDay = new Date(year, month, 0).getDate();
+            end = `${year}-${month}-${lastDay}`;
+            label = `Mes: ${filterMonthInput.value}`;
+        }
+
+        return { start, end, label };
+    }
+
     async function loadAttendance() {
         try {
-            let query = db.collection('attendances').orderBy('timestamp', 'desc').limit(100);
+            const { start, end } = getDateRange();
 
-            // Filtro de fecha simple (si se selecciona)
-            if (filterDateInput.value) {
-                query = db.collection('attendances')
-                    .where('date', '==', filterDateInput.value)
-                    .orderBy('timestamp', 'desc');
+            let query = db.collection('attendances');
+
+            if (start && end) {
+                if (start === end) {
+                    query = query.where('date', '==', start);
+                } else {
+                    query = query.where('date', '>=', start).where('date', '<=', end);
+                }
+            } else {
+                // Default fallback if no date selected
+                query = query.orderBy('timestamp', 'desc').limit(50);
             }
 
             const snapshot = await query.get();
             attendanceTableBody.innerHTML = '';
 
             if (snapshot.empty) {
-                attendanceTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem;">No hay registros</td></tr>';
+                attendanceTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem;">No hay registros para este periodo</td></tr>';
                 return;
             }
 
-            snapshot.forEach(doc => {
-                const data = doc.data();
+            // Client-side sort by timestamp desc (since we might have filtered by date range)
+            const docs = [];
+            snapshot.forEach(doc => docs.push(doc.data()));
+            docs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+            docs.forEach(data => {
                 const dateObj = data.timestamp ? data.timestamp.toDate() : new Date();
                 const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                // Resolver nombre de área (si no está en el doc de asistencia, buscarlo)
-                // Para optimizar, asumimos que el doc de asistencia podría tener el areaId
                 const areaName = areasMap[data.areaId] || '---';
 
                 const row = `
@@ -131,15 +204,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (e) {
             console.error('Error loading attendance:', e);
-            // Si falla por índice, mostrar mensaje amigable
             if (e.message.includes('index')) {
                 attendanceTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: red;">Falta índice en Firebase para este filtro.</td></tr>';
             }
         }
     }
-
-    // Listener para filtro de fecha
-    filterDateInput.addEventListener('change', loadAttendance);
 
     // --- Exportación PDF ---
     const { jsPDF } = window.jspdf;
@@ -168,6 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('export-attendance').addEventListener('click', () => {
+        const { label } = getDateRange();
         const doc = new jsPDF();
 
         // Header
@@ -177,12 +247,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         doc.setFontSize(11);
         doc.setTextColor(100);
-        doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 30);
+        doc.text(`Periodo: ${label || 'General'}`, 14, 30);
+        doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 36);
 
         // Table
         doc.autoTable({
             html: '#attendance-table',
-            startY: 40,
+            startY: 45,
             headStyles: { fillColor: [45, 45, 45] }, // Dark header for attendance
             theme: 'grid'
         });

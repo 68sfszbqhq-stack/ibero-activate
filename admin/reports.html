@@ -114,11 +114,26 @@
             <div id="attendance-tab" class="tab-content hidden">
                 <div class="card">
                     <div class="card-header"
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
                         <h2>Historial de Asistencias</h2>
-                        <div style="display: flex; gap: 1rem;">
-                            <input type="date" id="filter-date"
+                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+
+                            <!-- Selector de Tipo -->
+                            <select id="filter-type"
                                 style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 8px;">
+                                <option value="day">Por Día</option>
+                                <option value="week">Por Semana</option>
+                                <option value="month">Por Mes</option>
+                            </select>
+
+                            <!-- Inputs Dinámicos -->
+                            <input type="date" id="filter-date" class="filter-input"
+                                style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 8px;">
+                            <input type="week" id="filter-week" class="filter-input hidden"
+                                style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 8px;">
+                            <input type="month" id="filter-month" class="filter-input hidden"
+                                style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 8px;">
+
                             <button id="export-attendance" class="btn-primary">
                                 <i class="fa-solid fa-file-pdf"></i> Exportar PDF
                             </button>
