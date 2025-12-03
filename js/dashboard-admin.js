@@ -18,6 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // En una app real, filtraríamos por semana actual
             // Aquí cargamos todo para demo
 
+            // 0. Cargar Mapa de Áreas (ID -> Nombre)
+            const areasMap = {};
+            const areasSnapshot = await db.collection('areas').get();
+            areasSnapshot.forEach(doc => {
+                areasMap[doc.id] = doc.data().name;
+            });
+
             // 1. Cargar Asistencias
             const attendancesSnapshot = await db.collection('attendances').get();
             const totalAttendances = attendancesSnapshot.size;
@@ -50,17 +57,17 @@ document.addEventListener('DOMContentLoaded', () => {
             activeAreasEl.textContent = areasSet.size;
 
             // 4. Generar Gráficas
-            renderCharts(attendancesSnapshot, feedbacksSnapshot);
+            renderCharts(attendancesSnapshot, feedbacksSnapshot, areasMap);
 
             // 5. Generar Leaderboard
-            generateLeaderboard(attendancesSnapshot, feedbacksSnapshot);
+            generateLeaderboard(attendancesSnapshot, feedbacksSnapshot, areasMap);
 
         } catch (error) {
             console.error('Error cargando dashboard:', error);
         }
     }
 
-    function renderCharts(attendances, feedbacks) {
+    function renderCharts(attendances, feedbacks, areasMap) {
         // Preparar datos para gráfica de áreas
         const areaCounts = {};
         attendances.forEach(doc => {
@@ -73,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         new Chart(areaCtx, {
             type: 'bar',
             data: {
-                labels: Object.keys(areaCounts).map(id => `Área ${id.substr(-3)}`), // Placeholder names
+                labels: Object.keys(areaCounts).map(id => areasMap[id] || 'Desconocido'),
                 datasets: [{
                     label: 'Asistencias',
                     data: Object.values(areaCounts),
@@ -118,17 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function generateLeaderboard(attendances, feedbacks) {
-        // 0. Cargar Mapa de Áreas (ID -> Nombre)
-        const areasMap = {};
-        try {
-            const areasSnapshot = await db.collection('areas').get();
-            areasSnapshot.forEach(doc => {
-                areasMap[doc.id] = doc.data().name;
-            });
-        } catch (e) {
-            console.error('Error loading areas map:', e);
-        }
+    async function generateLeaderboard(attendances, feedbacks, areasMap) {
+        // areasMap ya viene cargado
 
         // Agrupar por empleado
         const employeeStats = {};
