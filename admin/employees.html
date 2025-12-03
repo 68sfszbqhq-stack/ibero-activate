@@ -77,9 +77,29 @@
 
                         <div class="form-group">
                             <label for="areaId">Área / Departamento</label>
-                            <select id="areaId" class="form-input" required>
-                                <option value="">Cargando áreas...</option>
-                            </select>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <select id="areaId" class="form-input" required style="flex: 1;">
+                                    <option value="">Cargando áreas...</option>
+                                </select>
+                                <button type="button" id="toggle-area-btn" class="btn-secondary"
+                                    style="padding: 0 1rem;" title="Nueva Área">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+
+                            <!-- Input para nueva área (oculto por defecto) -->
+                            <div id="new-area-container" class="hidden"
+                                style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                                <input type="text" id="newAreaName" class="form-input"
+                                    placeholder="Nombre de la nueva área">
+                                <button type="button" id="save-area-btn" class="btn-primary" style="padding: 0 1rem;">
+                                    <i class="fa-solid fa-check"></i>
+                                </button>
+                                <button type="button" id="cancel-area-btn" class="btn-secondary"
+                                    style="padding: 0 1rem;">
+                                    <i class="fa-solid fa-times"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="form-group">
