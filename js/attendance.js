@@ -1,58 +1,34 @@
-// Lógica de Pase de Lista
+// Lógica de Pase de Lista en Tiempo Real
+// Ahora cada clic guarda inmediatamente en Firestore
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Verificar autenticación primero (manejado por auth.js)
-
-    // Inicializar fecha
-    const dateDisplay = document.getElementById('current-date-display');
-    if (dateDisplay) {
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        dateDisplay.textContent = new Date().toLocaleDateString('es-ES', options);
-    }
+    // Verificar autenticación
+    auth.onAuthStateChanged(user => {
+        if (!user) {
+            window.location.href = 'login.html';
+        }
+    });
 
     // Elementos DOM
+    const dateDisplay = document.getElementById('current-date');
     const areaDropdown = document.getElementById('area-dropdown');
     const employeeList = document.getElementById('employee-list');
-    const emptyState = document.getElementById('empty-state');
-    const loadingIndicator = document.getElementById('loading-indicator');
-    const saveBtn = document.getElementById('save-attendance');
-    const countSpan = document.getElementById('count');
-    const selectAllBtn = document.getElementById('select-all-btn');
+    const saveBtn = document.getElementById('save-attendance-btn'); // Ya no se usará igual, pero lo mantenemos oculto o para "cerrar sesión"
 
-    // Cargar áreas
+    // Inicializar fecha
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    dateDisplay.textContent = new Date().toLocaleDateString('es-ES', options);
+
+    // Cargar Áreas
     loadAreas();
 
     // Event Listeners
-    if (areaDropdown) {
-        areaDropdown.addEventListener('change', (e) => {
-            const areaId = e.target.value;
-            if (areaId) {
-                loadEmployees(areaId);
-            } else {
-                showEmptyState();
-            }
-        });
-    }
+    areaDropdown.addEventListener('change', loadEmployees);
 
-    if (selectAllBtn) {
-        selectAllBtn.addEventListener('click', toggleSelectAll);
-    }
-
-    if (saveBtn) {
-        saveBtn.addEventListener('click', saveAttendances);
-    }
-
-    // Funciones
     async function loadAreas() {
         try {
-            const snapshot = await db.collection('areas').orderBy('name').get();
-
-            if (snapshot.empty) {
-                console.log('No hay áreas registradas');
-                // Crear datos de prueba si está vacío (solo para desarrollo)
-                // createDummyData(); 
-                return;
-            }
+            const snapshot = await db.collection('areas').get();
+            areaDropdown.innerHTML = '<option value="">Selecciona un Área...</option>';
 
             snapshot.forEach(doc => {
                 const area = doc.data();
@@ -62,200 +38,154 @@ document.addEventListener('DOMContentLoaded', () => {
                 areaDropdown.appendChild(option);
             });
         } catch (error) {
-            console.error('Error al cargar áreas:', error);
-            alert('Error al cargar las áreas. Verifica tu conexión.');
+            console.error('Error cargando áreas:', error);
         }
     }
 
-    async function loadEmployees(areaId) {
-        // UI Updates
-        emptyState.classList.add('hidden');
-        employeeList.classList.add('hidden');
-        loadingIndicator.classList.remove('hidden');
-        saveBtn.classList.add('hidden');
+    async function loadEmployees() {
+        const areaId = areaDropdown.value;
+        employeeList.innerHTML = ''; // Limpiar lista
+
+        if (!areaId) return;
 
         try {
+            // 1. Obtener empleados del área
             const snapshot = await db.collection('employees')
                 .where('areaId', '==', areaId)
                 .orderBy('fullName')
                 .get();
 
-            loadingIndicator.classList.add('hidden');
-            employeeList.innerHTML = '';
-
             if (snapshot.empty) {
-                employeeList.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">No hay empleados en esta área.</p>';
-                employeeList.classList.remove('hidden');
+                employeeList.innerHTML = '<div class="no-data">No hay empleados en esta área</div>';
                 return;
             }
 
-            snapshot.forEach(doc => {
-                const employee = doc.data();
-                const card = createEmployeeCard(doc.id, employee);
-                employeeList.appendChild(card);
+            // 2. Verificar quiénes ya tienen asistencia HOY
+            const today = new Date().toISOString().split('T')[0];
+            const attendanceSnapshot = await db.collection('attendances')
+                .where('date', '==', today)
+                .where('areaId', '==', areaId)
+                .get();
+
+            const attendedEmployeeIds = new Set();
+            attendanceSnapshot.forEach(doc => {
+                attendedEmployeeIds.add(doc.data().employeeId);
             });
 
-            employeeList.classList.remove('hidden');
-            saveBtn.classList.remove('hidden');
-            updateCount();
+            // 3. Renderizar tarjetas
+            snapshot.forEach(doc => {
+                const emp = doc.data();
+                const isPresent = attendedEmployeeIds.has(doc.id);
+                createEmployeeCard(doc.id, emp, isPresent);
+            });
 
         } catch (error) {
-            console.error('Error al cargar empleados:', error);
-            loadingIndicator.classList.add('hidden');
-            alert('Error al cargar empleados.');
+            console.error('Error cargando empleados:', error);
+            employeeList.innerHTML = '<div class="error">Error al cargar datos</div>';
         }
     }
 
-    function createEmployeeCard(id, employee) {
-        const div = document.createElement('div');
-        div.className = 'employee-card';
-        div.dataset.id = id;
+    function createEmployeeCard(id, emp, isPresent) {
+        const card = document.createElement('div');
+        card.className = `employee-card ${isPresent ? 'selected' : ''}`;
+        card.dataset.id = id;
 
-        // Iniciales para avatar
-        const initials = employee.fullName
-            .split(' ')
-            .map(n => n[0])
-            .slice(0, 2)
-            .join('')
-            .toUpperCase();
+        // Estilo visual para indicar estado
+        const statusIcon = isPresent ? '<i class="fa-solid fa-check-circle"></i>' : '<i class="fa-regular fa-circle"></i>';
 
-        div.innerHTML = `
-            <div class="checkbox-wrapper">
-                <input type="checkbox" id="${id}" class="attendance-checkbox">
-            </div>
-            <div class="avatar-small">${initials}</div>
-            <div class="employee-info">
-                <h3>${employee.fullName}</h3>
-                <span class="account-number">#${employee.accountNumber}</span>
+        card.innerHTML = `
+            <div class="card-icon">${statusIcon}</div>
+            <div class="card-info">
+                <h3>${emp.fullName}</h3>
+                <p>#${emp.accountNumber}</p>
             </div>
         `;
 
-        // Click en tarjeta selecciona checkbox
-        div.addEventListener('click', (e) => {
-            if (e.target.type !== 'checkbox') {
-                const checkbox = div.querySelector('.attendance-checkbox');
-                checkbox.checked = !checkbox.checked;
-                toggleCardSelection(div, checkbox.checked);
-                updateCount();
-            }
-        });
+        // Click Event: Toggle Asistencia en Tiempo Real
+        card.addEventListener('click', () => toggleAttendance(card, id, emp));
 
-        // Evento directo en checkbox
-        const checkbox = div.querySelector('.attendance-checkbox');
-        checkbox.addEventListener('change', (e) => {
-            toggleCardSelection(div, e.target.checked);
-            updateCount();
-        });
-
-        return div;
+        employeeList.appendChild(card);
     }
 
-    function toggleCardSelection(card, isSelected) {
-        if (isSelected) {
-            card.classList.add('selected');
-        } else {
-            card.classList.remove('selected');
-        }
-    }
+    async function toggleAttendance(card, employeeId, employeeData) {
+        // Prevenir doble clic rápido
+        if (card.classList.contains('processing')) return;
+        card.classList.add('processing');
 
-    function updateCount() {
-        const checked = document.querySelectorAll('.attendance-checkbox:checked').length;
-        countSpan.textContent = checked;
-    }
-
-    function toggleSelectAll() {
-        const checkboxes = document.querySelectorAll('.attendance-checkbox');
-        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-
-        checkboxes.forEach(cb => {
-            cb.checked = !allChecked;
-            const card = cb.closest('.employee-card');
-            toggleCardSelection(card, !allChecked);
-        });
-
-        updateCount();
-    }
-
-    function showEmptyState() {
-        emptyState.classList.remove('hidden');
-        employeeList.classList.add('hidden');
-        loadingIndicator.classList.add('hidden');
-        saveBtn.classList.add('hidden');
-    }
-
-    async function saveAttendances() {
-        const checkboxes = document.querySelectorAll('.attendance-checkbox:checked');
-
-        if (checkboxes.length === 0) {
-            alert('Selecciona al menos un empleado.');
-            return;
-        }
-
-        const saveBtn = document.getElementById('save-attendance');
-        const originalText = saveBtn.innerHTML;
-        saveBtn.disabled = true;
-        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+        const isSelected = card.classList.contains('selected');
+        const today = new Date().toISOString().split('T')[0];
+        const areaId = areaDropdown.value;
 
         try {
-            const batch = db.batch();
-            const today = new Date().toISOString().split('T')[0];
-            const sessionType = document.getElementById('session-type').value;
-            const areaId = document.getElementById('area-dropdown').value;
-            const currentUser = auth.currentUser;
-
-            checkboxes.forEach(checkbox => {
-                const employeeId = checkbox.id;
-                const attendanceRef = db.collection('attendances').doc();
-
-                batch.set(attendanceRef, {
-                    employeeId,
-                    areaId,
+            if (!isSelected) {
+                // MARCAR ASISTENCIA (Crear documento)
+                // Incluimos fullName para facilitar la lectura en el frontend sin joins
+                await db.collection('attendances').add({
+                    employeeId: employeeId,
+                    employeeName: employeeData.fullName, // Clave para el "Magic Display"
+                    areaId: areaId,
                     date: today,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    markedBy: currentUser ? currentUser.uid : 'unknown',
-                    sessionType,
+                    status: 'active', // 'active' significa que acaba de llegar y puede dar feedback
                     weekNumber: getWeekNumber(new Date()),
                     year: new Date().getFullYear()
                 });
 
-                // Actualizar puntos del empleado (Attendance = 10 pts)
-                // Esto idealmente se haría con Cloud Functions, pero lo haremos aquí para simplificar
-                updateEmployeePoints(employeeId, 10);
-            });
+                card.classList.add('selected');
+                card.querySelector('.card-icon').innerHTML = '<i class="fa-solid fa-check-circle"></i>';
 
-            await batch.commit();
+                // Feedback visual rápido
+                showToast(`Asistencia marcada: ${employeeData.fullName}`);
 
-            alert(`✅ ${checkboxes.length} asistencias guardadas correctamente.`);
+            } else {
+                // DESMARCAR (Borrar documento - opcional, o marcar como cancelado)
+                // Para simplificar, buscamos y borramos
+                const snapshot = await db.collection('attendances')
+                    .where('employeeId', '==', employeeId)
+                    .where('date', '==', today)
+                    .get();
 
-            // Resetear selección
-            const allCheckboxes = document.querySelectorAll('.attendance-checkbox');
-            allCheckboxes.forEach(cb => {
-                cb.checked = false;
-                toggleCardSelection(cb.closest('.employee-card'), false);
-            });
-            updateCount();
+                const batch = db.batch();
+                snapshot.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
 
+                card.classList.remove('selected');
+                card.querySelector('.card-icon').innerHTML = '<i class="fa-regular fa-circle"></i>';
+                showToast(`Asistencia eliminada: ${employeeData.fullName}`);
+            }
         } catch (error) {
-            console.error('Error al guardar:', error);
-            alert('Hubo un error al guardar las asistencias.');
+            console.error('Error actualizando asistencia:', error);
+            alert('Error de conexión. Intenta de nuevo.');
         } finally {
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = originalText;
+            card.classList.remove('processing');
         }
     }
 
-    // Helper para actualizar puntos (simplificado)
-    function updateEmployeePoints(employeeId, pointsToAdd) {
-        const weekNumber = getWeekNumber(new Date());
-        const year = new Date().getFullYear();
+    // Helper: Toast Notification
+    function showToast(message) {
+        // Crear elemento toast si no existe
+        let toast = document.getElementById('toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'toast';
+            toast.style.cssText = `
+                position: fixed; bottom: 20px; right: 20px;
+                background: var(--secondary); color: white;
+                padding: 1rem 2rem; border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 1000; opacity: 0; transition: opacity 0.3s;
+            `;
+            document.body.appendChild(toast);
+        }
 
-        // Esta lógica es compleja para ejecutar en cliente por cada empleado en batch
-        // En una app real, usaríamos Cloud Functions.
-        // Aquí solo registraremos la asistencia y dejaremos que el dashboard calcule o 
-        // actualizaremos puntos cuando el usuario entre a su perfil.
+        toast.textContent = message;
+        toast.style.opacity = '1';
+        setTimeout(() => { toast.style.opacity = '0'; }, 3000);
     }
 
-    // Helper para número de semana ISO
+    // Helper: Week Number
     function getWeekNumber(d) {
         d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
         d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));

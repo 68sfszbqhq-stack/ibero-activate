@@ -1,28 +1,53 @@
 :root {
   /* Colores principales */
-  --primary: hsl(220, 90%, 56%);      /* Azul vibrante */
-  --secondary: hsl(340, 82%, 52%);    /* Rosa energético */
-  --accent: hsl(160, 84%, 39%);       /* Verde éxito */
-  --warning: hsl(38, 92%, 50%);       /* Naranja advertencia */
-  
+  --primary: hsl(220, 90%, 56%);
+  /* Azul vibrante */
+  --secondary: hsl(340, 82%, 52%);
+  /* Rosa energético */
+  /* IBERO Puebla Brand Colors */
+  --primary: #c4161c;
+  /* Rojo IBERO */
+  --primary-dark: #9e1216;
+  /* Rojo Oscuro */
+  --secondary: #2d2d2d;
+  /* Gris Oscuro / Negro */
+  --accent: #eab308;
+  /* Dorado/Amarillo (Complementario) */
+
   /* Gradientes */
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --gradient-success: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  --gradient-card: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  --gradient-bg: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  
+  --gradient-primary: linear-gradient(135deg, #c4161c 0%, #9e1216 100%);
+  /* Adjusted to new primary colors */
+  --gradient-success: linear-gradient(135deg, #16a34a 0%, #0f763a 100%);
+  /* Adjusted to new success color */
+  --gradient-card: linear-gradient(135deg, #fdf2f2 0%, #ffffff 100%);
+  /* New card background gradient */
+  --gradient-bg: linear-gradient(135deg, #fdf2f2 0%, #ffffff 100%);
+  /* New background gradient */
+
   /* Neutrales */
   --bg-dark: hsl(220, 26%, 14%);
-  --bg-light: hsl(210, 36%, 96%);
-  --text-dark: hsl(220, 20%, 20%);
-  --text-light: hsl(0, 0%, 95%);
+  --bg-light: #fdf2f2;
+  /* Adjusted to new light background */
+  --text-main: #1f2937;
+  /* New main text color */
+  --text-dark: #1f2937;
+  /* Adjusted to new main text color */
+  --text-light: #6b7280;
+  /* Adjusted to new light text color */
   --white: #ffffff;
-  
+  --card-bg: rgba(255, 255, 255, 0.95);
+  /* New card background */
+
+  /* Status Colors */
+  --success: #16a34a;
+  --warning: #ca8a04;
+  --error: #dc2626;
+
   /* Sombras */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
-  
+
   /* Animaciones */
   --transition-fast: 0.2s ease;
   --transition-normal: 0.3s ease;
@@ -167,6 +192,7 @@ body {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -178,6 +204,7 @@ body {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -185,9 +212,17 @@ body {
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Utility Classes */

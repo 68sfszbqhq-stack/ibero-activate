@@ -30,17 +30,21 @@
         <main class="feedback-content">
             <div class="feedback-card">
                 <div class="card-header">
-                    <h1>⭐ Califica tu Pausa Activa</h1>
-                    <p>Tu opinión nos ayuda a mejorar</p>
-                </div>
+                    <div id="welcome-section" class="search-section">
+                        <h1 style="text-align: center; margin-bottom: 0.5rem;">¡Bienvenido a tu Pausa Activa!</h1>
+                        <p style="text-align: center; color: #666; margin-bottom: 2rem;">
+                            Espera a que tu instructor pase lista y tu nombre aparecerá aquí abajo mágicamente ✨
+                        </p>
 
-                <!-- Paso 1: Buscar Empleado -->
-                <div id="search-section">
-                    <div class="search-box">
-                        <i class="fa-solid fa-search"></i>
-                        <input type="text" id="search-input" placeholder="Busca tu nombre o número de cuenta...">
+                        <div id="live-list" class="live-list-container">
+                            <!-- Aquí aparecerán los botones mágicos -->
+                        </div>
+
+                        <div id="waiting-message" class="waiting-state">
+                            <div class="pulse-ring"></div>
+                            <p>Esperando a que el instructor inicie...</p>
+                        </div>
                     </div>
-                    <div id="search-results" class="results-list hidden"></div>
                 </div>
 
                 <!-- Paso 2: Formulario de Feedback (Oculto inicialmente) -->

@@ -1,22 +1,23 @@
-// Lógica de Feedback
+// Lógica de Feedback "Magia en Vivo"
+// Escucha cambios en tiempo real en la colección 'attendances'
 
 document.addEventListener('DOMContentLoaded', () => {
     // Estado local
     let selectedEmployee = null;
     let currentRating = 0;
     let currentEmoji = '';
+    let currentAttendanceId = null;
 
     // Elementos DOM
-    const searchInput = document.getElementById('search-input');
-    const searchResults = document.getElementById('search-results');
-    const searchSection = document.getElementById('search-section');
+    const liveList = document.getElementById('live-list'); // Contenedor para botones mágicos
+    const waitingMessage = document.getElementById('waiting-message');
     const feedbackForm = document.getElementById('feedback-form');
     const successState = document.getElementById('success-state');
+    const welcomeSection = document.getElementById('welcome-section'); // Sección de bienvenida/búsqueda (ahora lista)
 
     // Elementos del perfil seleccionado
     const profileAvatar = document.getElementById('profile-avatar');
     const employeeName = document.getElementById('employee-name');
-    const employeeAccount = document.getElementById('employee-account');
     const changeUserBtn = document.getElementById('change-user-btn');
 
     // Elementos de interacción
@@ -26,215 +27,172 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitBtn = document.getElementById('submit-feedback');
     const newFeedbackBtn = document.getElementById('new-feedback-btn');
 
-    // Event Listeners
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(handleSearch, 300));
-    }
+    // Inicializar Listener en Tiempo Real
+    initRealTimeListener();
 
-    if (changeUserBtn) {
-        changeUserBtn.addEventListener('click', resetSelection);
-    }
-
-    if (newFeedbackBtn) {
-        newFeedbackBtn.addEventListener('click', () => {
-            resetSelection();
-            successState.classList.add('hidden');
-            searchSection.classList.remove('hidden');
-            searchInput.value = '';
-        });
-    }
-
-    // Rating System
-    stars.forEach(star => {
-        star.addEventListener('click', () => {
-            const rating = parseInt(star.dataset.rating);
-            setRating(rating);
-        });
-
-        star.addEventListener('mouseover', () => {
-            const rating = parseInt(star.dataset.rating);
-            highlightStars(rating);
-        });
-
-        star.addEventListener('mouseout', () => {
-            highlightStars(currentRating);
-        });
+    // Event Listeners UI
+    if (changeUserBtn) changeUserBtn.addEventListener('click', resetSelection);
+    if (newFeedbackBtn) newFeedbackBtn.addEventListener('click', () => {
+        resetSelection();
+        successState.classList.add('hidden');
+        welcomeSection.classList.remove('hidden');
     });
+    if (submitBtn) submitBtn.addEventListener('click', submitFeedback);
 
-    // Emoji System
-    emojiBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            emojiBtns.forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            currentEmoji = btn.dataset.emoji;
-        });
-    });
+    // Rating & Emoji Logic (Igual que antes)
+    setupInteractionLogic();
 
-    // Submit
-    if (submitBtn) {
-        submitBtn.addEventListener('click', submitFeedback);
+    // --- FUNCIONES CORE ---
+
+    function initRealTimeListener() {
+        const today = new Date().toISOString().split('T')[0];
+
+        // Escuchar asistencias de HOY que estén 'active' (sin feedback aún)
+        // Ordenamos por timestamp desc para que los últimos aparezcan arriba
+        db.collection('attendances')
+            .where('date', '==', today)
+            .where('status', '==', 'active') // Solo los que el admin acaba de marcar
+            .orderBy('timestamp', 'desc')
+            .limit(20)
+            .onSnapshot((snapshot) => {
+                updateLiveList(snapshot);
+            }, (error) => {
+                console.error("Error escuchando cambios:", error);
+            });
     }
 
-    // Funciones
-    async function handleSearch(e) {
-        const query = e.target.value.trim();
-
-        if (query.length < 3) {
-            searchResults.classList.add('hidden');
-            return;
-        }
-
-        try {
-            // Búsqueda simple por nombre (startAt/endAt)
-            // Nota: Firestore requiere índices para búsquedas complejas, aquí usamos una simple
-            const snapshot = await db.collection('employees')
-                .where('fullName', '>=', query)
-                .where('fullName', '<=', query + '\uf8ff')
-                .limit(5)
-                .get();
-
-            displayResults(snapshot);
-        } catch (error) {
-            console.error('Error en búsqueda:', error);
-        }
-    }
-
-    function displayResults(snapshot) {
-        searchResults.innerHTML = '';
+    function updateLiveList(snapshot) {
+        liveList.innerHTML = '';
 
         if (snapshot.empty) {
-            searchResults.innerHTML = '<div class="result-item">No se encontraron empleados</div>';
-            searchResults.classList.remove('hidden');
+            waitingMessage.classList.remove('hidden');
             return;
         }
 
+        waitingMessage.classList.add('hidden');
+
         snapshot.forEach(doc => {
-            const employee = doc.data();
-            const div = document.createElement('div');
-            div.className = 'result-item';
-            div.innerHTML = `
-                <div class="avatar-small" style="width: 32px; height: 32px; font-size: 0.8rem;">
-                    ${getInitials(employee.fullName)}
-                </div>
-                <div>
-                    <div style="font-weight: 600;">${employee.fullName}</div>
-                    <div style="font-size: 0.8rem; color: #666;">#${employee.accountNumber}</div>
-                </div>
+            const data = doc.data();
+            const btn = document.createElement('button');
+            btn.className = 'magic-btn'; // Clase CSS nueva para animación
+            btn.innerHTML = `
+                <div class="avatar-tiny">${getInitials(data.employeeName)}</div>
+                <span>Soy ${data.employeeName}</span>
+                <i class="fa-solid fa-chevron-right"></i>
             `;
 
-            div.addEventListener('click', () => selectEmployee(doc.id, employee));
-            searchResults.appendChild(div);
+            // Al hacer clic, seleccionamos a este empleado
+            btn.addEventListener('click', () => selectEmployee(doc.id, data));
+            liveList.appendChild(btn);
         });
-
-        searchResults.classList.remove('hidden');
     }
 
-    function selectEmployee(id, employee) {
-        selectedEmployee = { id, ...employee };
+    function selectEmployee(attendanceId, data) {
+        selectedEmployee = {
+            id: data.employeeId,
+            name: data.employeeName
+        };
+        currentAttendanceId = attendanceId;
 
         // Actualizar UI
-        profileAvatar.textContent = getInitials(employee.fullName);
-        employeeName.textContent = employee.fullName;
-        employeeAccount.textContent = `#${employee.accountNumber}`;
+        profileAvatar.textContent = getInitials(data.employeeName);
+        employeeName.textContent = data.employeeName;
 
-        searchSection.classList.add('hidden');
-        searchResults.classList.add('hidden');
+        welcomeSection.classList.add('hidden');
         feedbackForm.classList.remove('hidden');
+    }
+
+    async function submitFeedback() {
+        if (!currentRating) {
+            alert('Por favor califica con estrellas ⭐');
+            return;
+        }
+
+        const submitBtn = document.getElementById('submit-feedback');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+
+        try {
+            const comment = document.getElementById('comment').value;
+
+            // 1. Guardar Feedback
+            await db.collection('feedbacks').add({
+                employeeId: selectedEmployee.id,
+                attendanceId: currentAttendanceId,
+                rating: currentRating,
+                reaction: currentEmoji,
+                comment: comment,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                date: new Date().toISOString().split('T')[0]
+            });
+
+            // 2. Actualizar estado de asistencia a 'completed' para que desaparezca de la lista
+            await db.collection('attendances').doc(currentAttendanceId).update({
+                status: 'completed'
+            });
+
+            // 3. Calcular puntos (Gamificación simple)
+            const earnedPoints = 10 + (currentRating * 2);
+            document.getElementById('earned-points').textContent = earnedPoints;
+
+            // UI Success
+            feedbackForm.classList.add('hidden');
+            successState.classList.remove('hidden');
+
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al enviar. Intenta de nuevo.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Enviar Calificación';
+        }
     }
 
     function resetSelection() {
         selectedEmployee = null;
+        currentAttendanceId = null;
         currentRating = 0;
         currentEmoji = '';
 
-        // Reset UI
+        // Reset UI elements
         stars.forEach(s => s.classList.remove('active'));
         emojiBtns.forEach(b => b.classList.remove('selected'));
         document.getElementById('comment').value = '';
         ratingText.textContent = 'Selecciona una calificación';
 
         feedbackForm.classList.add('hidden');
-        searchSection.classList.remove('hidden');
+        welcomeSection.classList.remove('hidden');
     }
 
-    function setRating(rating) {
-        currentRating = rating;
-        highlightStars(rating);
+    function setupInteractionLogic() {
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                const rating = parseInt(star.dataset.rating);
+                currentRating = rating;
+                highlightStars(rating);
+                const texts = ['Malo', 'Regular', 'Bueno', 'Muy Bueno', 'Excelente'];
+                ratingText.textContent = texts[rating - 1];
+            });
+        });
 
-        const texts = ['Malo', 'Regular', 'Bueno', 'Muy Bueno', 'Excelente'];
-        ratingText.textContent = texts[rating - 1];
+        emojiBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                emojiBtns.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                currentEmoji = btn.dataset.emoji;
+            });
+        });
     }
 
     function highlightStars(rating) {
         stars.forEach(star => {
             const starRating = parseInt(star.dataset.rating);
-            if (starRating <= rating) {
-                star.classList.add('active');
-            } else {
-                star.classList.remove('active');
-            }
+            if (starRating <= rating) star.classList.add('active');
+            else star.classList.remove('active');
         });
     }
 
-    async function submitFeedback() {
-        if (!currentRating) {
-            alert('Por favor selecciona una calificación (estrellas)');
-            return;
-        }
-
-        const submitBtn = document.getElementById('submit-feedback');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
-
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            const comment = document.getElementById('comment').value;
-
-            // Buscar asistencia de hoy (opcional, para vincular)
-            // En este MVP permitimos feedback incluso sin asistencia marcada por admin
-            // pero idealmente buscaríamos el ID de asistencia.
-
-            await db.collection('feedbacks').add({
-                employeeId: selectedEmployee.id,
-                rating: currentRating,
-                reaction: currentEmoji,
-                comment: comment,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                date: today
-            });
-
-            // Calcular puntos ganados (10 base + rating * 2)
-            const earnedPoints = 10 + (currentRating * 2);
-            document.getElementById('earned-points').textContent = earnedPoints;
-
-            // Mostrar éxito
-            feedbackForm.classList.add('hidden');
-            successState.classList.remove('hidden');
-
-        } catch (error) {
-            console.error('Error al enviar feedback:', error);
-            alert('Hubo un error al enviar tu feedback. Intenta nuevamente.');
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalText;
-        }
-    }
-
-    // Helpers
     function getInitials(name) {
-        return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
-    }
-
-    function debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
+        return name ? name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : '??';
     }
 });
