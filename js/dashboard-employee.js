@@ -32,6 +32,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const empData = empDoc.data();
             const myPoints = empData.points || 0;
+            const myAccount = empData.accountNumber || '---';
+
+            // Actualizar UI con datos reales
+            const detailsDisplay = document.getElementById('dashboard-details');
+            if (detailsDisplay) detailsDisplay.textContent = `Colaborador • #${myAccount}`;
 
             // Actualizar Puntos en UI
             const pointsCard = document.querySelector('.card:nth-child(1) p'); // Asumiendo orden
