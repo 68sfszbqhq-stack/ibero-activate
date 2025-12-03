@@ -119,6 +119,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function generateLeaderboard(attendances, feedbacks) {
+        // 0. Cargar Mapa de Áreas (ID -> Nombre)
+        const areasMap = {};
+        try {
+            const areasSnapshot = await db.collection('areas').get();
+            areasSnapshot.forEach(doc => {
+                areasMap[doc.id] = doc.data().name;
+            });
+        } catch (e) {
+            console.error('Error loading areas map:', e);
+        }
+
         // Agrupar por empleado
         const employeeStats = {};
 
@@ -151,21 +162,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // Renderizar tabla
         leaderboardTable.innerHTML = '';
 
-        // Necesitamos obtener nombres de empleados
-        // En producción, haríamos un 'where in' query o tendríamos los nombres en los docs de asistencia
-        // Aquí haremos fetch individual (no óptimo pero funcional para demo)
-
         for (const [index, stat] of sortedEmployees.entries()) {
             try {
                 const empDoc = await db.collection('employees').doc(stat.id).get();
                 const empData = empDoc.data() || { fullName: 'Desconocido', areaId: 'N/A' };
+
+                // Resolver nombre del área
+                const areaName = areasMap[empData.areaId] || 'Área Desconocida';
 
                 const row = document.createElement('tr');
                 row.style.borderBottom = '1px solid #f3f4f6';
                 row.innerHTML = `
                     <td style="padding: 1rem;">${index + 1}</td>
                     <td style="padding: 1rem; font-weight: 500;">${empData.fullName}</td>
-                    <td style="padding: 1rem; color: #666;">${empData.areaId}</td>
+                    <td style="padding: 1rem; color: #666;">${areaName}</td>
                     <td style="padding: 1rem;">${stat.attendances}</td>
                     <td style="padding: 1rem;">-</td>
                     <td style="padding: 1rem; font-weight: 700; color: var(--primary);">${stat.points} pts</td>
