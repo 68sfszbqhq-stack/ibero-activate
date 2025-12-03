@@ -40,7 +40,71 @@ document.addEventListener('DOMContentLoaded', () => {
     if (submitBtn) submitBtn.addEventListener('click', submitFeedback);
 
     // Rating & Emoji Logic (Igual que antes)
+    // Rating & Emoji Logic (Igual que antes)
     setupInteractionLogic();
+
+    // --- LOGICA DE ESTADÍSTICAS ---
+    const statsModal = document.getElementById('stats-modal');
+    const showStatsBtn = document.getElementById('show-stats-btn');
+    const closeStatsBtn = document.getElementById('close-stats-btn');
+
+    if (showStatsBtn) {
+        showStatsBtn.addEventListener('click', () => {
+            statsModal.classList.remove('hidden');
+            statsModal.style.display = 'flex'; // Ensure flex for centering
+            loadGlobalStats();
+        });
+    }
+
+    if (closeStatsBtn) {
+        closeStatsBtn.addEventListener('click', () => {
+            statsModal.classList.add('hidden');
+            statsModal.style.display = 'none';
+        });
+    }
+
+    async function loadGlobalStats() {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().getMonth(); // 0-11
+
+            // Helper para semana
+            const getWeekNumber = (d) => {
+                d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+                d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+                var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+                return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            };
+            const currentWeek = getWeekNumber(new Date());
+
+            // 1. Hoy
+            const todaySnapshot = await db.collection('attendances').where('date', '==', today).get();
+            document.getElementById('stats-today').textContent = todaySnapshot.size;
+
+            // 2. Semana (Requiere index o filtro cliente si es poco data. Usaremos filtro cliente por seguridad de indices)
+            // Para optimizar, pedimos solo las de este año y filtramos en memoria (si no son miles)
+            // O mejor, usamos where weekNumber si lo guardamos (sí lo guardamos en attendance.js)
+            const weekSnapshot = await db.collection('attendances')
+                .where('year', '==', currentYear)
+                .where('weekNumber', '==', currentWeek)
+                .get();
+            document.getElementById('stats-week').textContent = weekSnapshot.size;
+
+            // 3. Mes (Filtro cliente simple sobre una query de rango de fechas del mes)
+            const startOfMonth = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
+            const endOfMonth = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
+
+            const monthSnapshot = await db.collection('attendances')
+                .where('date', '>=', startOfMonth)
+                .where('date', '<=', endOfMonth)
+                .get();
+            document.getElementById('stats-month').textContent = monthSnapshot.size;
+
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+    }
 
     // --- FUNCIONES CORE ---
 

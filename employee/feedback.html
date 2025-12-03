@@ -40,73 +40,107 @@
                             <!-- Aquí aparecerán los botones mágicos -->
                         </div>
 
-                        <div id="waiting-message" class="waiting-state">
-                            <div class="pulse-ring"></div>
-                            <p>Esperando a que el instructor inicie...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Paso 2: Formulario de Feedback (Oculto inicialmente) -->
-                <div id="feedback-form" class="hidden fade-in">
-                    <div class="selected-profile">
-                        <div class="avatar-medium" id="profile-avatar">JP</div>
-                        <div class="profile-details">
-                            <h2 id="employee-name">Juan Pérez</h2>
-                            <span id="employee-account">#12345</span>
-                            <button id="change-user-btn" class="btn-text-small">Cambiar</button>
-                        </div>
+                        <p>Esperando a que el instructor inicie...</p>
                     </div>
 
-                    <div class="rating-section">
-                        <label>¿Cómo te sentiste?</label>
-                        <div class="star-rating">
-                            <i class="fa-solid fa-star star" data-rating="1"></i>
-                            <i class="fa-solid fa-star star" data-rating="2"></i>
-                            <i class="fa-solid fa-star star" data-rating="3"></i>
-                            <i class="fa-solid fa-star star" data-rating="4"></i>
-                            <i class="fa-solid fa-star star" data-rating="5"></i>
-                        </div>
-                        <p id="rating-text" class="rating-text">Selecciona una calificación</p>
-                    </div>
-
-                    <div class="reaction-section">
-                        <label>Selecciona tu reacción:</label>
-                        <div class="emoji-grid">
-                            <button class="emoji-btn" data-emoji="😊">😊</button>
-                            <button class="emoji-btn" data-emoji="😄">😄</button>
-                            <button class="emoji-btn" data-emoji="🤩">🤩</button>
-                            <button class="emoji-btn" data-emoji="😌">😌</button>
-                            <button class="emoji-btn" data-emoji="💪">💪</button>
-                            <button class="emoji-btn" data-emoji="🔥">🔥</button>
-                        </div>
-                    </div>
-
-                    <div class="comment-section">
-                        <label for="comment">Comentarios (opcional):</label>
-                        <textarea id="comment" rows="3"
-                            placeholder="Cuéntanos qué te pareció la dinámica..."></textarea>
-                    </div>
-
-                    <button id="submit-feedback" class="btn-primary btn-block">
-                        📤 Enviar Feedback
-                    </button>
-                </div>
-
-                <!-- Estado de Éxito -->
-                <div id="success-state" class="hidden fade-in text-center">
-                    <div class="success-icon">
-                        <i class="fa-solid fa-check"></i>
-                    </div>
-                    <h2>¡Gracias por tu feedback!</h2>
-                    <p>Has ganado <span class="points-highlight">+<span id="earned-points">10</span> puntos</span></p>
-                    <div class="action-buttons">
-                        <a href="dashboard.html" class="btn-primary">Ver mi Progreso</a>
-                        <button id="new-feedback-btn" class="btn-secondary">Nuevo Feedback</button>
+                    <!-- Botón de Estadísticas -->
+                    <div style="margin-top: 2rem; text-align: center;">
+                        <button id="show-stats-btn" class="btn-secondary" style="font-size: 0.9rem;">
+                            <i class="fa-solid fa-chart-simple"></i> Ver Estadísticas Globales
+                        </button>
                     </div>
                 </div>
             </div>
-        </main>
+
+            <!-- Modal de Estadísticas -->
+            <div id="stats-modal" class="modal hidden"
+                style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;">
+                <div class="modal-content"
+                    style="background: white; padding: 2rem; border-radius: 12px; width: 90%; max-width: 400px; position: relative;">
+                    <button id="close-stats-btn"
+                        style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.2rem; cursor: pointer;">&times;</button>
+                    <h2 style="text-align: center; margin-bottom: 1.5rem; color: var(--primary);">Participación Global
+                    </h2>
+
+                    <div style="display: grid; gap: 1rem;">
+                        <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 0.9rem; color: #666;">Hoy</div>
+                            <div id="stats-today" style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">0
+                            </div>
+                        </div>
+                        <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 0.9rem; color: #666;">Esta Semana</div>
+                            <div id="stats-week" style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">0
+                            </div>
+                        </div>
+                        <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 0.9rem; color: #666;">Este Mes</div>
+                            <div id="stats-month" style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">0
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paso 2: Formulario de Feedback (Oculto inicialmente) -->
+            <div id="feedback-form" class="hidden fade-in">
+                <div class="selected-profile">
+                    <div class="avatar-medium" id="profile-avatar">JP</div>
+                    <div class="profile-details">
+                        <h2 id="employee-name">Juan Pérez</h2>
+                        <span id="employee-account">#12345</span>
+                        <button id="change-user-btn" class="btn-text-small">Cambiar</button>
+                    </div>
+                </div>
+
+                <div class="rating-section">
+                    <label>¿Cómo te sentiste?</label>
+                    <div class="star-rating">
+                        <i class="fa-solid fa-star star" data-rating="1"></i>
+                        <i class="fa-solid fa-star star" data-rating="2"></i>
+                        <i class="fa-solid fa-star star" data-rating="3"></i>
+                        <i class="fa-solid fa-star star" data-rating="4"></i>
+                        <i class="fa-solid fa-star star" data-rating="5"></i>
+                    </div>
+                    <p id="rating-text" class="rating-text">Selecciona una calificación</p>
+                </div>
+
+                <div class="reaction-section">
+                    <label>Selecciona tu reacción:</label>
+                    <div class="emoji-grid">
+                        <button class="emoji-btn" data-emoji="😊">😊</button>
+                        <button class="emoji-btn" data-emoji="😄">😄</button>
+                        <button class="emoji-btn" data-emoji="🤩">🤩</button>
+                        <button class="emoji-btn" data-emoji="😌">😌</button>
+                        <button class="emoji-btn" data-emoji="💪">💪</button>
+                        <button class="emoji-btn" data-emoji="🔥">🔥</button>
+                    </div>
+                </div>
+
+                <div class="comment-section">
+                    <label for="comment">Comentarios (opcional):</label>
+                    <textarea id="comment" rows="3" placeholder="Cuéntanos qué te pareció la dinámica..."></textarea>
+                </div>
+
+                <button id="submit-feedback" class="btn-primary btn-block">
+                    📤 Enviar Feedback
+                </button>
+            </div>
+
+            <!-- Estado de Éxito -->
+            <div id="success-state" class="hidden fade-in text-center">
+                <div class="success-icon">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h2>¡Gracias por tu feedback!</h2>
+                <p>Has ganado <span class="points-highlight">+<span id="earned-points">10</span> puntos</span></p>
+                <div class="action-buttons">
+                    <a href="dashboard.html" class="btn-primary">Ver mi Progreso</a>
+                    <button id="new-feedback-btn" class="btn-secondary">Nuevo Feedback</button>
+                </div>
+            </div>
+    </div>
+    </main>
     </div>
 
     <script src="../js/firebase-config.js"></script>
