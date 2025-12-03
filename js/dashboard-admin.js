@@ -174,7 +174,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 row.style.borderBottom = '1px solid #f3f4f6';
                 row.innerHTML = `
                     <td style="padding: 1rem;">${index + 1}</td>
-                    <td style="padding: 1rem; font-weight: 500;">${empData.fullName}</td>
+                    <td style="padding: 1rem; font-weight: 500;">
+                        <a href="employee-detail.html?id=${stat.id}" style="color: var(--primary); text-decoration: none; font-weight: bold;">
+                            ${empData.fullName} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.8rem;"></i>
+                        </a>
+                    </td>
                     <td style="padding: 1rem; color: #666;">${areaName}</td>
                     <td style="padding: 1rem;">${stat.attendances}</td>
                     <td style="padding: 1rem;">-</td>
