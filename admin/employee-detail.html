@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Empleado - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase SDKs (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <h2>IBERO ACTÍVATE</h2>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="attendance.html" class="nav-link">
+                        <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="employees.html" class="nav-link">
+                        <i class="fa-solid fa-user-plus"></i> Empleados
+                    </a>
+                </li>
+            </ul>
+
+            <button id="logout-btn" onclick="auth.signOut()" class="nav-link logout-btn">
+                <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="page-header">
+                <div>
+                    <a href="dashboard.html" style="color: #666; text-decoration: none; font-size: 0.9rem;">
+                        <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+                    </a>
+                    <h1 id="emp-name" style="margin-top: 0.5rem;">Cargando...</h1>
+                    <p id="emp-details">...</p>
+                </div>
+            </header>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid" style="margin-bottom: 2rem;">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #fee2e2; color: var(--primary);">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="total-points">0</h3>
+                        <p>Puntos Totales</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #e0e7ff; color: #4f46e5;">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="total-attendances">0</h3>
+                        <p>Asistencias</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #dcfce7; color: #16a34a;">
+                        <i class="fa-solid fa-face-smile"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="avg-mood">--</h3>
+                        <p>Ánimo Promedio</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-grid" style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
+
+                <!-- Historial de Feedback -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-comment-dots"></i> Historial de Feedback</h2>
+                    </div>
+                    <div class="table-container">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="text-align: left; border-bottom: 2px solid #f3f4f6;">
+                                    <th style="padding: 1rem;">Fecha</th>
+                                    <th style="padding: 1rem;">Rating</th>
+                                    <th style="padding: 1rem;">Reacción</th>
+                                    <th style="padding: 1rem;">Comentario</th>
+                                </tr>
+                            </thead>
+                            <tbody id="feedback-history-body">
+                                <!-- Llenado por JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/admin-employee-detail.js"></script>
+</body>
+
+</html>
