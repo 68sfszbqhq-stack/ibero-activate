@@ -101,15 +101,37 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td style="padding: 1rem;">${areaName}</td>
                         <td style="padding: 1rem;">${data.position || '---'}</td>
                         <td style="padding: 1rem; font-weight: bold;">${data.points || 0}</td>
+                        <td style="padding: 1rem;">
+                            <button onclick="deleteEmployee('${doc.id}', '${data.fullName}')" 
+                                    style="background: #fee2e2; color: #dc2626; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;"
+                                    title="Eliminar Empleado">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
                     </tr>
                 `;
                 employeesTableBody.innerHTML += row;
             });
         } catch (e) {
             console.error('Error loading employees:', e);
-            employeesTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Error al cargar datos</td></tr>';
+            employeesTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Error al cargar datos</td></tr>';
         }
     }
+
+    // Hacer global para onclick
+    window.deleteEmployee = async (id, name) => {
+        if (confirm(`¿Estás seguro de eliminar a ${name}? Esta acción es irreversible.`)) {
+            try {
+                await db.collection('employees').doc(id).delete();
+                // Opcional: Eliminar asistencias relacionadas (requiere query batch)
+                alert('Empleado eliminado correctamente.');
+                loadEmployees(); // Recargar tabla
+            } catch (e) {
+                console.error('Error deleting:', e);
+                alert('Error al eliminar: ' + e.message);
+            }
+        }
+    };
 
     function getDateRange() {
         const type = filterTypeSelect.value;
