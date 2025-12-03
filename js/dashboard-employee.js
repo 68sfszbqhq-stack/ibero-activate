@@ -26,31 +26,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadEmployeeData(empId) {
         try {
-            // 1. Cargar datos del empleado (Opcional si ya tenemos el nombre)
-            // const empDoc = await db.collection('employees').doc(empId).get();
-            // const empData = empDoc.data();
-            // updateProfileUI(empData);
+            // 1. Cargar datos del empleado (Puntos Reales)
+            const empDoc = await db.collection('employees').doc(empId).get();
+            if (!empDoc.exists) return;
 
-            // 2. Cargar Puntos y Estadísticas
-            // Simulación de datos para demo visual
-            // En producción: query a colección 'points'
+            const empData = empDoc.data();
+            const myPoints = empData.points || 0;
+
+            // Actualizar Puntos en UI
+            const pointsCard = document.querySelector('.card:nth-child(1) p'); // Asumiendo orden
+            if (pointsCard) pointsCard.textContent = myPoints;
+
+            // 2. Calcular Ranking (Cuántos tienen más puntos que yo)
+            const rankSnapshot = await db.collection('employees')
+                .where('points', '>', myPoints)
+                .get();
+
+            const myRank = rankSnapshot.size + 1;
+
+            // Actualizar Ranking en UI
+            const rankCard = document.querySelector('.card:nth-child(3) p');
+            if (rankCard) rankCard.textContent = `#${myRank}`;
+
 
             // 3. Cargar Asistencias de la Semana
             const today = new Date();
             const startOfWeek = getStartOfWeek(today);
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(endOfWeek.getDate() + 6);
 
-            // Query real
-            /*
+            // Query real de asistencias
             const attendances = await db.collection('attendances')
                 .where('employeeId', '==', empId)
                 .where('date', '>=', startOfWeek.toISOString().split('T')[0])
                 .get();
-            */
 
-            // Renderizar calendario (simulado para demo)
-            renderCalendar();
+            // Renderizar calendario
+            renderCalendar(attendances);
 
         } catch (error) {
             console.error('Error cargando datos de empleado:', error);
@@ -64,8 +74,47 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Date(d.setDate(diff));
     }
 
-    function renderCalendar() {
-        // Lógica para marcar días completados en el calendario visual
-        // Ya está hardcodeado en el HTML para la demo inicial
+    function renderCalendar(snapshot) {
+        const weekGrid = document.querySelector('.week-grid');
+        if (!weekGrid) return;
+
+        weekGrid.innerHTML = ''; // Limpiar lo anterior
+
+        // 1. Identificar días con asistencia
+        const attendedDays = new Set();
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            // data.date es YYYY-MM-DD
+            attendedDays.add(data.date);
+        });
+
+        // 2. Generar días de la semana (Lun-Vie)
+        const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
+        const today = new Date();
+        const startOfWeek = getStartOfWeek(today);
+
+        days.forEach((dayName, index) => {
+            // Calcular fecha de este día
+            const currentDayDate = new Date(startOfWeek);
+            currentDayDate.setDate(startOfWeek.getDate() + index);
+            const dateString = currentDayDate.toISOString().split('T')[0];
+
+            const isAttended = attendedDays.has(dateString);
+
+            // HTML del día
+            const dayHtml = `
+                <div class="day-card" style="text-align: center; flex: 1;">
+                    <div style="font-size: 0.8rem; color: #666; margin-bottom: 0.5rem;">${dayName}</div>
+                    <div style="width: 40px; height: 40px; 
+                                background: ${isAttended ? '#dcfce7' : '#f3f4f6'}; 
+                                color: ${isAttended ? '#16a34a' : '#d1d5db'}; 
+                                border-radius: 50%; 
+                                display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                        ${isAttended ? '✓' : '-'}
+                    </div>
+                </div>
+            `;
+            weekGrid.innerHTML += dayHtml;
+        });
     }
 });

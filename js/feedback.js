@@ -138,6 +138,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const earnedPoints = 10 + (currentRating * 2);
             document.getElementById('earned-points').textContent = earnedPoints;
 
+            // 4. GUARDAR PUNTOS EN EL EMPLEADO
+            await db.collection('employees').doc(selectedEmployee.id).update({
+                points: firebase.firestore.FieldValue.increment(earnedPoints),
+                lastAttendance: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
             // UI Success
             feedbackForm.classList.add('hidden');
             successState.classList.remove('hidden');
