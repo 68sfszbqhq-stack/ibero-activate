@@ -130,6 +130,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Hacer la función global para que funcione el onclick
+    window.deleteEmployee = async (id, name) => {
+        if (confirm(`¿Estás seguro de eliminar a ${name}? Esta acción no se puede deshacer.`)) {
+            try {
+                await db.collection('employees').doc(id).delete();
+                // Opcional: Eliminar también sus asistencias y feedbacks si se requiere limpieza total
+                // Por seguridad, solo eliminamos el perfil por ahora.
+                // loadEmployees(); // Recargar lista - Assuming this function exists elsewhere or will be added
+                alert('Empleado eliminado correctamente.');
+            } catch (error) {
+                console.error('Error deleting employee:', error);
+                alert('Error al eliminar empleado.');
+            }
+        }
+    };
+
     function addToRecentList(emp) {
         // Remover mensaje de "vacío" si existe
         const emptyMsg = recentList.querySelector('p');

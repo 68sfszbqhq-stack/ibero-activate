@@ -125,15 +125,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (!isSelected) {
-                // MARCAR ASISTENCIA (Crear documento)
-                // Incluimos fullName para facilitar la lectura en el frontend sin joins
+                // 1. VERIFICACIÓN DOBLE (Server-side check)
+                const checkSnapshot = await db.collection('attendances')
+                    .where('employeeId', '==', employeeId)
+                    .where('date', '==', today)
+                    .get();
+
+                if (!checkSnapshot.empty) {
+                    showToast('⚠️ Este empleado ya tiene asistencia hoy.');
+                    card.classList.add('selected'); // Sincronizar UI
+                    card.querySelector('.card-icon').innerHTML = '<i class="fa-solid fa-check-circle"></i>';
+                    return;
+                }
+
+                // 2. MARCAR ASISTENCIA (Crear documento)
                 await db.collection('attendances').add({
                     employeeId: employeeId,
-                    employeeName: employeeData.fullName, // Clave para el "Magic Display"
+                    employeeName: employeeData.fullName,
                     areaId: areaId,
                     date: today,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    status: 'active', // 'active' significa que acaba de llegar y puede dar feedback
+                    status: 'active',
                     weekNumber: getWeekNumber(new Date()),
                     year: new Date().getFullYear()
                 });
