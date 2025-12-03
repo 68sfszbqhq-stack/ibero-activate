@@ -87,6 +87,69 @@ async function seedDatabase() {
             }
         }
 
+        // 3. Generar Asistencias y Feedbacks (Historial)
+        log('📅 Generando historial de asistencias y feedbacks...', 'info');
+
+        // Obtener todos los empleados
+        const empSnapshot = await db.collection('employees').get();
+        const allEmployees = [];
+        empSnapshot.forEach(doc => allEmployees.push({ id: doc.id, ...doc.data() }));
+
+        const reactions = ['happy', 'neutral', 'excited', 'tired'];
+        const comments = ['Excelente sesión', 'Me ayudó mucho', 'Gracias', 'Muy divertido', ''];
+
+        // Generar datos para los últimos 7 días
+        for (let i = 0; i < 7; i++) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+
+            // Seleccionar 5 empleados al azar por día
+            const dailyAttendees = allEmployees.sort(() => 0.5 - Math.random()).slice(0, 5);
+
+            for (const emp of dailyAttendees) {
+                // Crear Asistencia
+                const attendanceRef = await db.collection('attendances').add({
+                    employeeId: emp.id,
+                    employeeName: emp.fullName,
+                    areaId: emp.areaId,
+                    date: dateStr,
+                    timestamp: firebase.firestore.Timestamp.fromDate(date),
+                    status: 'completed',
+                    weekNumber: getWeekNumber(date),
+                    year: date.getFullYear()
+                });
+
+                // Crear Feedback
+                const rating = Math.floor(Math.random() * 3) + 3; // 3 to 5
+                const points = 10 + (rating * 2);
+
+                await db.collection('feedbacks').add({
+                    employeeId: emp.id,
+                    attendanceId: attendanceRef.id,
+                    rating: rating,
+                    reaction: reactions[Math.floor(Math.random() * reactions.length)],
+                    comment: comments[Math.floor(Math.random() * comments.length)],
+                    timestamp: firebase.firestore.Timestamp.fromDate(date),
+                    date: dateStr
+                });
+
+                // Actualizar Puntos del Empleado
+                await db.collection('employees').doc(emp.id).update({
+                    points: firebase.firestore.FieldValue.increment(points),
+                    lastAttendance: firebase.firestore.Timestamp.fromDate(date)
+                });
+            }
+            log(`✅ Datos generados para ${dateStr}`, 'success');
+        }
+
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
         log('✨ ¡Proceso finalizado con éxito!', 'success');
         log('Ahora puedes ir al Pase de Lista o al Feedback.', 'info');
 
