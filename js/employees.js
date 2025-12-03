@@ -11,8 +11,58 @@ document.addEventListener('DOMContentLoaded', () => {
     const areaSelect = document.getElementById('areaId');
     const recentList = document.getElementById('recent-list');
 
+    // Elementos de Nueva Área
+    const toggleAreaBtn = document.getElementById('toggle-area-btn');
+    const newAreaContainer = document.getElementById('new-area-container');
+    const newAreaInput = document.getElementById('newAreaName');
+    const saveAreaBtn = document.getElementById('save-area-btn');
+    const cancelAreaBtn = document.getElementById('cancel-area-btn');
+
     // Cargar Áreas al iniciar
     loadAreas();
+
+    // --- Lógica de Nueva Área ---
+    toggleAreaBtn.addEventListener('click', () => {
+        newAreaContainer.classList.remove('hidden');
+        newAreaInput.focus();
+    });
+
+    cancelAreaBtn.addEventListener('click', () => {
+        newAreaContainer.classList.add('hidden');
+        newAreaInput.value = '';
+    });
+
+    saveAreaBtn.addEventListener('click', async () => {
+        const name = newAreaInput.value.trim();
+        if (!name) return;
+
+        try {
+            saveAreaBtn.disabled = true;
+
+            // Guardar en Firestore
+            const docRef = await db.collection('areas').add({
+                name: name,
+                description: 'Agregada manualmente'
+            });
+
+            // Feedback
+            showToast(`✅ Área "${name}" creada`);
+
+            // Recargar dropdown y seleccionar la nueva
+            await loadAreas();
+            areaSelect.value = docRef.id;
+
+            // Limpiar UI
+            newAreaContainer.classList.add('hidden');
+            newAreaInput.value = '';
+
+        } catch (error) {
+            console.error('Error creando área:', error);
+            showToast('❌ Error al crear área');
+        } finally {
+            saveAreaBtn.disabled = false;
+        }
+    });
 
     // Manejar Envío del Formulario
     form.addEventListener('submit', async (e) => {
