@@ -50,15 +50,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // 1. Obtener empleados del área
+            // Nota: Quitamos orderBy en Firestore para evitar requerir índice compuesto
             const snapshot = await db.collection('employees')
                 .where('areaId', '==', areaId)
-                .orderBy('fullName')
                 .get();
 
             if (snapshot.empty) {
                 employeeList.innerHTML = '<div class="no-data">No hay empleados en esta área</div>';
                 return;
             }
+
+            // Convertir a array y ordenar en cliente
+            let employees = [];
+            snapshot.forEach(doc => {
+                employees.push({ id: doc.id, ...doc.data() });
+            });
+
+            employees.sort((a, b) => a.fullName.localeCompare(b.fullName));
 
             // 2. Verificar quiénes ya tienen asistencia HOY
             const today = new Date().toISOString().split('T')[0];
@@ -73,10 +81,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // 3. Renderizar tarjetas
-            snapshot.forEach(doc => {
-                const emp = doc.data();
-                const isPresent = attendedEmployeeIds.has(doc.id);
-                createEmployeeCard(doc.id, emp, isPresent);
+            employees.forEach(emp => {
+                const isPresent = attendedEmployeeIds.has(emp.id);
+                createEmployeeCard(emp.id, emp, isPresent);
             });
 
         } catch (error) {
