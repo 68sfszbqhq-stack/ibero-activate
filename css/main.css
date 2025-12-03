@@ -103,6 +103,7 @@ body {
   font-weight: 800;
   background: var(--gradient-primary);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0;
 }
@@ -266,4 +267,29 @@ body {
 
 .hidden {
   display: none !important;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .landing-header h1 {
+    font-size: 2rem;
+  }
+
+  .landing-container {
+    padding: 1rem;
+  }
+
+  .role-card {
+    width: 100%;
+    max-width: 100%;
+    padding: 2rem 1.5rem;
+  }
+
+  .role-selection {
+    gap: 1rem;
+  }
+
+  .btn-primary {
+    width: 100%;
+  }
 }
