@@ -1,15 +1,32 @@
 // Lógica del Dashboard de Empleado
 
 document.addEventListener('DOMContentLoaded', () => {
-    // En una app real, obtendríamos el ID del empleado autenticado o seleccionado previamente
-    // Para demo, usaremos un ID fijo o el último seleccionado en localStorage
-    const employeeId = 'emp_001'; // ID de prueba
+    // Recuperar empleado seleccionado del LocalStorage
+    const storedEmployee = localStorage.getItem('currentEmployee');
+
+    if (!storedEmployee) {
+        // Si no hay usuario seleccionado, volver al inicio
+        window.location.href = 'feedback.html';
+        return;
+    }
+
+    const currentUser = JSON.parse(storedEmployee);
+    const employeeId = currentUser.id;
+
+    // Actualizar UI con datos del LocalStorage
+    const nameDisplay = document.getElementById('dashboard-name');
+    const detailsDisplay = document.getElementById('dashboard-details');
+    const avatarDisplay = document.querySelector('.avatar-medium');
+
+    if (nameDisplay) nameDisplay.textContent = currentUser.name;
+    if (detailsDisplay) detailsDisplay.textContent = `Colaborador • #${employeeId.substring(0, 6)}`;
+    if (avatarDisplay) avatarDisplay.textContent = currentUser.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
 
     loadEmployeeData(employeeId);
 
     async function loadEmployeeData(empId) {
         try {
-            // 1. Cargar datos del empleado
+            // 1. Cargar datos del empleado (Opcional si ya tenemos el nombre)
             // const empDoc = await db.collection('employees').doc(empId).get();
             // const empData = empDoc.data();
             // updateProfileUI(empData);
