@@ -68,6 +68,7 @@
     margin-bottom: 0.5rem;
     background: var(--gradient-primary);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -376,4 +377,32 @@
 
 .text-center {
     text-align: center;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .employee-header {
+        padding: 1rem;
+    }
+
+    .feedback-card {
+        padding: 1.5rem;
+    }
+
+    .emoji-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .star {
+        font-size: 2rem;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        width: 100%;
+    }
 }

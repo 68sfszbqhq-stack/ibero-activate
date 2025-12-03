@@ -310,3 +310,57 @@
     z-index: 100;
     box-shadow: var(--shadow-lg);
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .admin-layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        padding: 1rem;
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .sidebar-header {
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+
+    .nav-menu {
+        display: flex;
+        overflow-x: auto;
+        gap: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+
+    .nav-item {
+        margin-bottom: 0;
+        flex-shrink: 0;
+    }
+
+    .nav-link span {
+        display: none;
+        /* Hide text on mobile nav if needed, or keep it */
+    }
+
+    .main-content {
+        padding: 1rem;
+    }
+
+    .filters-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .employee-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .login-card {
+        padding: 2rem 1.5rem;
+    }
+}
