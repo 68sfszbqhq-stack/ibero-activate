@@ -94,6 +94,9 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         currentAttendanceId = attendanceId;
 
+        // GUARDAR EN LOCALSTORAGE para que el dashboard sepa quién es
+        localStorage.setItem('currentEmployee', JSON.stringify(selectedEmployee));
+
         // Actualizar UI
         profileAvatar.textContent = getInitials(data.employeeName);
         employeeName.textContent = data.employeeName;
