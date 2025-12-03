@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="../css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Firebase SDKs -->
+    <!-- Firebase SDKs (Compat) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -35,14 +35,9 @@
                         <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link">
-                        <i class="fa-solid fa-users"></i> Empleados
-                    </a>
-                </li>
             </ul>
 
-            <button onclick="logout()" class="nav-link logout-btn">
+            <button id="logout-btn" onclick="auth.signOut()" class="nav-link logout-btn">
                 <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
             </button>
         </aside>
@@ -51,13 +46,13 @@
         <main class="main-content">
             <header class="page-header">
                 <div>
-                    <h1>Pase de Lista</h1>
-                    <p>Registra la participación en pausas activas</p>
+                    <h1>Pase de Lista (En Vivo)</h1>
+                    <p>Toca un nombre para marcar asistencia al instante</p>
                 </div>
                 <div class="session-info"
                     style="background: white; padding: 0.5rem 1rem; border-radius: 8px; box-shadow: var(--shadow-sm);">
                     <i class="fa-regular fa-calendar"></i>
-                    <span id="current-date-display" style="font-weight: 600;">Cargando fecha...</span>
+                    <span id="current-date" style="font-weight: 600;">Cargando fecha...</span>
                 </div>
             </header>
 
@@ -78,18 +73,6 @@
                         <option value="extra">Sesión Extraordinaria</option>
                     </select>
                 </div>
-
-                <div class="filter-group">
-                    <label>Acciones Rápidas</label>
-                    <button id="select-all-btn" class="btn-secondary" style="width: 100%;">
-                        <i class="fa-solid fa-check-double"></i> Seleccionar Todos
-                    </button>
-                </div>
-            </div>
-
-            <div id="loading-indicator" class="hidden" style="text-align: center; padding: 2rem;">
-                <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
-                <p style="margin-top: 1rem; color: #666;">Cargando empleados...</p>
             </div>
 
             <div id="empty-state"
@@ -97,21 +80,16 @@
                 <i class="fa-solid fa-users-viewfinder"
                     style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
                 <h3 style="color: #4b5563;">Selecciona un área para comenzar</h3>
-                <p style="color: #9ca3af;">Aparecerá la lista de empleados disponibles para el pase de lista.</p>
+                <p style="color: #9ca3af;">La lista se actualizará automáticamente.</p>
             </div>
 
-            <div id="employee-list" class="employee-grid hidden">
+            <div id="employee-list" class="employee-grid">
                 <!-- Tarjetas de empleados generadas dinámicamente -->
             </div>
-
-            <button id="save-attendance" class="btn-primary floating-action hidden">
-                <i class="fa-solid fa-floppy-disk"></i> Guardar Asistencias (<span id="count">0</span>)
-            </button>
         </main>
     </div>
 
     <script src="../js/firebase-config.js"></script>
-    <script src="../js/auth.js"></script>
     <script src="../js/attendance.js"></script>
 </body>
 
