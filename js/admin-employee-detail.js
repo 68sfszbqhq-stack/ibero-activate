@@ -188,9 +188,151 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Global function for modal (placeholder for now)
-    window.viewTestDetails = (testId) => {
-        alert('Detalle completo próximamente. ID: ' + testId);
-        // TODO: Implement modal to show specific answers if needed
+    // --- MODAL LOGIC ---
+    const modal = document.getElementById('test-details-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+    }
+
+    // TEST DEFINITIONS (Copy from wellness.js for mapping)
+    const TESTS = {
+        ansiedad: {
+            questions: [
+                "Me siento nervioso o ansioso antes de ir al trabajo.",
+                "Tengo dificultades para concentrarme en mis tareas debido a preocupaciones laborales.",
+                "Siento que mi trabajo me abruma frecuentemente.",
+                "Me preocupo constantemente por cometer errores en mi trabajo.",
+                "Siento tensión o presión en el pecho cuando pienso en mis responsabilidades laborales.",
+                "Tengo problemas para dormir porque pienso en mi trabajo.",
+                "Me siento irritable o impaciente con mis compañeros de trabajo.",
+                "Siento que no puedo cumplir con las expectativas de mi jefe o equipo.",
+                "Experimentó palpitaciones o taquicardia cuando estoy en el trabajo.",
+                "Me siento agotado emocionalmente por las demandas de mi trabajo.",
+                "Tengo miedo de no poder manejar situaciones difíciles en el trabajo.",
+                "Siento que mi trabajo afecta negativamente mi vida personal.",
+                "Me preocupo por mi desempeño laboral incluso fuera del horario de trabajo.",
+                "Siento que no tengo control sobre las exigencias de mi trabajo.",
+                "Tengo pensamientos recurrentes sobre problemas laborales que no puedo controlar.",
+                "Siento una sensación de inquietud o nerviosismo durante mi jornada laboral.",
+                "Me siento inseguro sobre mi capacidad para realizar mis tareas laborales.",
+                "Siento que mi trabajo me genera estrés constante.",
+                "Tengo síntomas físicos (como dolores de cabeza o estómago) relacionados con mi trabajo.",
+                "Me siento ansioso por el futuro de mi carrera o estabilidad laboral."
+            ],
+            options: ["Nunca", "A veces", "Frecuentemente", "Siempre"]
+        },
+        burnout: {
+            questions: [
+                "Debido a mi trabajo me siento emocionalmente agotado o agotada.",
+                "Al final del día me siento agotado o agotada.",
+                "Me encuentro cansado o cansada cuando me levanto por la mañana y tengo que enfrentarme a otro día de trabajo.",
+                "Puedo entender con facilidad lo que piensan las personas con quienes trabajo.",
+                "Creo que trato a las personas como si fueran objetos.",
+                "Trabajar con personas todos los días es una tensión para mí.",
+                "Me enfrento muy bien a los problemas de trabajo que se me presentan.",
+                "Me siento 'quemado' o 'quemada' por mi trabajo.",
+                "Siento que con mi trabajo estoy influyendo positivamente en la vida de otros.",
+                "Creo que tengo un trato más insensible con las personas desde que tengo este trabajo.",
+                "Me preocupa que este trabajo me esté endureciendo emocionalmente.",
+                "Me encuentro con mucha vitalidad.",
+                "Me siento frustrado por mi trabajo.",
+                "Siento que estoy haciendo un trabajo muy duro.",
+                "Realmente no me importa lo que pueda suceder a las personas que me rodean.",
+                "Trabajar directamente con personas me produce estrés.",
+                "Tengo facilidad para crear un ambiente de confianza con las personas con quienes trabajo.",
+                "Me encuentro relajado después de una junta de trabajo.",
+                "He realizado muchas cosas que valen la pena en este trabajo.",
+                "En el trabajo siento que estoy al límite de mis posibilidades.",
+                "Siento que sé tratar de forma adecuada los problemas emocionales en el trabajo.",
+                "Siento que las personas en mi trabajo me culpan de algunos de sus problemas."
+            ],
+            options: ["Nunca", "Alguna vez al año", "Una vez al mes", "Algunas veces al mes", "Una vez a la semana", "Varias veces a la semana", "Todos los días"]
+        },
+        depresion: {
+            questions: [
+                "Poco interés o placer en hacer cosas",
+                "Sentirse deprimido, triste o sin esperanzas",
+                "Dificultad para conciliar o mantener el sueño, o dormir demasiado",
+                "Sentirse cansado o con poca energía",
+                "Poco apetito o comer en exceso",
+                "Sentirse mal consigo mismo, o que es un fracaso, o que ha decepcionado a su familia o a sí mismo",
+                "Dificultad para concentrarse en cosas, como leer el periódico o ver televisión",
+                "Moverse o hablar tan despacio que otras personas lo han notado, o lo contrario, estar tan inquieto o agitado que ha estado moviéndose más de lo habitual",
+                "Pensamientos de que estaría mejor muerto o de hacerse daño de alguna manera"
+            ],
+            options: ["Nada", "Varios días", "Más de la mitad de los días", "Casi todos los días"]
+        },
+        estres: {
+            questions: [
+                "¿Sientes que tu carga de trabajo es excesiva?",
+                "¿Tienes control sobre cómo realizas tu trabajo?",
+                "¿Recibes apoyo suficiente de tus superiores y compañeros?",
+                "¿Cómo son tus relaciones interpersonales en el trabajo?",
+                "¿Está claro tu rol y responsabilidades en el trabajo?",
+                "¿Cómo manejas los cambios en tu entorno laboral?"
+            ],
+            options: ["Nunca / Muy Malo", "Poco / Malo", "Regular", "Bueno / Bastante", "Siempre / Excelente"]
+        }
+    };
+
+    window.viewTestDetails = async (testId) => {
+        try {
+            const doc = await db.collection('wellness_tests').doc(testId).get();
+            if (!doc.exists) {
+                alert('No se encontró el test');
+                return;
+            }
+            const data = doc.data();
+            const testDef = TESTS[data.type];
+
+            if (!testDef) {
+                alert('Tipo de test desconocido: ' + data.type);
+                return;
+            }
+
+            // Populate Modal
+            document.getElementById('modal-test-title').textContent = data.testTitle || data.type;
+            document.getElementById('modal-test-date').textContent = `Fecha: ${data.date}`;
+            document.getElementById('modal-test-level').textContent = data.level;
+            document.getElementById('modal-test-score').textContent = data.score;
+
+            const list = document.getElementById('modal-questions-list');
+            list.innerHTML = '';
+
+            data.answers.forEach((ansValue, index) => {
+                const question = testDef.questions[index] || `Pregunta ${index + 1}`;
+                // Try to find label from options if possible, else show value
+                // Note: Values in DB are numbers. Options array is 0-indexed or 1-indexed depending on test.
+                // Ansiedad: 1-4. Options index 0-3.
+                // Burnout: 0-6. Options index 0-6.
+                // Depresion: 0-3. Options index 0-3.
+                // Estres: 0-4. Options index 0-4.
+
+                let answerLabel = ansValue;
+                if (data.type === 'ansiedad') {
+                    answerLabel = testDef.options[ansValue - 1] || ansValue;
+                } else {
+                    answerLabel = testDef.options[ansValue] || ansValue;
+                }
+
+                const item = document.createElement('div');
+                item.className = 'bg-gray-50 p-4 rounded-lg';
+                item.innerHTML = `
+                    <p class="text-gray-800 font-medium text-sm mb-1">${index + 1}. ${question}</p>
+                    <p class="text-indigo-600 font-bold text-sm">${answerLabel}</p>
+                `;
+                list.appendChild(item);
+            });
+
+            modal.classList.remove('hidden');
+
+        } catch (error) {
+            console.error("Error fetching test details:", error);
+            alert("Error al cargar detalles");
+        }
     };
 });
