@@ -198,8 +198,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 status: 'completed'
             });
 
-            // 3. Calcular puntos (Gamificación simple)
-            const earnedPoints = 10 + (currentRating * 2);
+            // 3. Calcular puntos (Gamificación: 20 fijos + 10 si ganó)
+            let earnedPoints = 20;
+            const commentLower = comment.toLowerCase();
+
+            // Si el comentario incluye la palabra "gane", dar bono
+            if (commentLower.includes('gane')) {
+                earnedPoints += 10;
+            }
+
             document.getElementById('earned-points').textContent = earnedPoints;
 
             // 4. GUARDAR PUNTOS EN EL EMPLEADO
