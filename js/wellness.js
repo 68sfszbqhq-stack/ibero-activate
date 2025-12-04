@@ -259,29 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- RENDER FUNCTIONS ---
 
-    function renderGrid() {
-        testGrid.innerHTML = Object.values(TESTS).map(test => `
-            <div class="glass-card rounded-2xl p-6 test-card cursor-pointer group relative overflow-hidden" onclick="openTest('${test.id}')">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${test.color} opacity-10 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
-                
-                <div class="flex items-start justify-between mb-4">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${test.color} flex items-center justify-center text-white shadow-lg">
-                        <i class="fa-solid ${test.icon} text-xl"></i>
-                    </div>
-                    <span class="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">
-                        ${test.questions.length} Preguntas
-                    </span>
-                </div>
-                
-                <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-indigo-600 transition-colors">${test.title}</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">${test.description}</p>
-                
-                <div class="mt-6 flex items-center text-indigo-600 font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
-                    Comenzar Test <i class="fa-solid fa-arrow-right ml-2"></i>
-                </div>
-            </div>
-        `).join('');
-    }
+
 
     window.openTest = (testId) => {
         currentTestId = testId;
@@ -398,5 +376,77 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- START ---
-    renderGrid();
-});
+    checkCompletedTests();
+
+    async function checkCompletedTests() {
+        if (!currentEmployee) return;
+
+        try {
+            // Calcular rango del mes actual
+            const date = new Date();
+            const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+            const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
+
+            const snapshot = await db.collection('wellness_tests')
+                .where('employeeId', '==', currentEmployee.id)
+                .where('date', '>=', startOfMonth)
+                .where('date', '<=', endOfMonth)
+                .get();
+
+            const completedTypes = new Set();
+            snapshot.forEach(doc => completedTypes.add(doc.data().type));
+
+            renderGrid(completedTypes);
+
+        } catch (error) {
+            console.error("Error checking completed tests:", error);
+            renderGrid(new Set()); // Render anyway on error
+        }
+    }
+
+    function renderGrid(completedSet = new Set()) {
+        testGrid.innerHTML = Object.values(TESTS).map(test => {
+            const isCompleted = completedSet.has(test.id);
+
+            if (isCompleted) {
+                return `
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-200 relative overflow-hidden opacity-75 cursor-default">
+                    <div class="absolute top-4 right-4 text-green-500 bg-green-100 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                        <i class="fa-solid fa-check"></i> Completado este mes
+                    </div>
+                    
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-gray-200 flex items-center justify-center text-gray-400">
+                            <i class="fa-solid ${test.icon} text-xl"></i>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-xl font-bold text-gray-500 mb-2">${test.title}</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Ya has realizado este test este mes. Vuelve el próximo mes.</p>
+                </div>
+                `;
+            }
+
+            return `
+            <div class="glass-card rounded-2xl p-6 test-card cursor-pointer group relative overflow-hidden" onclick="openTest('${test.id}')">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${test.color} opacity-10 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
+                
+                <div class="flex items-start justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${test.color} flex items-center justify-center text-white shadow-lg">
+                        <i class="fa-solid ${test.icon} text-xl"></i>
+                    </div>
+                    <span class="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">
+                        ${test.questions.length} Preguntas
+                    </span>
+                </div>
+                
+                <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-indigo-600 transition-colors">${test.title}</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">${test.description}</p>
+                
+                <div class="mt-6 flex items-center text-indigo-600 font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
+                    Comenzar Test <i class="fa-solid fa-arrow-right ml-2"></i>
+                </div>
+            </div>
+            `;
+        }).join('');
+    }

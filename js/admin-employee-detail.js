@@ -134,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const snapshot = await db.collection('wellness_tests')
                 .where('employeeId', '==', id)
-                .orderBy('timestamp', 'desc')
                 .get();
 
             const tbody = document.getElementById('wellness-list');
@@ -145,7 +144,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            snapshot.forEach(doc => {
+            // Client-side sort (avoid index requirement)
+            const docs = snapshot.docs.sort((a, b) => {
+                const timeA = a.data().timestamp ? a.data().timestamp.toMillis() : 0;
+                const timeB = b.data().timestamp ? b.data().timestamp.toMillis() : 0;
+                return timeB - timeA;
+            });
+
+            docs.forEach(doc => {
                 const data = doc.data();
 
                 // Color badge logic
