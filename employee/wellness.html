@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro de Bienestar - Ibero 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+        }
+
+        .test-card {
+            transition: all 0.3s ease;
+        }
+
+        .test-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                        W
+                    </div>
+                    <span class="font-bold text-xl text-gray-800">Centro de Bienestar</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span id="user-name-display"
+                        class="text-sm font-medium text-gray-600 hidden sm:block">Cargando...</span>
+                    <a href="../index.html" class="text-gray-500 hover:text-gray-700 transition-colors">
+                        <i class="fa-solid fa-right-from-bracket text-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-5xl">
+
+        <!-- Welcome Section -->
+        <div class="text-center mb-12">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Tu Salud Mental Importa</h1>
+            <p class="text-gray-600 max-w-2xl mx-auto text-lg">
+                Este espacio es seguro y confidencial. Tus respuestas nos ayudan a entender cómo te sientes y a crear un
+                mejor ambiente para todos.
+                <span class="font-medium text-indigo-600">Solo el administrador tiene acceso a tus resultados.</span>
+            </p>
+        </div>
+
+        <!-- Test Grid -->
+        <div id="test-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Cards will be injected by JS -->
+        </div>
+
+        <!-- Test Interface (Hidden by default) -->
+        <div id="test-interface" class="hidden fixed inset-0 bg-gray-50 z-50 overflow-y-auto">
+            <div class="min-h-screen flex flex-col">
+                <!-- Test Header -->
+                <div class="bg-white shadow-sm sticky top-0 z-10 px-4 py-4">
+                    <div class="max-w-3xl mx-auto flex justify-between items-center">
+                        <button id="close-test-btn"
+                            class="text-gray-500 hover:text-gray-800 flex items-center gap-2 transition-colors">
+                            <i class="fa-solid fa-arrow-left"></i> Volver
+                        </button>
+                        <h2 id="test-title" class="text-xl font-bold text-gray-800">Título del Test</h2>
+                        <div class="w-8"></div> <!-- Spacer for centering -->
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="max-w-3xl mx-auto mt-4 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="h-full bg-indigo-600 transition-all duration-300"
+                            style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Questions Container -->
+                <div class="flex-grow container mx-auto px-4 py-8 max-w-3xl">
+                    <form id="test-form" class="space-y-8">
+                        <!-- Questions injected here -->
+                    </form>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="bg-white border-t border-gray-100 p-4 sticky bottom-0 z-10">
+                    <div class="max-w-3xl mx-auto flex justify-end">
+                        <button id="submit-test-btn"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl font-medium shadow-lg shadow-indigo-200 transition-all transform active:scale-95">
+                            Enviar Respuestas
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="success-modal"
+            class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+            <div
+                class="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-2xl transform transition-all scale-100">
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fa-solid fa-check text-3xl text-green-600"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">¡Gracias por compartir!</h3>
+                <p class="text-gray-600 mb-8">Tus respuestas han sido guardadas de forma segura. Apreciamos tu
+                    honestidad y participación.</p>
+                <button id="close-success-btn"
+                    class="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-xl font-medium transition-colors">
+                    Volver al Inicio
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/wellness.js"></script>
+</body>
+
+</html>
