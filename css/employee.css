@@ -49,12 +49,11 @@
 }
 
 .feedback-card {
-    background: var(--white);
-    border-radius: 24px;
-    padding: 2.5rem;
+    background: transparent;
+    padding: 1rem;
     width: 100%;
-    max-width: 500px;
-    box-shadow: var(--shadow-lg);
+    max-width: 600px;
+    box-shadow: none;
     animation: fadeInUp 0.5s ease;
 }
 
