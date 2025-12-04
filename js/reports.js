@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Client-side sort by timestamp desc (since we might have filtered by date range)
             const docs = [];
-            snapshot.forEach(doc => docs.push(doc.data()));
+            snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
             docs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
             docs.forEach(data => {
@@ -219,6 +219,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ${data.status === 'completed' ? 'Completado' : 'Pendiente'}
                             </span>
                         </td>
+                        <td style="padding: 1rem;">
+                            <button onclick="deleteAttendance('${data.id}')" 
+                                    style="background: #fee2e2; color: #dc2626; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;"
+                                    title="Eliminar Asistencia">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
                     </tr>
                 `;
                 attendanceTableBody.innerHTML += row;
@@ -227,10 +234,24 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.error('Error loading attendance:', e);
             if (e.message.includes('index')) {
-                attendanceTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: red;">Falta índice en Firebase para este filtro.</td></tr>';
+                attendanceTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: red;">Falta índice en Firebase para este filtro.</td></tr>';
             }
         }
     }
+
+    // Hacer global para onclick
+    window.deleteAttendance = async (id) => {
+        if (confirm('¿Estás seguro de eliminar este registro de asistencia?')) {
+            try {
+                await db.collection('attendances').doc(id).delete();
+                alert('Asistencia eliminada correctamente.');
+                loadAttendance(); // Recargar tabla
+            } catch (e) {
+                console.error('Error deleting attendance:', e);
+                alert('Error al eliminar: ' + e.message);
+            }
+        }
+    };
 
     // --- Exportación PDF ---
     const { jsPDF } = window.jspdf;
