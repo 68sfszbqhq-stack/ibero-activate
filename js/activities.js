@@ -89,10 +89,24 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('type').value = data.type;
             document.getElementById('intensity').value = data.intensity;
             document.getElementById('description').value = data.description;
+
+            // Populate Checkboxes
+            const benefitTypes = data.benefitType || [];
+            document.querySelectorAll('input[name="benefitType"]').forEach(cb => {
+                cb.checked = benefitTypes.includes(cb.value);
+            });
+
+            const specificBenefits = data.specificBenefits || [];
+            document.querySelectorAll('input[name="specificBenefits"]').forEach(cb => {
+                cb.checked = specificBenefits.includes(cb.value);
+            });
+
         } else {
             modalTitle.textContent = 'Nueva Actividad';
             form.reset();
             document.getElementById('activity-id').value = '';
+            // Uncheck all manually just in case
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
         }
     };
 
@@ -106,6 +120,11 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         const id = document.getElementById('activity-id').value;
+
+        // Collect Checkbox Values
+        const benefitType = Array.from(document.querySelectorAll('input[name="benefitType"]:checked')).map(cb => cb.value);
+        const specificBenefits = Array.from(document.querySelectorAll('input[name="specificBenefits"]:checked')).map(cb => cb.value);
+
         const data = {
             name: document.getElementById('name').value,
             emoji: document.getElementById('emoji').value,
@@ -113,6 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
             type: document.getElementById('type').value,
             intensity: document.getElementById('intensity').value,
             description: document.getElementById('description').value,
+            benefitType: benefitType,
+            specificBenefits: specificBenefits,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 

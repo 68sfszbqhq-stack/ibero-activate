@@ -128,10 +128,109 @@
                     </div>
                 </div>
 
+                <!-- Tipo de Beneficio -->
+                <div class="form-group">
+                    <label>Tipo de Beneficio (Selecciona uno o varios)</label>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal;">
+                            <input type="checkbox" name="benefitType" value="Físico"> Físico
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal;">
+                            <input type="checkbox" name="benefitType" value="Psicológico"> Psicológico
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal;">
+                            <input type="checkbox" name="benefitType" value="Social"> Social
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Beneficios Específicos -->
+                <div class="form-group">
+                    <label>Beneficios Específicos</label>
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; background: #f9fafb; padding: 1rem; border-radius: 8px;">
+
+                        <!-- Físicos -->
+                        <div>
+                            <strong
+                                style="display: block; font-size: 0.8rem; color: #6b7280; margin-bottom: 0.5rem;">Físicos</strong>
+                            <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+                                <label style="font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <input type="checkbox" name="specificBenefits" value="Mejora postura"> Mejora
+                                    postura
+                                </label>
+                                <label style="font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <input type="checkbox" name="specificBenefits" value="Reduce dolor muscular"> Reduce
+                                    dolor muscular
+                                </label>
+                                <label style="font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <input type="checkbox" name="specificBenefits" value="Mejora movilidad"> Mejora
+                                    movilidad
+                                </label>
+                                <label style="font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <input type="checkbox" name="specificBenefits" value="Activa circulación"> Activa
+                                    circulación
+                                </label>
+                                <label style="font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <input type="checkbox" name="specificBenefits" value="Mejora flexibilidad"> Mejora
+                                    flexibilidad
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Psicológicos -->
+                        <div>
+                            <strong
+                                style="display: block; font-size: 0.8rem; color: #6b7280; margin-bottom: 0.5rem;">Psicológicos</strong>
+                            <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+                                <label style="font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <input type="checkbox" name="specificBenefits" value="Reduce estrés"> Reduce estrés
+                                </label>
+                                <label style="font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <input type="checkbox" name="specificBenefits" value="Mejora estado de ánimo">
+                                    Mejora ánimo
+                                </label>
+                                <label style="font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <input type="checkbox" name="specificBenefits" value="Aumenta energía"> Aumenta
+                                    energía
+                                </label>
+                                <label style="font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <input type="checkbox" name="specificBenefits" value="Mejora concentración"> Mejora
+                                    concentración
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Sociales -->
+                        <div>
+                            <strong
+                                style="display: block; font-size: 0.8rem; color: #6b7280; margin-bottom: 0.5rem;">Sociales</strong>
+                            <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+                                <label style="font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <input type="checkbox" name="specificBenefits" value="Fomenta trabajo en equipo">
+                                    Trabajo en equipo
+                                </label>
+                                <label style="font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <input type="checkbox" name="specificBenefits" value="Mejora clima laboral"> Clima
+                                    laboral
+                                </label>
+                                <label style="font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <input type="checkbox" name="specificBenefits" value="Fomenta integración">
+                                    Integración
+                                </label>
+                                <label style="font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <input type="checkbox" name="specificBenefits" value="Mejora comunicación">
+                                    Comunicación
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label>Descripción</label>
                     <textarea id="description" rows="3" required
-                        placeholder="Descripción breve de la actividad..."></textarea>
+                        placeholder="Ej: Secuencia de estiramientos de cuello y hombros en el escritorio. Se realiza sentado, con movimientos suaves y controlados. Ayuda a reducir tensión muscular y mejorar la postura."></textarea>
                 </div>
 
                 <div class="form-actions">
