@@ -182,6 +182,28 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const comment = document.getElementById('comment').value;
 
+            // 0.1 SEGURIDAD: Verificar que la asistencia sigue activa
+            const attendanceDoc = await db.collection('attendances').doc(currentAttendanceId).get();
+            if (!attendanceDoc.exists || attendanceDoc.data().status !== 'active') {
+                alert('⚠️ Esta sesión de asistencia ya no es válida o ha expirado.');
+                resetSelection();
+                return;
+            }
+
+            // 0.2 SEGURIDAD: Verificar si ya dio feedback para esta asistencia
+            const existingFeedback = await db.collection('feedbacks')
+                .where('attendanceId', '==', currentAttendanceId)
+                .where('employeeId', '==', selectedEmployee.id)
+                .get();
+
+            if (!existingFeedback.empty) {
+                alert('⚠️ Ya has enviado tu feedback para esta sesión.');
+                // Opcional: Mostrar estado de éxito directamente si ya lo hizo
+                feedbackForm.classList.add('hidden');
+                successState.classList.remove('hidden');
+                return;
+            }
+
             // 1. Guardar Feedback
             await db.collection('feedbacks').add({
                 employeeId: selectedEmployee.id,
