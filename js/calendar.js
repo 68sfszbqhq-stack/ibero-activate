@@ -11,6 +11,45 @@ document.addEventListener('DOMContentLoaded', () => {
     // State
     let currentWeekStart = getStartOfWeek(new Date());
     let activitiesMap = {}; // id -> data
+    console.log("Calendar JS Loaded v2.1");
+
+    // --- FUNCTIONS DEFINED EARLY TO AVOID REFERENCE ERRORS ---
+
+    function openModal(day, time, item = null, index = null) {
+        const modal = document.getElementById('schedule-modal');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+
+        document.getElementById('selected-day').value = day;
+        document.getElementById('selected-time').value = time;
+        document.getElementById('display-day').value = translateDay(day);
+        document.getElementById('display-time').value = time;
+
+        if (item) {
+            document.getElementById('modal-title').textContent = 'Editar Actividad';
+            document.getElementById('schedule-id').value = index;
+            document.getElementById('activity-select').value = item.activityId;
+            document.getElementById('location').value = item.location;
+            document.getElementById('btn-delete-schedule').classList.remove('hidden');
+        } else {
+            document.getElementById('modal-title').textContent = 'Programar Actividad';
+            document.getElementById('schedule-id').value = '';
+            document.getElementById('activity-select').value = '';
+            document.getElementById('location').value = '';
+            document.getElementById('btn-delete-schedule').classList.add('hidden');
+        }
+    }
+    // Expose to window
+    window.openModal = openModal;
+
+    function closeModal() {
+        const modal = document.getElementById('schedule-modal');
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
+    window.closeModal = closeModal;
+
+    // --- END FUNCTIONS ---
 
     // DOM Elements
     const calendarBody = document.getElementById('calendar-body');
@@ -132,38 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 4. Modal Logic
-    // 4. Modal Logic
-    function openModal(day, time, item = null, index = null) {
-        modal.classList.remove('hidden');
-        modal.style.display = 'flex';
-
-        document.getElementById('selected-day').value = day;
-        document.getElementById('selected-time').value = time;
-        document.getElementById('display-day').value = translateDay(day);
-        document.getElementById('display-time').value = time;
-
-        if (item) {
-            document.getElementById('modal-title').textContent = 'Editar Actividad';
-            document.getElementById('schedule-id').value = index; // Using array index as ID for now
-            document.getElementById('activity-select').value = item.activityId;
-            document.getElementById('location').value = item.location;
-            document.getElementById('btn-delete-schedule').classList.remove('hidden');
-        } else {
-            document.getElementById('modal-title').textContent = 'Programar Actividad';
-            document.getElementById('schedule-id').value = '';
-            document.getElementById('activity-select').value = '';
-            document.getElementById('location').value = '';
-            document.getElementById('btn-delete-schedule').classList.add('hidden');
-        }
-    }
-    // Expose to window for HTML onclick
-    window.openModal = openModal;
-
-    function closeModal() {
-        modal.classList.add('hidden');
-        modal.style.display = 'none';
-    }
-    window.closeModal = closeModal;
+    // (Moved to top)
 
     // 5. Save Schedule
     async function saveSchedule(e) {
