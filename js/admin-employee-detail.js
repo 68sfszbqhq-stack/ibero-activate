@@ -176,7 +176,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.score}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button onclick="viewTestDetails('${doc.id}')" class="text-indigo-600 hover:text-indigo-900">Ver respuestas</button>
+                        <button onclick="viewTestDetails('${doc.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">Ver respuestas</button>
+                        <button onclick="deleteWellnessTest('${doc.id}')" class="text-red-600 hover:text-red-900" title="Eliminar Test">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -187,6 +190,23 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('wellness-list').innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-red-400">Error cargando datos</td></tr>';
         }
     }
+
+    // Global function to delete wellness test
+    window.deleteWellnessTest = async (testId) => {
+        if (confirm('¿Estás seguro de eliminar este test? Esta acción no se puede deshacer.')) {
+            try {
+                await db.collection('wellness_tests').doc(testId).delete();
+                alert('Test eliminado correctamente.');
+                // Reload history
+                const urlParams = new URLSearchParams(window.location.search);
+                const employeeId = urlParams.get('id');
+                if (employeeId) loadWellnessHistory(employeeId);
+            } catch (error) {
+                console.error("Error deleting test:", error);
+                alert("Error al eliminar el test: " + error.message);
+            }
+        }
+    };
 
     // --- MODAL LOGIC ---
     const modal = document.getElementById('test-details-modal');
