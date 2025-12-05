@@ -565,4 +565,3 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error cargando detalles:', error);
         }
     }
-    ```
