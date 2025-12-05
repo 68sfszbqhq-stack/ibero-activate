@@ -73,10 +73,10 @@ document.addEventListener('DOMContentLoaded', () => {
         updateWeekLabel();
     }
 
-    // 1. Render Grid Structure (9:00 - 17:00)
+    // 1. Render Grid Structure (10:00 - 13:00)
     function renderGridStructure() {
         calendarBody.innerHTML = '';
-        const hours = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+        const hours = ['10:00', '11:00', '12:00', '13:00'];
         const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
         hours.forEach(time => {
