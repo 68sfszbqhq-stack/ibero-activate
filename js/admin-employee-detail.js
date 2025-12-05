@@ -355,4 +355,214 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Error al cargar detalles");
         }
     };
-});
+
+    // --- EDIT EMPLOYEE LOGIC ---
+    const editModal = document.getElementById('edit-employee-modal');
+    const editBtn = document.getElementById('edit-employee-btn');
+    const closeEditBtn = document.getElementById('close-edit-modal-btn');
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
+    const editForm = document.getElementById('edit-employee-form');
+    const saveEditBtn = document.getElementById('save-edit-btn');
+
+    let currentEmployeeData = null;
+
+    // Cargar áreas en el selector del modal
+    async function loadAreasForEdit() {
+        try {
+            const areasSnapshot = await db.collection('areas').get();
+            const areaSelect = document.getElementById('edit-areaId');
+            areaSelect.innerHTML = '<option value="">Selecciona un área...</option>';
+
+            areasSnapshot.forEach(doc => {
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = doc.data().name;
+                areaSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading areas:', error);
+        }
+    }
+
+    // Abrir modal de edición
+    if (editBtn) {
+        editBtn.addEventListener('click', async () => {
+            if (!empId || !currentEmployeeData) {
+                alert('No se pudo cargar la información del empleado');
+                return;
+            }
+
+            // Cargar áreas si no se han cargado
+            await loadAreasForEdit();
+
+            // Llenar formulario con datos actuales
+            document.getElementById('edit-fullName').value = currentEmployeeData.fullName || '';
+            document.getElementById('edit-accountNumber').value = currentEmployeeData.accountNumber || '';
+            document.getElementById('edit-areaId').value = currentEmployeeData.areaId || '';
+            document.getElementById('edit-position').value = currentEmployeeData.position || '';
+            document.getElementById('edit-email').value = currentEmployeeData.email || '';
+            document.getElementById('edit-phone').value = currentEmployeeData.phone || '';
+
+            // Mostrar modal
+            editModal.classList.remove('hidden');
+            editModal.style.display = 'flex';
+        });
+    }
+
+    // Cerrar modal
+    function closeEditModal() {
+        editModal.classList.add('hidden');
+        editModal.style.display = 'none';
+    }
+
+    if (closeEditBtn) closeEditBtn.addEventListener('click', closeEditModal);
+    if (cancelEditBtn) cancelEditBtn.addEventListener('click', closeEditModal);
+
+    // Guardar cambios
+    if (editForm) {
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const fullName = document.getElementById('edit-fullName').value.trim();
+            const accountNumber = document.getElementById('edit-accountNumber').value.trim();
+            const areaId = document.getElementById('edit-areaId').value;
+            const position = document.getElementById('edit-position').value.trim();
+            const email = document.getElementById('edit-email').value.trim();
+            const phone = document.getElementById('edit-phone').value.trim();
+
+            if (!fullName || !accountNumber || !areaId) {
+                alert('Por favor completa todos los campos obligatorios');
+                return;
+            }
+
+            // Deshabilitar botón mientras se guarda
+            saveEditBtn.disabled = true;
+            saveEditBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+
+            try {
+                // Actualizar en Firestore
+                const updateData = {
+                    fullName,
+                    accountNumber,
+                    areaId,
+                    position,
+                    email,
+                    phone,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                await db.collection('employees').doc(empId).update(updateData);
+
+                // Actualizar datos locales
+                currentEmployeeData = { ...currentEmployeeData, ...updateData };
+
+                // Actualizar UI inmediatamente
+                document.getElementById('emp-name').textContent = fullName;
+
+                // Resolver nombre del área
+                const areaDoc = await db.collection('areas').doc(areaId).get();
+                const areaName = areaDoc.exists ? areaDoc.data().name : '---';
+                document.getElementById('emp-details').textContent = `${areaName} • #${accountNumber}`;
+
+                // Cerrar modal
+                closeEditModal();
+
+                // Mostrar mensaje de éxito
+                alert('✅ Datos actualizados correctamente');
+
+            } catch (error) {
+                console.error('Error actualizando empleado:', error);
+                alert('❌ Error al guardar los cambios: ' + error.message);
+            } finally {
+                saveEditBtn.disabled = false;
+                saveEditBtn.innerHTML = '<i class="fa-solid fa-save"></i> Guardar Cambios';
+            }
+        });
+    }
+
+    // Guardar referencia a los datos del empleado cuando se cargan
+    async function loadEmployeeDetails(id) {
+        try {
+            // 1. Cargar Perfil
+            const empDoc = await db.collection('employees').doc(id).get();
+            if (!empDoc.exists) {
+                document.getElementById('emp-name').textContent = 'Empleado no encontrado';
+                return;
+            }
+            const empData = empDoc.data();
+            currentEmployeeData = empData; // Guardar para edición
+
+            // Resolver nombre del área
+            let areaName = '---';
+            if (empData.areaId) {
+                const areaDoc = await db.collection('areas').doc(empData.areaId).get();
+                if (areaDoc.exists) areaName = areaDoc.data().name;
+            }
+
+            document.getElementById('emp-name').textContent = empData.fullName;
+            document.getElementById('emp-details').textContent = `${areaName} • #${empData.accountNumber || '---'}`;
+            document.getElementById('total-points').textContent = empData.points || 0;
+
+            // 2. Cargar Asistencias (Total)
+            const attendancesSnapshot = await db.collection('attendances')
+                .where('employeeId', '==', id)
+                .get();
+            document.getElementById('total-attendances').textContent = attendancesSnapshot.size;
+
+            // 3. Cargar Feedback (Historial)
+            const feedbackSnapshot = await db.collection('feedbacks')
+                .where('employeeId', '==', id)
+                .orderBy('timestamp', 'desc')
+                .get();
+
+            const feedbackList = document.getElementById('feedback-list');
+            feedbackList.innerHTML = '';
+
+            let totalRating = 0;
+
+            if (feedbackSnapshot.empty) {
+                feedbackList.innerHTML = '<div class="p-8 text-center text-gray-400">Sin feedback registrado</div>';
+                document.getElementById('avg-rating').textContent = '-';
+                document.getElementById('avg-stars').innerHTML = '';
+            } else {
+                const lastDate = feedbackSnapshot.docs[0].data().date;
+                document.getElementById('last-feedback-date').textContent = lastDate;
+                document.getElementById('total-feedbacks').textContent = feedbackSnapshot.size;
+
+                feedbackSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    totalRating += data.rating;
+
+                    const item = document.createElement('div');
+                    item.className = 'p-6 hover:bg-gray-50 transition-colors';
+                    item.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-gray-900">${'⭐'.repeat(data.rating)}</span>
+                                <span class="text-sm text-gray-500">• ${data.date}</span>
+                            </div>
+                            <div class="text-2xl">${data.reaction || ''}</div>
+                        </div>
+                        <p class="text-gray-600 text-sm leading-relaxed">${data.comment || 'Sin comentario'}</p>
+                    `;
+                    feedbackList.appendChild(item);
+                });
+
+                // Calcular Promedio
+                const avg = (totalRating / feedbackSnapshot.size).toFixed(1);
+                document.getElementById('avg-rating').textContent = avg;
+
+                // Render stars for average
+                const fullStars = Math.floor(avg);
+                const hasHalf = avg % 1 >= 0.5;
+                let starsHtml = '';
+                for (let i = 0; i < fullStars; i++) starsHtml += '<i class="fa-solid fa-star"></i>';
+                if (hasHalf) starsHtml += '<i class="fa-solid fa-star-half-stroke"></i>';
+                document.getElementById('avg-stars').innerHTML = starsHtml;
+            }
+
+        } catch (error) {
+            console.error('Error cargando detalles:', error);
+        }
+    }
+    ```
