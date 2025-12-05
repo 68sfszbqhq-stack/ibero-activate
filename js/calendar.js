@@ -132,7 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 4. Modal Logic
-    window.openModal = (day, time, item = null, index = null) => {
+    // 4. Modal Logic
+    function openModal(day, time, item = null, index = null) {
         modal.classList.remove('hidden');
         modal.style.display = 'flex';
 
@@ -154,12 +155,15 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('location').value = '';
             document.getElementById('btn-delete-schedule').classList.add('hidden');
         }
-    };
+    }
+    // Expose to window for HTML onclick
+    window.openModal = openModal;
 
-    window.closeModal = () => {
+    function closeModal() {
         modal.classList.add('hidden');
         modal.style.display = 'none';
-    };
+    }
+    window.closeModal = closeModal;
 
     // 5. Save Schedule
     async function saveSchedule(e) {
