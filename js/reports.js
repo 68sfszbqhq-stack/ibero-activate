@@ -125,7 +125,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const areaName = areasMap[data.areaId] || '---';
                 const row = `
                     <tr style="border-bottom: 1px solid #f3f4f6;">
-                        <td style="padding: 1rem;">${data.fullName}</td>
+                        <td style="padding: 1rem;">
+                            <a href="employee-detail.html?id=${doc.id}" 
+                               style="color: var(--primary); text-decoration: none; font-weight: 500; transition: opacity 0.2s;"
+                               onmouseover="this.style.opacity='0.7'" 
+                               onmouseout="this.style.opacity='1'">
+                                ${data.fullName}
+                            </a>
+                        </td>
                         <td style="padding: 1rem;">${data.accountNumber || '---'}</td>
                         <td style="padding: 1rem;">${areaName}</td>
                         <td style="padding: 1rem;">${data.position || '---'}</td>
