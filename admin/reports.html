@@ -86,6 +86,10 @@
                     style="padding: 1rem; border: none; background: none; font-weight: 500; color: #666; cursor: pointer;">
                     <i class="fa-solid fa-calendar-days"></i> Bitácora de Asistencias
                 </button>
+                <button class="tab-btn" data-target="feedback-tab"
+                    style="padding: 1rem; border: none; background: none; font-weight: 500; color: #666; cursor: pointer;">
+                    <i class="fa-solid fa-comments"></i> Feedback
+                </button>
             </div>
 
             <!-- Employees Tab -->
@@ -166,6 +170,58 @@
                                 <!-- JS Load -->
                                 <tr>
                                     <td colspan="5" style="text-align: center; padding: 2rem;">Cargando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feedback Tab -->
+            <div id="feedback-tab" class="tab-content hidden">
+                <div class="card">
+                    <div class="card-header"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2>Historial de Feedback</h2>
+                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+
+                            <!-- Selector de Tipo -->
+                            <select id="filter-type-feedback"
+                                style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 8px;">
+                                <option value="day">Por Día</option>
+                                <option value="week">Por Semana</option>
+                                <option value="month">Por Mes</option>
+                            </select>
+
+                            <!-- Inputs Dinámicos -->
+                            <input type="date" id="filter-date-feedback" class="filter-input-feedback"
+                                style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 8px;">
+                            <input type="week" id="filter-week-feedback" class="filter-input-feedback hidden"
+                                style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 8px;">
+                            <input type="month" id="filter-month-feedback" class="filter-input-feedback hidden"
+                                style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 8px;">
+
+                            <button id="export-feedback" class="btn-primary">
+                                <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-container" style="overflow-x: auto;">
+                        <table id="feedback-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f9fafb; text-align: left;">
+                                    <th style="padding: 1rem;">Fecha</th>
+                                    <th style="padding: 1rem;">Empleado</th>
+                                    <th style="padding: 1rem;">Calificación</th>
+                                    <th style="padding: 1rem;">Reacción</th>
+                                    <th style="padding: 1rem;">Comentario</th>
+                                    <th style="padding: 1rem;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JS Load -->
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 2rem;">Cargando...</td>
                                 </tr>
                             </tbody>
                         </table>

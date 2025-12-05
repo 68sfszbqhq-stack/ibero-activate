@@ -10,11 +10,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Elementos DOM
     const employeesTableBody = document.getElementById('employees-table').querySelector('tbody');
     const attendanceTableBody = document.getElementById('attendance-table').querySelector('tbody');
+    const feedbackTableBody = document.getElementById('feedback-table').querySelector('tbody');
 
     const filterTypeSelect = document.getElementById('filter-type');
     const filterDateInput = document.getElementById('filter-date');
     const filterWeekInput = document.getElementById('filter-week');
     const filterMonthInput = document.getElementById('filter-month');
+
+    const filterTypeSelectFeedback = document.getElementById('filter-type-feedback');
+    const filterDateInputFeedback = document.getElementById('filter-date-feedback');
+    const filterWeekInputFeedback = document.getElementById('filter-week-feedback');
+    const filterMonthInputFeedback = document.getElementById('filter-month-feedback');
 
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
@@ -28,7 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
         loadEmployees();
         // Set default date to today
         filterDateInput.value = new Date().toISOString().split('T')[0];
+        filterDateInputFeedback.value = new Date().toISOString().split('T')[0];
         loadAttendance();
+        loadFeedbacks();
     });
 
     // --- Lógica de UI Filtros ---
@@ -50,6 +58,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     [filterDateInput, filterWeekInput, filterMonthInput].forEach(input => {
         input.addEventListener('change', loadAttendance);
+    });
+
+    // --- Lógica de UI Filtros Feedback ---
+    filterTypeSelectFeedback.addEventListener('change', (e) => {
+        const type = e.target.value;
+
+        // Ocultar todos
+        filterDateInputFeedback.classList.add('hidden');
+        filterWeekInputFeedback.classList.add('hidden');
+        filterMonthInputFeedback.classList.add('hidden');
+
+        // Mostrar seleccionado
+        if (type === 'day') filterDateInputFeedback.classList.remove('hidden');
+        if (type === 'week') filterWeekInputFeedback.classList.remove('hidden');
+        if (type === 'month') filterMonthInputFeedback.classList.remove('hidden');
+
+        loadFeedbacks();
+    });
+
+    [filterDateInputFeedback, filterWeekInputFeedback, filterMonthInputFeedback].forEach(input => {
+        input.addEventListener('change', loadFeedbacks);
     });
 
     // --- Lógica de Tabs ---
@@ -253,6 +282,146 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Feedback Functions ---
+
+    function getDateRangeFeedback() {
+        const type = filterTypeSelectFeedback.value;
+        let start = null;
+        let end = null;
+        let label = '';
+
+        if (type === 'day' && filterDateInputFeedback.value) {
+            start = filterDateInputFeedback.value;
+            end = filterDateInputFeedback.value;
+            label = `Día: ${start}`;
+        } else if (type === 'week' && filterWeekInputFeedback.value) {
+            // value is "2023-W10"
+            const [year, week] = filterWeekInputFeedback.value.split('-W');
+            const simpleDate = new Date(year, 0, 1 + (week - 1) * 7);
+            const dayOfWeek = simpleDate.getDay();
+            const weekStart = simpleDate;
+            if (dayOfWeek <= 4) weekStart.setDate(simpleDate.getDate() - simpleDate.getDay() + 1);
+            else weekStart.setDate(simpleDate.getDate() + 8 - simpleDate.getDay());
+
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+
+            start = weekStart.toISOString().split('T')[0];
+            end = weekEnd.toISOString().split('T')[0];
+            label = `Semana: ${start} al ${end}`;
+        } else if (type === 'month' && filterMonthInputFeedback.value) {
+            // value is "2023-05"
+            const [year, month] = filterMonthInputFeedback.value.split('-');
+            start = `${year}-${month}-01`;
+            // Last day of month
+            const lastDay = new Date(year, month, 0).getDate();
+            end = `${year}-${month}-${lastDay}`;
+            label = `Mes: ${filterMonthInputFeedback.value}`;
+        }
+
+        return { start, end, label };
+    }
+
+    async function loadFeedbacks() {
+        try {
+            const { start, end } = getDateRangeFeedback();
+
+            let query = db.collection('feedbacks');
+
+            if (start && end) {
+                if (start === end) {
+                    query = query.where('date', '==', start);
+                } else {
+                    query = query.where('date', '>=', start).where('date', '<=', end);
+                }
+            } else {
+                // Default fallback if no date selected
+                query = query.orderBy('timestamp', 'desc').limit(50);
+            }
+
+            const snapshot = await query.get();
+            feedbackTableBody.innerHTML = '';
+
+            if (snapshot.empty) {
+                feedbackTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">No hay feedbacks para este periodo</td></tr>';
+                return;
+            }
+
+            // Get employee names for each feedback
+            const employeeIds = new Set();
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.employeeId) employeeIds.add(data.employeeId);
+            });
+
+            // Fetch employee data
+            const employeeMap = {};
+            const employeePromises = Array.from(employeeIds).map(async (id) => {
+                try {
+                    const empDoc = await db.collection('employees').doc(id).get();
+                    if (empDoc.exists) {
+                        employeeMap[id] = empDoc.data().fullName;
+                    }
+                } catch (e) {
+                    console.error('Error fetching employee:', e);
+                }
+            });
+            await Promise.all(employeePromises);
+
+            // Client-side sort by timestamp desc
+            const docs = [];
+            snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
+            docs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+            docs.forEach(data => {
+                const employeeName = employeeMap[data.employeeId] || 'Desconocido';
+                const stars = '⭐'.repeat(data.rating || 0);
+                const reaction = data.reaction || '—';
+                const comment = data.comment || 'Sin comentario';
+
+                const row = `
+                    <tr style="border-bottom: 1px solid #f3f4f6;">
+                        <td style="padding: 1rem;">${data.date}</td>
+                        <td style="padding: 1rem; font-weight: 500;">${employeeName}</td>
+                        <td style="padding: 1rem; font-size: 1.2rem;">${stars}</td>
+                        <td style="padding: 1rem; font-size: 1.5rem;">${reaction}</td>
+                        <td style="padding: 1rem; max-width: 300px; word-wrap: break-word;">${comment}</td>
+                        <td style="padding: 1rem;">
+                            <button onclick="deleteFeedback('${data.id}')" 
+                                    style="background: #fee2e2; color: #dc2626; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;"
+                                    title="Eliminar Feedback">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                feedbackTableBody.innerHTML += row;
+            });
+
+        } catch (e) {
+            console.error('Error loading feedbacks:', e);
+            if (e.message.includes('index')) {
+                feedbackTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: red;">Falta índice en Firebase para este filtro.</td></tr>';
+            } else {
+                feedbackTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: red;">Error al cargar feedbacks: ' + e.message + '</td></tr>';
+            }
+        }
+    }
+
+    // Hacer global para onclick
+    window.deleteFeedback = async (id) => {
+        if (confirm('¿Estás seguro de eliminar este feedback?')) {
+            try {
+                await db.collection('feedbacks').doc(id).delete();
+                alert('Feedback eliminado correctamente.');
+                loadFeedbacks(); // Recargar tabla
+            } catch (e) {
+                console.error('Error deleting feedback:', e);
+                alert('Error al eliminar: ' + e.message);
+            }
+        }
+    };
+
     // --- Exportación PDF ---
     const { jsPDF } = window.jspdf;
 
@@ -302,6 +471,46 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         doc.save('asistencias_ibero.pdf');
+    });
+
+    document.getElementById('export-feedback').addEventListener('click', () => {
+        const { label } = getDateRangeFeedback();
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFontSize(18);
+        doc.setTextColor(196, 22, 28);
+        doc.text('Reporte de Feedback - IBERO ACTÍVATE', 14, 22);
+
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Periodo: ${label || 'General'}`, 14, 30);
+        doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 36);
+
+        // Table with custom column widths for better comment display
+        doc.autoTable({
+            html: '#feedback-table',
+            startY: 45,
+            headStyles: { fillColor: [196, 22, 28] },
+            theme: 'grid',
+            columnStyles: {
+                0: { cellWidth: 25 }, // Fecha
+                1: { cellWidth: 35 }, // Empleado
+                2: { cellWidth: 25 }, // Calificación
+                3: { cellWidth: 20 }, // Reacción
+                4: { cellWidth: 'auto' }, // Comentario (flexible)
+                5: { cellWidth: 0 }  // Acciones (hide in PDF)
+            },
+            didParseCell: function (data) {
+                // Hide the "Acciones" column in PDF
+                if (data.column.index === 5) {
+                    data.cell.styles.cellWidth = 0;
+                    data.cell.text = [];
+                }
+            }
+        });
+
+        doc.save('feedback_ibero.pdf');
     });
 
 });
