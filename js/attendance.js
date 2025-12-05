@@ -11,19 +11,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Elementos DOM
     const dateDisplay = document.getElementById('current-date');
+    const datePicker = document.getElementById('date-picker');
     const areaDropdown = document.getElementById('area-dropdown');
     const employeeList = document.getElementById('employee-list');
     const saveBtn = document.getElementById('save-attendance-btn'); // Ya no se usará igual, pero lo mantenemos oculto o para "cerrar sesión"
 
+    // Variable para la fecha seleccionada (por defecto hoy)
+    let currentDate = new Date();
+
     // Inicializar fecha
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    dateDisplay.textContent = new Date().toLocaleDateString('es-ES', options);
+    updateDateDisplay();
+
+    // Establecer fecha máxima (hoy) en el date picker
+    datePicker.max = new Date().toISOString().split('T')[0];
+    datePicker.value = currentDate.toISOString().split('T')[0];
 
     // Cargar Áreas
     loadAreas();
 
     // Event Listeners
     areaDropdown.addEventListener('change', loadEmployees);
+    datePicker.addEventListener('change', (e) => {
+        currentDate = new Date(e.target.value + 'T12:00:00'); // Mediodía para evitar problemas de zona horaria
+        updateDateDisplay();
+        loadEmployees(); // Recargar empleados para la nueva fecha
+    });
+
+    function updateDateDisplay() {
+        dateDisplay.textContent = currentDate.toLocaleDateString('es-ES', options);
+        datePicker.value = currentDate.toISOString().split('T')[0];
+    }
 
     async function loadAreas() {
         try {
@@ -68,10 +86,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             employees.sort((a, b) => a.fullName.localeCompare(b.fullName));
 
-            // 2. Verificar quiénes ya tienen asistencia HOY
-            const today = new Date().toISOString().split('T')[0];
+            // 2. Verificar quiénes ya tienen asistencia en la FECHA SELECCIONADA
+            const selectedDate = currentDate.toISOString().split('T')[0];
             const attendanceSnapshot = await db.collection('attendances')
-                .where('date', '==', today)
+                .where('date', '==', selectedDate)
                 .where('areaId', '==', areaId)
                 .get();
 
@@ -120,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         card.classList.add('processing');
 
         const isSelected = card.classList.contains('selected');
-        const today = new Date().toISOString().split('T')[0];
+        const selectedDate = currentDate.toISOString().split('T')[0];
         const areaId = areaDropdown.value;
 
         try {
@@ -128,11 +146,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 1. VERIFICACIÓN DOBLE (Server-side check)
                 const checkSnapshot = await db.collection('attendances')
                     .where('employeeId', '==', employeeId)
-                    .where('date', '==', today)
+                    .where('date', '==', selectedDate)
                     .get();
 
                 if (!checkSnapshot.empty) {
-                    showToast('⚠️ Este empleado ya tiene asistencia hoy.');
+                    showToast('⚠️ Este empleado ya tiene asistencia en esta fecha.');
                     card.classList.add('selected'); // Sincronizar UI
                     card.querySelector('.card-icon').innerHTML = '<i class="fa-solid fa-check-circle"></i>';
                     return;
@@ -143,11 +161,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     employeeId: employeeId,
                     employeeName: employeeData.fullName,
                     areaId: areaId,
-                    date: today,
+                    date: selectedDate,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                     status: 'active',
-                    weekNumber: getWeekNumber(new Date()),
-                    year: new Date().getFullYear()
+                    weekNumber: getWeekNumber(currentDate),
+                    year: currentDate.getFullYear()
                 });
 
                 card.classList.add('selected');
@@ -161,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Para simplificar, buscamos y borramos
                 const snapshot = await db.collection('attendances')
                     .where('employeeId', '==', employeeId)
-                    .where('date', '==', today)
+                    .where('date', '==', selectedDate)
                     .get();
 
                 const batch = db.batch();

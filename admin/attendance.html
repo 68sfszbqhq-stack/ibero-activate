@@ -70,9 +70,12 @@
                     <p>Toca un nombre para marcar asistencia al instante</p>
                 </div>
                 <div class="session-info"
-                    style="background: white; padding: 0.5rem 1rem; border-radius: 8px; box-shadow: var(--shadow-sm);">
+                    style="background: white; padding: 0.5rem 1rem; border-radius: 8px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s;"
+                    onclick="document.getElementById('date-picker').showPicker()">
                     <i class="fa-regular fa-calendar"></i>
                     <span id="current-date" style="font-weight: 600;">Cargando fecha...</span>
+                    <input type="date" id="date-picker" style="position: absolute; opacity: 0; pointer-events: none;"
+                        max="">
                 </div>
             </header>
 
