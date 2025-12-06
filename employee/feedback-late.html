@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feedback - IBERO ACTÍVATE</title>
+    <title>Feedback Extemporáneo - IBERO ACTÍVATE</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/employee.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -23,11 +23,10 @@
                 <span>IBERO ACTÍVATE</span>
             </div>
             <div class="header-actions" style="display: flex; gap: 1rem;">
-                <a href="feedback-late.html" class="profile-link">
-                    <i class="fa-solid fa-clock-rotate-left"></i> Feedback Extemporáneo
+                <a href="feedback.html" class="profile-link">
+                    <i class="fa-solid fa-comment"></i> Feedback En Vivo
                 </a>
-                <a href="rankings.html" class="profile-link"
-                    style="background: rgba(196, 22, 28, 0.1); color: #c4161c;">
+                <a href="rankings.html" class="profile-link">
                     <i class="fa-solid fa-trophy"></i> Rankings
                 </a>
                 <a href="dashboard.html" class="profile-link">
@@ -39,30 +38,64 @@
         <main class="feedback-content">
             <div class="feedback-card">
                 <div class="card-header">
-                    <div id="welcome-section" class="search-section">
-                        <h1 style="text-align: center; margin-bottom: 0.5rem;">¡Bienvenido a tu Pausa Activa!</h1>
+                    <div id="search-section" class="search-section">
+                        <h1 style="text-align: center; margin-bottom: 0.5rem;">Feedback Extemporáneo</h1>
                         <p style="text-align: center; color: #666; margin-bottom: 2rem;">
-                            Espera a que tu instructor pase lista y tu nombre aparecerá aquí abajo mágicamente ✨
+                            Envía tu feedback para sesiones de fechas pasadas
                         </p>
 
-                        <div id="live-list" class="live-list-container">
-                            <!-- Aquí aparecerán los botones mágicos -->
+                        <!-- Selector de Fecha y Búsqueda -->
+                        <div style="max-width: 500px; margin: 0 auto;">
+                            <div style="margin-bottom: 1.5rem;">
+                                <label for="date-picker"
+                                    style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                                    <i class="fa-regular fa-calendar"></i> Selecciona la fecha de la sesión
+                                </label>
+                                <input type="date" id="date-picker"
+                                    style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
+                            </div>
+
+                            <div style="margin-bottom: 1.5rem;">
+                                <label for="account-input"
+                                    style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                                    <i class="fa-solid fa-id-card"></i> Tu número de cuenta
+                                </label>
+                                <input type="number" id="account-input" placeholder="Ej: 712412"
+                                    style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
+                            </div>
+
+                            <button id="search-btn" class="btn-primary btn-block">
+                                <i class="fa-solid fa-search"></i> Buscar mi asistencia
+                            </button>
                         </div>
 
-                        <div id="waiting-message" class="waiting-state">
-                            <div class="pulse-ring"></div>
-                            <p>Esperando a que el instructor inicie...</p>
+                        <!-- Resultados de búsqueda -->
+                        <div id="search-results" class="hidden" style="margin-top: 2rem;">
+                            <div id="attendance-list"></div>
+                        </div>
+
+                        <!-- Estado vacío -->
+                        <div id="empty-state" class="hidden"
+                            style="text-align: center; padding: 2rem; margin-top: 2rem; background: #f9fafb; border-radius: 12px;">
+                            <i class="fa-solid fa-inbox"
+                                style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
+                            <h3 style="color: #6b7280;">No se encontraron asistencias</h3>
+                            <p style="color: #9ca3af;">Verifica la fecha y tu número de cuenta</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Paso 2: Formulario de Feedback (Oculto inicialmente) -->
+                <!-- Formulario de Feedback (Oculto inicialmente) -->
                 <div id="feedback-form" class="hidden fade-in">
                     <div class="selected-profile" style="justify-content: center;">
                         <div class="avatar-medium" id="profile-avatar">JP</div>
                         <div class="profile-details" style="text-align: left;">
                             <h2 id="employee-name">Juan Pérez</h2>
                             <span id="employee-account">#12345</span>
+                            <span id="session-date"
+                                style="display: block; color: #666; font-size: 0.9rem; margin-top: 0.25rem;">
+                                <i class="fa-regular fa-calendar"></i> <span id="attendance-date"></span>
+                            </span>
                             <button id="change-user-btn" class="btn-text-small">Cambiar</button>
                         </div>
                     </div>
@@ -121,7 +154,7 @@
     </div>
 
     <script src="../js/firebase-config.js"></script>
-    <script src="../js/feedback.js"></script>
+    <script src="../js/feedback-late.js"></script>
 </body>
 
 </html>
