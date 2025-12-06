@@ -16,9 +16,13 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
-// Exportar referencias a servicios (Globales para uso en otros scripts)
+// Exportar globalmente para uso en otros scripts
 const db = firebase.firestore();
 const auth = firebase.auth();
+
+// También asignar a window para asegurar acceso global
+window.db = db;
+window.auth = auth;
 
 // Habilitar persistencia offline si es posible
 db.enablePersistence()
