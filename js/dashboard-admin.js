@@ -15,52 +15,78 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadDashboardData() {
         try {
-            // En una app real, filtraríamos por semana actual
-            // Aquí cargamos todo para demo
-
-            // 0. Cargar Mapa de Áreas (ID -> Nombre)
+            // 0. Cargar Mapa de Áreas (ID → Nombre)
             const areasMap = {};
             const areasSnapshot = await db.collection('areas').get();
             areasSnapshot.forEach(doc => {
                 areasMap[doc.id] = doc.data().name;
             });
 
-            // 1. Cargar Asistencias
-            const attendancesSnapshot = await db.collection('attendances').get();
-            const totalAttendances = attendancesSnapshot.size;
+            // 1. Cargar todos los empleados para iterar sus subcollections
+            const employeesSnapshot = await db.collection('employees').get();
+
+            let totalAttendances = 0;
+            let totalRating = 0;
+            let feedbackCount = 0;
+            const areasSet = new Set();
+            const allAttendances = [];
+            const allFeedbacks = [];
+
+            // Iterar sobre cada empleado y obtener sus attendances y feedbacks
+            for (const empDoc of employeesSnapshot.docs) {
+                const empId = empDoc.id;
+                const empData = empDoc.data();
+
+                // Obtener attendances de este empleado
+                const attSnapshot = await db.collection('employees')
+                    .doc(empId)
+                    .collection('attendance')
+                    .get();
+
+                totalAttendances += attSnapshot.size;
+
+                attSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.areaId) areasSet.add(data.areaId);
+                    allAttendances.push({ id: doc.id, ...data, employeeId: empId });
+                });
+
+                // Obtener feedbacks de este empleado
+                const fbSnapshot = await db.collection('employees')
+                    .doc(empId)
+                    .collection('feedback')
+                    .get();
+
+                fbSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    totalRating += data.rating || 0;
+                    feedbackCount++;
+                    allFeedbacks.push({ id: doc.id, ...data, employeeId: empId });
+                });
+            }
+
             totalAttendancesEl.textContent = totalAttendances;
 
-            // 2. Cargar Feedbacks
-            const feedbacksSnapshot = await db.collection('feedbacks').get();
-
             // Calcular Rating Promedio
-            let totalRating = 0;
-            feedbacksSnapshot.forEach(doc => {
-                totalRating += doc.data().rating;
-            });
-            const avgRating = feedbacksSnapshot.size > 0
-                ? (totalRating / feedbacksSnapshot.size).toFixed(1)
+            const avgRating = feedbackCount > 0
+                ? (totalRating / feedbackCount).toFixed(1)
                 : '0.0';
             avgRatingEl.textContent = `${avgRating} ⭐`;
 
             // Calcular Tasa de Feedback
             const feedbackRate = totalAttendances > 0
-                ? Math.round((feedbacksSnapshot.size / totalAttendances) * 100)
+                ? Math.round((feedbackCount / totalAttendances) * 100)
                 : 0;
             feedbackRateEl.textContent = `${feedbackRate}%`;
 
-            // 3. Áreas Activas (simplificado)
-            const areasSet = new Set();
-            attendancesSnapshot.forEach(doc => {
-                areasSet.add(doc.data().areaId);
-            });
+            // Áreas Activas
             activeAreasEl.textContent = areasSet.size;
 
-            // 4. Generar Gráficas
-            renderCharts(attendancesSnapshot, feedbacksSnapshot, areasMap);
+            // 4. Generar Gráficas (pasamos arrays con datos agregados)
+            renderCharts(allAttendances, allFeedbacks, areasMap);
 
             // 5. Generar Leaderboard
-            generateLeaderboard(attendancesSnapshot, feedbacksSnapshot, areasMap);
+            generateLeaderboard(allAttendances, allFeedbacks, areasMap);
 
         } catch (error) {
             console.error('Error cargando dashboard:', error);
@@ -70,8 +96,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderCharts(attendances, feedbacks, areasMap) {
         // Preparar datos para gráfica de áreas
         const areaCounts = {};
-        attendances.forEach(doc => {
-            const areaId = doc.data().areaId;
+        attendances.forEach(att => {
+            const areaId = att.areaId;
             areaCounts[areaId] = (areaCounts[areaId] || 0) + 1;
         });
 
@@ -99,8 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const dayCounts = {};
         const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
-        attendances.forEach(doc => {
-            const date = new Date(doc.data().date); // Asumiendo formato YYYY-MM-DD compatible
+        attendances.forEach(att => {
+            const date = new Date(att.date); // Asumiendo formato YYYY-MM-DD compatible
             const dayName = days[date.getDay()];
             dayCounts[dayName] = (dayCounts[dayName] || 0) + 1;
         });
@@ -131,9 +157,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Agrupar por empleado
         const employeeStats = {};
 
-        attendances.forEach(doc => {
-            const data = doc.data();
-            const empId = data.employeeId;
+        attendances.forEach(att => {
+            const empId = att.employeeId;
 
             if (!employeeStats[empId]) {
                 employeeStats[empId] = { id: empId, attendances: 0, points: 0 };
@@ -143,12 +168,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Sumar puntos de feedback
-        feedbacks.forEach(doc => {
-            const data = doc.data();
-            const empId = data.employeeId;
+        feedbacks.forEach(fb => {
+            const empId = fb.employeeId;
 
             if (employeeStats[empId]) {
-                employeeStats[empId].points += (data.rating * 2); // Bonus por rating
+                employeeStats[empId].points += (fb.rating * 2); // Bonus por rating
             }
         });
 

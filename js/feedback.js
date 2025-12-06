@@ -182,8 +182,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const comment = document.getElementById('comment').value;
 
-            // 0.1 SEGURIDAD: Verificar que la asistencia sigue activa
-            const attendanceDoc = await db.collection('attendances').doc(currentAttendanceId).get();
+            // 0.1 SEGURIDAD: Verificar que la asistencia sigue activa (en subcollection)
+            const attendanceDoc = await db.collection('employees')
+                .doc(selectedEmployee.id)
+                .collection('attendance')
+                .doc(currentAttendanceId)
+                .get();
             if (!attendanceDoc.exists || attendanceDoc.data().status !== 'active') {
                 alert('⚠️ Esta sesión de asistencia ya no es válida o ha expirado.');
                 resetSelection();
@@ -191,9 +195,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 0.2 SEGURIDAD: Verificar si ya dio feedback para esta asistencia
-            const existingFeedback = await db.collection('feedbacks')
+            const existingFeedback = await db.collection('employees')
+                .doc(selectedEmployee.id)
+                .collection('feedback')
                 .where('attendanceId', '==', currentAttendanceId)
-                .where('employeeId', '==', selectedEmployee.id)
                 .get();
 
             if (!existingFeedback.empty) {
@@ -204,21 +209,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // 1. Guardar Feedback
-            await db.collection('feedbacks').add({
-                employeeId: selectedEmployee.id,
-                attendanceId: currentAttendanceId,
-                rating: currentRating,
-                reaction: currentEmoji,
-                comment: comment,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                date: new Date().toISOString().split('T')[0]
-            });
+            // 1. Guardar Feedback en subcollection
+            await db.collection('employees')
+                .doc(selectedEmployee.id)
+                .collection('feedback')
+                .add({
+                    attendanceId: currentAttendanceId,
+                    rating: currentRating,
+                    reaction: currentEmoji,
+                    comment: comment,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    date: new Date().toISOString().split('T')[0]
+                });
 
-            // 2. Actualizar estado de asistencia a 'completed' para que desaparezca de la lista
-            await db.collection('attendances').doc(currentAttendanceId).update({
-                status: 'completed'
-            });
+            // 2. Actualizar estado de asistencia a 'completed' en subcollection
+            await db.collection('employees')
+                .doc(selectedEmployee.id)
+                .collection('attendance')
+                .doc(currentAttendanceId)
+                .update({
+                    status: 'completed'
+                });
 
             // 3. Calcular puntos (Gamificación: 20 fijos + 10 si ganó)
             let earnedPoints = 20;

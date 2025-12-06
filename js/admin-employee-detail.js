@@ -67,15 +67,17 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('emp-details').textContent = `${areaName} • #${empData.accountNumber || '---'}`;
             document.getElementById('total-points').textContent = empData.points || 0;
 
-            // 2. Cargar Asistencias (Total)
-            const attendancesSnapshot = await db.collection('attendances')
-                .where('employeeId', '==', id)
+            // 2. Cargar Asistencias (Total) desde subcollection
+            const attendancesSnapshot = await db.collection('employees')
+                .doc(id)
+                .collection('attendance')
                 .get();
             document.getElementById('total-attendances').textContent = attendancesSnapshot.size;
 
             // 3. Cargar Feedback (Historial)
-            const feedbackSnapshot = await db.collection('feedbacks')
-                .where('employeeId', '==', id)
+            const feedbackSnapshot = await db.collection('employees')
+                .doc(id)
+                .collection('feedback')
                 .orderBy('timestamp', 'desc')
                 .get();
 
@@ -132,8 +134,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadWellnessHistory(id) {
         try {
-            const snapshot = await db.collection('wellness_tests')
-                .where('employeeId', '==', id)
+            const snapshot = await db.collection('employees')
+                .doc(id)
+                .collection('health_surveys')
                 .get();
 
             const tbody = document.getElementById('wellness-list');
@@ -195,7 +198,11 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteWellnessTest = async (testId) => {
         if (confirm('¿Estás seguro de eliminar este test? Esta acción no se puede deshacer.')) {
             try {
-                await db.collection('wellness_tests').doc(testId).delete();
+                await db.collection('employees')
+                    .doc(empId)
+                    .collection('health_surveys')
+                    .doc(testId)
+                    .delete();
                 alert('Test eliminado correctamente.');
                 // Reload history
                 const urlParams = new URLSearchParams(window.location.search);
@@ -301,7 +308,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.viewTestDetails = async (testId) => {
         try {
-            const doc = await db.collection('wellness_tests').doc(testId).get();
+            const doc = await db.collection('employees')
+                .doc(empId)
+                .collection('health_surveys')
+                .doc(testId)
+                .get();
             if (!doc.exists) {
                 alert('No se encontró el test');
                 return;
@@ -503,15 +514,17 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('emp-details').textContent = `${areaName} • #${empData.accountNumber || '---'}`;
             document.getElementById('total-points').textContent = empData.points || 0;
 
-            // 2. Cargar Asistencias (Total)
-            const attendancesSnapshot = await db.collection('attendances')
-                .where('employeeId', '==', id)
+            // 2. Cargar Asistencias (Total) desde subcollection
+            const attendancesSnapshot = await db.collection('employees')
+                .doc(id)
+                .collection('attendance')
                 .get();
             document.getElementById('total-attendances').textContent = attendancesSnapshot.size;
 
-            // 3. Cargar Feedback (Historial)
-            const feedbackSnapshot = await db.collection('feedbacks')
-                .where('employeeId', '==', id)
+            // 3. Cargar Feedback (Historial) desde subcollection
+            const feedbackSnapshot = await db.collection('employees')
+                .doc(id)
+                .collection('feedback')
                 .orderBy('timestamp', 'desc')
                 .get();
 
@@ -565,3 +578,4 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error cargando detalles:', error);
         }
     }
+});
