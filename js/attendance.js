@@ -88,15 +88,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 2. Verificar quiénes ya tienen asistencia en la FECHA SELECCIONADA
             const selectedDate = currentDate.toISOString().split('T')[0];
-            const attendanceSnapshot = await db.collection('attendances')
-                .where('date', '==', selectedDate)
-                .where('areaId', '==', areaId)
-                .get();
 
+            // Obtener asistencias de todos los empleados del área para esta fecha
             const attendedEmployeeIds = new Set();
-            attendanceSnapshot.forEach(doc => {
-                attendedEmployeeIds.add(doc.data().employeeId);
-            });
+            for (const emp of employees) {
+                const attSnapshot = await db.collection('employees')
+                    .doc(emp.id)
+                    .collection('attendance')
+                    .where('date', '==', selectedDate)
+                    .get();
+                if (!attSnapshot.empty) {
+                    attendedEmployeeIds.add(emp.id);
+                }
+            }
+
+
 
             // 3. Renderizar tarjetas
             employees.forEach(emp => {
@@ -144,8 +150,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (!isSelected) {
                 // 1. VERIFICACIÓN DOBLE (Server-side check)
-                const checkSnapshot = await db.collection('attendances')
-                    .where('employeeId', '==', employeeId)
+                const checkSnapshot = await db.collection('employees')
+                    .doc(employeeId)
+                    .collection('attendance')
                     .where('date', '==', selectedDate)
                     .get();
 
@@ -156,17 +163,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                // 2. MARCAR ASISTENCIA (Crear documento)
-                await db.collection('attendances').add({
-                    employeeId: employeeId,
-                    employeeName: employeeData.fullName,
-                    areaId: areaId,
-                    date: selectedDate,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    status: 'active',
-                    weekNumber: getWeekNumber(currentDate),
-                    year: currentDate.getFullYear()
-                });
+                // 2. MARCAR ASISTENCIA (Crear documento en subcollection)
+                await db.collection('employees')
+                    .doc(employeeId)
+                    .collection('attendance')
+                    .add({
+                        employeeName: employeeData.fullName,
+                        areaId: areaId,
+                        date: selectedDate,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        status: 'active',
+                        weekNumber: getWeekNumber(currentDate),
+                        year: currentDate.getFullYear()
+                    });
 
                 card.classList.add('selected');
                 card.querySelector('.card-icon').innerHTML = '<i class="fa-solid fa-check-circle"></i>';
@@ -175,10 +184,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast(`Asistencia marcada: ${employeeData.fullName}`);
 
             } else {
-                // DESMARCAR (Borrar documento - opcional, o marcar como cancelado)
-                // Para simplificar, buscamos y borramos
-                const snapshot = await db.collection('attendances')
-                    .where('employeeId', '==', employeeId)
+                // DESMARCAR (Borrar documento de subcollection)
+                const snapshot = await db.collection('employees')
+                    .doc(employeeId)
+                    .collection('attendance')
                     .where('date', '==', selectedDate)
                     .get();
 

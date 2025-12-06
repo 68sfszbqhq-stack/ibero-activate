@@ -339,23 +339,25 @@ document.addEventListener('DOMContentLoaded', () => {
         // Calculate results
         const result = test.calculate(answers);
 
-        // Save to Firebase
+        // Save to Firebase (subcollection structure)
         try {
             submitTestBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Guardando...';
 
-            await db.collection('wellness_tests').add({
-                employeeId: currentEmployee ? currentEmployee.id : 'anonymous',
-                employeeName: currentEmployee ? currentEmployee.name : 'Anónimo',
-                type: test.id,
-                testTitle: test.title,
-                date: new Date().toISOString().split('T')[0],
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                score: result.score,
-                level: result.level,
-                rawScore: result.rawScore || 0,
-                answers: answers, // Save raw answers for detailed analysis
-                dimensions: result.dimensions || null
-            });
+            await db.collection('employees')
+                .doc(currentEmployee.id)
+                .collection('health_surveys')
+                .add({
+                    employeeName: currentEmployee.name,
+                    type: test.id,
+                    testTitle: test.title,
+                    date: new Date().toISOString().split('T')[0],
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    score: result.score,
+                    level: result.level,
+                    rawScore: result.rawScore || 0,
+                    answers: answers, // Save raw answers for detailed analysis
+                    dimensions: result.dimensions || null
+                });
 
             // Show success
             testInterface.classList.add('hidden');
@@ -387,8 +389,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
             const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
 
-            const snapshot = await db.collection('wellness_tests')
-                .where('employeeId', '==', currentEmployee.id)
+            const snapshot = await db.collection('employees')
+                .doc(currentEmployee.id)
+                .collection('health_surveys')
                 .where('date', '>=', startOfMonth)
                 .where('date', '<=', endOfMonth)
                 .get();

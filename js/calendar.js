@@ -66,6 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-delete-schedule').addEventListener('click', deleteSchedule);
     form.addEventListener('submit', saveSchedule);
 
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
     async function initCalendar() {
         renderGridStructure();
         await loadActivities();

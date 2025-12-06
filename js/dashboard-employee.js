@@ -39,11 +39,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 2. RECALCULAR PUNTOS Y BADGES (Datos Reales)
             // Consultar todas las asistencias
-            const attendancesSnapshot = await db.collection('attendances').where('employeeId', '==', empId).get();
+            // Obtener asistencias y feedbacks de subcollections
+            const attendancesSnapshot = await db.collection('employees')
+                .doc(empId)
+                .collection('attendance')
+                .get();
             const totalAttendances = attendancesSnapshot.size;
 
             // Consultar todos los feedbacks
-            const feedbacksSnapshot = await db.collection('feedbacks').where('employeeId', '==', empId).get();
+            const feedbacksSnapshot = await db.collection('employees')
+                .doc(empId)
+                .collection('feedback')
+                .get();
             const totalFeedbacks = feedbacksSnapshot.size;
 
             // Calcular Puntos: (Asistencias * 10) + (Feedbacks * 5 [Bonus])
@@ -96,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 4. Calcular Ranking
             const rankSnapshot = await db.collection('employees')
-                .where('points', '>', calculatedPoints)
+                .orderBy('points', 'desc')
                 .get();
             const myRank = rankSnapshot.size + 1;
             const rankCard = document.getElementById('dashboard-rank');
