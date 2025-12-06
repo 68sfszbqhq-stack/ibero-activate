@@ -1,5 +1,5 @@
 // Lógica de Feedback Extemporáneo
-// Permite a empleados dar feedback para asistencias de fechas pasadas
+// Muestra automáticamente los empleados con asistencia pendiente de una fecha seleccionada
 
 document.addEventListener('DOMContentLoaded', () => {
     // Estado local
@@ -8,17 +8,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentEmoji = '';
     let currentAttendanceId = null;
     let currentAttendanceRef = null;
+    let selectedDate = null;
 
     // Elementos DOM
-    const searchSection = document.getElementById('search-section');
     const datePicker = document.getElementById('date-picker');
-    const accountInput = document.getElementById('account-input');
-    const searchBtn = document.getElementById('search-btn');
-    const searchResults = document.getElementById('search-results');
-    const attendanceList = document.getElementById('attendance-list');
+    const dateDisplay = document.getElementById('current-date');
+    const liveList = document.getElementById('live-list');
+    const waitingMessage = document.getElementById('waiting-message');
     const emptyState = document.getElementById('empty-state');
     const feedbackForm = document.getElementById('feedback-form');
     const successState = document.getElementById('success-state');
+    const welcomeSection = document.getElementById('welcome-section');
 
     // Elementos del perfil seleccionado
     const profileAvatar = document.getElementById('profile-avatar');
@@ -35,137 +35,116 @@ document.addEventListener('DOMContentLoaded', () => {
     const newFeedbackBtn = document.getElementById('new-feedback-btn');
 
     // Event Listeners
-    if (searchBtn) searchBtn.addEventListener('click', searchAttendances);
+    if (datePicker) datePicker.addEventListener('change', handleDateChange);
     if (changeUserBtn) changeUserBtn.addEventListener('click', resetSelection);
     if (newFeedbackBtn) newFeedbackBtn.addEventListener('click', () => {
         resetSelection();
         successState.classList.add('hidden');
-        searchSection.classList.remove('hidden');
+        welcomeSection.classList.remove('hidden');
     });
     if (submitBtn) submitBtn.addEventListener('click', submitFeedback);
 
     // Setup interaction logic (stars & emojis)
     setupInteractionLogic();
 
-    // Permitir búsqueda con Enter
-    accountInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') searchAttendances();
-    });
+    async function handleDateChange(e) {
+        selectedDate = e.target.value;
+        if (!selectedDate) return;
 
-    async function searchAttendances() {
-        const selectedDate = datePicker.value;
-        const accountNumber = accountInput.value.trim();
+        // Actualizar display
+        const dateObj = new Date(selectedDate + 'T12:00:00');
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        dateDisplay.textContent = dateObj.toLocaleDateString('es-ES', options);
 
-        // Validaciones
-        if (!selectedDate) {
-            alert('Por favor selecciona una fecha');
-            return;
-        }
+        // Cargar asistencias de esa fecha
+        await loadAttendancesForDate(selectedDate);
+    }
 
-        if (!accountNumber) {
-            alert('Por favor ingresa tu número de cuenta');
-            return;
-        }
-
-        // Mostrar loading
-        searchBtn.disabled = true;
-        searchBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando...';
-        attendanceList.innerHTML = '';
-        searchResults.classList.add('hidden');
+    async function loadAttendancesForDate(date) {
+        liveList.innerHTML = '';
+        waitingMessage.classList.add('hidden');
         emptyState.classList.add('hidden');
 
         try {
-            // 1. Buscar empleado por número de cuenta
-            const employeeSnapshot = await db.collection('employees')
-                .where('accountNumber', '==', parseInt(accountNumber))
+            // Buscar TODAS las asistencias de esa fecha con status 'active' (pendientes de feedback)
+            // Usamos collectionGroup para buscar en todas las subcollections de attendance
+            const attendancesQuery = await db.collectionGroup('attendance')
+                .where('date', '==', date)
+                .where('status', '==', 'active')
                 .get();
 
-            if (employeeSnapshot.empty) {
-                showEmptyState('No se encontró ningún empleado con ese número de cuenta');
+            if (attendancesQuery.empty) {
+                emptyState.classList.remove('hidden');
                 return;
             }
 
-            const employeeDoc = employeeSnapshot.docs[0];
-            const employeeData = employeeDoc.data();
-            const employeeId = employeeDoc.id;
+            // Para cada asistencia, crear un botón con el nombre del empleado
+            const attendances = [];
+            for (const doc of attendancesQuery.docs) {
+                const attendanceData = doc.data();
+                const employeeId = doc.ref.parent.parent.id; // Obtener el ID del empleado desde la referencia
 
-            // 2. Buscar asistencias de esa fecha para ese empleado
-            const attendanceSnapshot = await db.collection('employees')
-                .doc(employeeId)
-                .collection('attendance')
-                .where('date', '==', selectedDate)
-                .where('status', '==', 'active') // Solo las que NO tienen feedback
-                .get();
-
-            if (attendanceSnapshot.empty) {
-                showEmptyState('No se encontraron asistencias pendientes de feedback para esta fecha');
-                return;
+                // Obtener datos completos del empleado
+                const employeeDoc = await db.collection('employees').doc(employeeId).get();
+                if (employeeDoc.exists) {
+                    const employeeData = employeeDoc.data();
+                    attendances.push({
+                        attendanceId: doc.id,
+                        attendanceData: attendanceData,
+                        employeeId: employeeId,
+                        employeeData: employeeData
+                    });
+                }
             }
 
-            // 3. Mostrar resultados
-            searchResults.classList.remove('hidden');
-            attendanceSnapshot.forEach(doc => {
-                createAttendanceCard(employeeId, employeeData, doc.id, doc.data());
+            // Ordenar por nombre
+            attendances.sort((a, b) => a.employeeData.fullName.localeCompare(b.employeeData.fullName));
+
+            // Mostrar botones
+            attendances.forEach(item => {
+                createEmployeeButton(item);
             });
 
         } catch (error) {
-            console.error('Error buscando asistencias:', error);
-            alert('Error al buscar. Intenta de nuevo.');
-        } finally {
-            searchBtn.disabled = false;
-            searchBtn.innerHTML = '<i class="fa-solid fa-search"></i> Buscar mi asistencia';
+            console.error('Error cargando asistencias:', error);
+            alert('Error al cargar asistencias. Intenta de nuevo.');
         }
     }
 
-    function showEmptyState(message) {
-        emptyState.classList.remove('hidden');
-        emptyState.querySelector('p').textContent = message;
-    }
-
-    function createAttendanceCard(employeeId, employeeData, attendanceId, attendanceData) {
-        const card = document.createElement('button');
-        card.className = 'magic-btn'; // Reutilizar estilo existente
-        card.style.width = '100%';
-        card.style.marginBottom = '1rem';
-
-        const formattedDate = new Date(attendanceData.date + 'T12:00:00').toLocaleDateString('es-ES', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-
-        card.innerHTML = `
-            <div class="avatar-tiny">${getInitials(employeeData.fullName)}</div>
-            <div style="flex: 1; text-align: left;">
-                <span style="display: block; font-weight: 600;">${employeeData.fullName}</span>
-                <span style="display: block; font-size: 0.85rem; color: #666;">${formattedDate}</span>
-            </div>
+    function createEmployeeButton(item) {
+        const btn = document.createElement('button');
+        btn.className = 'magic-btn';
+        btn.innerHTML = `
+            <div class="avatar-tiny">${getInitials(item.employeeData.fullName)}</div>
+            <span>Soy ${item.employeeData.fullName}</span>
             <i class="fa-solid fa-chevron-right"></i>
         `;
 
-        card.addEventListener('click', () => selectAttendance(employeeId, employeeData, attendanceId, attendanceData));
-        attendanceList.appendChild(card);
+        btn.addEventListener('click', () => selectEmployee(item));
+        liveList.appendChild(btn);
     }
 
-    function selectAttendance(employeeId, employeeData, attendanceId, attendanceData) {
+    function selectEmployee(item) {
         selectedEmployee = {
-            id: employeeId,
-            name: employeeData.fullName,
-            accountNumber: employeeData.accountNumber
+            id: item.employeeId,
+            name: item.employeeData.fullName,
+            accountNumber: item.employeeData.accountNumber
         };
-        currentAttendanceId = attendanceId;
-        currentAttendanceRef = db.collection('employees').doc(employeeId).collection('attendance').doc(attendanceId);
+        currentAttendanceId = item.attendanceId;
+        currentAttendanceRef = db.collection('employees')
+            .doc(item.employeeId)
+            .collection('attendance')
+            .doc(item.attendanceId);
 
         // Guardar en localStorage
         localStorage.setItem('currentEmployee', JSON.stringify(selectedEmployee));
 
         // Actualizar UI
-        profileAvatar.textContent = getInitials(employeeData.fullName);
-        employeeName.textContent = employeeData.fullName;
-        employeeAccount.textContent = `#${employeeData.accountNumber}`;
+        profileAvatar.textContent = getInitials(item.employeeData.fullName);
+        employeeName.textContent = item.employeeData.fullName;
+        employeeAccount.textContent = `#${item.employeeData.accountNumber}`;
 
-        const formattedDate = new Date(attendanceData.date + 'T12:00:00').toLocaleDateString('es-ES', {
+        const formattedDate = new Date(item.attendanceData.date + 'T12:00:00').toLocaleDateString('es-ES', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
@@ -173,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         attendanceDate.textContent = formattedDate;
 
-        searchSection.classList.add('hidden');
+        welcomeSection.classList.add('hidden');
         feedbackForm.classList.remove('hidden');
     }
 
@@ -223,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     reaction: currentEmoji,
                     comment: comment,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    date: attendanceData.date, // Fecha de la asistencia, no la actual
+                    date: attendanceData.date,
                     isLate: true // Marcar como feedback extemporáneo
                 });
 
@@ -275,9 +254,12 @@ document.addEventListener('DOMContentLoaded', () => {
         ratingText.textContent = 'Selecciona una calificación';
 
         feedbackForm.classList.add('hidden');
-        searchSection.classList.remove('hidden');
-        searchResults.classList.add('hidden');
-        emptyState.classList.add('hidden');
+        welcomeSection.classList.remove('hidden');
+
+        // Recargar lista si hay fecha seleccionada
+        if (selectedDate) {
+            loadAttendancesForDate(selectedDate);
+        }
     }
 
     function setupInteractionLogic() {
