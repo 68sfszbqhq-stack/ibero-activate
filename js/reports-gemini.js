@@ -1,4 +1,4 @@
-// Reportes inteligentes con Gemini AI
+// Reportes inteligentes con Gemini AI - Versión Anónima Multi-Experto
 
 // Esperar a que Firebase esté listo
 function waitForFirebase(callback) {
@@ -37,28 +37,23 @@ function initReports() {
             return;
         }
 
-        // Guardar API key
         localStorage.setItem('gemini_api_key', apiKey);
 
         try {
-            // Mostrar loading
             loadingState.classList.remove('hidden');
             reportContainer.classList.add('hidden');
             generateBtn.disabled = true;
 
-            // 1. Agregar datos
-            console.log('Agregando datos del período:', period);
-            const reportData = await aggregateDataForReport(period);
+            console.log('Recopilando datos anónimos por departamento...');
+            const anonymousData = await aggregateAnonymousData(period);
 
-            // 2. Generar reporte con IA
-            console.log('Generando análisis con Gemini IA...');
-            const aiReport = await generateAIReport(reportData, apiKey);
+            console.log('Enviando a Gemini para análisis multi-experto...');
+            const aiReport = await generateMultiExpertReport(anonymousData, apiKey);
 
-            // 3. Mostrar reporte
-            displayReport(aiReport, reportData);
+            displayReport(aiReport, anonymousData);
 
         } catch (error) {
-            console.error('Error generando reporte:', error);
+            console.error('Error:', error);
             alert('Error: ' + error.message);
         } finally {
             loadingState.classList.add('hidden');
@@ -67,7 +62,6 @@ function initReports() {
     });
 
     function displayReport(aiReport, data) {
-        // Convertir markdown a HTML básico
         let html = aiReport
             .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -99,14 +93,13 @@ function initReports() {
         return translations[period] || period;
     }
 
-    // Exportar a PDF
     document.getElementById('export-pdf-btn')?.addEventListener('click', () => {
         window.print();
     });
 }
 
-// Función para agregar datos del período
-async function aggregateDataForReport(period = 'weekly') {
+// Recopilar datos ANÓNIMOS agregados por departamento
+async function aggregateAnonymousData(period = 'weekly') {
     const now = new Date();
     let startDate;
 
@@ -124,30 +117,52 @@ async function aggregateDataForReport(period = 'weekly') {
 
     const startDateStr = startDate.toISOString().split('T')[0];
 
-    // Obtener todos los empleados
-    const employees = await db.collection('employees').get();
+    // Cargar áreas/departamentos
+    const areasSnapshot = await db.collection('areas').get();
+    const areasMap = {};
+    areasSnapshot.forEach(doc => {
+        areasMap[doc.id] = doc.data().name;
+    });
 
-    const reportData = {
-        period: period,
-        startDate: startDateStr,
-        endDate: new Date().toISOString().split('T')[0],
-        totalEmployees: employees.size,
-        employeeMetrics: [],
-        globalStats: {
-            totalAttendances: 0,
-            avgFeedbackRating: 0,
-            burnoutLevels: [],
-            anxietyLevels: [],
-            depressionLevels: []
-        }
+    const employeesSnapshot = await db.collection('employees').get();
+
+    // Estructura de datos anónimos por departamento
+    const departmentStats = {};
+
+    // Inicializar
+    Object.values(areasMap).forEach(areaName => {
+        departmentStats[areaName] = {
+            empleados: 0,
+            asistencias: 0,
+            tasaAsistencia: 0,
+            feedbacks: 0,
+            promedioSatisfaccion: 0,
+            burnout: { bajo: 0, moderado: 0, alto: 0, muyAlto: 0 },
+            ansiedad: { bajo: 0, moderado: 0, alto: 0, muyAlto: 0 },
+            depresion: { bajo: 0, moderado: 0, alto: 0, muyAlto: 0 }
+        };
+    });
+
+    // Agregar categoría para empleados sin departamento
+    departmentStats['Sin Departamento Asignado'] = {
+        empleados: 0,
+        asistencias: 0,
+        tasaAsistencia: 0,
+        feedbacks: 0,
+        promedioSatisfaccion: 0,
+        burnout: { bajo: 0, moderado: 0, alto: 0, muyAlto: 0 },
+        ansiedad: { bajo: 0, moderado: 0, alto: 0, muyAlto: 0 },
+        depresion: { bajo: 0, moderado: 0, alto: 0, muyAlto: 0 }
     };
 
-    // Usar Promise.all para mejor performance
-    const employeePromises = employees.docs.map(async (empDoc) => {
+    // Procesar cada empleado (SIN guardar nombres ni números de cuenta)
+    const employeePromises = employeesSnapshot.docs.map(async (empDoc) => {
         const empId = empDoc.id;
         const empData = empDoc.data();
+        const deptName = areasMap[empData.areaId] || 'Sin Departamento Asignado';
 
-        // Obtener datos en paralelo
+        departmentStats[deptName].empleados++;
+
         const [attendances, healthSurveys, feedbacks] = await Promise.all([
             db.collection('employees').doc(empId).collection('attendance')
                 .where('date', '>=', startDateStr).get(),
@@ -157,132 +172,170 @@ async function aggregateDataForReport(period = 'weekly') {
                 .where('date', '>=', startDateStr).get()
         ]);
 
-        const empMetric = {
-            name: empData.fullName,
-            attendanceCount: attendances.size,
-            healthTests: [],
-            avgFeedback: 0,
-            feedbackCount: feedbacks.size
-        };
+        departmentStats[deptName].asistencias += attendances.size;
+        departmentStats[deptName].feedbacks += feedbacks.size;
 
-        // Procesar health surveys
+        // Tests de salud mental (solo conteos por nivel)
         healthSurveys.forEach(doc => {
             const data = doc.data();
-            empMetric.healthTests.push({
-                type: data.type,
-                level: data.level,
-                score: data.score,
-                date: data.date
-            });
+            const level = data.level || 'moderado';
+
+            if (data.type === 'burnout' && departmentStats[deptName].burnout[level] !== undefined) {
+                departmentStats[deptName].burnout[level]++;
+            }
+            if (data.type === 'ansiedad' && departmentStats[deptName].ansiedad[level] !== undefined) {
+                departmentStats[deptName].ansiedad[level]++;
+            }
+            if (data.type === 'depresion' && departmentStats[deptName].depresion[level] !== undefined) {
+                departmentStats[deptName].depresion[level]++;
+            }
         });
 
-        // Calcular avg feedback
+        // Satisfacción
         let totalRating = 0;
         feedbacks.forEach(doc => {
             totalRating += doc.data().rating || 0;
         });
-        empMetric.avgFeedback = feedbacks.size > 0 ?
-            (totalRating / feedbacks.size).toFixed(1) : 0;
 
-        return empMetric;
+        return {
+            dept: deptName,
+            feedbackCount: feedbacks.size,
+            totalRating: totalRating
+        };
     });
 
-    reportData.employeeMetrics = await Promise.all(employeePromises);
+    const results = await Promise.all(employeePromises);
 
-    // Calcular stats globales
-    reportData.globalStats.totalAttendances = reportData.employeeMetrics.reduce(
-        (sum, emp) => sum + emp.attendanceCount, 0
-    );
-
-    const totalFeedbackRating = reportData.employeeMetrics.reduce(
-        (sum, emp) => sum + parseFloat(emp.avgFeedback || 0), 0
-    );
-    reportData.globalStats.avgFeedbackRating =
-        (totalFeedbackRating / reportData.employeeMetrics.filter(e => e.avgFeedback > 0).length).toFixed(1);
-
-    // Extraer niveles de salud mental
-    reportData.employeeMetrics.forEach(emp => {
-        emp.healthTests.forEach(test => {
-            if (test.type === 'burnout') {
-                reportData.globalStats.burnoutLevels.push({
-                    employee: emp.name,
-                    level: test.level,
-                    score: test.score
-                });
-            }
-            if (test.type === 'ansiedad') {
-                reportData.globalStats.anxietyLevels.push({
-                    employee: emp.name,
-                    level: test.level,
-                    score: test.score
-                });
-            }
-            if (test.type === 'depresion') {
-                reportData.globalStats.depressionLevels.push({
-                    employee: emp.name,
-                    level: test.level,
-                    score: test.score
-                });
-            }
-        });
+    // Calcular promedios
+    results.forEach(r => {
+        if (r.feedbackCount > 0 && departmentStats[r.dept]) {
+            departmentStats[r.dept].promedioSatisfaccion += r.totalRating;
+        }
     });
 
-    return reportData;
+    Object.keys(departmentStats).forEach(dept => {
+        const stats = departmentStats[dept];
+        if (stats.empleados > 0) {
+            const dias = period === 'daily' ? 1 : period === 'weekly' ? 7 : 30;
+            stats.tasaAsistencia = ((stats.asistencias / stats.empleados) / dias * 100).toFixed(1);
+        }
+        if (stats.feedbacks > 0) {
+            stats.promedioSatisfaccion = (stats.promedioSatisfaccion / stats.feedbacks).toFixed(1);
+        }
+    });
+
+    return {
+        period: period,
+        startDate: startDateStr,
+        endDate: new Date().toISOString().split('T')[0],
+        totalEmpleados: employeesSnapshot.size,
+        departamentos: departmentStats
+    };
 }
 
-// Función para llamar a Gemini API
-async function generateAIReport(reportData, apiKey) {
-    const prompt = `Eres un analista de recursos humanos especializado en bienestar laboral y salud mental organizacional. Analiza los siguientes datos de un programa de pausas activas en una universidad y genera un reporte ejecutivo.
+// Generar análisis con Gemini desde 3 perspectivas de expertos
+async function generateMultiExpertReport(data, apiKey) {
+    // Formatear datos para el prompt
+    const deptSummary = Object.entries(data.departamentos)
+        .filter(([_, stats]) => stats.empleados > 0)
+        .map(([dept, stats]) => {
+            const totalTests = Object.values(stats.burnout).reduce((a, b) => a + b, 0) +
+                Object.values(stats.ansiedad).reduce((a, b) => a + b, 0) +
+                Object.values(stats.depresion).reduce((a, b) => a + b, 0);
 
-DATOS DEL PERÍODO (${reportData.period.toUpperCase()}):
-- Período: ${reportData.startDate} a ${reportData.endDate}
-- Total de empleados: ${reportData.totalEmployees}
-- Total de asistencias: ${reportData.globalStats.totalAttendances}
-- Calificación promedio de actividades: ${reportData.globalStats.avgFeedbackRating}/5
+            return `${dept}:
+  - Empleados: ${stats.empleados}
+  - Asistencias: ${stats.asistencias} (tasa: ${stats.tasaAsistencia}%)
+  - Satisfacción promedio: ${stats.promedioSatisfaccion}/5
+  - Tests de salud: ${totalTests} realizados
+    * Burnout: ${stats.burnout.bajo} bajo, ${stats.burnout.moderado} mod, ${stats.burnout.alto} alto, ${stats.burnout.muyAlto} muy alto
+    * Ansiedad: ${stats.ansiedad.bajo} bajo, ${stats.ansiedad.moderado} mod, ${stats.ansiedad.alto} alto, ${stats.ansiedad.muyAlto} muy alto`;
+        }).join('\n\n');
 
-MÉTRICAS POR EMPLEADO (Top 10 más activos):
-${reportData.employeeMetrics
-            .sort((a, b) => b.attendanceCount - a.attendanceCount)
-            .slice(0, 10)
-            .map(emp => `- ${emp.name}: ${emp.attendanceCount} asistencias, ${emp.healthTests.length} tests, rating: ${emp.avgFeedback}/5`)
-            .join('\n')}
+    const prompt = `Eres un panel de 3 expertos analizando datos ANÓNIMOS de un programa de bienestar laboral (pausas activas) en una universidad.
 
-NIVELES DE BURNOUT REGISTRADOS:
-${reportData.globalStats.burnoutLevels.length > 0 ?
-            reportData.globalStats.burnoutLevels.slice(0, 5).map(b => `- ${b.employee}: ${b.level} (${b.score} pts)`).join('\n') :
-            'No hay datos de burnout en este período'}
+DATOS AGREGADOS POR DEPARTAMENTO (${data.period.toUpperCase()}):
+Período: ${data.startDate} a ${data.endDate}
+Total empleados: ${data.totalEmpleados}
 
-NIVELES DE ANSIEDAD:
-${reportData.globalStats.anxietyLevels.length > 0 ?
-            reportData.globalStats.anxietyLevels.slice(0, 5).map(a => `- ${a.employee}: ${a.level} (${a.score} pts)`).join('\n') :
-            'No hay datos de ansiedad en este período'}
+${deptSummary}
 
 ---
 
-GENERA UN REPORTE EJECUTIVO QUE INCLUYA:
+INSTRUCCIONES:
+Analiza estos datos desde 3 perspectivas expertas diferentes y genera un reporte integrado:
 
-1. **RESUMEN EJECUTIVO** (2-3 líneas)
-   Un overview del estado general del programa
+**EXPERTO 1: Especialista en Riesgos Laborales y Salud Ocupacional**
+- Identifica riesgos psicosociales por departamento
+- Evalúa indicadores de burnout, ansiedad y depresión
+- Señala departamentos en "zona roja" que requieren intervención urgente
+- Recomienda medidas preventivas y correctivas
 
-2. **HALLAZGOS CLAVE** (3-5 puntos bullet)
-   Insights más importantes encontrados en los datos
+**EXPERTO 2: Especialista en Liderazgo, Comunicación y Desarrollo Personal**
+- Analiza participación y engagement por departamento
+- Identifica oportunidades de liderazgo y trabajo en equipo
+- Sugiere estrategias de comunicación interna
+- Propone iniciativas de desarrollo y crecimiento personal
 
-3. **CORRELACIONES DETECTADAS**
-   ¿Existe correlación entre asistencia y niveles de burnout/ansiedad?
+**EXPERTO 3: Psicólogo Organizacional / Especialista en Bienestar Corporativo**
+- Evalúa clima laboral y satisfacción
+- Analiza correlación entre participación y bienestar mental
+- Identifica patrones de comportamiento colectivo
+- Recomienda programas de bienestar personalizados por departamento
 
-4. **TENDENCIAS POSITIVAS**
-   ¿Qué está funcionando bien?
+---
 
-5. **ÁREAS DE OPORTUNIDAD**
-   ¿Dónde se puede mejorar?
+FORMATO DEL REPORTE:
 
-6. **RECOMENDACIONES ESPECÍFICAS** (3-5 acciones concretas)
-   Pasos para mejorar el programa
+# Reporte Multi-Experto de Bienestar Laboral
 
-7. **VALIDACIÓN DE HIPÓTESIS**
-   ¿Los datos apoyan que empleados con alta asistencia tienen menor burnout?
+## RESUMEN EJECUTIVO
+(2-3 líneas sobre el estado general)
 
-Usa lenguaje profesional pero accesible. Incluye porcentajes y números cuando sea relevante.`;
+## ANÁLISIS POR EXPERTO
+
+### 🛡️ Perspectiva: Riesgos Laborales
+**Hallazgos:**
+- (3-4 puntos clave)
+
+**Departamentos de Riesgo Alto:**
+- (listar si aplica)
+
+**Recomendaciones Inmediatas:**
+1. (acción específica)
+2. (acción específica)
+
+### 💡 Perspectiva: Liderazgo y Desarrollo
+**Hallazgos:**
+- (3-4 puntos clave)
+
+**Oportunidades de Mejora:**
+- (específicas por dept si es posible)
+
+**Estrategias Sugeridas:**
+1. (acción específica)
+2. (acción específica)
+
+### 🧠 Perspectiva: Psicología Organizacional
+**Hallazgos:**
+- (3-4 puntos clave)
+
+**Correlaciones Detectadas:**
+- (relaciones entre variables)
+
+**Programas Recomendados:**
+1. (programa específico)
+2. (programa específico)
+
+## PLAN DE ACCIÓN INTEGRADO
+(Combina las 3 perspectivas en 5-7 acciones prioritarias concretas, ordenadas por urgencia)
+
+## INDICADORES CLAVE A MONITOREAR
+(3-5 métricas específicas para seguimiento)
+
+---
+
+Sé específico, usa datos concretos, y mantén un tono profesional pero empático. Los nombres de departamentos son reales pero NO menciones ningún dato personal individual.`;
 
     const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
@@ -294,8 +347,8 @@ Usa lenguaje profesional pero accesible. Incluye porcentajes y números cuando s
                     parts: [{ text: prompt }]
                 }],
                 generationConfig: {
-                    temperature: 0.7,
-                    maxOutputTokens: 2048,
+                    temperature: 0.8,
+                    maxOutputTokens: 3072,
                 }
             })
         }
@@ -306,6 +359,6 @@ Usa lenguaje profesional pero accesible. Incluye porcentajes y números cuando s
         throw new Error(error.error?.message || 'Error llamando a Gemini API');
     }
 
-    const data = await response.json();
-    return data.candidates[0].content.parts[0].text;
+    const result = await response.json();
+    return result.candidates[0].content.parts[0].text;
 }
