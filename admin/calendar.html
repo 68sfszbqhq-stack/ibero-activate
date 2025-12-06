@@ -219,24 +219,32 @@
     </div>
 
     <style>
-        /* Google Calendar Style Modal */
+        /* Google Calendar Style Modal (Popover) */
+        #schedule-modal {
+            background: transparent !important;
+            /* Sin overlay oscuro */
+            justify-content: flex-start !important;
+            align-items: flex-start !important;
+        }
+
         .quick-add-modal {
             max-width: 420px !important;
             padding: 0 !important;
             border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-            animation: slideDown 0.2s ease-out;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+            animation: popIn 0.15s cubic-bezier(0.2, 0, 0.2, 1);
+            margin: 0 !important;
         }
 
-        @keyframes slideDown {
+        @keyframes popIn {
             from {
                 opacity: 0;
-                transform: translateY(-20px);
+                transform: scale(0.95);
             }
 
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: scale(1);
             }
         }
 
@@ -246,6 +254,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: linear-gradient(to bottom, #f9fafb, white);
         }
 
         .modal-header-compact h3 {
@@ -281,6 +290,7 @@
             display: flex;
             flex-direction: column;
             gap: 1rem;
+            background: white;
         }
 
         .form-field-inline {
@@ -291,6 +301,7 @@
             border: 1.5px solid #e5e7eb;
             border-radius: 8px;
             transition: all 0.2s;
+            background: white;
         }
 
         .form-field-inline:focus-within {

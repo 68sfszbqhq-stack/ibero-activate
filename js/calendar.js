@@ -15,10 +15,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNCTIONS DEFINED EARLY TO AVOID REFERENCE ERRORS ---
 
-    function openModal(day, time, item = null, index = null) {
+    function openModal(day, time, item = null, index = null, clickEvent = null) {
         const modal = document.getElementById('schedule-modal');
+        const modalContent = modal.querySelector('.quick-add-modal');
+
         modal.classList.remove('hidden');
         modal.style.display = 'flex';
+
+        // Posicionar modal cerca del click (popover contextual)
+        if (clickEvent) {
+            const rect = clickEvent.target.getBoundingClientRect();
+            const modalWidth = 420; // Ancho del modal
+            const modalHeight = 400; // Alto estimado del modal
+
+            // Calcular posición (a la derecha del botón +)
+            let left = rect.right + 10; // 10px de separación
+            let top = rect.top;
+
+            // Ajustar si se sale de la pantalla por la derecha
+            if (left + modalWidth > window.innerWidth) {
+                left = rect.left - modalWidth - 10; // Moverlo a la izquierda
+            }
+
+            // Ajustar si se sale por abajo
+            if (top + modalHeight > window.innerHeight) {
+                top = window.innerHeight - modalHeight - 20;
+            }
+
+            // Ajustar si se sale por arriba
+            if (top < 20) {
+                top = 20;
+            }
+
+            modalContent.style.position = 'fixed';
+            modalContent.style.top = `${top}px`;
+            modalContent.style.left = `${left}px`;
+            modalContent.style.transform = 'none';
+        }
 
         document.getElementById('selected-day').value = day;
         document.getElementById('selected-time').value = time;
@@ -26,13 +59,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('display-time').value = time;
 
         if (item) {
-            document.getElementById('modal-title').textContent = 'Editar Actividad';
+            document.getElementById('modal-title').textContent = '✏️ Editar Actividad';
             document.getElementById('schedule-id').value = index;
             document.getElementById('activity-select').value = item.activityId;
             document.getElementById('location').value = item.location;
             document.getElementById('btn-delete-schedule').classList.remove('hidden');
         } else {
-            document.getElementById('modal-title').textContent = 'Programar Actividad';
+            document.getElementById('modal-title').textContent = '📅 Agregar Actividad';
             document.getElementById('schedule-id').value = '';
             document.getElementById('activity-select').value = '';
             document.getElementById('location').value = '';
@@ -105,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const btnAdd = document.createElement('button');
                 btnAdd.className = 'btn-add-slot';
                 btnAdd.innerHTML = '<i class="fa-solid fa-plus"></i>';
-                btnAdd.onclick = () => openModal(day, time);
+                btnAdd.onclick = (e) => openModal(day, time, null, null, e);
                 dayCell.appendChild(btnAdd);
 
                 calendarBody.appendChild(dayCell);
