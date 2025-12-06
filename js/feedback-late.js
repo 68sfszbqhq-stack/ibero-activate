@@ -49,23 +49,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function handleDateChange(e) {
         selectedDate = e.target.value;
+        console.log('📅 Fecha seleccionada:', selectedDate);
         if (!selectedDate) return;
 
         // Actualizar display
         const dateObj = new Date(selectedDate + 'T12:00:00');
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         dateDisplay.textContent = dateObj.toLocaleDateString('es-ES', options);
+        console.log('📅 Display actualizado a:', dateDisplay.textContent);
 
         // Cargar asistencias de esa fecha
         await loadAttendancesForDate(selectedDate);
     }
 
     async function loadAttendancesForDate(date) {
+        console.log('🔄 Iniciando búsqueda de asistencias para:', date);
         liveList.innerHTML = '';
         waitingMessage.classList.add('hidden');
         emptyState.classList.add('hidden');
 
         try {
+            console.log('🔍 Ejecutando collectionGroup query...');
             // Buscar TODAS las asistencias de esa fecha con status 'active' (pendientes de feedback)
             // Usamos collectionGroup para buscar en todas las subcollections de attendance
             const attendancesQuery = await db.collectionGroup('attendance')
@@ -73,29 +77,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 .where('status', '==', 'active')
                 .get();
 
+            console.log('📊 Resultados encontrados:', attendancesQuery.size);
+
             if (attendancesQuery.empty) {
+                console.log('❌ No se encontraron asistencias pendientes para esta fecha');
                 emptyState.classList.remove('hidden');
                 return;
             }
 
             // Para cada asistencia, crear un botón con el nombre del empleado
             const attendances = [];
+            console.log('👥 Procesando', attendancesQuery.size, 'asistencias...');
+
             for (const doc of attendancesQuery.docs) {
                 const attendanceData = doc.data();
                 const employeeId = doc.ref.parent.parent.id; // Obtener el ID del empleado desde la referencia
+                console.log('  - Asistencia de empleado ID:', employeeId);
 
                 // Obtener datos completos del empleado
                 const employeeDoc = await db.collection('employees').doc(employeeId).get();
                 if (employeeDoc.exists) {
                     const employeeData = employeeDoc.data();
+                    console.log('  ✅ Empleado encontrado:', employeeData.fullName);
                     attendances.push({
                         attendanceId: doc.id,
                         attendanceData: attendanceData,
                         employeeId: employeeId,
                         employeeData: employeeData
                     });
+                } else {
+                    console.warn('  ⚠️ Empleado no encontrado:', employeeId);
                 }
             }
+
+            console.log('📋 Total de empleados a mostrar:', attendances.length);
 
             // Ordenar por nombre
             attendances.sort((a, b) => a.employeeData.fullName.localeCompare(b.employeeData.fullName));
@@ -105,9 +120,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 createEmployeeButton(item);
             });
 
+            console.log('✅ Lista de empleados creada exitosamente');
+
         } catch (error) {
-            console.error('Error cargando asistencias:', error);
-            alert('Error al cargar asistencias. Intenta de nuevo.');
+            console.error('❌ Error cargando asistencias:', error);
+            console.error('   Tipo de error:', error.name);
+            console.error('   Mensaje:', error.message);
+
+            // Mostrar mensaje de error más específico
+            emptyState.classList.remove('hidden');
+            emptyState.querySelector('h3').textContent = 'Error al cargar asistencias';
+            emptyState.querySelector('p').textContent = 'Error: ' + error.message + '. Revisa la consola para más detalles.';
         }
     }
 
