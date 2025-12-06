@@ -338,12 +338,13 @@ FORMATO DEL REPORTE:
 Sé específico, usa datos concretos, y mantén un tono profesional pero empático. Los nombres de departamentos son reales pero NO menciones ningún dato personal individual.`;
 
     const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-002:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{
+                    role: "user",
                     parts: [{ text: prompt }]
                 }],
                 generationConfig: {
