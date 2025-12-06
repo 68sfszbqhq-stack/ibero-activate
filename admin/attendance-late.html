@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pase de Lista - IBERO ACTÍVATE</title>
+    <title>Pase de Lista Extemporáneo - IBERO ACTÍVATE</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -41,12 +41,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="attendance.html" class="nav-link active">
+                    <a href="attendance.html" class="nav-link">
                         <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="attendance-late.html" class="nav-link">
+                    <a href="attendance-late.html" class="nav-link active">
                         <i class="fa-solid fa-clock-rotate-left"></i> Pase Extemporáneo
                     </a>
                 </li>
@@ -71,16 +71,15 @@
         <main class="main-content">
             <header class="page-header">
                 <div>
-                    <h1>Pase de Lista (En Vivo)</h1>
-                    <p>Toca un nombre para marcar asistencia al instante</p>
+                    <h1>Pase de Lista Extemporáneo</h1>
+                    <p>Marca asistencias para fechas pasadas</p>
                 </div>
                 <div class="session-info"
                     style="background: white; padding: 0.5rem 1rem; border-radius: 8px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s;"
                     onclick="document.getElementById('date-picker').showPicker()">
                     <i class="fa-regular fa-calendar"></i>
-                    <span id="current-date" style="font-weight: 600;">Cargando fecha...</span>
-                    <input type="date" id="date-picker" style="position: absolute; opacity: 0; pointer-events: none;"
-                        max="">
+                    <span id="current-date" style="font-weight: 600;">Selecciona una fecha...</span>
+                    <input type="date" id="date-picker" style="position: absolute; opacity: 0; pointer-events: none;">
                 </div>
             </header>
 
@@ -105,10 +104,9 @@
 
             <div id="empty-state"
                 style="text-align: center; padding: 4rem 2rem; background: white; border-radius: 16px; margin-bottom: 2rem;">
-                <i class="fa-solid fa-users-viewfinder"
-                    style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
-                <h3 style="color: #4b5563;">Selecciona un área para comenzar</h3>
-                <p style="color: #9ca3af;">La lista se actualizará automáticamente.</p>
+                <i class="fa-solid fa-calendar-clock" style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
+                <h3 style="color: #4b5563;">Selecciona una fecha y un área para comenzar</h3>
+                <p style="color: #9ca3af;">Podrás marcar asistencias para fechas pasadas.</p>
             </div>
 
             <div id="employee-list" class="employee-grid">
@@ -118,7 +116,7 @@
     </div>
 
     <script src="../js/firebase-config.js"></script>
-    <script src="../js/attendance.js"></script>
+    <script src="../js/attendance-late.js"></script>
 </body>
 
 </html>
