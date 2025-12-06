@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes con IA - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>IBERO ACTÍVATE</h2>
+                <p class="role-badge">Admin Panel</p>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+                <a href="employees.html"><i class="fa-solid fa-users"></i> Empleados</a>
+                <a href="attendance.html"><i class="fa-solid fa-clipboard-check"></i> Asistencia</a>
+                <a href="activities.html"><i class="fa-solid fa-dumbbell"></i> Actividades</a>
+                <a href="calendar.html"><i class="fa-solid fa-calendar"></i> Calendario</a>
+                <a href="ai-reports.html" class="active"><i class="fa-solid fa-sparkles"></i> Reportes IA</a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="#" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="page-header">
+                <div>
+                    <h1>🤖 Reportes Inteligentes</h1>
+                    <p>Análisis automático generado por Gemini AI</p>
+                </div>
+            </header>
+
+            <!-- Configuración de Reporte -->
+            <div class="card">
+                <h2 style="margin-bottom: 1.5rem;">Generar Nuevo Reporte</h2>
+
+                <div class="form-group">
+                    <label for="report-period">Período de Análisis</label>
+                    <select id="report-period" class="form-control">
+                        <option value="daily">Último Día</option>
+                        <option value="weekly" selected>Última Semana</option>
+                        <option value="monthly">Último Mes</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="gemini-api-key">API Key de Gemini</label>
+                    <input type="password" id="gemini-api-key" placeholder="Ingresa tu API key de Google AI Studio"
+                        class="form-control">
+                    <small style="color: #666; font-size: 0.875rem; margin-top: 0.5rem; display: block;">
+                        Obtén tu key gratuita en:
+                        <a href="https://makersuite.google.com/app/apikey" target="_blank"
+                            style="color: var(--primary);">
+                            Google AI Studio <i class="fa-solid fa-external-link" style="font-size: 0.75rem;"></i>
+                        </a>
+                    </small>
+                </div>
+
+                <button id="generate-report-btn" class="btn-primary" style="margin-top: 1rem;">
+                    <i class="fa-solid fa-sparkles"></i> Generar Reporte con IA
+                </button>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="card hidden" style="text-align: center; padding: 3rem;">
+                <div class="loader"></div>
+                <p style="margin-top: 1rem; color: #666;">Generando análisis con IA... esto puede tomar unos segundos
+                </p>
+            </div>
+
+            <!-- Área de Resultados -->
+            <div id="report-container" class="card hidden">
+                <div class="report-header">
+                    <h2>Reporte Generado</h2>
+                    <div class="report-meta">
+                        <span id="report-date" style="color: #666; font-size: 0.875rem;"></span>
+                        <button id="export-pdf-btn" class="btn-secondary">
+                            <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+                        </button>
+                    </div>
+                </div>
+
+                <div id="report-content" class="report-body">
+                    <!-- Contenido del reporte generado por IA -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/reports-gemini.js"></script>
+</body>
+
+</html>
