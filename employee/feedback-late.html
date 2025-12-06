@@ -38,49 +38,41 @@
         <main class="feedback-content">
             <div class="feedback-card">
                 <div class="card-header">
-                    <div id="search-section" class="search-section">
+                    <div id="welcome-section" class="search-section">
                         <h1 style="text-align: center; margin-bottom: 0.5rem;">Feedback Extemporáneo</h1>
                         <p style="text-align: center; color: #666; margin-bottom: 2rem;">
-                            Envía tu feedback para sesiones de fechas pasadas
+                            Selecciona la fecha de tu sesión y haz click en tu nombre para dar feedback
                         </p>
 
-                        <!-- Selector de Fecha y Búsqueda -->
-                        <div style="max-width: 500px; margin: 0 auto;">
-                            <div style="margin-bottom: 1.5rem;">
-                                <label for="date-picker"
-                                    style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                                    <i class="fa-regular fa-calendar"></i> Selecciona la fecha de la sesión
-                                </label>
+                        <!-- Selector de Fecha -->
+                        <div style="max-width: 400px; margin: 0 auto 2rem;">
+                            <div class="session-info"
+                                style="background: white; padding: 0.75rem 1rem; border-radius: 8px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s; border: 2px solid #e5e7eb;"
+                                onclick="document.getElementById('date-picker').showPicker()">
+                                <i class="fa-regular fa-calendar"></i>
+                                <span id="current-date" style="font-weight: 600;">Selecciona una fecha...</span>
                                 <input type="date" id="date-picker"
-                                    style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
+                                    style="position: absolute; opacity: 0; pointer-events: none;">
                             </div>
-
-                            <div style="margin-bottom: 1.5rem;">
-                                <label for="account-input"
-                                    style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                                    <i class="fa-solid fa-id-card"></i> Tu número de cuenta
-                                </label>
-                                <input type="number" id="account-input" placeholder="Ej: 712412"
-                                    style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
-                            </div>
-
-                            <button id="search-btn" class="btn-primary btn-block">
-                                <i class="fa-solid fa-search"></i> Buscar mi asistencia
-                            </button>
                         </div>
 
-                        <!-- Resultados de búsqueda -->
-                        <div id="search-results" class="hidden" style="margin-top: 2rem;">
-                            <div id="attendance-list"></div>
+                        <!-- Lista de empleados con asistencia pendiente -->
+                        <div id="live-list" class="live-list-container">
+                            <!-- Aquí aparecerán los botones con nombres mágicamente -->
                         </div>
 
-                        <!-- Estado vacío -->
+                        <!-- Estados -->
+                        <div id="waiting-message" class="waiting-state">
+                            <div class="pulse-ring"></div>
+                            <p>Selecciona una fecha para ver tus asistencias pendientes</p>
+                        </div>
+
                         <div id="empty-state" class="hidden"
                             style="text-align: center; padding: 2rem; margin-top: 2rem; background: #f9fafb; border-radius: 12px;">
                             <i class="fa-solid fa-inbox"
                                 style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
-                            <h3 style="color: #6b7280;">No se encontraron asistencias</h3>
-                            <p style="color: #9ca3af;">Verifica la fecha y tu número de cuenta</p>
+                            <h3 style="color: #6b7280;">No hay asistencias pendientes</h3>
+                            <p style="color: #9ca3af;">No se encontraron asistencias sin feedback para esta fecha</p>
                         </div>
                     </div>
                 </div>
