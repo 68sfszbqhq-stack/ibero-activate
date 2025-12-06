@@ -1,6 +1,20 @@
 // Reportes inteligentes con Gemini AI
 
+// Esperar a que Firebase esté listo
+function waitForFirebase(callback) {
+    if (typeof db !== 'undefined' && db) {
+        callback();
+    } else {
+        console.log('Esperando a Firebase...');
+        setTimeout(() => waitForFirebase(callback), 100);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    waitForFirebase(initReports);
+});
+
+function initReports() {
     const generateBtn = document.getElementById('generate-report-btn');
     const reportContainer = document.getElementById('report-container');
     const reportContent = document.getElementById('report-content');
@@ -89,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('export-pdf-btn')?.addEventListener('click', () => {
         window.print();
     });
-});
+}
 
 // Función para agregar datos del período
 async function aggregateDataForReport(period = 'weekly') {
