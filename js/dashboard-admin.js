@@ -32,38 +32,60 @@ document.addEventListener('DOMContentLoaded', () => {
             const allAttendances = [];
             const allFeedbacks = [];
 
-            // Iterar sobre cada empleado y obtener sus attendances y feedbacks
-            for (const empDoc of employeesSnapshot.docs) {
+            // OPTIMIZACIÓN: Usar Promise.all para queries paralelas
+            const employeePromises = employeesSnapshot.docs.map(async (empDoc) => {
                 const empId = empDoc.id;
                 const empData = empDoc.data();
 
-                // Obtener attendances de este empleado
-                const attSnapshot = await db.collection('employees')
-                    .doc(empId)
-                    .collection('attendance')
-                    .get();
+                // Obtener attendances y feedbacks en paralelo
+                const [attSnapshot, fbSnapshot] = await Promise.all([
+                    db.collection('employees')
+                        .doc(empId)
+                        .collection('attendance')
+                        .get(),
+                    db.collection('employees')
+                        .doc(empId)
+                        .collection('feedback')
+                        .get()
+                ]);
 
-                totalAttendances += attSnapshot.size;
-
+                // Procesar attendances
+                const empAttendances = [];
                 attSnapshot.forEach(doc => {
                     const data = doc.data();
                     if (data.areaId) areasSet.add(data.areaId);
-                    allAttendances.push({ id: doc.id, ...data, employeeId: empId });
+                    empAttendances.push({ id: doc.id, ...data, employeeId: empId });
                 });
 
-                // Obtener feedbacks de este empleado
-                const fbSnapshot = await db.collection('employees')
-                    .doc(empId)
-                    .collection('feedback')
-                    .get();
-
+                // Procesar feedbacks
+                const empFeedbacks = [];
+                let empTotalRating = 0;
                 fbSnapshot.forEach(doc => {
                     const data = doc.data();
-                    totalRating += data.rating || 0;
-                    feedbackCount++;
-                    allFeedbacks.push({ id: doc.id, ...data, employeeId: empId });
+                    empTotalRating += data.rating || 0;
+                    empFeedbacks.push({ id: doc.id, ...data, employeeId: empId });
                 });
-            }
+
+                return {
+                    attendances: empAttendances,
+                    feedbacks: empFeedbacks,
+                    totalRating: empTotalRating,
+                    attendanceCount: attSnapshot.size,
+                    feedbackCount: fbSnapshot.size
+                };
+            });
+
+            // Esperar todas las queries en paralelo
+            const results = await Promise.all(employeePromises);
+
+            // Agregar resultados
+            results.forEach(result => {
+                totalAttendances += result.attendanceCount;
+                feedbackCount += result.feedbackCount;
+                totalRating += result.totalRating;
+                allAttendances.push(...result.attendances);
+                allFeedbacks.push(...result.feedbacks);
+            });
 
             totalAttendancesEl.textContent = totalAttendances;
 
