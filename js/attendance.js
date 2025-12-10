@@ -62,9 +62,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadEmployees() {
         const areaId = areaDropdown.value;
+        const emptyState = document.getElementById('empty-state');
+
         employeeList.innerHTML = ''; // Limpiar lista
 
-        if (!areaId) return;
+        if (!areaId) {
+            emptyState.style.display = 'block';
+            return;
+        }
+
+        // Ocultar empty state y mostrar loading
+        emptyState.style.display = 'none';
+        employeeList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem;"></i><br><br>Cargando empleados...</div>';
 
         try {
             // 1. Obtener empleados del área
@@ -72,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const snapshot = await db.collection('employees')
                 .where('areaId', '==', areaId)
                 .get();
+
+            employeeList.innerHTML = ''; // Limpiar mensaje de carga
 
             if (snapshot.empty) {
                 employeeList.innerHTML = '<div class="no-data">No hay empleados en esta área</div>';
@@ -164,18 +175,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // 2. MARCAR ASISTENCIA (Crear documento en subcollection)
-                await db.collection('employees')
+                const attendanceData = {
+                    employeeId: employeeId,
+                    employeeName: employeeData.fullName,
+                    areaId: areaId,
+                    date: selectedDate,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: 'active',
+                    weekNumber: getWeekNumber(currentDate),
+                    year: currentDate.getFullYear()
+                };
+
+                // Escribir en subcollection (para organización de datos)
+                const subcollectionDoc = await db.collection('employees')
                     .doc(employeeId)
                     .collection('attendance')
-                    .add({
-                        employeeName: employeeData.fullName,
-                        areaId: areaId,
-                        date: selectedDate,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                        status: 'active',
-                        weekNumber: getWeekNumber(currentDate),
-                        year: currentDate.getFullYear()
-                    });
+                    .add(attendanceData);
+
+                // Escribir en colección top-level (para listener de feedback en vivo)
+                await db.collection('attendances').doc(subcollectionDoc.id).set(attendanceData);
 
                 card.classList.add('selected');
                 card.querySelector('.card-icon').innerHTML = '<i class="fa-solid fa-check-circle"></i>';
@@ -184,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast(`Asistencia marcada: ${employeeData.fullName}`);
 
             } else {
-                // DESMARCAR (Borrar documento de subcollection)
+                // DESMARCAR (Borrar documento de subcollection Y top-level)
                 const snapshot = await db.collection('employees')
                     .doc(employeeId)
                     .collection('attendance')
@@ -193,7 +211,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const batch = db.batch();
                 snapshot.docs.forEach(doc => {
+                    // Borrar de subcollection
                     batch.delete(doc.ref);
+                    // Borrar de top-level usando el mismo ID
+                    batch.delete(db.collection('attendances').doc(doc.id));
                 });
                 await batch.commit();
 
