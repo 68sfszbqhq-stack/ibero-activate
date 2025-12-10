@@ -222,10 +222,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     date: new Date().toISOString().split('T')[0]
                 });
 
-            // 2. Actualizar estado de asistencia a 'completed' en subcollection
+            // 2. Actualizar estado de asistencia a 'completed' en AMBAS ubicaciones
+            // (subcollection Y top-level para que el listener lo filtre correctamente)
             await db.collection('employees')
                 .doc(selectedEmployee.id)
                 .collection('attendance')
+                .doc(currentAttendanceId)
+                .update({
+                    status: 'completed'
+                });
+
+            // También actualizar en top-level attendances (para el listener de feedback en vivo)
+            await db.collection('attendances')
                 .doc(currentAttendanceId)
                 .update({
                     status: 'completed'
