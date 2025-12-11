@@ -1,8 +1,10 @@
-// Activities Showcase - Public presentation page
+// Activities Showcase - Enhanced with images, materials, and modal
 document.addEventListener('DOMContentLoaded', () => {
     const activitiesGrid = document.getElementById('activities-grid');
     const totalActivitiesEl = document.getElementById('total-activities');
     const filterButtons = document.querySelectorAll('.filter-btn');
+    const modal = document.getElementById('activity-modal');
+    const closeModalBtn = document.getElementById('close-modal');
 
     let allActivities = [];
     let currentBenefitFilter = 'all';
@@ -62,88 +64,160 @@ document.addEventListener('DOMContentLoaded', () => {
                 intensityIcon = '🔥';
             }
 
-            // Type badge color
-            let typeClass = 'bg-blue-100 text-blue-800';
-            let typeIcon = '🏢';
-            if (activity.type === 'outdoor') {
-                typeClass = 'bg-green-100 text-green-800';
-                typeIcon = '🌳';
-            } else if (activity.type === 'desk') {
-                typeClass = 'bg-purple-100 text-purple-800';
-                typeIcon = '💻';
-            }
+            // Category badge with ID
+            const categoryDisplay = activity.activityId || activity.categoria || 'SIN CATEGORÍA';
+            const categoryClass = getCategoryClass(activity.categoria);
 
-            // Benefit type badges
-            const benefitBadges = (activity.benefitType || []).map(benefit => {
-                let badgeClass = 'bg-gray-100 text-gray-700';
-                let icon = '';
+            // Use imagen if available, otherwise fallback
+            const imageUrl = activity.imagen || 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&w=800&q=80';
 
-                if (benefit === 'Físico') {
-                    badgeClass = 'bg-blue-100 text-blue-700';
-                    icon = '💪';
-                } else if (benefit === 'Psicológico') {
-                    badgeClass = 'bg-purple-100 text-purple-700';
-                    icon = '🧠';
-                } else if (benefit === 'Social') {
-                    badgeClass = 'bg-green-100 text-green-700';
-                    icon = '🤝';
-                }
-
-                return `<span class="badge ${badgeClass}">${icon} ${benefit}</span>`;
-            }).join('');
-
-            // Specific benefits
-            const specificBenefits = (activity.specificBenefits || []).slice(0, 3).map(benefit =>
-                `<li class="flex items-start gap-2">
-                    <i class="fa-solid fa-check text-green-500 mt-1"></i>
-                    <span class="text-sm text-gray-600">${benefit}</span>
-                </li>`
-            ).join('');
+            // Escape single quotes for onclick
+            const activityJson = JSON.stringify(activity).replace(/'/g, '&#39;');
 
             return `
-                <div class="bg-white rounded-2xl shadow-lg overflow-hidden card-hover fade-in border border-gray-100" 
-                     style="animation-delay: ${index * 0.1}s">
-                    <!-- Header with Emoji -->
-                    <div class="p-8 text-center bg-gradient-to-br from-blue-50 to-purple-50">
-                        <div class="text-6xl mb-4">${activity.emoji}</div>
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2">${activity.name}</h3>
+                <div class="bg-white rounded-2xl overflow-hidden card-hover fade-in border border-gray-100 cursor-pointer" 
+                     style="animation-delay: ${index * 0.1}s"
+                     onclick='openActivityModal(${activityJson})'>
+                    
+                    <!-- Activity Image -->
+                    <div class="relative h-56 overflow-hidden">
+                        <img src="${imageUrl}" alt="${activity.name}" 
+                             class="w-full h-full object-cover transition-transform duration-300 hover:scale-110">
+                        <div class="absolute top-4 left-4">
+                            <span class="badge ${categoryClass} shadow-lg text-sm font-bold">
+                                ${categoryDisplay}
+                            </span>
+                        </div>
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+                            <div class="text-4xl mb-2">${activity.emoji || '⭐'}</div>
+                        </div>
+                    </div>
+
+                    <!-- Card Content -->
+                    <div class="p-5">
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">${activity.name}</h3>
                         
-                        <!-- Type & Duration -->
-                        <div class="flex justify-center gap-2 flex-wrap">
-                            <span class="badge ${typeClass}">${typeIcon} ${activity.type}</span>
+                        <!-- Meta badges -->
+                        <div class="flex gap-2 flex-wrap mb-3">
                             <span class="badge bg-gray-100 text-gray-700">
                                 <i class="fa-solid fa-clock"></i> ${activity.duration} min
                             </span>
                             <span class="badge ${intensityClass}">${intensityIcon} ${activity.intensity}</span>
                         </div>
-                    </div>
 
-                    <!-- Content -->
-                    <div class="p-6">
-                        <!-- Description -->
-                        <p class="text-gray-600 mb-4 leading-relaxed">${activity.description}</p>
+                        <!-- Objective -->
+                        <p class="text-gray-600 text-sm line-clamp-2 mb-4">${activity.objetivo || activity.description || ''}</p>
 
-                        <!-- Benefits -->
-                        <div class="mb-4">
-                            <h4 class="text-sm font-semibold text-gray-700 mb-2">Tipo de Beneficio</h4>
-                            <div class="flex gap-2 flex-wrap">
-                                ${benefitBadges || '<span class="text-sm text-gray-400">Sin especificar</span>'}
-                            </div>
-                        </div>
-
-                        ${specificBenefits ? `
-                            <div class="border-t pt-4 mt-4">
-                                <h4 class="text-sm font-semibold text-gray-700 mb-2">Beneficios Específicos</h4>
-                                <ul class="space-y-2">
-                                    ${specificBenefits}
-                                </ul>
-                            </div>
-                        ` : ''}
+                        <!-- View details button -->
+                        <button class="w-full py-2 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all">
+                            Ver Detalles <i class="fa-solid fa-arrow-right ml-2"></i>
+                        </button>
                     </div>
                 </div>
             `;
         }).join('');
     }
+
+    // Get category badge class
+    function getCategoryClass(categoria) {
+        const categoryColors = {
+            'Física': 'bg-blue-600 text-white',
+            'Juegos': 'bg-green-600 text-white',
+            'Mesa': 'bg-purple-600 text-white',
+            'Relax': 'bg-pink-600 text-white',
+            'Caminata': 'bg-orange-600 text-white'
+        };
+        return categoryColors[categoria] || 'bg-gray-600 text-white';
+    }
+
+    // Open activity modal
+    window.openActivityModal = (activity) => {
+        // Populate modal with activity data
+        document.getElementById('modal-image').src = activity.imagen || 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&w=800&q=80';
+        document.getElementById('modal-emoji').textContent = activity.emoji || '⭐';
+        document.getElementById('modal-title').textContent = activity.name;
+        document.getElementById('modal-category-badge').textContent = activity.activityId || activity.categoria || 'Actividad';
+        document.getElementById('modal-category-badge').className = `inline-block px-3 py-1 rounded-full text-xs font-semibold ${getCategoryClass(activity.categoria)}`;
+
+        // Meta info
+        document.getElementById('modal-duration').innerHTML = `<i class="fa-solid fa-clock"></i> ${activity.duration} min`;
+
+        // Type
+        let typeIcon = '🏢';
+        let typeClass = 'bg-blue-100 text-blue-800';
+        if (activity.type === 'outdoor') {
+            typeIcon = '🌳';
+            typeClass = 'bg-green-100 text-green-800';
+        } else if (activity.type === 'desk') {
+            typeIcon = '💻';
+            typeClass = 'bg-purple-100 text-purple-800';
+        }
+        document.getElementById('modal-type').className = `badge ${typeClass}`;
+        document.getElementById('modal-type').innerHTML = `${typeIcon} ${activity.type}`;
+
+        // Intensity
+        let intensityIcon = '🌱';
+        let intensityClass = 'bg-green-100 text-green-800';
+        if (activity.intensity === 'moderada') {
+            intensityIcon = '⚡';
+            intensityClass = 'bg-yellow-100 text-yellow-800';
+        } else if (activity.intensity === 'alta') {
+            intensityIcon = '🔥';
+            intensityClass = 'bg-red-100 text-red-800';
+        }
+        document.getElementById('modal-intensity').className = `badge ${intensityClass}`;
+        document.getElementById('modal-intensity').innerHTML = `${intensityIcon} ${activity.intensity}`;
+
+        // Objective
+        document.getElementById('modal-objective').textContent = activity.objetivo || activity.description || 'No especificado';
+
+        // Materials
+        document.getElementById('modal-materials').textContent = activity.materials || 'No se requieren materiales especiales';
+
+        // Instructions
+        const instructionsList = document.getElementById('modal-instructions');
+        instructionsList.innerHTML = '';
+        if (activity.instrucciones && activity.instrucciones.length > 0) {
+            activity.instrucciones.forEach(instruction => {
+                const li = document.createElement('li');
+                li.textContent = instruction;
+                instructionsList.appendChild(li);
+            });
+        } else {
+            instructionsList.innerHTML = '<li>No hay instrucciones detalladas disponibles</li>';
+        }
+
+        // Benefits
+        const benefitsEl = document.getElementById('modal-benefits');
+        benefitsEl.innerHTML = '';
+        if (activity.specificBenefits && activity.specificBenefits.length > 0) {
+            activity.specificBenefits.forEach(benefit => {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-green-100 text-green-700';
+                badge.innerHTML = `<i class="fa-solid fa-check"></i> ${benefit}`;
+                benefitsEl.appendChild(badge);
+            });
+        } else {
+            benefitsEl.innerHTML = '<span class="text-gray-500">No especificado</span>';
+        }
+
+        // Show modal
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    };
+
+    // Close modal
+    function closeModal() {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    closeModalBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
 
     // Filter logic
     function filterActivities() {
