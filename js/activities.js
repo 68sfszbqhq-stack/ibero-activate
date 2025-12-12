@@ -183,112 +183,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Import Complete Catalog
     async function importCatalog() {
-        if (!confirm('¿Importar el catálogo completo de 5 actividades de ejemplo? Esto agregará o actualizará las actividades.')) {
+        if (!confirm('¿Importar el catálogo COMPLETO de 54 actividades? Esto puede tardar un momento.\n\nIncluye:\n- 10 Activación (AF)\n- 12 Físicos/Grupal (FG)\n- 19 Mesa (JM)\n- 4 Digital (VD)\n- 5 Relax (RC)\n- 4 Caminatas (CR)')) {
             return;
         }
 
-        const catalogoActividades = [
-            {
-                activityId: "AF-01",
-                categoria: "Física",
-                name: "Energía Express",
-                objetivo: "Aumentar energía y mejorar estado de ánimo",
-                duration: 5,
-                materials: "Cronómetro (App Seconds), Bocina",
-                imagen: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=800&q=80",
-                instrucciones: [
-                    "Fase 1 (1 min): Lubricación articular (cuello, hombros, torso)",
-                    "Fase 2 (3 min): Circuito (Sentadillas, Elevación de rodillas, Flexiones pared, Saltos tijera)",
-                    "Fase 3 (1 min): Vuelta a la calma (Estiramientos)"
-                ],
-                emoji: "⚡",
-                type: "indoor",
-                intensity: "moderada",
-                benefitType: ["Físico", "Psicológico"],
-                specificBenefits: ["Aumenta energía", "Mejora estado de ánimo", "Activa circulación"],
-                description: "Secuencia rápida de ejercicios para aumentar energía y mejorar el estado de ánimo en solo 5 minutos."
-            },
-            {
-                activityId: "FG-01",
-                categoria: "Juegos",
-                name: "Spaghetti-Vóley",
-                objetivo: "Trabajo en equipo y coordinación",
-                duration: 15,
-                materials: "Tubos de espuma ('spaguetis'), globo o pelota de playa",
-                imagen: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=800&q=80",
-                instrucciones: [
-                    "Dividir en dos equipos con una línea imaginaria",
-                    "Pasar el globo al campo contrario usando solo los tubos de espuma",
-                    "Si el globo cae, es punto para el equipo contrario"
-                ],
-                emoji: "🎈",
-                type: "outdoor",
-                intensity: "moderada",
-                benefitType: ["Físico", "Social"],
-                specificBenefits: ["Fomenta trabajo en equipo", "Mejora coordinación", "Fomenta integración"],
-                description: "Juego dinámico en equipo que combina coordinación, estrategia y diversión usando tubos de espuma."
-            },
-            {
-                activityId: "JM-04",
-                categoria: "Mesa",
-                name: "UNO (Clásico)",
-                objetivo: "Interacción social y pensamiento estratégico simple",
-                duration: 20,
-                materials: "Mazo de cartas UNO",
-                imagen: "https://images.unsplash.com/photo-1605304383472-3c2243e39c4f?auto=format&fit=crop&w=800&q=80",
-                instrucciones: [
-                    "Deshacerse de todas las cartas coincidiendo número o color",
-                    "Usar cartas especiales (Reversa, Toma 2) estratégicamente",
-                    "Gritar 'UNO' cuando quede una sola carta"
-                ],
-                emoji: "🎴",
-                type: "desk",
-                intensity: "baja",
-                benefitType: ["Psicológico", "Social"],
-                specificBenefits: ["Reduce estrés", "Mejora clima laboral", "Fomenta integración"],
-                description: "Clásico juego de cartas que fomenta la interacción social y el pensamiento estratégico de forma divertida."
-            },
-            {
-                activityId: "RC-02",
-                categoria: "Relax",
-                name: "Meditación Guiada",
-                objetivo: "Eliminar estrés y mejorar concentración",
-                duration: 10,
-                materials: "Sillas cómodas, bocina, ambiente tranquilo",
-                imagen: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80",
-                instrucciones: [
-                    "Sentarse cómodamente y cerrar los ojos",
-                    "Seguir el audio o voz del instructor enfocándose en la respiración",
-                    "Liberar pensamientos y buscar la calma"
-                ],
-                emoji: "🧘",
-                type: "indoor",
-                intensity: "baja",
-                benefitType: ["Psicológico"],
-                specificBenefits: ["Reduce estrés", "Mejora concentración", "Mejora estado de ánimo"],
-                description: "Sesión de meditación guiada para eliminar el estrés y mejorar la concentración a través de la atención plena."
-            },
-            {
-                activityId: "CR-01",
-                categoria: "Caminata",
-                name: "Caminata Consciente",
-                objetivo: "Conexión personal y atención plena",
-                duration: 15,
-                materials: "Tarjetas 'Somos' (opcional), ruta segura",
-                imagen: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=800&q=80",
-                instrucciones: [
-                    "Fase 1 (5 min): Conexión y reflexión en parejas con preguntas",
-                    "Fase 2 (7 min): Caminata enfocada en respiración y entorno",
-                    "Fase 3 (3 min): Cierre y compartir reflexión grupal"
-                ],
-                emoji: "🚶",
-                type: "outdoor",
-                intensity: "baja",
-                benefitType: ["Físico", "Psicológico", "Social"],
-                specificBenefits: ["Reduce estrés", "Mejora concentración", "Mejora comunicación", "Activa circulación"],
-                description: "Caminata consciente que combina movimiento físico con reflexión personal y conexión interpersonal."
-            }
-        ];
+        // Usar el catálogo cargado desde js/catalog-data.js
+        const catalogoActividades = typeof CATALOGO_COMPLETO !== 'undefined' ? CATALOGO_COMPLETO : [];
+
+        if (catalogoActividades.length === 0) {
+            alert('Error: No se pudo cargar el catálogo de actividades.');
+            return;
+        }
 
         try {
             let added = 0;

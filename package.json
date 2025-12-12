@@ -1,0 +1,20 @@
+{
+    "name": "ibero-activate-migration",
+    "version": "1.0.0",
+    "description": "Scripts de migración de Firestore para IBERO ACTÍVATE",
+    "scripts": {
+        "backup": "node scripts/migration-backup.js",
+        "migrate:dry-run": "node scripts/migrate-to-subcollections.js --dry-run",
+        "migrate:execute": "node scripts/migrate-to-subcollections.js --execute",
+        "validate": "node scripts/validate-migration.js"
+    },
+    "keywords": [
+        "firestore",
+        "migration"
+    ],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "firebase-admin": "^12.0.0"
+    }
+}

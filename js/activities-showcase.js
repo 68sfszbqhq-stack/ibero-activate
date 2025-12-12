@@ -219,9 +219,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Variables for filters (declared at top of file, updating values here is implicit)
+    // Filter logic starts here
+
     // Filter logic
     function filterActivities() {
         let filtered = allActivities;
+
+        // Filter by category
+        if (currentCategoryFilter !== 'all') {
+            filtered = filtered.filter(activity =>
+                (activity.categoria && activity.categoria === currentCategoryFilter) ||
+                (activity.category && activity.category === currentCategoryFilter) // Fallback
+            );
+        }
 
         // Filter by benefit type
         if (currentBenefitFilter !== 'all') {
@@ -242,16 +253,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Reset filters
     window.resetFilters = () => {
+        currentCategoryFilter = 'all';
         currentBenefitFilter = 'all';
         currentIntensityFilter = 'all';
 
-        // Reset button styles
         filterButtons.forEach(btn => {
             btn.classList.remove('active');
-            if (btn.dataset.filter === 'all') {
-                btn.classList.add('active');
+            // Reset to "Todas" if it's an 'all' filter
+            if (btn.dataset.category === 'all' || btn.dataset.filter === 'all' || (btn.dataset.intensity === undefined && !btn.dataset.category && !btn.dataset.filter)) {
+                // This logic is a bit complex, simpler to just set active classes manually or re-init
             }
         });
+
+        // Simpler reset visual
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector('[data-category="all"]').classList.add('active');
 
         renderActivities(allActivities);
     };
@@ -259,32 +275,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // Filter button event listeners
     filterButtons.forEach(btn => {
         btn.addEventListener('click', () => {
-            // Benefit type filter
-            if (btn.dataset.filter) {
-                // Remove active from benefit buttons
-                filterButtons.forEach(b => {
-                    if (b.dataset.filter) {
-                        b.classList.remove('active');
-                    }
-                });
+            // Category filter
+            if (btn.dataset.category) {
+                document.querySelectorAll('[data-category]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentCategoryFilter = btn.dataset.category;
+            }
 
+            // Benefit filter
+            if (btn.dataset.filter) {
+                document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentBenefitFilter = btn.dataset.filter;
             }
 
             // Intensity filter
             if (btn.dataset.intensity) {
-                // Toggle intensity filter
                 if (btn.classList.contains('active')) {
                     btn.classList.remove('active');
                     currentIntensityFilter = 'all';
                 } else {
-                    // Remove active from other intensity buttons
-                    filterButtons.forEach(b => {
-                        if (b.dataset.intensity) {
-                            b.classList.remove('active');
-                        }
-                    });
+                    document.querySelectorAll('[data-intensity]').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     currentIntensityFilter = btn.dataset.intensity;
                 }
