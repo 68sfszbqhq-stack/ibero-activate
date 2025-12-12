@@ -110,6 +110,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // 5. Generar Leaderboard
             generateLeaderboard(allAttendances, allFeedbacks, areasMap);
 
+            // 6. Cargar conteo de actividades
+            const activitiesSnapshot = await db.collection('activities').get();
+            const activitiesCountEl = document.getElementById('total-activities-count');
+            if (activitiesCountEl) {
+                activitiesCountEl.textContent = activitiesSnapshot.size;
+            }
+
         } catch (error) {
             console.error('Error cargando dashboard:', error);
         }
