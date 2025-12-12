@@ -54,6 +54,8 @@
     width: 100%;
     max-width: 600px;
     box-shadow: none;
+    margin: 0 auto;
+    text-align: center;
     animation: fadeInUp 0.5s ease;
 }
 

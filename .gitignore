@@ -4,3 +4,10 @@ node_modules/
 *.log
 .vscode/
 .idea/
+
+# Firestore migration scripts
+firebase-service-account.json
+
+# Migration outputs
+backups/
+migration-logs/
