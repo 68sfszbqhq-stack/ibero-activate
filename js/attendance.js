@@ -209,13 +209,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     .where('date', '==', selectedDate)
                     .get();
 
+                // 2. ALSO Query Top-Level Collection directly to find any ORPHANS (fixes "ghost" issues)
+                const topLevelSnapshot = await db.collection('attendances')
+                    .where('employeeId', '==', employeeId)
+                    .where('date', '==', selectedDate)
+                    .get();
+
                 const batch = db.batch();
+
+                // Add subcollection docs to delete batch
                 snapshot.docs.forEach(doc => {
-                    // Borrar de subcollection
                     batch.delete(doc.ref);
-                    // Borrar de top-level usando el mismo ID
+                    // Also try to delete by ID match (standard case)
                     batch.delete(db.collection('attendances').doc(doc.id));
                 });
+
+                // Add orphan top-level docs to delete batch
+                topLevelSnapshot.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+
                 await batch.commit();
 
                 card.classList.remove('selected');
