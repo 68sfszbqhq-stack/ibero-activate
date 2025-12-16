@@ -2,7 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const activitiesGrid = document.getElementById('activities-grid');
     const totalActivitiesEl = document.getElementById('total-activities');
-    const filterButtons = document.querySelectorAll('.filter-btn');
+    const filterButtons = document.querySelectorAll('.filter-card, .filter-pill');
     const modal = document.getElementById('activity-modal');
     const closeModalBtn = document.getElementById('close-modal');
 
@@ -266,8 +266,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Simpler reset visual
-        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelector('[data-category="all"]').classList.add('active');
+        document.querySelectorAll('.filter-card, .filter-pill').forEach(btn => btn.classList.remove('active'));
+        const allBtn = document.querySelector('[data-category="all"]');
+        if (allBtn) allBtn.classList.add('active');
 
         renderActivities(allActivities);
     };

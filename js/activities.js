@@ -1,4 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Variables de Estado
+    let allActivities = [];
+    let currentCategory = 'all';
+
     // Auth Check
     auth.onAuthStateChanged(user => {
         if (!user) {
@@ -18,6 +22,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnCancel = document.getElementById('btn-cancel');
     const modalTitle = document.getElementById('modal-title');
 
+    // Image Input Elements
+    const inputImagen = document.getElementById('imagen');
+    const imgPreview = document.getElementById('image-preview');
+
+    // Filter Elements
+    const filterButtons = document.querySelectorAll('.filter-card');
+
     // Event Listeners
     btnNew.addEventListener('click', () => openModal());
     btnImport.addEventListener('click', importCatalog);
@@ -25,74 +36,145 @@ document.addEventListener('DOMContentLoaded', () => {
     btnCancel.addEventListener('click', closeModal);
     form.addEventListener('submit', saveActivity);
 
+    // Image Preview Listener
+    if (inputImagen) {
+        inputImagen.addEventListener('input', (e) => {
+            const url = e.target.value;
+            if (url) {
+                imgPreview.src = url;
+                imgPreview.style.display = 'block';
+            } else {
+                imgPreview.style.display = 'none';
+            }
+        });
+    }
+
+    // Filter Logic
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentCategory = btn.dataset.category;
+            renderActivities();
+        });
+    });
+
     // Load Activities
     async function loadActivities() {
         try {
             const snapshot = await db.collection('activities').get();
-            activitiesGrid.innerHTML = '';
-
             if (snapshot.empty) {
-                activitiesGrid.innerHTML = '<p class="text-gray-500 col-span-full text-center py-8">No hay actividades registradas. ¡Crea la primera!</p>';
+                allActivities = [];
+                renderActivities();
                 return;
             }
-
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const card = document.createElement('div');
-                card.className = 'card activity-card';
-                card.style.position = 'relative';
-
-                // Badge color based on intensity
-                let intensityColor = 'bg-green-100 text-green-800';
-                if (data.intensity === 'moderada') intensityColor = 'bg-yellow-100 text-yellow-800';
-                if (data.intensity === 'alta') intensityColor = 'bg-red-100 text-red-800';
-
-                card.innerHTML = `
-                    <div style="font-size: 3rem; margin-bottom: 1rem; text-align: center;">${data.emoji}</div>
-                    <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; text-align: center;">${data.name}</h3>
-                    
-                    <div style="display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1rem;">
-                        <span class="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">${data.type}</span>
-                        <span class="px-2 py-1 rounded-full text-xs font-semibold ${intensityColor}">${data.intensity}</span>
-                        <span class="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">${data.duration} min</span>
-                    </div>
-
-                    <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1.5rem; text-align: center;">${data.description}</p>
-
-                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
-                        <button onclick="editActivity('${doc.id}')" class="btn-secondary" style="padding: 0.5rem 1rem;">
-                            <i class="fa-solid fa-pen"></i> Editar
-                        </button>
-                        <button onclick="deleteActivity('${doc.id}')" class="btn-secondary" style="padding: 0.5rem 1rem; color: var(--primary); border-color: var(--primary);">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
-                `;
-                activitiesGrid.appendChild(card);
-            });
-
+            allActivities = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            renderActivities();
         } catch (error) {
             console.error("Error loading activities:", error);
-            activitiesGrid.innerHTML = '<p class="error">Error cargando actividades</p>';
+            activitiesGrid.innerHTML = '<p class="text-red-500 col-span-full text-center py-8">Error cargando actividades</p>';
         }
+    }
+
+    // Render Function
+    function renderActivities() {
+        activitiesGrid.innerHTML = '';
+        const filtered = currentCategory === 'all'
+            ? allActivities
+            : allActivities.filter(a => a.categoria === currentCategory || a.category === currentCategory);
+
+        if (filtered.length === 0) {
+            activitiesGrid.innerHTML = `
+                <div class="col-span-full flex flex-col items-center justify-center py-12 text-gray-400">
+                    <i class="fa-solid fa-folder-open text-4xl mb-4"></i>
+                    <p>No se encontraron actividades en esta categoría.</p>
+                </div>`;
+            return;
+        }
+
+        filtered.forEach(data => {
+            const card = document.createElement('div');
+            card.className = 'group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col h-full';
+
+            let badgeClass = 'bg-blue-100 text-blue-700';
+            if (data.intensity === 'alta') badgeClass = 'bg-red-100 text-red-700';
+            if (data.intensity === 'baja') badgeClass = 'bg-green-100 text-green-700';
+
+            const bgImage = data.imagen || 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=800';
+
+            card.innerHTML = `
+                <div class="h-48 relative overflow-hidden shrink-0">
+                    <img src="${bgImage}" alt="${data.name}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0"></div>
+                    
+                    <div class="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button onclick="editActivity('${data.id}')" class="w-8 h-8 flex items-center justify-center bg-white rounded-full text-blue-600 hover:bg-blue-600 hover:text-white shadow-lg transition-colors" title="Editar">
+                            <i class="fa-solid fa-pen text-sm"></i>
+                        </button>
+                        <button onclick="deleteActivity('${data.id}')" class="w-8 h-8 flex items-center justify-center bg-white rounded-full text-red-600 hover:bg-red-600 hover:text-white shadow-lg transition-colors" title="Eliminar">
+                            <i class="fa-solid fa-trash text-sm"></i>
+                        </button>
+                    </div>
+
+                    <span class="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-gray-700 shadow-sm">
+                        ${data.emoji || '✨'} ${data.categoria || 'General'}
+                    </span>
+                    <span class="absolute bottom-3 right-3 bg-black/50 backdrop-blur text-white px-2 py-1 rounded-md text-xs font-medium">
+                        <i class="fa-regular fa-clock mr-1"></i>${data.duration} min
+                    </span>
+                </div>
+
+                <div class="p-5 flex flex-col grow">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-lg text-gray-800 leading-tight group-hover:text-blue-600 transition-colors">
+                            ${data.name}
+                        </h3>
+                    </div>
+                    <p class="text-gray-500 text-sm line-clamp-2 mb-4 grow">
+                        ${data.objetivo || data.description || 'Sin descripción disponible.'}
+                    </p>
+                    <div class="flex flex-wrap gap-2 mt-auto pt-4 border-t border-gray-50">
+                        <span class="px-2 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                            ${(data.benefitType && data.benefitType[0]) || 'Bienestar'}
+                        </span>
+                        <span class="px-2 py-1 rounded-md text-xs font-semibold ${badgeClass} border border-transparent">
+                            Intensidad ${data.intensity}
+                        </span>
+                    </div>
+                </div>
+            `;
+            activitiesGrid.appendChild(card);
+        });
     }
 
     // Open Modal
     window.openModal = (id = null, data = null) => {
         modal.classList.remove('hidden');
-        modal.style.display = 'flex'; // Ensure flex for centering
+        modal.style.display = 'flex';
 
         if (id && data) {
             modalTitle.textContent = 'Editar Actividad';
             document.getElementById('activity-id').value = id;
             document.getElementById('name').value = data.name;
+            document.getElementById('imagen').value = data.imagen || ''; // Load URL
+
+            // Preview
+            if (data.imagen) {
+                imgPreview.src = data.imagen;
+                imgPreview.style.display = 'block';
+            } else {
+                imgPreview.style.display = 'none';
+            }
+
             document.getElementById('emoji').value = data.emoji;
             document.getElementById('duration').value = data.duration;
             document.getElementById('type').value = data.type;
             document.getElementById('intensity').value = data.intensity;
             document.getElementById('description').value = data.description;
 
-            // Populate Checkboxes
             const benefitTypes = data.benefitType || [];
             document.querySelectorAll('input[name="benefitType"]').forEach(cb => {
                 cb.checked = benefitTypes.includes(cb.value);
@@ -107,8 +189,8 @@ document.addEventListener('DOMContentLoaded', () => {
             modalTitle.textContent = 'Nueva Actividad';
             form.reset();
             document.getElementById('activity-id').value = '';
-            // Uncheck all manually just in case
             document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            imgPreview.style.display = 'none'; // Reset preview
         }
     };
 
@@ -117,18 +199,18 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.style.display = 'none';
     }
 
-    // Save Activity (Create/Update)
+    // Save Activity
     async function saveActivity(e) {
         e.preventDefault();
-
         const id = document.getElementById('activity-id').value;
 
-        // Collect Checkbox Values
+        // Collect Checkboxes
         const benefitType = Array.from(document.querySelectorAll('input[name="benefitType"]:checked')).map(cb => cb.value);
         const specificBenefits = Array.from(document.querySelectorAll('input[name="specificBenefits"]:checked')).map(cb => cb.value);
 
         const data = {
             name: document.getElementById('name').value,
+            imagen: document.getElementById('imagen').value, // Save URL
             emoji: document.getElementById('emoji').value,
             duration: parseInt(document.getElementById('duration').value),
             type: document.getElementById('type').value,
@@ -141,93 +223,98 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (id) {
+                const activity = allActivities.find(a => a.id === id);
+                // Preserve original category if not edited (modal doesn't have category input yet, assuming existing)
+                // Actually, catalog-data has 'categoria'. If we create new, where does it come from? 
+                // Currently modal doesn't allow editing Category. 
+                // We should probably safeguard 'categoria'
+                if (activity && activity.categoria) {
+                    data.categoria = activity.categoria;
+                } else if (!data.categoria) {
+                    // Default for new
+                    data.categoria = 'General';
+                }
+
                 await db.collection('activities').doc(id).update(data);
+                const idx = allActivities.findIndex(a => a.id === id);
+                if (idx !== -1) allActivities[idx] = { id, ...data, ...allActivities[idx] };
                 alert('Actividad actualizada correctamente');
             } else {
                 data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                await db.collection('activities').add(data);
+                data.categoria = 'General'; // Default
+                const docRef = await db.collection('activities').add(data);
+                allActivities.push({ id: docRef.id, ...data });
                 alert('Actividad creada correctamente');
             }
             closeModal();
-            loadActivities();
+            renderActivities();
         } catch (error) {
             console.error("Error saving activity:", error);
             alert("Error al guardar: " + error.message);
         }
     }
 
-    // Edit Activity (Global wrapper to fetch data first)
+    // Edit Activity Global
     window.editActivity = async (id) => {
-        try {
-            const doc = await db.collection('activities').doc(id).get();
-            if (doc.exists) {
-                openModal(id, doc.data());
+        const activity = allActivities.find(a => a.id === id);
+        if (activity) {
+            openModal(id, activity);
+        } else {
+            try {
+                const doc = await db.collection('activities').doc(id).get();
+                if (doc.exists) openModal(id, doc.data());
+            } catch (e) {
+                console.error(e);
             }
-        } catch (error) {
-            console.error("Error fetching activity:", error);
         }
     };
 
-    // Delete Activity
+    // Delete Activity Global
     window.deleteActivity = async (id) => {
         if (confirm('¿Estás seguro de eliminar esta actividad?')) {
             try {
                 await db.collection('activities').doc(id).delete();
-                loadActivities();
+                allActivities = allActivities.filter(a => a.id !== id);
+                renderActivities();
             } catch (error) {
-                console.error('Error deleting activity:', error);
+                console.error(error);
                 alert('Error al eliminar: ' + error.message);
             }
         }
     };
 
-    // Import Complete Catalog
+    // Import Logic
     async function importCatalog() {
-        if (!confirm('¿Importar el catálogo COMPLETO de 54 actividades? Esto puede tardar un momento.\n\nIncluye:\n- 10 Activación (AF)\n- 12 Físicos/Grupal (FG)\n- 19 Mesa (JM)\n- 4 Digital (VD)\n- 5 Relax (RC)\n- 4 Caminatas (CR)')) {
-            return;
-        }
-
-        // Usar el catálogo cargado desde js/catalog-data.js
+        if (!confirm('¿Importar el catálogo COMPLETO de 54 actividades?')) return;
         const catalogoActividades = typeof CATALOGO_COMPLETO !== 'undefined' ? CATALOGO_COMPLETO : [];
-
         if (catalogoActividades.length === 0) {
-            alert('Error: No se pudo cargar el catálogo de actividades.');
+            alert('Error: No se pudo cargar el catálogo.');
             return;
         }
-
         try {
+            const btn = document.getElementById('btn-import-catalog');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Importando...';
+            btn.disabled = true;
             let added = 0;
             let updated = 0;
-
             for (const actividad of catalogoActividades) {
-                // Buscar si ya existe por activityId
-                const existing = await db.collection('activities')
-                    .where('activityId', '==', actividad.activityId)
-                    .get();
-
+                const existing = await db.collection('activities').where('activityId', '==', actividad.activityId).get();
                 if (existing.empty) {
-                    // No existe, crear nueva
-                    await db.collection('activities').add({
-                        ...actividad,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    await db.collection('activities').add({ ...actividad, createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
                     added++;
                 } else {
-                    // Ya existe, actualizar
                     const docId = existing.docs[0].id;
-                    await db.collection('activities').doc(docId).update({
-                        ...actividad,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    await db.collection('activities').doc(docId).update({ ...actividad, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
                     updated++;
                 }
             }
-
-            alert(`✅ Catálogo importado exitosamente!\n\nAgregadas: ${added}\nActualizadas: ${updated}`);
+            alert(`✅ Importación finalizada!\nAgregadas: ${added}\nActualizadas: ${updated}`);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
             loadActivities();
         } catch (error) {
-            console.error('Error importing catalog:', error);
+            console.error(error);
             alert('Error al importar: ' + error.message);
         }
     }

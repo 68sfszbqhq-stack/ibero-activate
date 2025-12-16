@@ -65,6 +65,20 @@ body {
   color: var(--text-dark);
   line-height: 1.6;
   min-height: 100vh;
+  min-height: 100dvh;
+  /* Mobile support */
+  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Mobile Input Zoom Fix */
+@media screen and (max-width: 768px) {
+
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 /* Landing Page Styles */

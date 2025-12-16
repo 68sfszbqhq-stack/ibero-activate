@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (clickEvent) {
             const rect = clickEvent.target.getBoundingClientRect();
             const modalWidth = 420; // Ancho del modal
-            const modalHeight = 400; // Alto estimado del modal
+            const modalHeight = 250; // Alto estimado (reducido)
 
             // Calcular posición (a la derecha del botón +)
             let left = rect.right + 10; // 10px de separación
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('modal-title').textContent = '📅 Agregar Actividad';
             document.getElementById('schedule-id').value = '';
             document.getElementById('activity-select').value = '';
-            document.getElementById('location').value = '';
+            document.getElementById('location').value = 'Explanada'; // Default location
             document.getElementById('btn-delete-schedule').classList.add('hidden');
         }
     }
@@ -199,11 +199,10 @@ document.addEventListener('DOMContentLoaded', () => {
         div.className = 'activity-item';
         div.innerHTML = `
             <div style="font-weight: 600;">${emoji} ${name}</div>
-            <div style="color: #666; font-size: 0.75rem;">📍 ${item.location}</div>
         `;
         div.onclick = (e) => {
             e.stopPropagation();
-            openModal(item.day, item.time, item, index);
+            openModal(item.day, item.time, item, index, e); // Pass 'e' for context position on edit too!
         };
 
         // Insert before the add button
