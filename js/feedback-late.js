@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentAttendanceId = null;
     let currentAttendanceRef = null;
     let selectedDate = null;
+    const recentlyCompletedIds = new Set(); // Blacklist local para filtrar inmediatamente
 
     // Elementos DOM
     const datePicker = document.getElementById('date-picker');
@@ -96,8 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('  - Asistencia encontrada:', doc.id, 'Status:', attendanceData.status);
 
                 // Double check client side
-                if (attendanceData.status !== 'active') {
-                    console.log('  ⚠️ Ignorando asistencia no activa (filtrado cliente):', doc.id);
+                if (attendanceData.status !== 'active' || recentlyCompletedIds.has(doc.id)) {
+                    console.log('  ⚠️ Ignorando asistencia (no activa o completada recientemente):', doc.id);
                     continue;
                 }
 
@@ -262,6 +263,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             document.getElementById('earned-points').textContent = earnedPoints;
+
+            // TRACK LOCAL COMPLETED
+            recentlyCompletedIds.add(currentAttendanceId);
 
             // 4. Guardar puntos en el empleado
             await db.collection('employees').doc(selectedEmployee.id).update({
