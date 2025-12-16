@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Dashboard - IBERO ACTÍVATE</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/admin.css">
@@ -116,22 +117,26 @@
                         style="font-size: 2rem; font-weight: 700; color: var(--secondary);">0%</p>
                 </div>
                 <!-- Catalog Access Card -->
-                <div class="stat-card card" onclick="window.location.href='activities.html'"
+                <div class="stat-card card" onclick="window.location.href='../employee/activities-showcase.html'"
                     onmouseover="this.style.transform='translateY(-5px)'"
                     onmouseout="this.style.transform='translateY(0)'"
                     style="cursor: pointer; transition: transform 0.2s;">
                     <div style="display: flex; justify-content: space-between; align-items: start;">
                         <div>
-                            <h3 style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Catálogo Actividades
-                            </h3>
+                            <h3 style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Catálogo Visual</h3>
                             <p class="stat-number" id="total-activities-count"
                                 style="font-size: 2rem; font-weight: 700; color: #8b5cf6;">--</p>
                         </div>
-                        <i class="fa-solid fa-dumbbell" style="font-size: 1.5rem; color: #ddd;"></i>
+                        <i class="fa-solid fa-eye" style="font-size: 1.5rem; color: #ddd;"></i>
                     </div>
                     <p style="font-size: 0.8rem; color: #8b5cf6; margin-top: 0.5rem; font-weight: 600;">
-                        Gestionar <i class="fa-solid fa-arrow-right"></i>
+                        Ver Showcase <i class="fa-solid fa-arrow-right"></i>
                     </p>
+                </div>
+                <div style="grid-column: span 1; text-align: center; margin-top: -10px;">
+                    <a href="activities.html"
+                        style="font-size: 0.75rem; color: #9ca3af; text-decoration: underline;">Administrar / Importar
+                        Catálogo</a>
                 </div>
             </div>
 
