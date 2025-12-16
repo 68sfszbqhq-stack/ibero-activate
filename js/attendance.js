@@ -60,11 +60,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    let unsubscribe = null; // Para detener el listener cuando cambie la fecha/área
+
     async function loadEmployees() {
         const areaId = areaDropdown.value;
         const emptyState = document.getElementById('empty-state');
 
         employeeList.innerHTML = ''; // Limpiar lista
+
+        // Detener listener anterior si existe
+        if (unsubscribe) {
+            unsubscribe();
+            unsubscribe = null;
+        }
 
         if (!areaId) {
             emptyState.style.display = 'block';
@@ -76,13 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
         employeeList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem;"></i><br><br>Cargando empleados...</div>';
 
         try {
-            // 1. Obtener empleados del área
-            // Nota: Quitamos orderBy en Firestore para evitar requerir índice compuesto
+            // 1. Obtener empleados del área (Static fetch)
             const snapshot = await db.collection('employees')
                 .where('areaId', '==', areaId)
                 .get();
-
-            employeeList.innerHTML = ''; // Limpiar mensaje de carga
 
             if (snapshot.empty) {
                 employeeList.innerHTML = '<div class="no-data">No hay empleados en esta área</div>';
@@ -97,29 +102,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
             employees.sort((a, b) => a.fullName.localeCompare(b.fullName));
 
-            // 2. Verificar quiénes ya tienen asistencia en la FECHA SELECCIONADA
+            // Renderizar slots vacíos primero (para llenar luego con el listener)
+            employeeList.innerHTML = '';
+            employees.forEach(emp => {
+                createEmployeeCard(emp.id, emp, null); // null status initially
+            });
+
+            // 2. ACTIVAR LISTENER DE ASISTENCIAS (Real-time)
             const selectedDate = currentDate.toISOString().split('T')[0];
 
-            // Obtener asistencias de todos los empleados del área para esta fecha
-            const attendedEmployeeIds = new Set();
-            for (const emp of employees) {
-                const attSnapshot = await db.collection('employees')
-                    .doc(emp.id)
-                    .collection('attendance')
-                    .where('date', '==', selectedDate)
-                    .get();
-                if (!attSnapshot.empty) {
-                    attendedEmployeeIds.add(emp.id);
-                }
-            }
+            // Escuchar cambios en la collección TOP-LEVEL 'attendances' para esta fecha
+            // Esto detectará instantáneamente cuando se crea una asistencia O cuando cambia a 'completed'
+            unsubscribe = db.collection('attendances')
+                .where('date', '==', selectedDate)
+                .onSnapshot((attSnapshot) => {
+                    // Crear mapa de asistencias: ID_Empleado -> Status
+                    const attendanceMap = new Map();
+                    attSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        if (data.employeeId) { // Asegurar que tenga ID
+                            // Si hay duplicados (raro), el último gana.
+                            // Importante: Diferenciar 'active' de 'completed'
+                            attendanceMap.set(data.employeeId, data.status);
+                        }
+                    });
 
+                    // Actualizar UI para cada empleado
+                    employees.forEach(emp => {
+                        const status = attendanceMap.get(emp.id); // 'active', 'completed', or undefined
+                        updateEmployeeCardStatus(emp.id, status);
+                    });
 
-
-            // 3. Renderizar tarjetas
-            employees.forEach(emp => {
-                const isPresent = attendedEmployeeIds.has(emp.id);
-                createEmployeeCard(emp.id, emp, isPresent);
-            });
+                }, (error) => {
+                    console.error("Error en listener de asistencia:", error);
+                });
 
         } catch (error) {
             console.error('Error cargando empleados:', error);
@@ -127,26 +143,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function createEmployeeCard(id, emp, isPresent) {
+    function createEmployeeCard(id, emp, status) {
         const card = document.createElement('div');
-        card.className = `employee-card ${isPresent ? 'selected' : ''}`;
+        card.className = 'employee-card'; // Quitamos 'selected' inicial, lo manejará updateEmployeeCardStatus
+        card.id = `card-${id}`; // ID para busqueda rápida
         card.dataset.id = id;
 
-        // Estilo visual para indicar estado
-        const statusIcon = isPresent ? '<i class="fa-solid fa-check-circle"></i>' : '<i class="fa-regular fa-circle"></i>';
-
         card.innerHTML = `
-            <div class="card-icon">${statusIcon}</div>
+            <div class="card-icon"><i class="fa-regular fa-circle"></i></div>
             <div class="card-info">
                 <h3>${emp.fullName}</h3>
                 <p>#${emp.accountNumber}</p>
             </div>
         `;
 
-        // Click Event: Toggle Asistencia en Tiempo Real
+        // Click Event: Toggle Asistencia
         card.addEventListener('click', () => toggleAttendance(card, id, emp));
 
         employeeList.appendChild(card);
+    }
+
+    function updateEmployeeCardStatus(id, status) {
+        const card = document.getElementById(`card-${id}`);
+        if (!card) return;
+
+        const iconContainer = card.querySelector('.card-icon');
+
+        // Limpiar clases de estado previo
+        card.classList.remove('selected', 'completed');
+
+        if (status === 'active') {
+            // ASISTENCIA MARCADA (Pendiente de feedback)
+            card.classList.add('selected');
+            iconContainer.innerHTML = '<i class="fa-solid fa-check-circle"></i>';
+            card.style.borderColor = 'var(--primary)';
+            card.style.backgroundColor = 'var(--light-bg)';
+
+        } else if (status === 'completed') {
+            // FEEDBACK RECIBIDO (Ciclo completo)
+            card.classList.add('selected', 'completed');
+            // Doble Check O Check Azul/Diferente
+            iconContainer.innerHTML = '<i class="fa-solid fa-check-double" style="color: #4CAF50;"></i>';
+            card.style.borderColor = '#4CAF50';
+            card.style.backgroundColor = '#e8f5e9'; // Verde clarito
+
+        } else {
+            // AUSENTE
+            iconContainer.innerHTML = '<i class="fa-regular fa-circle"></i>';
+            card.style.borderColor = '#e1e4e8';
+            card.style.backgroundColor = '#fff';
+        }
+
+        // Guardar status actual en dataset para lógica de toggle
+        card.dataset.status = status || 'absent';
     }
 
     async function toggleAttendance(card, employeeId, employeeData) {
@@ -154,27 +203,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (card.classList.contains('processing')) return;
         card.classList.add('processing');
 
-        const isSelected = card.classList.contains('selected');
+        const currentStatus = card.dataset.status || 'absent';
         const selectedDate = currentDate.toISOString().split('T')[0];
         const areaId = areaDropdown.value;
 
         try {
-            if (!isSelected) {
-                // 1. VERIFICACIÓN DOBLE (Server-side check)
-                const checkSnapshot = await db.collection('employees')
-                    .doc(employeeId)
-                    .collection('attendance')
-                    .where('date', '==', selectedDate)
-                    .get();
+            if (currentStatus === 'absent') {
+                // MARCAR ASISTENCIA (Crear)
+                // Usamos la misma lógica de escritura dual (Subcollection + TopLevel)
 
-                if (!checkSnapshot.empty) {
-                    showToast('⚠️ Este empleado ya tiene asistencia en esta fecha.');
-                    card.classList.add('selected'); // Sincronizar UI
-                    card.querySelector('.card-icon').innerHTML = '<i class="fa-solid fa-check-circle"></i>';
-                    return;
-                }
-
-                // 2. MARCAR ASISTENCIA (Crear documento en subcollection)
                 const attendanceData = {
                     employeeId: employeeId,
                     employeeName: employeeData.fullName,
@@ -186,30 +223,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     year: currentDate.getFullYear()
                 };
 
-                // Escribir en subcollection (para organización de datos)
+                // 1. Crear en subcollection (source of truth histórico)
                 const subcollectionDoc = await db.collection('employees')
                     .doc(employeeId)
                     .collection('attendance')
                     .add(attendanceData);
 
-                // Escribir en colección top-level (para listener de feedback en vivo)
+                // 2. Crear en Top-Level (para real-time y queries rápidas)
                 await db.collection('attendances').doc(subcollectionDoc.id).set(attendanceData);
 
-                card.classList.add('selected');
-                card.querySelector('.card-icon').innerHTML = '<i class="fa-solid fa-check-circle"></i>';
-
-                // Feedback visual rápido
                 showToast(`Asistencia marcada: ${employeeData.fullName}`);
 
             } else {
-                // DESMARCAR (Borrar documento de subcollection Y top-level)
+                // DESMARCAR (Borrar) - Aplica tanto para 'active' como 'completed' si el admin quiere borrarlo
+
+                // Buscar registros para borrar (usando ID de empleado y fecha)
                 const snapshot = await db.collection('employees')
                     .doc(employeeId)
                     .collection('attendance')
                     .where('date', '==', selectedDate)
                     .get();
 
-                // 2. ALSO Query Top-Level Collection directly to find any ORPHANS (fixes "ghost" issues)
                 const topLevelSnapshot = await db.collection('attendances')
                     .where('employeeId', '==', employeeId)
                     .where('date', '==', selectedDate)
@@ -217,22 +251,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const batch = db.batch();
 
-                // Add subcollection docs to delete batch
                 snapshot.docs.forEach(doc => {
                     batch.delete(doc.ref);
-                    // Also try to delete by ID match (standard case)
+                    // Intento borrar por ID directo si coincide
                     batch.delete(db.collection('attendances').doc(doc.id));
                 });
 
-                // Add orphan top-level docs to delete batch
                 topLevelSnapshot.docs.forEach(doc => {
                     batch.delete(doc.ref);
                 });
 
                 await batch.commit();
-
-                card.classList.remove('selected');
-                card.querySelector('.card-icon').innerHTML = '<i class="fa-regular fa-circle"></i>';
                 showToast(`Asistencia eliminada: ${employeeData.fullName}`);
             }
         } catch (error) {
