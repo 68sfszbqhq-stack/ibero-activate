@@ -210,6 +210,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!existingFeedback.empty) {
                 alert('⚠️ Ya has enviado tu feedback para esta sesión.');
+
+                // TRACK LOCAL COMPLETED (to hide from list)
+                recentlyCompletedIds.add(currentAttendanceId);
+
+                // Trigger UI update to remove the button if list is visible
+                // (Optional, but good practice if we were strictly reactive. 
+                // Since we rely on updateLiveList triggering or next render, explicit removal isn't strictly needed 
+                // if we just add to set, but let's be safe).
+
                 // Opcional: Mostrar estado de éxito directamente si ya lo hizo
                 feedbackForm.classList.add('hidden');
                 successState.classList.remove('hidden');
@@ -231,20 +240,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 2. Actualizar estado de asistencia a 'completed' en AMBAS ubicaciones
             // (subcollection Y top-level para que el listener lo filtre correctamente)
-            await db.collection('employees')
-                .doc(selectedEmployee.id)
-                .collection('attendance')
-                .doc(currentAttendanceId)
-                .update({
-                    status: 'completed'
-                });
+            try {
+                await db.collection('employees')
+                    .doc(selectedEmployee.id)
+                    .collection('attendance')
+                    .doc(currentAttendanceId)
+                    .update({
+                        status: 'completed'
+                    });
 
-            // También actualizar en top-level attendances (para el listener de feedback en vivo)
-            await db.collection('attendances')
-                .doc(currentAttendanceId)
-                .update({
-                    status: 'completed'
-                });
+                // También actualizar en top-level attendances (para el listener de feedback en vivo)
+                await db.collection('attendances')
+                    .doc(currentAttendanceId)
+                    .update({
+                        status: 'completed'
+                    });
+            } catch (updateError) {
+                console.warn('Error actualizando status (no crítico si el feedback se guardó):', updateError);
+            }
 
             // 3. Calcular puntos (Gamificación: 20 fijos + 10 si ganó)
             let earnedPoints = 20;
