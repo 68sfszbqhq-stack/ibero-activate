@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentRating = 0;
     let currentEmoji = '';
     let currentAttendanceId = null;
+    const recentlyCompletedIds = new Set(); // Blacklist local para filtrar inmediatamente
 
     // Elementos DOM
     const liveList = document.getElementById('live-list'); // Contenedor para botones mágicos
@@ -137,6 +138,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         snapshot.forEach(doc => {
             const data = doc.data();
+
+            // Filtrar si ya se completó localmente (Blacklist)
+            if (recentlyCompletedIds.has(doc.id)) {
+                return;
+            }
+
             const btn = document.createElement('button');
             btn.className = 'magic-btn'; // Clase CSS nueva para animación
             btn.innerHTML = `
@@ -249,6 +256,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             document.getElementById('earned-points').textContent = earnedPoints;
+
+            // TRACK LOCAL COMPLETED
+            recentlyCompletedIds.add(currentAttendanceId);
 
             // 4. GUARDAR PUNTOS EN EL EMPLEADO
             await db.collection('employees').doc(selectedEmployee.id).update({
