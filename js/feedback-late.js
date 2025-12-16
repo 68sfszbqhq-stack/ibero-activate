@@ -72,10 +72,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('🔍 Ejecutando collectionGroup query...');
             // Buscar TODAS las asistencias de esa fecha con status 'active' (pendientes de feedback)
             // Usamos collectionGroup para buscar en todas las subcollections de attendance
+            // FORECE SERVER to avoid cache issues
             const attendancesQuery = await db.collectionGroup('attendance')
                 .where('date', '==', date)
                 .where('status', '==', 'active')
-                .get();
+                .get({ source: 'server' });
 
             console.log('📊 Resultados encontrados:', attendancesQuery.size);
 
@@ -92,7 +93,13 @@ document.addEventListener('DOMContentLoaded', () => {
             for (const doc of attendancesQuery.docs) {
                 const attendanceData = doc.data();
                 const employeeId = doc.ref.parent.parent.id; // Obtener el ID del empleado desde la referencia
-                console.log('  - Asistencia de empleado ID:', employeeId);
+                console.log('  - Asistencia encontrada:', doc.id, 'Status:', attendanceData.status);
+
+                // Double check client side
+                if (attendanceData.status !== 'active') {
+                    console.log('  ⚠️ Ignorando asistencia no activa (filtrado cliente):', doc.id);
+                    continue;
+                }
 
                 // Obtener datos completos del empleado
                 const employeeDoc = await db.collection('employees').doc(employeeId).get();

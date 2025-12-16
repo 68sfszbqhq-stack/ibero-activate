@@ -188,8 +188,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
+                // 1.5 VERIFICACIÓN EXTRA: Revisar collection top-level también (Evitar desincronización)
+                // Esto previene que se cree una "late" si ya existe una "normal" que falló en sincronizarse
+                const topLevelCheck = await db.collection('attendances')
+                    .where('employeeId', '==', employeeId)
+                    .where('date', '==', selectedDate)
+                    .get();
+
+                if (!topLevelCheck.empty) {
+                    showToast('⚠️ Ya existe asistencia registrada (Top-Level Check).');
+                    card.classList.add('selected');
+                    card.querySelector('.card-icon').innerHTML = '<i class="fa-solid fa-check-circle"></i>';
+                    card.classList.remove('processing');
+                    return;
+                }
+
                 // 2. MARCAR ASISTENCIA (Crear documento en subcollection)
-                await db.collection('employees')
+                const docRef = await db.collection('employees')
                     .doc(employeeId)
                     .collection('attendance')
                     .add({
@@ -202,6 +217,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         year: currentDate.getFullYear(),
                         isLate: true // Marcar como asistencia extemporánea
                     });
+
+                // Write to top-level as well for consistency
+                await db.collection('attendances').doc(docRef.id).set({
+                    employeeId: employeeId,
+                    employeeName: employeeData.fullName,
+                    areaId: areaId,
+                    date: selectedDate,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: 'active',
+                    weekNumber: getWeekNumber(currentDate),
+                    year: currentDate.getFullYear(),
+                    isLate: true
+                });
 
                 card.classList.add('selected');
                 card.querySelector('.card-icon').innerHTML = '<i class="fa-solid fa-check-circle"></i>';
