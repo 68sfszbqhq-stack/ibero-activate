@@ -230,9 +230,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
             // 2. Actualizar estado de asistencia a 'completed'
+            // 2. Actualizar estado de asistencia a 'completed' en AMBAS ubicaciones
             await currentAttendanceRef.update({
                 status: 'completed'
             });
+
+            // INTENTO DE SINCRONIZACIÓN: Actualizar también en la colección top-level 'attendances'
+            // (Si existe, para que desaparezca de la lista en vivo standard)
+            try {
+                await db.collection('attendances').doc(currentAttendanceId).update({
+                    status: 'completed'
+                });
+            } catch (e) {
+                // Ignoramos error si el documento no existe (puede ser una asistencia creada como late que no tiene par en root)
+                console.log('Nota: No se actualizó attendance root (probablemente no existe)', e);
+            }
 
             // 3. Calcular puntos
             let earnedPoints = 20;
