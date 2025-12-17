@@ -209,33 +209,89 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (currentStatus === 'absent') {
-                // MARCAR ASISTENCIA (Crear)
-                // Usamos la misma lógica de escritura dual (Subcollection + TopLevel)
-
-                const attendanceData = {
-                    employeeId: employeeId,
-                    employeeName: employeeData.fullName,
-                    areaId: areaId,
-                    date: selectedDate,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    status: 'active',
-                    weekNumber: getWeekNumber(currentDate),
-                    year: currentDate.getFullYear()
-                };
-
-                // 1. Crear en subcollection (source of truth histórico)
-                const subcollectionDoc = await db.collection('employees')
+                // MARCAR ASISTENCIA
+                // Primero verificar si ya existe una asistencia para este empleado en esta fecha
+                const existingAttendanceSnapshot = await db.collection('employees')
                     .doc(employeeId)
                     .collection('attendance')
-                    .add(attendanceData);
+                    .where('date', '==', selectedDate)
+                    .get();
 
-                // 2. Crear en Top-Level (para real-time y queries rápidas)
-                await db.collection('attendances').doc(subcollectionDoc.id).set(attendanceData);
+                if (!existingAttendanceSnapshot.empty) {
+                    // YA EXISTE UNA ASISTENCIA
+                    const existingDoc = existingAttendanceSnapshot.docs[0];
+                    const existingData = existingDoc.data();
+                    const existingDocId = existingDoc.id;
 
-                showToast(`Asistencia marcada: ${employeeData.fullName}`);
+                    // Verificar el estado de la asistencia existente
+                    if (existingData.status === 'completed') {
+                        // Ya dio feedback - NO reactivar para evitar que aparezca en la lista
+                        alert(
+                            `ℹ️ ${employeeData.fullName} ya tiene asistencia registrada para hoy y ya dio su feedback.\n\n` +
+                            `Si necesitas marcarlo de nuevo, primero debes eliminar su asistencia actual haciendo clic en su tarjeta.`
+                        );
+                        card.classList.remove('processing');
+                        return;
+                    } else if (existingData.status === 'active') {
+                        // Asistencia activa pero sin feedback - Reactivar por redundancia
+                        const reactivationData = {
+                            status: 'active',
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        };
+
+                        await db.collection('employees')
+                            .doc(employeeId)
+                            .collection('attendance')
+                            .doc(existingDocId)
+                            .update(reactivationData);
+
+                        await db.collection('attendances')
+                            .doc(existingDocId)
+                            .update(reactivationData);
+
+                        showToast(`Asistencia actualizada: ${employeeData.fullName}`);
+                    }
+                } else {
+                    // NO EXISTE - Crear nueva asistencia
+                    const attendanceData = {
+                        employeeId: employeeId,
+                        employeeName: employeeData.fullName,
+                        areaId: areaId,
+                        date: selectedDate,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        status: 'active',
+                        weekNumber: getWeekNumber(currentDate),
+                        year: currentDate.getFullYear()
+                    };
+
+                    // 1. Crear en subcollection (source of truth histórico)
+                    const subcollectionDoc = await db.collection('employees')
+                        .doc(employeeId)
+                        .collection('attendance')
+                        .add(attendanceData);
+
+                    // 2. Crear en Top-Level (para real-time y queries rápidas)
+                    await db.collection('attendances').doc(subcollectionDoc.id).set(attendanceData);
+
+                    showToast(`Asistencia marcada: ${employeeData.fullName}`);
+                }
 
             } else {
                 // DESMARCAR (Borrar) - Aplica tanto para 'active' como 'completed' si el admin quiere borrarlo
+
+                // Si el status es 'completed', significa que ya hay feedback. Pedir confirmación.
+                if (currentStatus === 'completed') {
+                    const confirmDelete = confirm(
+                        `⚠️ ${employeeData.fullName} ya dio su feedback.\n\n` +
+                        `¿Estás seguro de que quieres eliminar esta asistencia?\n\n` +
+                        `Esto también eliminará su feedback asociado.`
+                    );
+
+                    if (!confirmDelete) {
+                        card.classList.remove('processing');
+                        return;
+                    }
+                }
 
                 // Buscar registros para borrar (usando ID de empleado y fecha)
                 const snapshot = await db.collection('employees')
@@ -249,15 +305,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     .where('date', '==', selectedDate)
                     .get();
 
+                // Si hay feedback asociado, también eliminarlo
+                const feedbackSnapshot = await db.collection('employees')
+                    .doc(employeeId)
+                    .collection('feedback')
+                    .where('date', '==', selectedDate)
+                    .get();
+
                 const batch = db.batch();
 
+                // Eliminar asistencias en subcollection
                 snapshot.docs.forEach(doc => {
                     batch.delete(doc.ref);
                     // Intento borrar por ID directo si coincide
                     batch.delete(db.collection('attendances').doc(doc.id));
                 });
 
+                // Eliminar asistencias en top-level
                 topLevelSnapshot.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+
+                // Eliminar feedback asociado
+                feedbackSnapshot.docs.forEach(doc => {
                     batch.delete(doc.ref);
                 });
 
