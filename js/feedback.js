@@ -238,26 +238,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     date: new Date().toISOString().split('T')[0]
                 });
 
+
             // 2. Actualizar estado de asistencia a 'completed' en AMBAS ubicaciones
             // (subcollection Y top-level para que el listener lo filtre correctamente)
-            try {
-                await db.collection('employees')
-                    .doc(selectedEmployee.id)
-                    .collection('attendance')
-                    .doc(currentAttendanceId)
-                    .update({
-                        status: 'completed'
-                    });
+            console.log('Updating attendance status to completed for:', currentAttendanceId);
 
-                // También actualizar en top-level attendances (para el listener de feedback en vivo)
-                await db.collection('attendances')
-                    .doc(currentAttendanceId)
-                    .update({
-                        status: 'completed'
-                    });
-            } catch (updateError) {
-                console.warn('Error actualizando status (no crítico si el feedback se guardó):', updateError);
-            }
+            await db.collection('employees')
+                .doc(selectedEmployee.id)
+                .collection('attendance')
+                .doc(currentAttendanceId)
+                .update({
+                    status: 'completed'
+                });
+
+            console.log('Updated subcollection attendance status');
+
+            // También actualizar en top-level attendances (para el listener de feedback en vivo)
+            await db.collection('attendances')
+                .doc(currentAttendanceId)
+                .update({
+                    status: 'completed'
+                });
+
+            console.log('Updated top-level attendance status');
+
 
             // 3. Calcular puntos (Gamificación: 20 fijos + 10 si ganó)
             let earnedPoints = 20;
