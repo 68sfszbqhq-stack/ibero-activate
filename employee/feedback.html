@@ -38,6 +38,19 @@
         </header>
 
         <main class="feedback-content">
+            <!-- Activity Banner (if scheduled for today) -->
+            <div id="activity-banner" class="activity-banner hidden" onclick="showActivityModal()">
+                <div class="banner-gradient"></div>
+                <div class="banner-content">
+                    <i class="fa-solid fa-calendar-day banner-icon"></i>
+                    <div class="banner-text">
+                        <h3>Actividad de Hoy</h3>
+                        <p id="activity-name">Cargando...</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right banner-arrow"></i>
+                </div>
+            </div>
+
             <div class="feedback-card">
                 <div class="card-header">
                     <div id="welcome-section" class="search-section">
@@ -118,11 +131,56 @@
                 </div>
             </div>
     </div>
-    </main>
+
+    <!-- Activity Detail Modal -->
+    <div id="activity-detail-modal" class="modal hidden">
+        <div class="modal-content activity-detail-modal">
+            <button class="modal-close" onclick="closeActivityModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="modal-header">
+                <img id="modal-activity-image" class="modal-image" src="" alt="Activity">
+                <div class="modal-emoji" id="modal-activity-emoji">⭐</div>
+            </div>
+
+            <div class="modal-body">
+                <h2 id="modal-activity-title" class="modal-title">Activity Name</h2>
+                <span id="modal-activity-category" class="category-badge">Categoría</span>
+
+                <div class="modal-meta">
+                    <span id="modal-activity-duration" class="meta-item"></span>
+                    <span id="modal-activity-type" class="meta-item"></span>
+                    <span id="modal-activity-intensity" class="meta-item"></span>
+                </div>
+
+                <div class="modal-section">
+                    <h3><i class="fa-solid fa-bullseye"></i> Objetivo</h3>
+                    <p id="modal-activity-description"></p>
+                </div>
+
+                <div class="modal-section">
+                    <h3><i class="fa-solid fa-box"></i> Materiales</h3>
+                    <p id="modal-activity-materials"></p>
+                </div>
+
+                <div class="modal-section">
+                    <h3><i class="fa-solid fa-list-check"></i> Instrucciones</h3>
+                    <ol id="modal-activity-instructions" class="instructions-list"></ol>
+                </div>
+
+                <div class="modal-section">
+                    <h3><i class="fa-solid fa-heart"></i> Beneficios</h3>
+                    <div id="modal-activity-benefits" class="benefits-container"></div>
+                </div>
+            </div>
+        </div>
     </div>
+    </main>
 
     <script src="../js/firebase-config.js"></script>
     <script src="../js/feedback.js"></script>
+    <script src="../js/feedback-activity-banner.js"></script>
 </body>
 
 </html>
