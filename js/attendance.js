@@ -116,6 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
             unsubscribe = db.collection('attendances')
                 .where('date', '==', selectedDate)
                 .onSnapshot((attSnapshot) => {
+                    console.log('🔄 Listener de asistencias activado - Documentos:', attSnapshot.size);
+
                     // Crear mapa de asistencias: ID_Empleado -> Status
                     const attendanceMap = new Map();
                     attSnapshot.forEach(doc => {
@@ -124,17 +126,29 @@ document.addEventListener('DOMContentLoaded', () => {
                             // Si hay duplicados (raro), el último gana.
                             // Importante: Diferenciar 'active' de 'completed'
                             attendanceMap.set(data.employeeId, data.status);
+                            console.log(`  - ${data.employeeName}: ${data.status}`);
                         }
                     });
 
                     // Actualizar UI para cada empleado
+                    let updatedCount = 0;
                     employees.forEach(emp => {
                         const status = attendanceMap.get(emp.id); // 'active', 'completed', or undefined
+                        const card = document.getElementById(`card-${emp.id}`);
+                        const previousStatus = card ? card.dataset.status : null;
+
+                        if (previousStatus !== status) {
+                            console.log(`✏️ Actualizando ${emp.fullName}: ${previousStatus} → ${status}`);
+                            updatedCount++;
+                        }
+
                         updateEmployeeCardStatus(emp.id, status);
                     });
 
+                    console.log(`✅ Listener completado - ${updatedCount} tarjetas actualizadas`);
+
                 }, (error) => {
-                    console.error("Error en listener de asistencia:", error);
+                    console.error("❌ Error en listener de asistencia:", error);
                 });
 
         } catch (error) {
