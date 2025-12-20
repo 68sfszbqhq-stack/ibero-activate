@@ -117,6 +117,278 @@
                     </button>
                 </div>
 
+                <!-- PRE-Activity Wellness Questionnaire -->
+                <div id="pre-wellness" class="hidden fade-in">
+                    <div class="wellness-card">
+                        <div class="wellness-header">
+                            <h2>✨ Antes de comenzar...</h2>
+                            <p>Ayúdanos a medir el impacto de nuestras actividades</p>
+                        </div>
+
+                        <div class="happiness-question">
+                            <label>¿Qué tan feliz te sientes en este momento?</label>
+                            <div class="happiness-scale">
+                                <button class="happiness-btn" data-value="1" title="Muy infeliz">
+                                    <span class="emoji">😞</span>
+                                    <span class="number">1</span>
+                                </button>
+                                <button class="happiness-btn" data-value="2">
+                                    <span class="emoji">🙁</span>
+                                    <span class="number">2</span>
+                                </button>
+                                <button class="happiness-btn" data-value="3">
+                                    <span class="emoji">😐</span>
+                                    <span class="number">3</span>
+                                </button>
+                                <button class="happiness-btn" data-value="4">
+                                    <span class="emoji">🙂</span>
+                                    <span class="number">4</span>
+                                </button>
+                                <button class="happiness-btn" data-value="5">
+                                    <span class="emoji">😊</span>
+                                    <span class="number">5</span>
+                                </button>
+                                <button class="happiness-btn" data-value="6">
+                                    <span class="emoji">😄</span>
+                                    <span class="number">6</span>
+                                </button>
+                                <button class="happiness-btn" data-value="7">
+                                    <span class="emoji">😁</span>
+                                    <span class="number">7</span>
+                                </button>
+                                <button class="happiness-btn" data-value="8">
+                                    <span class="emoji">🤩</span>
+                                    <span class="number">8</span>
+                                </button>
+                                <button class="happiness-btn" data-value="9">
+                                    <span class="emoji">😍</span>
+                                    <span class="number">9</span>
+                                </button>
+                                <button class="happiness-btn" data-value="10" title="Muy feliz">
+                                    <span class="emoji">🥳</span>
+                                    <span class="number">10</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button id="confirm-pre-wellness" class="btn-primary btn-block" disabled>
+                            Continuar →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- POST-Activity Wellness Questionnaire -->
+                <div id="post-wellness" class="hidden fade-in">
+                    <div class="wellness-card">
+                        <div class="wellness-header">
+                            <h2>🎉 ¡Gracias por participar!</h2>
+                            <p>Cuéntanos cómo te sientes ahora</p>
+                        </div>
+
+                        <!-- POST Happiness -->
+                        <div class="wellness-section">
+                            <label>¿Qué tan feliz te sientes ahora?</label>
+                            <div class="happiness-scale compact">
+                                <button class="happiness-btn-small" data-post-happiness="1">😞<br>1</button>
+                                <button class="happiness-btn-small" data-post-happiness="2">🙁<br>2</button>
+                                <button class="happiness-btn-small" data-post-happiness="3">😐<br>3</button>
+                                <button class="happiness-btn-small" data-post-happiness="4">🙂<br>4</button>
+                                <button class="happiness-btn-small" data-post-happiness="5">😊<br>5</button>
+                                <button class="happiness-btn-small" data-post-happiness="6">😄<br>6</button>
+                                <button class="happiness-btn-small" data-post-happiness="7">😁<br>7</button>
+                                <button class="happiness-btn-small" data-post-happiness="8">🤩<br>8</button>
+                                <button class="happiness-btn-small" data-post-happiness="9">😍<br>9</button>
+                                <button class="happiness-btn-small" data-post-happiness="10">🥳<br>10</button>
+                            </div>
+                        </div>
+
+                        <!-- PANAS-SF -->
+                        <div class="wellness-section">
+                            <label>¿Cómo te sientes en este momento?</label>
+                            <div id="panas-questions" class="panas-grid">
+                                <!-- Positive emotions -->
+                                <div class="panas-item">
+                                    <span>Interesado/a</span>
+                                    <select data-panas="1" data-type="positive">
+                                        <option value="">-</option>
+                                        <option value="1">Nada</option>
+                                        <option value="2">Un poco</option>
+                                        <option value="3">Moderadamente</option>
+                                        <option value="4">Bastante</option>
+                                        <option value="5">Extremadamente</option>
+                                    </select>
+                                </div>
+                                <div class="panas-item">
+                                    <span>Entusiasmado/a</span>
+                                    <select data-panas="2" data-type="positive">
+                                        <option value="">-</option>
+                                        <option value="1">Nada</option>
+                                        <option value="2">Un poco</option>
+                                        <option value="3">Moderadamente</option>
+                                        <option value="4">Bastante</option>
+                                        <option value="5">Extremadamente</option>
+                                    </select>
+                                </div>
+                                <div class="panas-item">
+                                    <span>Fuerte/activo/a</span>
+                                    <select data-panas="3" data-type="positive">
+                                        <option value="">-</option>
+                                        <option value="1">Nada</option>
+                                        <option value="2">Un poco</option>
+                                        <option value="3">Moderadamente</option>
+                                        <option value="4">Bastante</option>
+                                        <option value="5">Extremadamente</option>
+                                    </select>
+                                </div>
+                                <div class="panas-item">
+                                    <span>Inspirado/a</span>
+                                    <select data-panas="4" data-type="positive">
+                                        <option value="">-</option>
+                                        <option value="1">Nada</option>
+                                        <option value="2">Un poco</option>
+                                        <option value="3">Moderadamente</option>
+                                        <option value="4">Bastante</option>
+                                        <option value="5">Extremadamente</option>
+                                    </select>
+                                </div>
+                                <div class="panas-item">
+                                    <span>Atento/a</span>
+                                    <select data-panas="5" data-type="positive">
+                                        <option value="">-</option>
+                                        <option value="1">Nada</option>
+                                        <option value="2">Un poco</option>
+                                        <option value="3">Moderadamente</option>
+                                        <option value="4">Bastante</option>
+                                        <option value="5">Extremadamente</option>
+                                    </select>
+                                </div>
+                                <!-- Negative emotions -->
+                                <div class="panas-item">
+                                    <span>Nervioso/a</span>
+                                    <select data-panas="6" data-type="negative">
+                                        <option value="">-</option>
+                                        <option value="1">Nada</option>
+                                        <option value="2">Un poco</option>
+                                        <option value="3">Moderadamente</option>
+                                        <option value="4">Bastante</option>
+                                        <option value="5">Extremadamente</option>
+                                    </select>
+                                </div>
+                                <div class="panas-item">
+                                    <span>Asustado/a</span>
+                                    <select data-panas="7" data-type="negative">
+                                        <option value="">-</option>
+                                        <option value="1">Nada</option>
+                                        <option value="2">Un poco</option>
+                                        <option value="3">Moderadamente</option>
+                                        <option value="4">Bastante</option>
+                                        <option value="5">Extremadamente</option>
+                                    </select>
+                                </div>
+                                <div class="panas-item">
+                                    <span>Irritable</span>
+                                    <select data-panas="8" data-type="negative">
+                                        <option value="">-</option>
+                                        <option value="1">Nada</option>
+                                        <option value="2">Un poco</option>
+                                        <option value="3">Moderadamente</option>
+                                        <option value="4">Bastante</option>
+                                        <option value="5">Extremadamente</option>
+                                    </select>
+                                </div>
+                                <div class="panas-item">
+                                    <span>Angustiado/a</span>
+                                    <select data-panas="9" data-type="negative">
+                                        <option value="">-</option>
+                                        <option value="1">Nada</option>
+                                        <option value="2">Un poco</option>
+                                        <option value="3">Moderadamente</option>
+                                        <option value="4">Bastante</option>
+                                        <option value="5">Extremadamente</option>
+                                    </select>
+                                </div>
+                                <div class="panas-item">
+                                    <span>Tenso/a</span>
+                                    <select data-panas="10" data-type="negative">
+                                        <option value="">-</option>
+                                        <option value="1">Nada</option>
+                                        <option value="2">Un poco</option>
+                                        <option value="3">Moderadamente</option>
+                                        <option value="4">Bastante</option>
+                                        <option value="5">Extremadamente</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Satisfaction -->
+                        <div class="wellness-section">
+                            <label>Sobre la actividad que acabas de hacer:</label>
+                            <div id="satisfaction-questions" class="satisfaction-grid">
+                                <div class="satisfaction-item">
+                                    <span>Disfruté esta actividad</span>
+                                    <select data-satisfaction="1">
+                                        <option value="">-</option>
+                                        <option value="1">Totalmente en desacuerdo</option>
+                                        <option value="2">En desacuerdo</option>
+                                        <option value="3">Neutral</option>
+                                        <option value="4">De acuerdo</option>
+                                        <option value="5">Totalmente de acuerdo</option>
+                                    </select>
+                                </div>
+                                <div class="satisfaction-item">
+                                    <span>Me gustaría participar en más actividades como esta</span>
+                                    <select data-satisfaction="2">
+                                        <option value="">-</option>
+                                        <option value="1">Totalmente en desacuerdo</option>
+                                        <option value="2">En desacuerdo</option>
+                                        <option value="3">Neutral</option>
+                                        <option value="4">De acuerdo</option>
+                                        <option value="5">Totalmente de acuerdo</option>
+                                    </select>
+                                </div>
+                                <div class="satisfaction-item">
+                                    <span>Me sentí conectado/a con mis compañeros</span>
+                                    <select data-satisfaction="3">
+                                        <option value="">-</option>
+                                        <option value="1">Totalmente en desacuerdo</option>
+                                        <option value="2">En desacuerdo</option>
+                                        <option value="3">Neutral</option>
+                                        <option value="4">De acuerdo</option>
+                                        <option value="5">Totalmente de acuerdo</option>
+                                    </select>
+                                </div>
+                                <div class="satisfaction-item">
+                                    <span>Esta actividad me ayudó a desconectarme del estrés</span>
+                                    <select data-satisfaction="4">
+                                        <option value="">-</option>
+                                        <option value="1">Totalmente en desacuerdo</option>
+                                        <option value="2">En desacuerdo</option>
+                                        <option value="3">Neutral</option>
+                                        <option value="4">De acuerdo</option>
+                                        <option value="5">Totalmente de acuerdo</option>
+                                    </select>
+                                </div>
+                                <div class="satisfaction-item">
+                                    <span>Me siento mejor ahora que antes de la actividad</span>
+                                    <select data-satisfaction="5">
+                                        <option value="">-</option>
+                                        <option value="1">Totalmente en desacuerdo</option>
+                                        <option value="2">En desacuerdo</option>
+                                        <option value="3">Neutral</option>
+                                        <option value="4">De acuerdo</option>
+                                        <option value="5">Totalmente de acuerdo</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="submit-post-wellness" class="btn-primary btn-block" disabled>
+                            📤 Enviar Respuestas
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Estado de Éxito -->
                 <div id="success-state" class="hidden fade-in text-center">
                     <div class="success-icon">
@@ -178,9 +450,11 @@
     </div>
     </main>
 
+
     <script src="../js/firebase-config.js"></script>
     <script src="../js/feedback.js"></script>
     <script src="../js/feedback-activity-banner.js"></script>
+    <script src="../js/wellness-questionnaire.js"></script>
 </body>
 
 </html>

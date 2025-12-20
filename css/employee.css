@@ -679,3 +679,240 @@
         justify-content: center;
     }
 }
+
+/* ==================== WELLNESS QUESTIONNAIRES ==================== */
+
+.wellness-card {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.wellness-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.wellness-header h2 {
+    font-size: 1.75rem;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.wellness-header p {
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+.wellness-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.wellness-section:last-of-type {
+    border-bottom: none;
+}
+
+.wellness-section label {
+    display: block;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 1rem;
+    font-size: 1.05rem;
+}
+
+.happiness-question {
+    margin: 2rem 0;
+}
+
+.happiness-scale {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+}
+
+.happiness-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 1rem 0.75rem;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 60px;
+}
+
+.happiness-btn .emoji {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.happiness-btn .number {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.happiness-btn:hover {
+    border-color: #c4161c;
+    background: #fef2f2;
+    transform: translateY(-2px);
+}
+
+.happiness-btn.selected {
+    border-color: #c4161c;
+    background: linear-gradient(135deg, #c4161c 0%, #dc2626 100%);
+    color: white;
+}
+
+.happiness-btn.selected .number {
+    color: white;
+}
+
+.happiness-scale.compact {
+    gap: 0.25rem;
+}
+
+.happiness-btn-small {
+    padding: 0.5rem;
+    font-size: 1.25rem;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 50px;
+    line-height: 1.2;
+}
+
+.happiness-btn-small:hover {
+    border-color: #c4161c;
+    background: #fef2f2;
+}
+
+.happiness-btn-small.selected {
+    border-color: #c4161c;
+    background: linear-gradient(135deg, #c4161c 0%, #dc2626 100%);
+    color: white;
+}
+
+.panas-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.panas-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    gap: 1rem;
+}
+
+.panas-item span {
+    font-weight: 500;
+    color: #334155;
+    flex: 1;
+}
+
+.panas-item select {
+    padding: 0.5rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    background: white;
+    font-size: 0.9rem;
+    cursor: pointer;
+    min-width: 180px;
+    transition: all 0.2s ease;
+}
+
+.panas-item select:hover {
+    border-color: #c4161c;
+}
+
+.panas-item select:focus {
+    outline: none;
+    border-color: #c4161c;
+    box-shadow: 0 0 0 3px rgba(196, 22, 28, 0.1);
+}
+
+.satisfaction-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.satisfaction-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    gap: 1rem;
+}
+
+.satisfaction-item span {
+    font-weight: 500;
+    color: #334155;
+    flex: 1;
+}
+
+.satisfaction-item select {
+    padding: 0.5rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    background: white;
+    font-size: 0.9rem;
+    cursor: pointer;
+    min-width: 220px;
+    transition: all 0.2s ease;
+}
+
+.satisfaction-item select:hover {
+    border-color: #c4161c;
+}
+
+.satisfaction-item select:focus {
+    outline: none;
+    border-color: #c4161c;
+    box-shadow: 0 0 0 3px rgba(196, 22, 28, 0.1);
+}
+
+@media (max-width: 768px) {
+    .happiness-scale {
+        gap: 0.25rem;
+    }
+    
+    .happiness-btn {
+        min-width: 50px;
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .happiness-btn .emoji {
+        font-size: 1.5rem;
+    }
+    
+    .panas-item,
+    .satisfaction-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .panas-item select,
+    .satisfaction-item select {
+        width: 100%;
+        min-width: unset;
+    }
+}
