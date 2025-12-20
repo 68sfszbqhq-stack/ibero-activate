@@ -139,6 +139,156 @@
             </div>
         </div>
 
+        <!-- Consent Modal (MUST appear before any test) -->
+        <div id="consent-modal"
+            class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+                <div class="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-t-2xl">
+                    <h2 class="text-2xl font-bold flex items-center gap-3">
+                        <i class="fa-solid fa-shield-heart"></i>
+                        Consentimiento Informado
+                    </h2>
+                </div>
+
+                <div class="p-6 space-y-4 text-gray-700">
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                        <h3 class="font-bold text-blue-900 mb-2">📋 Propósito</h3>
+                        <p class="text-sm">Esta evaluación identifica factores de riesgo psicosocial en el entorno
+                            laboral para mejorar las condiciones de trabajo y promover el bienestar, en cumplimiento con
+                            la <strong>NOM-035-STPS-2018</strong>.</p>
+                    </div>
+
+                    <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                        <h3 class="font-bold text-green-900 mb-2">🔒 Confidencialidad</h3>
+                        <p class="text-sm">Tus respuestas son confidenciales. Solo personal autorizado de Recursos
+                            Humanos y profesionales de salud tendrán acceso. Los datos se usarán de forma agregada para
+                            mejoras organizacionales.</p>
+                    </div>
+
+                    <div class="bg-purple-50 border-l-4 border-purple-500 p-4 rounded">
+                        <h3 class="font-bold text-purple-900 mb-2">✋ Voluntariedad</h3>
+                        <p class="text-sm">Tu participación es completamente voluntaria. No habrá consecuencias
+                            negativas si decides no participar o retirarte en cualquier momento.</p>
+                    </div>
+
+                    <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
+                        <h3 class="font-bold text-amber-900 mb-2">🏥 Datos Sensibles de Salud</h3>
+                        <p class="text-sm">Esta evaluación incluye preguntas sobre estado emocional y salud mental.
+                            Estos datos están protegidos por la <strong>LFPDPPP</strong>. Nunca se usarán para
+                            decisiones de empleo o despido.</p>
+                    </div>
+
+                    <div class="bg-rose-50 border-l-4 border-rose-500 p-4 rounded">
+                        <h3 class="font-bold text-rose-900 mb-2">🆘 Protocolo de Seguimiento</h3>
+                        <p class="text-sm">Si tus respuestas indican necesidad de apoyo psicológico, serás contactado/a
+                            confidencialmente por un profesional de salud para ofrecerte recursos.</p>
+                    </div>
+
+                    <p class="text-xs text-gray-500 mt-4">
+                        <strong>Derechos ARCO:</strong> Tienes derecho a Acceder, Rectificar, Cancelar u Oponerte al
+                        tratamiento de tus datos.
+                        Para más información: <a href="#" class="text-indigo-600 underline">Aviso de Privacidad</a>
+                    </p>
+                </div>
+
+                <div class="p-6 pt-0">
+                    <label
+                        class="flex items-start gap-3 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                        <input type="checkbox" id="accept-consent" class="w-5 h-5 text-indigo-600 rounded mt-1"
+                            onchange="document.getElementById('btn-proceed-consent').disabled = !this.checked">
+                        <span class="text-sm text-gray-700 leading-relaxed">
+                            He leído y comprendido esta información. <strong>Acepto participar voluntariamente</strong>
+                            en esta evaluación y consiento el tratamiento de mis datos personales según lo descrito.
+                        </span>
+                    </label>
+                </div>
+
+                <div class="p-6 pt-0 flex gap-3">
+                    <button onclick="window.location.href='dashboard.html'"
+                        class="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+                        No acepto
+                    </button>
+                    <button id="btn-proceed-consent" disabled
+                        onclick="document.getElementById('consent-modal').classList.add('hidden')"
+                        class="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        Acepto y continuar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Crisis Modal (triggered by PHQ-9 Q9) -->
+        <div id="crisis-modal"
+            class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[80] flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl transform scale-100 transition-all">
+                <div class="bg-gradient-to-r from-rose-500 to-red-600 text-white p-6 rounded-t-2xl">
+                    <h2 class="text-2xl font-bold flex items-center gap-3">
+                        <i class="fa-solid fa-heart-pulse"></i>
+                        Apoyo Disponible
+                    </h2>
+                </div>
+
+                <div class="p-6 space-y-4">
+                    <p class="text-gray-700 leading-relaxed">
+                        Tus respuestas indican que podrías estar pasando por un momento difícil.
+                        <strong class="text-rose-600">No estás solo/a.</strong>
+                    </p>
+
+                    <div class="bg-rose-50 border border-rose-200 rounded-lg p-4 space-y-3">
+                        <h3 class="font-bold text-rose-900 flex items-center gap-2">
+                            <i class="fa-solid fa-phone-volume"></i>
+                            Recursos Inmediatos 24/7
+                        </h3>
+                        <ul class="space-y-2 text-sm text-gray-700">
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-phone text-rose-500 mt-1"></i>
+                                <div>
+                                    <strong>Línea de la Vida (CDMX):</strong><br>
+                                    <a href="tel:8009112000" class="text-rose-600 font-bold text-lg">800 911 2000</a>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-phone text-rose-500 mt-1"></i>
+                                <div>
+                                    <strong>SAPTEL (Salud Mental):</strong><br>
+                                    <a href="tel:5552598121" class="text-rose-600 font-bold text-lg">55 5259 8121</a>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-comments text-rose-500 mt-1"></i>
+                                <div>
+                                    <strong>Chat de Crisis:</strong><br>
+                                    <a href="https://chat.conadic.salud.gob.mx" target="_blank"
+                                        class="text-indigo-600 underline">chat.conadic.salud.gob.mx</a>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-hospital text-rose-500 mt-1"></i>
+                                <div>
+                                    <strong>Servicios Médicos IBERO:</strong> ext. 4444
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p class="text-sm text-blue-900">
+                            <i class="fa-solid fa-user-doctor mr-2"></i>
+                            <strong>Nuestro equipo de bienestar se pondrá en contacto contigo de forma confidencial en
+                                las próximas 24 horas</strong> para ofrecerte apoyo personalizado.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="p-6 pt-0">
+                    <button id="close-crisis-btn"
+                        class="w-full px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors">
+                        Entendido, gracias
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <script src="../js/firebase-config.js"></script>

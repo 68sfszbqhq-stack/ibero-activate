@@ -24,6 +24,89 @@ document.addEventListener('DOMContentLoaded', () => {
         userNameDisplay.textContent = "Invitado";
     }
 
+
+    // --- CONSENT MODAL HANDLING ---
+    // Wait for DOM to ensure elements exist
+    setTimeout(() => {
+        const consentModal = document.getElementById('consent-modal');
+        const acceptConsentCheckbox = document.getElementById('accept-consent');
+        const btnProceedConsent = document.getElementById('btn-proceed-consent');
+
+        if (!acceptConsentCheckbox || !btnProceedConsent) {
+            console.error('Consent elements not found');
+            return;
+        }
+
+        // Enable proceed button when checkbox is checked
+        acceptConsentCheckbox.addEventListener('change', (e) => {
+            btnProceedConsent.disabled = !e.target.checked;
+            console.log('Checkbox changed:', e.target.checked, 'Button disabled:', btnProceedConsent.disabled);
+        });
+
+        // Proceed with consent
+        btnProceedConsent.addEventListener('click', async () => {
+            if (!currentEmployee) {
+                alert('Error: No hay empleado activo');
+                return;
+            }
+
+            try {
+                // Register consent in Firebase
+                await db.collection('employees').doc(currentEmployee.id).update({
+                    wellnessConsentDate: firebase.firestore.FieldValue.serverTimestamp(),
+                    wellnessConsentVersion: '1.0'
+                });
+
+                // Hide consent modal
+                consentModal.classList.add('hidden');
+            } catch (error) {
+                console.error('Error registering consent:', error);
+                // Continue anyway for demo purposes
+                consentModal.classList.add('hidden');
+            }
+        });
+    }, 100);
+
+
+    // --- CRISIS PROTOCOL ---
+    const crisisModal = document.getElementById('crisis-modal');
+    const closeCrisisBtn = document.getElementById('close-crisis-btn');
+
+    closeCrisisBtn.addEventListener('click', () => {
+        crisisModal.classList.add('hidden');
+    });
+
+    async function checkCriticalResponse(questionIndex, answer) {
+        // PHQ-9 Question 9 (index 8): "Pensamientos de hacerte daño o sería mejor estar muerto/a"
+        // Any answer > 0 (not "Nunca") triggers crisis protocol
+        if (questionIndex === 8 && answer >= 1) {
+            await triggerCrisisProtocol(answer);
+        }
+    }
+
+    async function triggerCrisisProtocol(severity) {
+        // 1. Show crisis modal immediately
+        crisisModal.classList.remove('hidden');
+
+        // 2. Register crisis alert in Firebase
+        try {
+            await db.collection('crisis_alerts').add({
+                employeeId: currentEmployee ? currentEmployee.id : 'unknown',
+                employeeName: currentEmployee ? currentEmployee.name : 'Unknown',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                severity: severity,
+                question: 'PHQ-9 Q9: Pensamientos de autolesión',
+                status: 'pending',
+                reviewed: false,
+                contactAttempts: []
+            });
+            console.log('Crisis alert registered in Firebase');
+        } catch (error) {
+            console.error('Error registering crisis alert:', error);
+        }
+    }
+
+
     // --- TEST DATA DEFINITIONS ---
     const TESTS = {
         ansiedad: {
@@ -76,70 +159,84 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         burnout: {
             id: 'burnout',
-            title: 'Test de Burnout (Maslach)',
+            title: 'Test de Burnout (Copenhagen)',
             icon: 'fa-fire',
             color: 'from-red-500 to-rose-600',
-            description: 'Mide el desgaste profesional, despersonalización y realización personal.',
+            description: 'Mide el agotamiento personal, relacionado con el trabajo y con clientes/usuarios.',
             questions: [
-                "Debido a mi trabajo me siento emocionalmente agotado o agotada.",
-                "Al final del día me siento agotado o agotada.",
-                "Me encuentro cansado o cansada cuando me levanto por la mañana y tengo que enfrentarme a otro día de trabajo.",
-                "Puedo entender con facilidad lo que piensan las personas con quienes trabajo.",
-                "Creo que trato a las personas como si fueran objetos.",
-                "Trabajar con personas todos los días es una tensión para mí.",
-                "Me enfrento muy bien a los problemas de trabajo que se me presentan.",
-                "Me siento 'quemado' o 'quemada' por mi trabajo.",
-                "Siento que con mi trabajo estoy influyendo positivamente en la vida de otros.",
-                "Creo que tengo un trato más insensible con las personas desde que tengo este trabajo.",
-                "Me preocupa que este trabajo me esté endureciendo emocionalmente.",
-                "Me encuentro con mucha vitalidad.",
-                "Me siento frustrado por mi trabajo.",
-                "Siento que estoy haciendo un trabajo muy duro.",
-                "Realmente no me importa lo que pueda suceder a las personas que me rodean.",
-                "Trabajar directamente con personas me produce estrés.",
-                "Tengo facilidad para crear un ambiente de confianza con las personas con quienes trabajo.",
-                "Me encuentro relajado después de una junta de trabajo.",
-                "He realizado muchas cosas que valen la pena en este trabajo.",
-                "En el trabajo siento que estoy al límite de mis posibilidades.",
-                "Siento que sé tratar de forma adecuada los problemas emocionales en el trabajo.",
-                "Siento que las personas en mi trabajo me culpan de algunos de sus problemas."
+                // Personal Burnout (6 items)
+                "¿Con qué frecuencia te sientes cansado/a?",
+                "¿Con qué frecuencia estás físicamente exhausto/a?",
+                "¿Con qué frecuencia estás emocionalmente agotado/a?",
+                "¿Con qué frecuencia piensas 'no puedo más'?",
+                "¿Con qué frecuencia te sientes débil y susceptible a enfermedades?",
+                "¿Con qué frecuencia te sientes decaído/a y sin energía?",
+
+                // Work-related Burnout (7 items)
+                "¿Te sientes agotado/a al final de un día de trabajo?",
+                "¿Te sientes exhausto/a en la mañana al pensar en otro día de trabajo?",
+                "¿Sientes que cada hora de trabajo es agotadora?",
+                "¿Tienes energía para familia y amigos durante tu tiempo libre?",
+                "¿Tu trabajo te frustra emocionalmente?",
+                "¿Te sientes quemado/a por tu trabajo?",
+                "¿Sientes que das más de lo que recibes cuando trabajas?",
+
+                // Client-related Burnout (6 items)
+                "¿Encuentras difícil trabajar con clientes/usuarios/compañeros?",
+                "¿Te cuesta motivarte para trabajar con clientes/usuarios/compañeros?",
+                "¿Te sientes frustrado/a al trabajar con clientes/usuarios/compañeros?",
+                "¿Sientes que has dado todo lo que tenías al trabajar con clientes/usuarios/compañeros?",
+                "¿Estás cansado/a de trabajar con clientes/usuarios/compañeros?",
+                "¿Te preguntas cuánto tiempo más podrás trabajar con clientes/usuarios/compañeros?"
             ],
             options: [
-                { label: "Nunca", value: 0 },
-                { label: "Alguna vez al año", value: 1 },
-                { label: "Una vez al mes", value: 2 },
-                { label: "Algunas veces al mes", value: 3 },
-                { label: "Una vez a la semana", value: 4 },
-                { label: "Varias veces a la semana", value: 5 },
-                { label: "Todos los días", value: 6 }
+                { label: "Nunca/Casi nunca", value: 0 },
+                { label: "Rara vez", value: 25 },
+                { label: "A veces", value: 50 },
+                { label: "A menudo", value: 75 },
+                { label: "Siempre/Casi siempre", value: 100 }
             ],
             calculate: (answers) => {
-                // Indices are 0-based here, PHP was 1-based
-                const ee_indices = [0, 1, 2, 5, 7, 12, 13, 15, 19];
-                const d_indices = [4, 9, 10, 14, 21];
-                const pa_indices = [3, 6, 8, 11, 16, 17, 18, 20];
+                // Copenhagen Burnout Inventory scoring
+                // Personal Burnout: items 0-5
+                // Work Burnout: items 6-12 (item 9 is reverse scored)
+                // Client Burnout: items 13-18
 
-                let ee = 0, d = 0, pa = 0;
-                ee_indices.forEach(i => ee += answers[i]);
-                d_indices.forEach(i => d += answers[i]);
-                pa_indices.forEach(i => pa += answers[i]);
+                const personalItems = answers.slice(0, 6);
+                const workItems = answers.slice(6, 13);
+                const clientItems = answers.slice(13, 19);
 
-                const ee_norm = (ee / 54) * 100;
-                const d_norm = (d / 30) * 100;
-                const pa_norm = 100 - ((pa / 48) * 100);
+                // Reverse score item 9 (index 9): "¿Tienes energía para familia y amigos?"
+                workItems[3] = 100 - workItems[3];
 
-                const score = (0.4 * ee_norm + 0.4 * d_norm + 0.2 * pa_norm) / 10;
-                let levelNum = Math.round(Math.min(Math.max(score, 1), 10));
+                const personalBurnout = personalItems.reduce((a, b) => a + b, 0) / personalItems.length;
+                const workBurnout = workItems.reduce((a, b) => a + b, 0) / workItems.length;
+                const clientBurnout = clientItems.reduce((a, b) => a + b, 0) / clientItems.length;
 
-                let levelText = "Bajo";
-                if (levelNum > 8) levelText = "Muy Alto";
-                else if (levelNum > 6) levelText = "Alto";
-                else if (levelNum > 3) levelText = "Moderado";
+                // Overall burnout (average of three dimensions)
+                const overallBurnout = (personalBurnout + workBurnout + clientBurnout) / 3;
+
+                // Interpretation (Copenhagen scale: 0-100)
+                let levelText = "Bajo"; // < 25
+                let levelNum = Math.round(overallBurnout / 10); // Convert to 0-10 scale
+
+                if (overallBurnout >= 75) {
+                    levelText = "Muy Alto"; // High burnout
+                } else if (overallBurnout >= 50) {
+                    levelText = "Alto"; // Moderate-high
+                } else if (overallBurnout >= 25) {
+                    levelText = "Moderado"; // Low-moderate
+                }
 
                 return {
                     score: levelNum,
                     level: levelText,
-                    dimensions: { ee, d, pa }
+                    rawScore: Math.round(overallBurnout),
+                    dimensions: {
+                        personal: Math.round(personalBurnout),
+                        work: Math.round(workBurnout),
+                        client: Math.round(clientBurnout)
+                    }
                 };
             }
         },
@@ -333,7 +430,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Por favor responde todas las preguntas.');
                 return;
             }
-            answers.push(parseInt(val));
+            const answerValue = parseInt(val);
+            answers.push(answerValue);
+
+            // Check for crisis response (PHQ-9 only)
+            if (test.id === 'depresion') {
+                await checkCriticalResponse(i, answerValue);
+            }
         }
 
         // Calculate results
@@ -378,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- START ---
-    checkCompletedTests();
+    checkCompletedTests(); // This will call renderGrid when ready
 
     async function checkCompletedTests() {
         if (!currentEmployee) return;
@@ -453,4 +556,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }).join('');
     }
+
+    // Call renderGrid immediately to show tests
+    renderGrid(new Set());
 });
