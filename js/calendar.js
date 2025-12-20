@@ -11,11 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // State
     let currentWeekStart = getStartOfWeek(new Date());
     let activitiesMap = {}; // id -> data
-    console.log("Calendar JS Loaded v2.1");
+    console.log("Calendar JS Loaded - Simplified v3.0");
 
     // --- FUNCTIONS DEFINED EARLY TO AVOID REFERENCE ERRORS ---
 
-    function openModal(day, time, item = null, index = null, clickEvent = null) {
+    function openModal(day, time = null, item = null, index = null, clickEvent = null) {
         const modal = document.getElementById('schedule-modal');
         const modalContent = modal.querySelector('.quick-add-modal');
 
@@ -25,24 +25,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // Posicionar modal cerca del click (popover contextual)
         if (clickEvent) {
             const rect = clickEvent.target.getBoundingClientRect();
-            const modalWidth = 420; // Ancho del modal
-            const modalHeight = 250; // Alto estimado (reducido)
+            const modalWidth = 420;
+            const modalHeight = 250;
 
-            // Calcular posición (a la derecha del botón +)
-            let left = rect.right + 10; // 10px de separación
+            let left = rect.right + 10;
             let top = rect.top;
 
-            // Ajustar si se sale de la pantalla por la derecha
             if (left + modalWidth > window.innerWidth) {
-                left = rect.left - modalWidth - 10; // Moverlo a la izquierda
+                left = rect.left - modalWidth - 10;
             }
 
-            // Ajustar si se sale por abajo
             if (top + modalHeight > window.innerHeight) {
                 top = window.innerHeight - modalHeight - 20;
             }
 
-            // Ajustar si se sale por arriba
             if (top < 20) {
                 top = 20;
             }
@@ -54,9 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         document.getElementById('selected-day').value = day;
-        document.getElementById('selected-time').value = time;
         document.getElementById('display-day').value = translateDay(day);
-        document.getElementById('display-time').value = time;
 
         if (item) {
             document.getElementById('modal-title').textContent = '✏️ Editar Actividad';
@@ -68,11 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('modal-title').textContent = '📅 Agregar Actividad';
             document.getElementById('schedule-id').value = '';
             document.getElementById('activity-select').value = '';
-            document.getElementById('location').value = 'Explanada'; // Default location
+            document.getElementById('location').value = 'Explanada';
             document.getElementById('btn-delete-schedule').classList.add('hidden');
         }
     }
-    // Expose to window
     window.openModal = openModal;
 
     function closeModal() {
@@ -113,36 +106,40 @@ document.addEventListener('DOMContentLoaded', () => {
         updateWeekLabel();
     }
 
-    // 1. Render Grid Structure (10:00 - 13:00)
+    // 1. Render Simplified Grid Structure (5 days, no times)
     function renderGridStructure() {
         calendarBody.innerHTML = '';
-        const hours = ['10:00', '11:00', '12:00', '13:00'];
-        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+        const days = [
+            { key: 'monday', label: 'Lunes' },
+            { key: 'tuesday', label: 'Martes' },
+            { key: 'wednesday', label: 'Miércoles' },
+            { key: 'thursday', label: 'Jueves' },
+            { key: 'friday', label: 'Viernes' }
+        ];
 
-        hours.forEach(time => {
-            // Time Column
-            const timeCell = document.createElement('div');
-            timeCell.className = 'time-slot';
-            timeCell.textContent = time;
-            calendarBody.appendChild(timeCell);
+        // Headers
+        days.forEach(({ label }) => {
+            const header = document.createElement('div');
+            header.className = 'day-header';
+            header.textContent = label;
+            calendarBody.appendChild(header);
+        });
 
-            // Day Columns
-            days.forEach(day => {
-                const dayCell = document.createElement('div');
-                dayCell.className = 'day-column';
-                dayCell.dataset.day = day;
-                dayCell.dataset.time = time;
-                dayCell.id = `cell-${day}-${time.replace(':', '')}`;
+        // Day slots
+        days.forEach(({ key }) => {
+            const daySlot = document.createElement('div');
+            daySlot.className = 'day-slot';
+            daySlot.dataset.day = key;
+            daySlot.id = `slot-${key}`;
 
-                // Add Button
-                const btnAdd = document.createElement('button');
-                btnAdd.className = 'btn-add-slot';
-                btnAdd.innerHTML = '<i class="fa-solid fa-plus"></i>';
-                btnAdd.onclick = (e) => openModal(day, time, null, null, e);
-                dayCell.appendChild(btnAdd);
+            // Botón agregar
+            const btnAdd = document.createElement('button');
+            btnAdd.className = 'btn-add-slot';
+            btnAdd.innerHTML = '<i class="fa-solid fa-plus"></i> Agregar actividad';
+            btnAdd.onclick = (e) => openModal(key, null, null, null, e);
+            daySlot.appendChild(btnAdd);
 
-                calendarBody.appendChild(dayCell);
-            });
+            calendarBody.appendChild(daySlot);
         });
     }
 
@@ -167,8 +164,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3. Load Schedule for Current Week
     async function loadSchedule() {
-        // Clear existing items (keep add buttons)
-        document.querySelectorAll('.activity-item').forEach(el => el.remove());
+        // Clear existing cards (keep add buttons)
+        document.querySelectorAll('.activity-card').forEach(el => el.remove());
 
         const weekId = getWeekId(currentWeekStart);
         console.log("Loading schedule for:", weekId);
@@ -177,40 +174,93 @@ document.addEventListener('DOMContentLoaded', () => {
             const doc = await db.collection('weekly_schedules').doc(weekId).get();
             if (doc.exists) {
                 const schedule = doc.data().schedule || [];
-                schedule.forEach((item, index) => {
-                    renderScheduleItem(item, index);
-                });
+
+                // Process all items in parallel
+                const renderPromises = schedule.map((item, index) => renderScheduleItem(item, index));
+                await Promise.all(renderPromises);
             }
         } catch (error) {
             console.error("Error loading schedule:", error);
         }
     }
 
-    function renderScheduleItem(item, index) {
-        const cellId = `cell-${item.day}-${item.time.replace(':', '')}`;
-        const cell = document.getElementById(cellId);
-        if (!cell) return;
+    async function renderScheduleItem(item, index) {
+        const slotId = `slot-${item.day}`;
+        const slot = document.getElementById(slotId);
+        if (!slot) return;
 
         const activity = activitiesMap[item.activityId];
         const name = activity ? activity.name : 'Actividad desconocida';
         const emoji = activity ? activity.emoji : '❓';
+        const duration = activity ? activity.duration : '?';
 
-        const div = document.createElement('div');
-        div.className = 'activity-item';
-        div.innerHTML = `
-            <div style="font-weight: 600;">${emoji} ${name}</div>
+        // Verificar estado de asistencia
+        const hasAttendance = await checkAttendanceStatus(item);
+        const statusBadge = getStatusBadge(item, hasAttendance);
+
+        const card = document.createElement('div');
+        card.className = 'activity-card';
+        card.dataset.itemIndex = index;
+
+        // Tooltip con nombre completo
+        card.title = `${emoji} ${name} - ${duration} min${item.location ? ' - ' + item.location : ''}`;
+
+        card.innerHTML = `
+            <div class="activity-name">${emoji} ${name.length > 30 ? name.substring(0, 30) + '...' : name}</div>
+            <div class="activity-meta">
+                <span>⏱️ ${duration} min</span>
+                ${item.location ? `<span>📍 ${item.location}</span>` : ''}
+            </div>
+            ${statusBadge}
         `;
-        div.onclick = (e) => {
+
+        card.onclick = (e) => {
             e.stopPropagation();
-            openModal(item.day, item.time, item, index, e); // Pass 'e' for context position on edit too!
+            openModal(item.day, null, item, index, e);
         };
 
-        // Insert before the add button
-        cell.insertBefore(div, cell.lastChild);
+        // Insertar antes del botón +
+        slot.insertBefore(card, slot.lastChild);
     }
 
-    // 4. Modal Logic
-    // (Moved to top)
+    async function checkAttendanceStatus(item) {
+        try {
+            const dayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].indexOf(item.day);
+            const activityDate = new Date(currentWeekStart);
+            activityDate.setDate(activityDate.getDate() + dayIndex);
+            const dateStr = activityDate.toISOString().split('T')[0];
+
+            // Buscar en la collection principal de attendances
+            const snapshot = await db.collection('attendances')
+                .where('activityId', '==', item.activityId)
+                .where('date', '==', dateStr)
+                .limit(1)
+                .get();
+
+            return !snapshot.empty;
+        } catch (error) {
+            console.error('Error checking attendance:', error);
+            return false;
+        }
+    }
+
+    function getStatusBadge(item, hasAttendance) {
+        const dayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].indexOf(item.day);
+        const activityDate = new Date(currentWeekStart);
+        activityDate.setDate(activityDate.getDate() + dayIndex);
+
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        activityDate.setHours(0, 0, 0, 0);
+
+        if (hasAttendance) {
+            return '<span class="status-badge completed">✅ Completado</span>';
+        } else if (activityDate < now) {
+            return '<span class="status-badge missed">⚠️ Sin registro</span>';
+        } else {
+            return '<span class="status-badge pending">⏳ Pendiente</span>';
+        }
+    }
 
     // 5. Save Schedule
     async function saveSchedule(e) {
@@ -221,7 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const newItem = {
             day: document.getElementById('selected-day').value,
-            time: document.getElementById('selected-time').value,
             activityId: document.getElementById('activity-select').value,
             location: document.getElementById('location').value
         };
@@ -290,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getStartOfWeek(date) {
         const d = new Date(date);
         const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is sunday
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
         return new Date(d.setDate(diff));
     }
 
