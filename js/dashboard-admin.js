@@ -1,8 +1,6 @@
-// Lógica del Dashboard Admin
+// Lógica del Dashboard Admin con Análisis Real
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Verificar autenticación (manejado por auth.js)
-
     // Elementos DOM
     const totalAttendancesEl = document.getElementById('total-attendances');
     const avgRatingEl = document.getElementById('avg-rating');
@@ -10,8 +8,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const feedbackRateEl = document.getElementById('feedback-rate');
     const leaderboardTable = document.getElementById('leaderboard-table').querySelector('tbody');
 
+    // Metas configurables
+    const GOALS = {
+        attendances: 400,  // Meta mensual
+        rating: 4.0,       // Rating mínimo deseado
+        areas: 10,         // Total de áreas que existen
+        feedbackRate: 90   // Porcentaje de feedback deseado
+    };
+
+    // Data global para modales
+    let globalData = {};
+
     // Inicializar
     loadDashboardData();
+    setupDetailButtons();
+    setupModalClose();
 
     async function loadDashboardData() {
         try {
@@ -54,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 attSnapshot.forEach(doc => {
                     const data = doc.data();
                     if (data.areaId) areasSet.add(data.areaId);
-                    empAttendances.push({ id: doc.id, ...data, employeeId: empId });
+                    empAttendances.push({ id: doc.id, ...data, employeeId: empId, employeeName: empData.fullName || 'Desconocido' });
                 });
 
                 // Procesar feedbacks
@@ -63,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 fbSnapshot.forEach(doc => {
                     const data = doc.data();
                     empTotalRating += data.rating || 0;
-                    empFeedbacks.push({ id: doc.id, ...data, employeeId: empId });
+                    empFeedbacks.push({ id: doc.id, ...data, employeeId: empId, employeeName: empData.fullName || 'Desconocido' });
                 });
 
                 return {
@@ -87,6 +98,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 allFeedbacks.push(...result.feedbacks);
             });
 
+            // Guardar datos globales para modales
+            globalData = {
+                allAttendances,
+                allFeedbacks,
+                areasMap,
+                totalAttendances,
+                totalRating,
+                feedbackCount,
+                areasSet
+            };
+
+            // Mostrar valores principales
             totalAttendancesEl.textContent = totalAttendances;
 
             // Calcular Rating Promedio
@@ -103,6 +126,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Áreas Activas
             activeAreasEl.textContent = areasSet.size;
+
+            // Calcular cambios de últimos 7 vs anteriores 7 días
+            calculateAndDisplayChanges(allAttendances, allFeedbacks, totalAttendances, avgRating, areasSet.size, feedbackRate);
+
+            // Crear sparklines
+            createSparklines(allAttendances, allFeedbacks);
+
+            // Calcular progreso hacia metas
+            calculateProgress(totalAttendances, avgRating, areasSet.size, feedbackRate);
 
             // 4. Generar Gráficas (pasamos arrays con datos agregados)
             renderCharts(allAttendances, allFeedbacks, areasMap);
@@ -121,6 +153,631 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error cargando dashboard:', error);
         }
     }
+
+    function calculateAndDisplayChanges(attendances, feedbacks, totalAtt, avgRating, activeAreas, feedbackRate) {
+        const now = new Date();
+
+        // Separar datos en períodos de 7 días
+        const last7Days = [];
+        const previous7Days = [];
+        const last7Feedbacks = [];
+        const previous7Feedbacks = [];
+
+        attendances.forEach(att => {
+            const attDate = new Date(att.date);
+            const daysAgo = Math.floor((now - attDate) / (1000 * 60 * 60 * 24));
+
+            if (daysAgo <= 7) {
+                last7Days.push(att);
+            } else if (daysAgo > 7 && daysAgo <= 14) {
+                previous7Days.push(att);
+            }
+        });
+
+        feedbacks.forEach(fb => {
+            const fbDate = fb.timestamp ? fb.timestamp.toDate() : new Date(fb.date);
+            const daysAgo = Math.floor((now - fbDate) / (1000 * 60 * 60 * 24));
+
+            if (daysAgo <= 7) {
+                last7Feedbacks.push(fb);
+            } else if (daysAgo > 7 && daysAgo <= 14) {
+                previous7Feedbacks.push(fb);
+            }
+        });
+
+        // Calcular cambios
+        const attChange = previous7Days.length > 0
+            ? ((last7Days.length - previous7Days.length) / previous7Days.length) * 100
+            : null;
+
+        const lastRating = last7Feedbacks.length > 0
+            ? last7Feedbacks.reduce((sum, fb) => sum + (fb.rating || 0), 0) / last7Feedbacks.length
+            : 0;
+        const prevRating = previous7Feedbacks.length > 0
+            ? previous7Feedbacks.reduce((sum, fb) => sum + (fb.rating || 0), 0) / previous7Feedbacks.length
+            : 0;
+        const ratingChange = prevRating > 0
+            ? ((lastRating - prevRating) / prevRating) * 100
+            : null;
+
+        // Áreas - contar áreas únicas en cada período
+        const last7Areas = new Set(last7Days.map(a => a.areaId).filter(Boolean));
+        const prev7Areas = new Set(previous7Days.map(a => a.areaId).filter(Boolean));
+        const areasChange = prev7Areas.size > 0
+            ? ((last7Areas.size - prev7Areas.size) / prev7Areas.size) * 100
+            : null;
+
+        // Feedback rate
+        const lastFeedbackRate = last7Days.length > 0
+            ? (last7Feedbacks.length / last7Days.length) * 100
+            : 0;
+        const prevFeedbackRate = previous7Days.length > 0
+            ? (previous7Feedbacks.length / previous7Days.length) * 100
+            : 0;
+        const feedbackRateChange = prevFeedbackRate > 0
+            ? ((lastFeedbackRate - prevFeedbackRate) / prevFeedbackRate) * 100
+            : null;
+
+        // Mostrar cambios
+        displayChange('attendances-change', attChange, last7Days.length, previous7Days.length);
+        displayChange('rating-change', ratingChange, lastRating, prevRating);
+        displayChange('areas-change', areasChange, last7Areas.size, prev7Areas.size);
+        displayChange('feedback-change', feedbackRateChange, lastFeedbackRate, prevFeedbackRate);
+    }
+
+    function displayChange(elementId, change, currentValue, previousValue) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+
+        if (change === null || previousValue === 0) {
+            element.innerHTML = `<span class="neutral">📊 Últimos 7 días: datos insuficientes</span>`;
+            element.className = 'stat-change neutral';
+            return;
+        }
+
+        const arrow = change >= 0 ? '↑' : '↓';
+        const className = change >= 0 ? 'positive' : 'negative';
+        const absChange = Math.abs(change).toFixed(1);
+
+        element.innerHTML = `<span><strong>${arrow} ${absChange}%</strong> vs 7 días previos</span>`;
+        element.className = `stat-change ${className}`;
+    }
+
+    function createSparklines(attendances, feedbacks) {
+        const now = new Date();
+
+        // Preparar datos de últimos 7 días
+        const last7Days = [];
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i);
+            date.setHours(0, 0, 0, 0);
+            last7Days.push(date);
+        }
+
+        // Contar asistencias por día
+        const attByDay = last7Days.map(date => {
+            return attendances.filter(att => {
+                const attDate = new Date(att.date);
+                attDate.setHours(0, 0, 0, 0);
+                return attDate.getTime() === date.getTime();
+            }).length;
+        });
+
+        // Ratings promedio por día
+        const ratingByDay = last7Days.map(date => {
+            const dayFeedbacks = feedbacks.filter(fb => {
+                const fbDate = fb.timestamp ? fb.timestamp.toDate() : new Date(fb.date);
+                fbDate.setHours(0, 0, 0, 0);
+                return fbDate.getTime() === date.getTime();
+            });
+            if (dayFeedbacks.length === 0) return 0;
+            return dayFeedbacks.reduce((sum, fb) => sum + (fb.rating || 0), 0) / dayFeedbacks.length;
+        });
+
+        // Áreas activas por día
+        const areasByDay = last7Days.map(date => {
+            const dayAtts = attendances.filter(att => {
+                const attDate = new Date(att.date);
+                attDate.setHours(0, 0, 0, 0);
+                return attDate.getTime() === date.getTime();
+            });
+            return new Set(dayAtts.map(a => a.areaId).filter(Boolean)).size;
+        });
+
+        // Tasa de feedback por día
+        const feedbackRateByDay = last7Days.map(date => {
+            const dayAtts = attendances.filter(att => {
+                const attDate = new Date(att.date);
+                attDate.setHours(0, 0, 0, 0);
+                return attDate.getTime() === date.getTime();
+            });
+            const dayFeedbacks = feedbacks.filter(fb => {
+                const fbDate = fb.timestamp ? fb.timestamp.toDate() : new Date(fb.date);
+                fbDate.setHours(0, 0, 0, 0);
+                return fbDate.getTime() === date.getTime();
+            });
+            return dayAtts.length > 0 ? (dayFeedbacks.length / dayAtts.length) * 100 : 0;
+        });
+
+        // Crear sparklines
+        createSparkline('attendances-sparkline', attByDay, '#667eea');
+        createSparkline('rating-sparkline', ratingByDay, '#f59e0b');
+        createSparkline('areas-sparkline', areasByDay, '#8b5cf6');
+        createSparkline('feedback-sparkline', feedbackRateByDay, '#10b981');
+    }
+
+    function createSparkline(canvasId, data, color) {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['', '', '', '', '', '', ''],
+                datasets: [{
+                    data: data,
+                    borderColor: color,
+                    borderWidth: 2,
+                    fill: false,
+                    pointRadius: 0,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: false },
+                    y: { display: false }
+                }
+            }
+        });
+    }
+
+    function calculateProgress(totalAtt, avgRating, activeAreas, feedbackRate) {
+        const now = new Date();
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const currentDay = now.getDate();
+
+        // Asistencias
+        const attProgress = Math.min((totalAtt / GOALS.attendances) * 100, 100);
+        const attExpected = (currentDay / daysInMonth) * 100;
+        updateProgressBar('attendances', attProgress, attExpected);
+
+        // Rating
+        const ratingProgress = Math.min((parseFloat(avgRating) / GOALS.rating) * 100, 100);
+        updateProgressBar('rating', ratingProgress, 100); // No tiene progreso esperado
+
+        // Áreas
+        const areasProgress = (activeAreas / GOALS.areas) * 100;
+        updateProgressBar('areas', areasProgress, 100);
+
+        // Feedback Rate
+        const feedbackProgress = Math.min((feedbackRate / GOALS.feedbackRate) * 100, 100);
+        updateProgressBar('feedback', feedbackProgress, 100);
+    }
+
+    function updateProgressBar(metric, progress, expectedProgress = null) {
+        const progressFill = document.getElementById(`${metric}-progress`);
+        const progressText = document.getElementById(`${metric}-progress-text`);
+        const statusEl = document.getElementById(`${metric}-status`);
+
+        if (!progressFill || !progressText) return;
+
+        progressFill.style.width = `${progress.toFixed(0)}%`;
+        progressText.textContent = `${progress.toFixed(0)}%`;
+
+        if (expectedProgress !== null && expectedProgress !== 100) {
+            // Solo para métricas con progreso temporal (como asistencias)
+            if (progress >= expectedProgress) {
+                progressFill.classList.add('on-track');
+                progressFill.classList.remove('behind');
+                if (statusEl) statusEl.textContent = '✓ En meta';
+            } else {
+                progressFill.classList.add('behind');
+                progressFill.classList.remove('on-track');
+                if (statusEl) statusEl.textContent = '⚠️ Debajo de meta';
+            }
+        } else {
+            // Para otras métricas
+            if (progress >= 90) {
+                progressFill.classList.add('on-track');
+                progressFill.classList.remove('behind');
+                if (statusEl) statusEl.textContent = '✓ Excelente';
+            } else if (progress >= 70) {
+                if (statusEl) statusEl.textContent = '👍 Bien';
+            } else {
+                progressFill.classList.add('behind');
+                if (statusEl) statusEl.textContent = '📈 Por mejorar';
+            }
+        }
+    }
+
+    // Setup detail buttons
+    function setupDetailButtons() {
+        const detailButtons = document.querySelectorAll('.btn-detail');
+        detailButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const metric = e.currentTarget.dataset.metric;
+                showDetailedAnalysis(metric);
+            });
+        });
+    }
+
+    function showDetailedAnalysis(metric) {
+        const modal = document.getElementById('analysis-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+
+        let content = '';
+        let title = '';
+
+        switch (metric) {
+            case 'attendances':
+                title = '📊 Análisis de Asistencias';
+                content = generateAttendanceAnalysis();
+                break;
+            case 'rating':
+                title = '⭐ Análisis de Calificaciones';
+                content = generateRatingAnalysis();
+                break;
+            case 'areas':
+                title = '🏢 Análisis por Áreas';
+                content = generateAreasAnalysis();
+                break;
+            case 'feedback':
+                title = '💬 Análisis de Feedback';
+                content = generateFeedbackAnalysis();
+                break;
+        }
+
+        modalTitle.textContent = title;
+        modalBody.innerHTML = content;
+        modal.classList.add('show');
+
+        // Render charts in modal if needed
+        setTimeout(() => {
+            if (metric === 'attendances') renderModalAttendanceChart();
+            if (metric === 'rating') renderModalRatingChart();
+            if (metric === 'areas') renderModalAreasChart();
+        }, 100);
+    }
+
+    function generateAttendanceAnalysis() {
+        const { allAttendances, areasMap } = globalData;
+
+        // Top 5 empleados
+        const empStats = {};
+        allAttendances.forEach(att => {
+            empStats[att.employeeId] = empStats[att.employeeId] || { name: att.employeeName, count: 0 };
+            empStats[att.employeeId].count++;
+        });
+        const topEmployees = Object.values(empStats).sort((a, b) => b.count - a.count).slice(0, 5);
+
+        // Por área
+        const byArea = {};
+        allAttendances.forEach(att => {
+            const area = areasMap[att.areaId] || 'Desconocida';
+            byArea[area] = (byArea[area] || 0) + 1;
+        });
+
+        return `
+            <div class="modal-section">
+                <h3>📈 Tendencia de Asistencias (30 días)</h3>
+                <div class="modal-chart-container">
+                    <canvas id="modal-attendance-chart" style="height: 250px;"></canvas>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <h3>🏆 Top 5 Empleados Más Activos</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #f3f4f6;">
+                            <th style="padding: 0.75rem; text-align: left;">#</th>
+                            <th style="padding: 0.75rem; text-align: left;">Nombre</th>
+                            <th style="padding: 0.75rem; text-align: right;">Asistencias</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${topEmployees.map((emp, i) => `
+                            <tr style="border-bottom: 1px solid #f3f4f6;">
+                                <td style="padding: 0.75rem;">${i + 1}</td>
+                                <td style="padding: 0.75rem; font-weight: 500;">${emp.name}</td>
+                                <td style="padding: 0.75rem; text-align: right; color: var(--primary); font-weight: 700;">${emp.count}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="modal-section">
+                <h3>🏢 Distribución por Área</h3>
+                <div class="insight-grid">
+                    ${Object.entries(byArea).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([area, count]) => `
+                        <div class="insight-card">
+                            <h4>${area}</h4>
+                            <div class="value">${count}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    function generateRatingAnalysis() {
+        const { allFeedbacks } = globalData;
+
+        // Distribución de ratings
+        const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+        allFeedbacks.forEach(fb => {
+            const rating = Math.round(fb.rating || 0);
+            if (rating >= 1 && rating <= 5) distribution[rating]++;
+        });
+
+        const total = allFeedbacks.length;
+
+        return `
+            <div class="modal-section">
+                <h3>📈 Tendencia de Satisfacción (30 días)</h3>
+                <div class="modal-chart-container">
+                    <canvas id="modal-rating-chart" style="height: 250px;"></canvas>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <h3>📊 Distribución de Calificaciones</h3>
+                <div style="space-y: 0.75rem;">
+                    ${[5, 4, 3, 2, 1].map(stars => {
+            const count = distribution[stars];
+            const percent = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+            return `
+                            <div style="margin-bottom: 0.75rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                    <span>${'⭐'.repeat(stars)}</span>
+                                    <span style="font-weight: 600;">${count} (${percent}%)</span>
+                                </div>
+                                <div style="height: 8px; background: #f3f4f6; border-radius: 10px; overflow: hidden;">
+                                    <div style="height: 100%; width: ${percent}%; background: linear-gradient(90deg, #f59e0b, #d97706); border-radius: 10px;"></div>
+                                </div>
+                            </div>
+                        `;
+        }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    function generateAreasAnalysis() {
+        const { allAttendances, areasMap } = globalData;
+
+        const byArea = {};
+        allAttendances.forEach(att => {
+            const area = areasMap[att.areaId] || 'Desconocida';
+            byArea[area] = (byArea[area] || 0) + 1;
+        });
+
+        const sorted = Object.entries(byArea).sort((a, b) => b[1] - a[1]);
+
+        return `
+            <div class="modal-section">
+                <h3>📊 Participación por Área</h3>
+                <div class="modal-chart-container">
+                    <canvas id="modal-areas-chart" style="height: 300px;"></canvas>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <h3>🏆 Área Más Activa</h3>
+                ${sorted.length > 0 ? `
+                    <div class="insight-card" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                        <h4 style="color: rgba(255,255,255,0.9);">${sorted[0][0]}</h4>
+                        <div class="value" style="color: white;">${sorted[0][1]} asistencias</div>
+                    </div>
+                ` : '<p>No hay datos disponibles</p>'}
+            </div>
+        `;
+    }
+
+    function generateFeedbackAnalysis() {
+        const { allAttendances, allFeedbacks } = globalData;
+
+        const feedbackRate = allAttendances.length > 0
+            ? ((allFeedbacks.length / allAttendances.length) * 100).toFixed(1)
+            : 0;
+
+        return `
+            <div class="modal-section">
+                <div class="insight-grid">
+                    <div class="insight-card">
+                        <h4>Total Asistencias</h4>
+                        <div class="value">${allAttendances.length}</div>
+                    </div>
+                    <div class="insight-card">
+                        <h4>Feedbacks Recibidos</h4>
+                        <div class="value">${allFeedbacks.length}</div>
+                    </div>
+                    <div class="insight-card" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">
+                        <h4 style="color: rgba(255,255,255,0.9);">Tasa de Feedback</h4>
+                        <div class="value" style="color: white;">${feedbackRate}%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <h3>🎯 Progreso hacia Meta (90%)</h3>
+                <div style="padding: 1.5rem; background: #f9fafb; border-radius: 12px;">
+                    <div style="height: 20px; background: #e5e7eb; border-radius: 10px; overflow: hidden;">
+                        <div style="height: 100%; width: ${Math.min(feedbackRate, 100)}%; background: linear-gradient(90deg, #10b981, #059669); border-radius: 10px; transition: width 0.8s;"></div>
+                    </div>
+                    <p style="margin-top: 0.75rem; color: #6b7280; text-align: center;">
+                        ${feedbackRate >= 90 ? '✓ Meta alcanzada!' : `Faltan ${(90 - feedbackRate).toFixed(1)}% para alcanzar la meta`}
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderModalAttendanceChart() {
+        const canvas = document.getElementById('modal-attendance-chart');
+        if (!canvas) return;
+
+        const { allAttendances } = globalData;
+        const now = new Date();
+        const last30Days = [];
+
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i);
+            date.setHours(0, 0, 0, 0);
+            last30Days.push(date);
+        }
+
+        const dataPoints = last30Days.map(date => {
+            return allAttendances.filter(att => {
+                const attDate = new Date(att.date);
+                attDate.setHours(0, 0, 0, 0);
+                return attDate.getTime() === date.getTime();
+            }).length;
+        });
+
+        const labels = last30Days.map(d => `${d.getDate()}/${d.getMonth() + 1}`);
+
+        new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Asistencias',
+                    data: dataPoints,
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    function renderModalRatingChart() {
+        const canvas = document.getElementById('modal-rating-chart');
+        if (!canvas) return;
+
+        const { allFeedbacks } = globalData;
+        const now = new Date();
+        const last30Days = [];
+
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i);
+            date.setHours(0, 0, 0, 0);
+            last30Days.push(date);
+        }
+
+        const dataPoints = last30Days.map(date => {
+            const dayFeedbacks = allFeedbacks.filter(fb => {
+                const fbDate = fb.timestamp ? fb.timestamp.toDate() : new Date(fb.date);
+                fbDate.setHours(0, 0, 0, 0);
+                return fbDate.getTime() === date.getTime();
+            });
+            if (dayFeedbacks.length === 0) return null;
+            return dayFeedbacks.reduce((sum, fb) => sum + (fb.rating || 0), 0) / dayFeedbacks.length;
+        });
+
+        const labels = last30Days.map(d => `${d.getDate()}/${d.getMonth() + 1}`);
+
+        new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Rating Promedio',
+                    data: dataPoints,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    spanGaps: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 5
+                    }
+                }
+            }
+        });
+    }
+
+    function renderModalAreasChart() {
+        const canvas = document.getElementById('modal-areas-chart');
+        if (!canvas) return;
+
+        const { allAttendances, areasMap } = globalData;
+
+        const byArea = {};
+        allAttendances.forEach(att => {
+            const area = areasMap[att.areaId] || 'Desconocida';
+            byArea[area] = (byArea[area] || 0) + 1;
+        });
+
+        const sorted = Object.entries(byArea).sort((a, b) => b[1] - a[1]);
+        const labels = sorted.map(([area]) => area);
+        const data = sorted.map(([, count]) => count);
+
+        new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Asistencias',
+                    data: data,
+                    backgroundColor: 'rgba(139, 92, 246, 0.6)',
+                    borderColor: '#8b5cf6',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    function setupModalClose() {
+        const modal = document.getElementById('analysis-modal');
+
+        // Close on background click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
+
+    window.closeModal = function () {
+        const modal = document.getElementById('analysis-modal');
+        modal.classList.remove('show');
+    };
 
     function renderCharts(attendances, feedbacks, areasMap) {
         // Preparar datos para gráfica de áreas
@@ -155,7 +812,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
         attendances.forEach(att => {
-            const date = new Date(att.date); // Asumiendo formato YYYY-MM-DD compatible
+            const date = new Date(att.date);
             const dayName = days[date.getDay()];
             dayCounts[dayName] = (dayCounts[dayName] || 0) + 1;
         });
@@ -181,8 +838,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function generateLeaderboard(attendances, feedbacks, areasMap) {
-        // areasMap ya viene cargado
-
         // Agrupar por empleado
         const employeeStats = {};
 
