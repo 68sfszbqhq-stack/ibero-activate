@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const feedbackForm = document.getElementById('feedback-form');
     const successState = document.getElementById('success-state');
     const welcomeSection = document.getElementById('welcome-section'); // Sección de bienvenida/búsqueda (ahora lista)
+    const preWellness = document.getElementById('pre-wellness');
+    const postWellness = document.getElementById('post-wellness');
 
     // Elementos del perfil seleccionado
     const profileAvatar = document.getElementById('profile-avatar');
@@ -168,12 +170,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // GUARDAR EN LOCALSTORAGE para que el dashboard sepa quién es
         localStorage.setItem('currentEmployee', JSON.stringify(selectedEmployee));
 
-        // Actualizar UI
+        // Actualizar UI del perfil
         profileAvatar.textContent = getInitials(data.employeeName);
         employeeName.textContent = data.employeeName;
 
+        // NUEVO: Mostrar PRE-wellness questionnaire primero
         welcomeSection.classList.add('hidden');
-        feedbackForm.classList.remove('hidden');
+        preWellness.classList.remove('hidden');
     }
 
     async function submitFeedback() {
@@ -283,9 +286,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 lastAttendance: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            // UI Success
+            // NUEVO: Mostrar POST-wellness questionnaire
             feedbackForm.classList.add('hidden');
-            successState.classList.remove('hidden');
+            postWellness.classList.remove('hidden');
 
         } catch (error) {
             console.error('Error:', error);
@@ -308,7 +311,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('comment').value = '';
         ratingText.textContent = 'Selecciona una calificación';
 
+        // Reset wellness questionnaires
+        preWellness.classList.add('hidden');
+        postWellness.classList.add('hidden');
         feedbackForm.classList.add('hidden');
+        successState.classList.add('hidden');
         welcomeSection.classList.remove('hidden');
     }
 
