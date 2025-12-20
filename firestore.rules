@@ -86,3 +86,9 @@ service cloud.firestore {
     }
   }
 }
+
+    // Wellness questionnaires data
+    match /wellness_data/{docId} {
+      allow create: if true;
+      allow read: if true;
+    }
