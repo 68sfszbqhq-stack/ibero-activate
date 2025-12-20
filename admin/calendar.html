@@ -15,77 +15,137 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
     <style>
-        .calendar-grid {
+        /* Simplified Calendar - 1 activity per day */
+        .calendar-simple-grid {
             display: grid;
-            grid-template-columns: 80px repeat(5, 1fr);
-            /* Time column + 5 days */
-            gap: 1px;
-            background: #e5e7eb;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            overflow: hidden;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: auto 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
         }
 
-        .calendar-header {
-            background: #f9fafb;
+        .day-header {
+            text-align: center;
+            font-weight: 700;
             padding: 1rem;
-            text-align: center;
-            font-weight: 600;
-            color: #374151;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 10px;
+            font-size: 1rem;
         }
 
-        .time-slot {
+        .day-slot {
+            min-height: 200px;
             background: white;
-            padding: 0.5rem;
-            text-align: center;
-            font-size: 0.85rem;
-            color: #6b7280;
-            border-right: 1px solid #f3f4f6;
+            border: 2px solid #f3f4f6;
+            border-radius: 12px;
+            padding: 1rem;
             display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .day-column {
-            background: white;
-            min-height: 100px;
-            padding: 0.5rem;
-            position: relative;
-        }
-
-        .activity-item {
-            background: #eff6ff;
-            border-left: 3px solid var(--primary);
-            padding: 0.5rem;
-            margin-bottom: 0.5rem;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            cursor: pointer;
+            flex-direction: column;
+            gap: 0.75rem;
             transition: all 0.2s;
         }
 
-        .activity-item:hover {
-            background: #dbeafe;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        .day-slot:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+
+        .activity-card {
+            background: linear-gradient(135deg, #f9fafb, #fff);
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        .activity-card:hover {
+            background: #eef2ff;
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .activity-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+        }
+
+        .activity-meta {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 12px;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 0.25rem;
+        }
+
+        .status-badge.completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-badge.missed {
+            background: #fee2e2;
+            color: #991b1b;
         }
 
         .btn-add-slot {
             width: 100%;
-            padding: 0.25rem;
-            border: 1px dashed #d1d5db;
+            padding: 0.75rem;
+            border: 2px dashed #d1d5db;
             background: transparent;
             color: #9ca3af;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 0.8rem;
-            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
         }
 
         .btn-add-slot:hover {
             border-color: var(--primary);
             color: var(--primary);
-            background: #fff5f5;
+            background: #f5f3ff;
+            border-style: solid;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .calendar-simple-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .day-header {
+                font-size: 0.9rem;
+                padding: 0.75rem;
+            }
+
+            .day-slot {
+                min-height: 150px;
+            }
         }
     </style>
 </head>
@@ -157,18 +217,8 @@
             </header>
 
             <!-- Calendar Grid -->
-            <div class="calendar-grid">
-                <!-- Headers -->
-                <div class="calendar-header">Hora</div>
-                <div class="calendar-header">Lunes</div>
-                <div class="calendar-header">Martes</div>
-                <div class="calendar-header">Miércoles</div>
-                <div class="calendar-header">Jueves</div>
-                <div class="calendar-header">Viernes</div>
-
-                <!-- Rows (9am - 5pm) -->
-                <!-- Will be generated by JS -->
-                <div id="calendar-body" style="display: contents;"></div>
+            <div class="calendar-simple-grid" id="calendar-body">
+                <!-- Generated by JS -->
             </div>
         </main>
     </div>
