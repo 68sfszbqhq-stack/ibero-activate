@@ -37,8 +37,11 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('PRE Happiness:', wellnessData.preHappiness);
         preWellness.classList.add('hidden');
 
-        // Show feedback form (implement this based on your current flow)
-        // document.getElementById('feedback-form').classList.remove('hidden');
+        // Show feedback form
+        const feedbackForm = document.getElementById('feedback-form');
+        if (feedbackForm) {
+            feedbackForm.classList.remove('hidden');
+        }
     });
 
     // ============= POST-ACTIVITY QUESTIONNAIRES =============
@@ -97,12 +100,15 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Wellness Data:', wellnessData);
         console.log('Calculated Scores:', scores);
 
-        // Save to Firebase (integrate with your existing saveFeedback function)
+        // Save to Firebase
         await saveWellnessData(scores);
 
-        // Show success or next step
+        // Show success state
         postWellness.classList.add('hidden');
-        // document.getElementById('success-state').classList.remove('hidden');
+        const successState = document.getElementById('success-state');
+        if (successState) {
+            successState.classList.remove('hidden');
+        }
     });
 
     // ============= SCORE CALCULATION =============
@@ -148,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await db.collection('wellness_data').add({
                 employeeId: currentEmployee.id,
                 employeeName: currentEmployee.name,
-                employeeAccount: currentEmployee.accountNumber,
+                employeeAccount: currentEmployee.accountNumber || '',
                 activityDate: new Date().toISOString().split('T')[0],
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
 
