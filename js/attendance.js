@@ -31,7 +31,22 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAreas();
 
     // Event Listeners
+    // Safari iOS sometimes needs both 'change' and 'input' events
     areaDropdown.addEventListener('change', loadEmployees);
+    areaDropdown.addEventListener('input', loadEmployees); // Safari iOS fallback
+
+    // Additional touch event for Safari iOS
+    areaDropdown.addEventListener('touchend', function (e) {
+        console.log('Touchend event on area dropdown');
+        // Let the native picker handle it, then trigger change
+        setTimeout(() => {
+            if (this.value) {
+                console.log('Area selected via touch:', this.value);
+                loadEmployees();
+            }
+        }, 300);
+    });
+
     datePicker.addEventListener('change', (e) => {
         currentDate = new Date(e.target.value + 'T12:00:00'); // Mediodía para evitar problemas de zona horaria
         updateDateDisplay();
