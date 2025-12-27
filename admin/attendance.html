@@ -87,10 +87,13 @@
             <div class="filters-bar">
                 <div class="filter-group">
                     <label for="area-dropdown">Seleccionar Área / Departamento</label>
-                    <select id="area-dropdown">
-                        <option value="">-- Seleccione un área --</option>
-                        <!-- Cargado dinámicamente -->
-                    </select>
+                    <!-- Wrapper label for Safari iOS compatibility -->
+                    <label class="select-wrapper" onclick="">
+                        <select id="area-dropdown">
+                            <option value="">-- Seleccione un área --</option>
+                            <!-- Cargado dinámicamente -->
+                        </select>
+                    </label>
                 </div>
 
                 <div class="filter-group">

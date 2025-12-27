@@ -227,6 +227,13 @@
     color: #6b7280;
 }
 
+/* Select wrapper for Safari iOS compatibility */
+.select-wrapper {
+    display: block;
+    margin-bottom: 0;
+    cursor: pointer;
+}
+
 .filter-group select,
 .filter-group input {
     width: 100%;
@@ -244,10 +251,21 @@
     background-position: right 12px center;
     padding-right: 36px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
     min-height: 44px;
     /* iOS touch target minimum */
     -webkit-tap-highlight-color: rgba(102, 126, 234, 0.1);
+    /* Safari iOS specific fixes */
+    position: relative;
+    z-index: 1;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Force pointer cursor on Safari */
+.filter-group select {
+    cursor: pointer !important;
+    -webkit-touch-callout: none;
 }
 
 .filter-group select:focus,
@@ -258,8 +276,10 @@
     background-color: #fafbff;
 }
 
+/* Remove transform on active - Safari iOS issue */
 .filter-group select:active {
-    transform: scale(0.98);
+    /* No transform - Safari doesn't like it */
+    border-color: var(--primary);
 }
 
 /* Override for date inputs */
