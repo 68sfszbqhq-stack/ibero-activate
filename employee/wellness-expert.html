@@ -176,6 +176,11 @@
                     <i class="fa-solid fa-sparkles"></i>
                     Obtener Recomendaciones Personalizadas
                 </button>
+                <button id="export-pdf-btn"
+                    class="hidden w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg shadow-green-200 transition-all transform active:scale-95 flex items-center justify-center gap-3 mt-4">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    Descargar Reporte en PDF
+                </button>
             </div>
         </div>
 
@@ -270,6 +275,7 @@
 
     </main>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="../js/firebase-config.js"></script>
     <script src="../js/wellness-expert.js"></script>
 </body>

@@ -44,6 +44,9 @@ function initWellnessExpert() {
     // Load employee wellness data
     loadEmployeeWellnessData();
 
+    // Store recommendations globally for PDF export
+    let currentRecommendations = null;
+
     // --- EVENT LISTENERS ---
     generateBtn.addEventListener('click', async () => {
         const apiKey = apiKeyInput.value.trim();
@@ -69,6 +72,7 @@ function initWellnessExpert() {
             console.log('Generando recomendaciones personalizadas con IA...');
             const recommendations = await generatePersonalizedRecommendations(wellnessData, apiKey);
 
+            currentRecommendations = recommendations;
             displayRecommendations(recommendations);
 
         } catch (error) {
@@ -78,6 +82,16 @@ function initWellnessExpert() {
             loadingState.classList.add('hidden');
             generateBtn.disabled = false;
         }
+    });
+
+    // PDF Export Handler
+    const exportPdfBtn = document.getElementById('export-pdf-btn');
+    exportPdfBtn.addEventListener('click', () => {
+        if (!currentRecommendations) {
+            alert('No hay recomendaciones para exportar');
+            return;
+        }
+        generatePDF(currentRecommendations, currentEmployee, wellnessData);
     });
 
     // --- FUNCTIONS ---
@@ -247,7 +261,7 @@ IMPORTANTE:
         const result = await response.json();
         const aiText = result.candidates[0].content.parts[0].text;
 
-        console.log('Respuesta de Gemini:', aiText); // Debug
+        console.log('Respuesta completa de Gemini:', aiText); // Debug
 
         // Parse JSON response (handle both pure JSON and markdown-wrapped JSON)
         let jsonText = aiText;
@@ -275,10 +289,14 @@ IMPORTANTE:
             jsonText = match[0];
         }
 
-        return JSON.parse(jsonText);
+        const parsedData = JSON.parse(jsonText);
+        console.log('Datos parseados:', parsedData); // Debug
+        return parsedData;
     }
 
     function displayRecommendations(recommendations) {
+        console.log('Mostrando recomendaciones:', recommendations); // Debug
+
         // Physical health
         document.getElementById('physical-recommendations').innerHTML =
             recommendations.salud_fisica.map(rec => `
@@ -337,5 +355,147 @@ IMPORTANTE:
         // Show results
         resultsContainer.classList.remove('hidden');
         resultsContainer.scrollIntoView({ behavior: 'smooth' });
+
+        // Show PDF export button
+        document.getElementById('export-pdf-btn').classList.remove('hidden');
+    }
+
+    function generatePDF(recommendations, employee, data) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        const pageWidth = doc.internal.pageSize.width;
+        const pageHeight = doc.internal.pageSize.height;
+        const margin = 20;
+        let yPos = margin;
+
+        // Helper function to add text with line breaks
+        const addWrappedText = (text, x, y, maxWidth) => {
+            const lines = doc.splitTextToSize(text, maxWidth);
+            doc.text(lines, x, y);
+            return y + (lines.length * 7);
+        };
+
+        // Helper to check if we need a new page
+        const checkNewPage = (requiredSpace) => {
+            if (yPos + requiredSpace > pageHeight - margin) {
+                doc.addPage();
+                yPos = margin;
+                return true;
+            }
+            return false;
+        };
+
+        // Header with gradient effect (simulated with rects)
+        doc.setFillColor(102, 126, 234);
+        doc.rect(0, 0, pageWidth, 40, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Reporte de Bienestar Personal', pageWidth / 2, 20, { align: 'center' });
+
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Generado con Inteligencia Artificial', pageWidth / 2, 30, { align: 'center' });
+
+        yPos = 50;
+
+        // Employee Info
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Empleado: ${employee.name}`, margin, yPos);
+        yPos += 10;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        const date = new Date().toLocaleDateString('es-MX', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        doc.text(`Fecha: ${date}`, margin, yPos);
+        yPos += 15;
+
+        // Tests Summary
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Evaluaciones Completadas:', margin, yPos);
+        yPos += 8;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        Object.values(data.tests).forEach(test => {
+            doc.text(`• ${test.title}: Nivel ${test.level}`, margin + 5, yPos);
+            yPos += 6;
+        });
+        yPos += 10;
+
+        // Recommendations sections
+        const sections = [
+            { key: 'salud_fisica', title: 'Salud Física', color: [34, 197, 94] },
+            { key: 'salud_emocional', title: 'Salud Emocional', color: [236, 72, 153] },
+            { key: 'salud_laboral', title: 'Salud Laboral', color: [59, 130, 246] },
+            { key: 'salud_mental', title: 'Salud Mental', color: [168, 85, 247] }
+        ];
+
+        sections.forEach(section => {
+            checkNewPage(40);
+
+            // Section header with colored bar
+            doc.setFillColor(...section.color);
+            doc.rect(margin - 5, yPos - 5, pageWidth - (margin * 2) + 10, 12, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text(section.title, margin, yPos + 3);
+            yPos += 15;
+
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+
+            recommendations[section.key].forEach((rec, index) => {
+                checkNewPage(20);
+                const bulletText = `${index + 1}. ${rec}`;
+                yPos = addWrappedText(bulletText, margin + 5, yPos, pageWidth - (margin * 2) - 10);
+                yPos += 3;
+            });
+
+            yPos += 10;
+        });
+
+        // General Insights
+        checkNewPage(40);
+        doc.setFillColor(234, 179, 8);
+        doc.rect(margin - 5, yPos - 5, pageWidth - (margin * 2) + 10, 12, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Insights Generales', margin, yPos + 3);
+        yPos += 15;
+
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+
+        recommendations.insights_generales.forEach((insight, index) => {
+            checkNewPage(20);
+            const bulletText = `⭐ ${insight}`;
+            yPos = addWrappedText(bulletText, margin + 5, yPos, pageWidth - (margin * 2) - 10);
+            yPos += 3;
+        });
+
+        // Footer on last page
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text('IBERO ACTÍVATE - Centro de Bienestar', pageWidth / 2, pageHeight - 10, { align: 'center' });
+
+        // Save PDF
+        const fileName = `Reporte_Bienestar_${employee.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
     }
 }
