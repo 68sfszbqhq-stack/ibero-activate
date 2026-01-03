@@ -198,34 +198,34 @@ Genera recomendaciones específicas, prácticas y personalizadas en 4 áreas. Ca
 - Ser concreta y accionable
 - Estar basada en los niveles detectados
 - Ser empática y motivadora
-- Incluir ejemplos específicos cuando sea posible
+- Ser BREVE (máximo 2-3 líneas cada una)
 
 Responde EXACTAMENTE en el siguiente formato JSON (sin markdown, solo JSON puro):
 
 {
   "salud_fisica": [
-    "Recomendación específica 1",
-    "Recomendación específica 2",
-    "Recomendación específica 3"
+    "Recomendación específica 1 (breve)",
+    "Recomendación específica 2 (breve)",
+    "Recomendación específica 3 (breve)"
   ],
   "salud_emocional": [
-    "Recomendación específica 1",
-    "Recomendación específica 2",
-    "Recomendación específica 3"
+    "Recomendación específica 1 (breve)",
+    "Recomendación específica 2 (breve)",
+    "Recomendación específica 3 (breve)"
   ],
   "salud_laboral": [
-    "Recomendación específica 1",
-    "Recomendación específica 2",
-    "Recomendación específica 3"
+    "Recomendación específica 1 (breve)",
+    "Recomendación específica 2 (breve)",
+    "Recomendación específica 3 (breve)"
   ],
   "salud_mental": [
-    "Recomendación específica 1",
-    "Recomendación específica 2",
-    "Recomendación específica 3"
+    "Recomendación específica 1 (breve)",
+    "Recomendación específica 2 (breve)",
+    "Recomendación específica 3 (breve)"
   ],
   "insights_generales": [
-    "Insight general 1",
-    "Insight general 2"
+    "Insight general 1 (breve)",
+    "Insight general 2 (breve)"
   ]
 }
 
@@ -233,7 +233,8 @@ IMPORTANTE:
 - Si detectas niveles altos de ansiedad/depresión/burnout, prioriza recomendaciones de autocuidado y apoyo profesional
 - Si los niveles son buenos, enfócate en mantenimiento y prevención
 - Usa un tono profesional pero cálido y cercano
-- Las recomendaciones deben ser realistas y aplicables en el contexto laboral mexicano`;
+- Las recomendaciones deben ser realistas y aplicables en el contexto laboral mexicano
+- MANTÉN TODAS LAS RECOMENDACIONES BREVES para asegurar que el JSON esté completo`;
 
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
@@ -246,8 +247,8 @@ IMPORTANTE:
                         parts: [{ text: prompt }]
                     }],
                     generationConfig: {
-                        temperature: 0.9,
-                        maxOutputTokens: 2048,
+                        temperature: 0.7,
+                        maxOutputTokens: 4096,
                     }
                 })
             }
