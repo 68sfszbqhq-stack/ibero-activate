@@ -495,8 +495,12 @@ IMPORTANTE:
         doc.setTextColor(128, 128, 128);
         doc.text('IBERO ACTÍVATE - Centro de Bienestar', pageWidth / 2, pageHeight - 10, { align: 'center' });
 
-        // Save PDF
-        const fileName = `Reporte_Bienestar_${employee.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+        // Save PDF with proper extension
+        const employeeName = employee.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+        const dateStr = new Date().toISOString().split('T')[0];
+        const fileName = `Reporte_Bienestar_${employeeName}_${dateStr}.pdf`;
+
+        // Ensure proper download
         doc.save(fileName);
     }
 }
