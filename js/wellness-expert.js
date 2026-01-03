@@ -247,13 +247,35 @@ IMPORTANTE:
         const result = await response.json();
         const aiText = result.candidates[0].content.parts[0].text;
 
-        // Parse JSON response (remove markdown code blocks if present)
-        const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            throw new Error('La IA no devolvió un formato JSON válido');
+        console.log('Respuesta de Gemini:', aiText); // Debug
+
+        // Parse JSON response (handle both pure JSON and markdown-wrapped JSON)
+        let jsonText = aiText;
+
+        // Remove markdown code blocks if present
+        if (aiText.includes('```json')) {
+            const match = aiText.match(/```json\s*([\s\S]*?)\s*```/);
+            if (match) {
+                jsonText = match[1];
+            }
+        } else if (aiText.includes('```')) {
+            const match = aiText.match(/```\s*([\s\S]*?)\s*```/);
+            if (match) {
+                jsonText = match[1];
+            }
         }
 
-        return JSON.parse(jsonMatch[0]);
+        // Try to extract JSON object if still not pure JSON
+        if (!jsonText.trim().startsWith('{')) {
+            const match = jsonText.match(/\{[\s\S]*\}/);
+            if (!match) {
+                console.error('No se encontró JSON en la respuesta:', aiText);
+                throw new Error('La IA no devolvió un formato JSON válido. Por favor intenta de nuevo.');
+            }
+            jsonText = match[0];
+        }
+
+        return JSON.parse(jsonText);
     }
 
     function displayRecommendations(recommendations) {
