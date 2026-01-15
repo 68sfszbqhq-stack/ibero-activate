@@ -5,9 +5,9 @@
 // Para mayor seguridad en el futuro, considera usar variables de entorno
 
 // Firebase Configuration
-// API Key rotada el 2026-01-14 después de limpieza de Git
+// API Key original - funcional con todas las APIs habilitadas
 const firebaseConfig = {
-    apiKey: "AIzaSyBRmZv0YOBDzrQRo40VRb70sKuAmTKOg88", // ✅ ROTADA
+    apiKey: "AIzaSyCqQq-bXpNRwVDTlVjj27JWHEenmEUZUp4",
     authDomain: "pausas-activas-ibero-2026.firebaseapp.com",
     projectId: "pausas-activas-ibero-2026",
     storageBucket: "pausas-activas-ibero-2026.firebasestorage.app",
