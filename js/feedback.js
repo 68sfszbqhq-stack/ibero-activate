@@ -146,13 +146,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // SEGURIDAD XSS: Crear elemento de forma segura
             const btn = document.createElement('button');
-            btn.className = 'magic-btn'; // Clase CSS nueva para animación
-            btn.innerHTML = `
-                <div class="avatar-tiny">${getInitials(data.employeeName)}</div>
-                <span>Soy ${data.employeeName}</span>
-                <i class="fa-solid fa-chevron-right"></i>
-            `;
+            btn.className = 'magic-btn';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar-tiny';
+            // Sanitizar nombre antes de mostrar
+            const safeName = window.SecurityUtils
+                ? window.SecurityUtils.escapeHTML(data.employeeName || 'Usuario')
+                : (data.employeeName || 'Usuario');
+            avatar.textContent = getInitials(safeName);
+
+            const span = document.createElement('span');
+            span.textContent = `Soy ${safeName}`;
+
+            const icon = document.createElement('i');
+            icon.className = 'fa-solid fa-chevron-right';
+
+            btn.appendChild(avatar);
+            btn.appendChild(span);
+            btn.appendChild(icon);
 
             // Al hacer clic, seleccionamos a este empleado
             btn.addEventListener('click', () => selectEmployee(doc.id, data));
@@ -161,18 +175,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function selectEmployee(attendanceId, data) {
+        // SEGURIDAD: Sanitizar datos del empleado
+        const safeName = window.SecurityUtils
+            ? window.SecurityUtils.escapeHTML(data.employeeName || 'Usuario')
+            : (data.employeeName || 'Usuario');
+
         selectedEmployee = {
             id: data.employeeId,
-            name: data.employeeName
+            name: safeName
         };
         currentAttendanceId = attendanceId;
 
         // GUARDAR EN LOCALSTORAGE para que el dashboard sepa quién es
         localStorage.setItem('currentEmployee', JSON.stringify(selectedEmployee));
 
-        // Actualizar UI del perfil
-        profileAvatar.textContent = getInitials(data.employeeName);
-        employeeName.textContent = data.employeeName;
+        // Actualizar UI del perfil con datos sanitizados
+        profileAvatar.textContent = getInitials(safeName);
+        employeeName.textContent = safeName;
 
         // NUEVO: Mostrar PRE-wellness questionnaire primero
         welcomeSection.classList.add('hidden');
@@ -190,7 +209,22 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
 
         try {
-            const comment = document.getElementById('comment').value;
+            const commentRaw = document.getElementById('comment').value;
+
+            // SEGURIDAD XSS: Validar y sanitizar comentario
+            const comment = window.SecurityUtils
+                ? window.SecurityUtils.validateComment(commentRaw, 500)
+                : commentRaw.substring(0, 500);
+
+            // SEGURIDAD: Validar rating
+            const validRating = window.SecurityUtils
+                ? window.SecurityUtils.validateRating(currentRating, 1, 5)
+                : currentRating;
+
+            if (!validRating) {
+                alert('⚠️ Calificación inválida');
+                return;
+            }
 
             // 0.1 SEGURIDAD: Verificar que la asistencia sigue activa (en subcollection)
             const attendanceDoc = await db.collection('employees')
@@ -217,26 +251,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 // TRACK LOCAL COMPLETED (to hide from list)
                 recentlyCompletedIds.add(currentAttendanceId);
 
-                // Trigger UI update to remove the button if list is visible
-                // (Optional, but good practice if we were strictly reactive. 
-                // Since we rely on updateLiveList triggering or next render, explicit removal isn't strictly needed 
-                // if we just add to set, but let's be safe).
-
                 // Opcional: Mostrar estado de éxito directamente si ya lo hizo
                 feedbackForm.classList.add('hidden');
                 successState.classList.remove('hidden');
                 return;
             }
 
-            // 1. Guardar Feedback en subcollection
+            // 1. Guardar Feedback en subcollection (con datos sanitizados)
             await db.collection('employees')
                 .doc(selectedEmployee.id)
                 .collection('feedback')
                 .add({
                     attendanceId: currentAttendanceId,
-                    rating: currentRating,
+                    rating: validRating,
                     reaction: currentEmoji,
-                    comment: comment,
+                    comment: comment, // Ya sanitizado
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                     date: new Date().toISOString().split('T')[0]
                 });

@@ -4,6 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Content Security Policy para prevenir XSS -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://firestore.googleapis.com; img-src 'self' data: https:;">
+
     <title>Pase de Lista - IBERO ACTÍVATE</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/admin.css">
@@ -119,6 +124,9 @@
             </div>
         </main>
     </div>
+
+    <!-- Security Utils (debe cargarse primero) -->
+    <script src="../js/security-utils.js"></script>
 
     <script src="../js/firebase-config.js"></script>
     <script src="../js/attendance.js"></script>

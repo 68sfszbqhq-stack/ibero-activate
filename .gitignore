@@ -1,13 +1,175 @@
+# ========================================
+# GITIGNORE MEJORADO - IBERO ACTÍVATE
+# Actualizado: 2026-01-14
+# Versión: 2.0 (Seguridad Hardened)
+# ========================================
+
+# ========================================
+# SISTEMA OPERATIVO
+# ========================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ========================================
+# DEPENDENCIAS Y PACKAGES
+# ========================================
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json  # Opcional: algunos prefieren versionarlo
+
+# ========================================
+# CONFIGURACIÓN SENSIBLE ⚠️ CRÍTICO
+# ========================================
+
+# Firebase - NUNCA commitear credenciales reales
+firebase-service-account.json
+firebase-adminsdk-*.json
+.firebaserc  # Si contiene IDs de proyectos sensibles
+
+# Variables de entorno
 .env
-*.log
+.env.local
+.env.development
+.env.test
+.env.production
+.env*.local
+
+# API Keys (por si creas archivos separados)
+**/config/secrets.js
+**/config/keys.js
+secrets.json
+credentials.json
+
+# ========================================
+# ARCHIVOS DE DESARROLLO
+# ========================================
+
+# IDEs
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
 
-# Firestore migration scripts
-firebase-service-account.json
+# Logs
+*.log
+npm-debug.log*
+logs/
+*.pid
+*.seed
+*.pid.lock
 
-# Migration outputs
+# ========================================
+# FIREBASE Y BASES DE DATOS
+# ========================================
+
+# Firestore emulator
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Backups de base de datos
 backups/
+*.backup
+*.bak
+*-backup.*
+
+# Migration logs
 migration-logs/
+migrations/*.log
+
+# Exports de Firestore con datos reales
+firestore-export/
+firestore-data/
+*.firestore
+
+# ========================================
+# ARCHIVOS ESPECÍFICOS DEL PROYECTO
+# ========================================
+
+# Tests PHP (si no son necesarios en producción)
+# NOTA: Descomentar si quieres ocultarlos
+# test_*.php
+
+# Backups de código
+*.backup
+*.bak
+*.old
+*~
+
+# Archivos temporales de wellness
+wellness-data-export/
+employee-data/
+health-surveys-export/
+
+# Scripts de migración con datos sensibles
+scripts/data-*.js
+scripts/*-production.js
+
+# ========================================
+# ARCHIVOS DE BUILD Y DISTRIBUCIÓN
+# ========================================
+
+# Builds
+dist/
+build/
+out/
+*.min.js.map
+*.css.map
+
+# Coverage
+coverage/
+.nyc_output/
+
+# ========================================
+# DOCUMENTACIÓN SENSIBLE (OPCIONAL)
+# ========================================
+
+# Documentos internos que no deben ser públicos
+# PRIVATE-*.md
+# INTERNAL-*.md
+# TODO-SECURITY.md
+
+# ========================================
+# OTROS
+# ========================================
+
+# Archivos grandes
+*.mp4
+*.mov
+*.avi
+*.zip
+*.tar.gz
+*.rar
+
+# Certificados
+*.pem
+*.key
+*.crt
+*.p12
+
+# ========================================
+# NOTAS IMPORTANTES
+# ========================================
+
+# ⚠️ RECORDATORIO: Si ya commiteaste archivos sensibles:
+# 1. Removerlos del historial de Git (git filter-branch o BFG)
+# 2. Rotar TODAS las credenciales expuestas
+# 3. Verificar logs de acceso en Firebase Console
+
+# ✅ BUENAS PRÁCTICAS:
+# - NUNCA commitear API keys directamente
+# - Usar variables de entorno para configuración
+# - Rotar credenciales regularmente
+# - Revisar el output de `git status` antes de cada commit

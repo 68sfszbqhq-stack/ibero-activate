@@ -61,13 +61,22 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadAreas() {
         try {
             const snapshot = await db.collection('areas').get();
-            areaDropdown.innerHTML = '<option value="">Selecciona un Área...</option>';
+            // SEGURIDAD XSS: Limpiar y crear opciones de forma segura
+            areaDropdown.innerHTML = '';
+
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Selecciona un Área...';
+            areaDropdown.appendChild(defaultOption);
 
             snapshot.forEach(doc => {
                 const area = doc.data();
                 const option = document.createElement('option');
                 option.value = doc.id;
-                option.textContent = area.name;
+                // Sanitizar nombre del área
+                option.textContent = window.SecurityUtils
+                    ? window.SecurityUtils.escapeHTML(area.name)
+                    : area.name;
                 areaDropdown.appendChild(option);
             });
         } catch (error) {
@@ -105,7 +114,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 .get();
 
             if (snapshot.empty) {
-                employeeList.innerHTML = '<div class="no-data">No hay empleados en esta área</div>';
+                // SEGURIDAD XSS: Crear mensaje de forma segura
+                employeeList.innerHTML = '';
+                const noDataDiv = document.createElement('div');
+                noDataDiv.className = 'no-data';
+                noDataDiv.textContent = 'No hay empleados en esta área';
+                employeeList.appendChild(noDataDiv);
                 return;
             }
 
@@ -168,23 +182,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Error cargando empleados:', error);
-            employeeList.innerHTML = '<div class="error">Error al cargar datos</div>';
+            // SEGURIDAD XSS: Crear mensaje de error de forma segura
+            employeeList.innerHTML = '';
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = 'Error al cargar datos';
+            employeeList.appendChild(errorDiv);
         }
     }
 
     function createEmployeeCard(id, emp, status) {
         const card = document.createElement('div');
-        card.className = 'employee-card'; // Quitamos 'selected' inicial, lo manejará updateEmployeeCardStatus
-        card.id = `card-${id}`; // ID para busqueda rápida
+        card.className = 'employee-card';
+        card.id = `card-${id}`;
         card.dataset.id = id;
 
-        card.innerHTML = `
-            <div class="card-icon"><i class="fa-regular fa-circle"></i></div>
-            <div class="card-info">
-                <h3>${emp.fullName}</h3>
-                <p>#${emp.accountNumber}</p>
-            </div>
-        `;
+        // SEGURIDAD XSS: Crear estructura de forma segura
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'card-icon';
+        const icon = document.createElement('i');
+        icon.className = 'fa-regular fa-circle';
+        iconDiv.appendChild(icon);
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'card-info';
+
+        const h3 = document.createElement('h3');
+        // Sanitizar nombre del empleado
+        h3.textContent = window.SecurityUtils
+            ? window.SecurityUtils.escapeHTML(emp.fullName)
+            : emp.fullName;
+
+        const p = document.createElement('p');
+        // Sanitizar número de cuenta
+        const safeAccountNumber = window.SecurityUtils
+            ? window.SecurityUtils.validateAccountNumber(emp.accountNumber)
+            : emp.accountNumber;
+        p.textContent = `#${safeAccountNumber || 'N/A'}`;
+
+        infoDiv.appendChild(h3);
+        infoDiv.appendChild(p);
+
+        card.appendChild(iconDiv);
+        card.appendChild(infoDiv);
 
         // Click Event: Toggle Asistencia
         card.addEventListener('click', () => toggleAttendance(card, id, emp));

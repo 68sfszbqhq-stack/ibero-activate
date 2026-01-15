@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inicializar
     loadDashboardData();
+    loadProgramSummary(); // Program Periodization
     setupDetailButtons();
     setupModalClose();
 
@@ -895,5 +896,91 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Error fetching employee', e);
             }
         }
+    }
+
+    // Load Program Peridization Summary
+    async function loadProgramSummary() {
+        try {
+            const doc = await db.collection('program_periodization')
+                .doc('current_macrocycle')
+                .get();
+
+            if (!doc.exists) {
+                // No program configured, hide the summary card
+                return;
+            }
+
+            const programData = doc.data();
+            const programContext = calculateProgramWeek(programData);
+
+            if (!programContext) return;
+
+            // Show the card
+            const summaryCard = document.getElementById('program-summary');
+            if (summaryCard) {
+                summaryCard.style.display = 'block';
+            }
+
+            // Update content
+            const weekTag = document.getElementById('program-week-tag');
+            const phaseName = document.getElementById('program-phase-name');
+            const objective = document.getElementById('program-objective');
+            const progressCircle = document.getElementById('progress-circle');
+            const progressPercentage = document.getElementById('progress-percentage');
+
+            if (weekTag) {
+                weekTag.textContent = `Semana ${programContext.weekNumber}/${programContext.totalWeeks}`;
+            }
+
+            if (phaseName && programContext.phase) {
+                phaseName.textContent = programContext.phase.name;
+            }
+
+            if (objective && programContext.phase) {
+                objective.textContent = programContext.phase.nomenclatura;
+            }
+
+            if (progressPercentage) {
+                progressPercentage.textContent = `${Math.round(programContext.progress)}%`;
+            }
+
+            // Animate progress ring
+            if (progressCircle) {
+                const circumference = 2 * Math.PI * 42; // r=42
+                const offset = circumference - (programContext.progress / 100) * circumference;
+                progressCircle.style.strokeDashoffset = offset;
+            }
+
+        } catch (error) {
+            console.error('Error loading program summary:', error);
+        }
+    }
+
+    function calculateProgramWeek(programData) {
+        if (!programData || !programData.startDate) {
+            return null;
+        }
+
+        const startDate = new Date(programData.startDate);
+        const today = new Date();
+
+        const diffTime = today - startDate;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const weekNumber = Math.max(1, Math.min(
+            Math.floor(diffDays / 7) + 1,
+            programData.totalWeeks
+        ));
+
+        // Find current phase
+        const phase = programData.phases.find(p =>
+            weekNumber >= p.weekRange[0] && weekNumber <= p.weekRange[1]
+        );
+
+        return {
+            weekNumber,
+            phase,
+            totalWeeks: programData.totalWeeks,
+            progress: (weekNumber / programData.totalWeeks) * 100
+        };
     }
 });

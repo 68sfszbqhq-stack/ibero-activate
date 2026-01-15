@@ -6,7 +6,8 @@
         "backup": "node scripts/migration-backup.js",
         "migrate:dry-run": "node scripts/migrate-to-subcollections.js --dry-run",
         "migrate:execute": "node scripts/migrate-to-subcollections.js --execute",
-        "validate": "node scripts/validate-migration.js"
+        "validate": "node scripts/validate-migration.js",
+        "init-periodization": "node scripts/init-periodization-node.js"
     },
     "keywords": [
         "firestore",

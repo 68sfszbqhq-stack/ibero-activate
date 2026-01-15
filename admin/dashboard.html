@@ -33,6 +33,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="program-overview.html" class="nav-link">
+                        <i class="fa-solid fa-calendar-star"></i> Programa 19 Semanas
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="calendar.html" class="nav-link">
                         <i class="fa-solid fa-calendar-days"></i> Calendario
                     </a>
@@ -92,6 +97,42 @@
                     <button id="next-week" class="btn-secondary"><i class="fa-solid fa-chevron-right"></i></button>
                 </div>
             </header>
+
+            <!-- Program Periodization Summary -->
+            <div class="program-summary-card" id="program-summary" style="display: none;">
+                <div class="program-summary-content">
+                    <div class="program-icon">
+                        <i class="fa-solid fa-calendar-star"></i>
+                    </div>
+                    <div class="program-info">
+                        <div class="program-tag" id="program-week-tag">Semana 5/19</div>
+                        <h3 id="program-phase-name">Construcción de Base Física y Lúdica</h3>
+                        <p id="program-objective">Mesociclo de Desarrollo de Capacidades Coordinativas</p>
+                    </div>
+                    <div class="program-progress">
+                        <svg class="progress-ring" width="100" height="100">
+                            <circle class="progress-ring-bg" stroke="#e5e7eb" stroke-width="8" fill="transparent" r="42"
+                                cx="50" cy="50" />
+                            <circle class="progress-ring-circle" id="progress-circle" stroke="url(#gradient)"
+                                stroke-width="8" fill="transparent" r="42" cx="50" cy="50"
+                                style="stroke-dasharray: 263.89; stroke-dashoffset: 263.89; transition: stroke-dashoffset 0.6s ease;" />
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div class="progress-percentage" id="progress-percentage">26%</div>
+                    </div>
+                    <div class="program-actions">
+                        <a href="program-overview.html" class="btn-view-program">
+                            <i class="fa-solid fa-eye"></i>
+                            Ver Programa Completo
+                        </a>
+                    </div>
+                </div>
+            </div>
 
             <!-- Stats Grid -->
             <div class="stats-grid"

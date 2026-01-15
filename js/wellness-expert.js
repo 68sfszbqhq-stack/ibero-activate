@@ -1,4 +1,4 @@
-// Experto de IA en Bienestar - Recomendaciones Personalizadas
+w// Experto de IA en Bienestar - Recomendaciones Personalizadas
 
 document.addEventListener('DOMContentLoaded', () => {
     waitForFirebase(initWellnessExpert);
@@ -33,7 +33,11 @@ function initWellnessExpert() {
         return;
     }
 
-    userNameDisplay.textContent = currentEmployee.name;
+    // SEGURIDAD XSS: Sanitizar nombre de usuario antes de mostrar
+    const safeName = window.SecurityUtils
+        ? window.SecurityUtils.escapeHTML(currentEmployee.name)
+        : currentEmployee.name;
+    userNameDisplay.textContent = safeName;
 
     // Load saved API key
     const savedKey = localStorage.getItem('gemini_api_key');
@@ -298,50 +302,82 @@ IMPORTANTE:
     function displayRecommendations(recommendations) {
         console.log('Mostrando recomendaciones:', recommendations); // Debug
 
+        // SEGURIDAD XSS: Función helper para sanitizar recomendaciones
+        const createSafeRecommendation = (rec, iconClass, bgClass, iconColor) => {
+            const div = document.createElement('div');
+            div.className = `flex items-start gap-3 ${bgClass} p-3 rounded-lg`;
+
+            const icon = document.createElement('i');
+            icon.className = `fa-solid fa-check ${iconColor} mt-1`;
+
+            const p = document.createElement('p');
+            p.className = 'text-sm leading-relaxed';
+            // Sanitizar el texto de la recomendación
+            p.textContent = window.SecurityUtils
+                ? window.SecurityUtils.escapeHTML(rec)
+                : rec;
+
+            div.appendChild(icon);
+            div.appendChild(p);
+            return div;
+        };
+
         // Physical health
-        document.getElementById('physical-recommendations').innerHTML =
-            recommendations.salud_fisica.map(rec => `
-                <div class="flex items-start gap-3 bg-green-50 p-3 rounded-lg">
-                    <i class="fa-solid fa-check text-green-600 mt-1"></i>
-                    <p class="text-sm leading-relaxed">${rec}</p>
-                </div>
-            `).join('');
+        const physicalContainer = document.getElementById('physical-recommendations');
+        physicalContainer.innerHTML = '';
+        recommendations.salud_fisica.forEach(rec => {
+            physicalContainer.appendChild(
+                createSafeRecommendation(rec, 'fa-check', 'bg-green-50', 'text-green-600')
+            );
+        });
 
         // Emotional health
-        document.getElementById('emotional-recommendations').innerHTML =
-            recommendations.salud_emocional.map(rec => `
-                <div class="flex items-start gap-3 bg-pink-50 p-3 rounded-lg">
-                    <i class="fa-solid fa-check text-pink-600 mt-1"></i>
-                    <p class="text-sm leading-relaxed">${rec}</p>
-                </div>
-            `).join('');
+        const emotionalContainer = document.getElementById('emotional-recommendations');
+        emotionalContainer.innerHTML = '';
+        recommendations.salud_emocional.forEach(rec => {
+            emotionalContainer.appendChild(
+                createSafeRecommendation(rec, 'fa-check', 'bg-pink-50', 'text-pink-600')
+            );
+        });
 
         // Occupational health
-        document.getElementById('occupational-recommendations').innerHTML =
-            recommendations.salud_laboral.map(rec => `
-                <div class="flex items-start gap-3 bg-blue-50 p-3 rounded-lg">
-                    <i class="fa-solid fa-check text-blue-600 mt-1"></i>
-                    <p class="text-sm leading-relaxed">${rec}</p>
-                </div>
-            `).join('');
+        const occupationalContainer = document.getElementById('occupational-recommendations');
+        occupationalContainer.innerHTML = '';
+        recommendations.salud_laboral.forEach(rec => {
+            occupationalContainer.appendChild(
+                createSafeRecommendation(rec, 'fa-check', 'bg-blue-50', 'text-blue-600')
+            );
+        });
 
         // Mental health
-        document.getElementById('mental-recommendations').innerHTML =
-            recommendations.salud_mental.map(rec => `
-                <div class="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
-                    <i class="fa-solid fa-check text-purple-600 mt-1"></i>
-                    <p class="text-sm leading-relaxed">${rec}</p>
-                </div>
-            `).join('');
+        const mentalContainer = document.getElementById('mental-recommendations');
+        mentalContainer.innerHTML = '';
+        recommendations.salud_mental.forEach(rec => {
+            mentalContainer.appendChild(
+                createSafeRecommendation(rec, 'fa-check', 'bg-purple-50', 'text-purple-600')
+            );
+        });
 
         // General insights
-        document.getElementById('general-insights').innerHTML =
-            recommendations.insights_generales.map(insight => `
-                <div class="flex items-start gap-3 bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400">
-                    <i class="fa-solid fa-star text-yellow-600 mt-1"></i>
-                    <p class="leading-relaxed">${insight}</p>
-                </div>
-            `).join('');
+        const insightsContainer = document.getElementById('general-insights');
+        insightsContainer.innerHTML = '';
+        recommendations.insights_generales.forEach(insight => {
+            const div = document.createElement('div');
+            div.className = 'flex items-start gap-3 bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400';
+
+            const icon = document.createElement('i');
+            icon.className = 'fa-solid fa-star text-yellow-600 mt-1';
+
+            const p = document.createElement('p');
+            p.className = 'leading-relaxed';
+            p.textContent = window.SecurityUtils
+                ? window.SecurityUtils.escapeHTML(insight)
+                : insight;
+
+            div.appendChild(icon);
+            div.appendChild(p);
+            insightsContainer.appendChild(div);
+        });
 
         // Update date
         document.getElementById('generation-date').textContent =

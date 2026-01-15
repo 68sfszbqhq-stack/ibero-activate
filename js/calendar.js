@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // State
     let currentWeekStart = getStartOfWeek(new Date());
     let activitiesMap = {}; // id -> data
+    let programData = null; // Program periodization data
+    let currentProgramContext = null; // Current week and phase info
     console.log("Calendar JS Loaded - Simplified v3.0");
 
     // --- FUNCTIONS DEFINED EARLY TO AVOID REFERENCE ERRORS ---
@@ -87,6 +89,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Buttons
     document.getElementById('prev-week').addEventListener('click', () => changeWeek(-1));
     document.getElementById('next-week').addEventListener('click', () => changeWeek(1));
+
+    // Fallback buttons (if program not configured)
+    const prevWeekFallback = document.getElementById('prev-week-fallback');
+    const nextWeekFallback = document.getElementById('next-week-fallback');
+    if (prevWeekFallback) prevWeekFallback.addEventListener('click', () => changeWeek(-1));
+    if (nextWeekFallback) nextWeekFallback.addEventListener('click', () => changeWeek(1));
+
     document.getElementById('btn-close-modal').addEventListener('click', closeModal);
     document.getElementById('btn-cancel').addEventListener('click', closeModal);
     document.getElementById('btn-delete-schedule').addEventListener('click', deleteSchedule);
@@ -101,9 +110,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function initCalendar() {
         renderGridStructure();
+        await loadProgramData();
         await loadActivities();
         loadSchedule();
         updateWeekLabel();
+        updateProgramContext();
     }
 
     // 1. Render Simplified Grid Structure (5 days, no times)
@@ -355,6 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentWeekStart.setDate(currentWeekStart.getDate() + (offset * 7));
         loadSchedule();
         updateWeekLabel();
+        updateProgramContext(); // Update phase context when changing weeks
     }
 
     function updateWeekLabel() {
@@ -363,6 +375,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const options = { day: 'numeric', month: 'short' };
         weekLabel.textContent = `Semana del ${currentWeekStart.toLocaleDateString('es-ES', options)} al ${end.toLocaleDateString('es-ES', options)}`;
+
+        // Update fallback label too
+        const fallbackLabel = document.getElementById('current-week-label-fallback');
+        if (fallbackLabel) {
+            fallbackLabel.textContent = `Semana del ${currentWeekStart.toLocaleDateString('es-ES', options)} al ${end.toLocaleDateString('es-ES', options)}`;
+        }
     }
 
     function translateDay(day) {
@@ -371,5 +389,212 @@ document.addEventListener('DOMContentLoaded', () => {
             'thursday': 'Jueves', 'friday': 'Viernes'
         };
         return map[day] || day;
+    }
+
+    // --- PROGRAM PERIODIZATION FUNCTIONS ---
+
+    async function loadProgramData() {
+        try {
+            const doc = await db.collection('program_periodization')
+                .doc('current_macrocycle')
+                .get();
+
+            if (doc.exists) {
+                programData = doc.data();
+                console.log('Program periodization loaded:', programData.programName);
+            } else {
+                console.log('No program periodization configured');
+                showFallbackHeader();
+            }
+        } catch (error) {
+            console.error('Error loading program data:', error);
+            showFallbackHeader();
+        }
+    }
+
+    function calculateProgramWeek(date = currentWeekStart) {
+        if (!programData || !programData.startDate) {
+            return null;
+        }
+
+        const programStart = new Date(programData.startDate);
+        const diffTime = date - programStart;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const weekNumber = Math.max(1, Math.min(
+            Math.floor(diffDays / 7) + 1,
+            programData.totalWeeks
+        ));
+
+        // Find current phase
+        const phase = programData.phases.find(p =>
+            weekNumber >= p.weekRange[0] && weekNumber <= p.weekRange[1]
+        );
+
+        // Find week schedule
+        const weekSchedule = programData.weeklySchedule?.find(w => w.week === weekNumber);
+
+        return {
+            weekNumber,
+            phase,
+            weekSchedule,
+            totalWeeks: programData.totalWeeks,
+            progress: (weekNumber / programData.totalWeeks) * 100
+        };
+    }
+
+    function updateProgramContext() {
+        if (!programData) {
+            showFallbackHeader();
+            return;
+        }
+
+        currentProgramContext = calculateProgramWeek();
+
+        if (!currentProgramContext) {
+            showFallbackHeader();
+            return;
+        }
+
+        // Show program banner, hide fallback
+        const banner = document.getElementById('program-context-banner');
+        const fallback = document.getElementById('fallback-header');
+
+        if (banner && fallback) {
+            banner.style.display = 'grid';
+            fallback.style.display = 'none';
+        }
+
+        // Update phase badge
+        const phaseBadge = document.getElementById('phase-badge');
+        const phaseNameBadge = document.getElementById('phase-name-badge');
+
+        if (currentProgramContext.phase && phaseBadge && phaseNameBadge) {
+            phaseBadge.style.setProperty('--phase-color', currentProgramContext.phase.colorTheme);
+            phaseNameBadge.textContent = `${currentProgramContext.phase.name}`;
+        }
+
+        // Update week title
+        const weekTitle = document.getElementById('week-title');
+        if (weekTitle) {
+            weekTitle.textContent = `Semana ${currentProgramContext.weekNumber}/${currentProgramContext.totalWeeks} - Calendario Semanal`;
+        }
+
+        // Update objective
+        const objectiveValue = document.getElementById('objective-value');
+        if (objectiveValue && currentProgramContext.weekSchedule) {
+            objectiveValue.textContent = `${currentProgramContext.weekSchedule.objetivo} (${currentProgramContext.weekSchedule.intensidad})`;
+        }
+
+        // Setup science link
+        const scienceLink = document.getElementById('btn-view-science');
+        if (scienceLink && currentProgramContext.phase) {
+            scienceLink.onclick = (e) => {
+                e.preventDefault();
+                showScienceModal(currentProgramContext.phase);
+            };
+        }
+    }
+
+    function showFallbackHeader() {
+        const banner = document.getElementById('program-context-banner');
+        const fallback = document.getElementById('fallback-header');
+
+        if (banner) banner.style.display = 'none';
+        if (fallback) fallback.style.display = 'flex';
+    }
+
+    function showScienceModal(phase) {
+        // Create simple modal for scientific foundations
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        `;
+
+        const content = document.createElement('div');
+        content.style.cssText = `
+            background: white;
+            border-radius: 16px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        `;
+
+        const header = document.createElement('div');
+        header.style.cssText = `
+            padding: 2rem;
+            background: linear-gradient(135deg, ${phase.colorTheme}, ${darkenColor(phase.colorTheme, 20)});
+            color: white;
+            border-radius: 16px 16px 0 0;
+            position: relative;
+        `;
+        header.innerHTML = `
+            <button onclick="this.closest('.science-modal-overlay').remove()" style="
+                position: absolute;
+                top: 1.5rem;
+                right: 1.5rem;
+                background: rgba(255, 255, 255, 0.2);
+                border: none;
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                color: white;
+                font-size: 1.25rem;
+                cursor: pointer;
+            ">&times;</button>
+            <h2 style="margin: 0 0 0.5rem 0; font-size: 1.75rem;">${phase.name}</h2>
+            <p style="margin: 0; opacity: 0.9;">${phase.nomenclatura}</p>
+        `;
+
+        const body = document.createElement('div');
+        body.style.cssText = 'padding: 2rem; line-height: 1.7;';
+
+        const justification = phase.justificacionCientifica.split('\n\n').map(para =>
+            `<p style="margin-bottom: 1rem;">${para.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`
+        ).join('');
+
+        body.innerHTML = `
+            <h3 style="color: var(--text-dark); margin-bottom: 0.75rem;">
+                <i class="fa-solid fa-flask"></i> Justificación Científica
+            </h3>
+            ${justification}
+            
+            <h3 style="color: var(--text-dark); margin: 2rem 0 0.75rem 0;">
+                <i class="fa-solid fa-bullseye"></i> Objetivos de la Fase
+            </h3>
+            <ul>
+                ${phase.objetivosFase.map(obj => `<li style="margin-bottom: 0.5rem;">${obj}</li>`).join('')}
+            </ul>
+        `;
+
+        content.appendChild(header);
+        content.appendChild(body);
+        modal.appendChild(content);
+        modal.className = 'science-modal-overlay';
+        document.body.appendChild(modal);
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    function darkenColor(hex, percent) {
+        const num = parseInt(hex.replace('#', ''), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = Math.max(0, (num >> 16) - amt);
+        const G = Math.max(0, (num >> 8 & 0x00FF) - amt);
+        const B = Math.max(0, (num & 0x0000FF) - amt);
+        return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
     }
 });

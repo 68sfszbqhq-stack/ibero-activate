@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programa de 19 Semanas - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* Hero Section */
+        .program-hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .program-hero h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 800;
+        }
+
+        .program-hero p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        /* Progress Bar */
+        .main-progress-bar {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .main-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #3b82f6);
+            border-radius: 10px;
+            transition: width 0.6s ease;
+        }
+
+        /* Phase Timeline */
+        .phase-timeline {
+            display: flex;
+            gap: 1rem;
+            margin: 2rem 0;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+        }
+
+        .phase-block {
+            flex: 1;
+            min-width: 180px;
+            background: white;
+            border: 3px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .phase-block:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .phase-block.active {
+            border-color: var(--phase-color, var(--primary));
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+        }
+
+        .phase-block.active::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(135deg, var(--phase-color), transparent);
+            border-radius: 12px;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        .phase-number {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: var(--phase-color, #6b7280);
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .phase-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+        }
+
+        .phase-weeks {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .phase-objective {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            background: #f3f4f6;
+            border-radius: 6px;
+            display: inline-block;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        /* Weeks Grid */
+        .weeks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.25rem;
+            margin-top: 2rem;
+        }
+
+        .week-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .week-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--phase-color, #6b7280);
+        }
+
+        .week-card:hover {
+            border-color: var(--phase-color, var(--primary));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .week-card.completed {
+            background: #f0fdf4;
+            border-color: #10b981;
+        }
+
+        .week-card.current {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, #eef2ff, #fff);
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+        }
+
+        .week-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .week-number {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-dark);
+        }
+
+        .week-status-badge {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .status-completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-current {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-pending {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .week-activity {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .week-objective {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .week-intensity {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            background: #f9fafb;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        /* Scientific Panel */
+        .scientific-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            margin-top: 2rem;
+        }
+
+        .scientific-panel h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+        }
+
+        .scientific-panel h3 i {
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--phase-color, #667eea), var(--phase-color-dark, #764ba2));
+            color: white;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .modal-header h2 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.75rem;
+        }
+
+        .modal-header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .objectives-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .objectives-list li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            align-items: start;
+            gap: 0.75rem;
+        }
+
+        .objectives-list li:last-child {
+            border-bottom: none;
+        }
+
+        .objectives-list i {
+            color: var(--phase-color, var(--primary));
+            margin-top: 0.25rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .metric-item {
+            background: #f9fafb;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 3px solid var(--phase-color, var(--primary));
+        }
+
+        .metric-item strong {
+            display: block;
+            color: var(--text-dark);
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        .metric-item span {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .close-modal:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .program-hero h1 {
+                font-size: 1.5rem;
+            }
+
+            .phase-timeline {
+                flex-direction: column;
+            }
+
+            .weeks-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <h2>IBERO ACTÍVATE</h2>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="program-overview.html" class="nav-link active">
+                        <i class="fa-solid fa-calendar-star"></i> Programa 19 Semanas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="calendar.html" class="nav-link">
+                        <i class="fa-solid fa-calendar-days"></i> Calendario
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="activities.html" class="nav-link">
+                        <i class="fa-solid fa-dumbbell"></i> Actividades
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="attendance.html" class="nav-link">
+                        <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="attendance-late.html" class="nav-link">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Pase Extemporáneo
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="employees.html" class="nav-link">
+                        <i class="fa-solid fa-user-plus"></i> Empleados
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="reports.html" class="nav-link">
+                        <i class="fa-solid fa-file-pdf"></i> Reportes
+                    </a>
+                </li>
+            </ul>
+
+            <button onclick="logout()" class="nav-link logout-btn">
+                <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Hero Section -->
+            <div class="program-hero" id="program-hero">
+                <h1 id="program-title">Macrociclo IBERO ACTÍVATE</h1>
+                <p id="program-subtitle">Sistema de Periodización de Bienestar Integral</p>
+
+                <div class="main-progress-bar">
+                    <div class="main-progress-fill" id="main-progress-fill" style="width: 0%"></div>
+                </div>
+
+                <div class="progress-stats">
+                    <div class="stat-box">
+                        <span class="stat-value" id="current-week-stat">-</span>
+                        <span class="stat-label">Semana Actual</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value" id="progress-percent">0%</span>
+                        <span class="stat-label">Progreso</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value" id="current-phase-name">-</span>
+                        <span class="stat-label">Fase Actual</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value" id="days-remaining">-</span>
+                        <span class="stat-label">Días Restantes</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase Timeline -->
+            <section>
+                <h2 style="margin-bottom: 1rem; color: var(--text-dark);">
+                    <i class="fa-solid fa-layer-group"></i> Fases del Programa
+                </h2>
+                <div class="phase-timeline" id="phase-timeline">
+                    <!-- Generado por JS -->
+                </div>
+            </section>
+
+            <!-- Weeks Grid -->
+            <section>
+                <h2 style="margin-bottom: 1rem; color: var(--text-dark);">
+                    <i class="fa-solid fa-calendar-week"></i> Calendario de 19 Semanas
+                </h2>
+                <div class="weeks-grid" id="weeks-grid">
+                    <!-- Generado por JS -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal de Fundamentos Científicos -->
+    <div class="modal" id="science-modal">
+        <div class="modal-content">
+            <div class="modal-header" id="modal-header">
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+                <h2 id="modal-phase-name">Fase</h2>
+                <p id="modal-nomenclatura">Nomenclatura</p>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: var(--text-dark); margin-bottom: 0.75rem;">
+                        <i class="fa-solid fa-flask"></i> Justificación Científica
+                    </h3>
+                    <div id="modal-justification" style="line-height: 1.7; color: #374151;"></div>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: var(--text-dark); margin-bottom: 0.75rem;">
+                        <i class="fa-solid fa-bullseye"></i> Objetivos de la Fase
+                    </h3>
+                    <ul class="objectives-list" id="modal-objectives"></ul>
+                </div>
+
+                <div>
+                    <h3 style="color: var(--text-dark); margin-bottom: 0.75rem;">
+                        <i class="fa-solid fa-chart-line"></i> Métricas Objetivo
+                    </h3>
+                    <div class="metrics-grid" id="modal-metrics"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/program-utils.js"></script>
+    <script src="../js/program-overview.js"></script>
+</body>
+
+</html>

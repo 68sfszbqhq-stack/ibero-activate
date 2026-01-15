@@ -1,4 +1,5 @@
 // Reportes inteligentes con Gemini AI - Versión Anónima Multi-Experto
+// ACTUALIZADO: Con sanitización XSS
 
 // Esperar a que Firebase esté listo
 function waitForFirebase(callback) {
@@ -22,7 +23,7 @@ function initReports() {
     const periodSelect = document.getElementById('report-period');
     const apiKeyInput = document.getElementById('gemini-api-key');
 
-    // Cargar API key guardada
+    // Cargar API key guardada (ADVERTENCIA: Ver recomendaciones de seguridad)
     const savedKey = localStorage.getItem('gemini_api_key');
     if (savedKey) {
         apiKeyInput.value = savedKey;
@@ -34,6 +35,13 @@ function initReports() {
 
         if (!apiKey) {
             alert('Por favor ingresa tu API Key de Gemini');
+            return;
+        }
+
+        // SEGURIDAD: Validar formato de API key
+        if (!apiKey.match(/^[A-Za-z0-9_-]{20,}$/)) {
+            alert('⚠️ Formato de API Key inválido');
+            window.SecurityUtils?.SecurityLogger.warn('Invalid API key format attempted');
             return;
         }
 
@@ -54,7 +62,10 @@ function initReports() {
 
         } catch (error) {
             console.error('Error:', error);
-            alert('Error: ' + error.message);
+            const errorMsg = window.SecurityUtils
+                ? window.SecurityUtils.escapeHTML(error.message)
+                : 'Error al generar reporte';
+            alert('Error: ' + errorMsg);
         } finally {
             loadingState.classList.add('hidden');
             generateBtn.disabled = false;
@@ -62,26 +73,29 @@ function initReports() {
     });
 
     function displayReport(aiReport, data) {
-        let html = aiReport
-            .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.+?)\*/g, '<em>$1</em>')
-            .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-            .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-            .replace(/^- (.+)$/gm, '<li>$1</li>')
-            .replace(/\n\n/g, '</p><p>')
-            .replace(/<li>/g, '<ul><li>')
-            .replace(/<\/li>(?!\n<li>)/g, '</li></ul>');
+        // SEGURIDAD XSS: Usar sanitización de markdown
+        const sanitizedHTML = window.SecurityUtils
+            ? window.SecurityUtils.formatAIResponse(aiReport)
+            : escapeBasicHTML(aiReport);
 
-        html = '<p>' + html + '</p>';
+        reportContent.innerHTML = sanitizedHTML;
 
-        reportContent.innerHTML = html;
+        const periodText = window.SecurityUtils
+            ? window.SecurityUtils.escapeHTML(translatePeriod(data.period))
+            : translatePeriod(data.period);
+
         document.getElementById('report-date').textContent =
-            `Generado: ${new Date().toLocaleString('es-MX')} | Período: ${translatePeriod(data.period)}`;
+            `Generado: ${new Date().toLocaleString('es-MX')} | Período: ${periodText}`;
 
         reportContainer.classList.remove('hidden');
         reportContainer.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Función de escape básica como fallback
+    function escapeBasicHTML(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     function translatePeriod(period) {
@@ -121,7 +135,11 @@ async function aggregateAnonymousData(period = 'weekly') {
     const areasSnapshot = await db.collection('areas').get();
     const areasMap = {};
     areasSnapshot.forEach(doc => {
-        areasMap[doc.id] = doc.data().name;
+        // SEGURIDAD: Sanitizar nombres de áreas
+        const areaName = window.SecurityUtils
+            ? window.SecurityUtils.escapeHTML(doc.data().name)
+            : doc.data().name;
+        areasMap[doc.id] = areaName;
     });
 
     const employeesSnapshot = await db.collection('employees').get();
@@ -235,7 +253,7 @@ async function aggregateAnonymousData(period = 'weekly') {
 
 // Generar análisis con Gemini desde 3 perspectivas de expertos
 async function generateMultiExpertReport(data, apiKey) {
-    // Formatear datos para el prompt
+    // Formatear datos para el prompt (ya sanitizados)
     const deptSummary = Object.entries(data.departamentos)
         .filter(([_, stats]) => stats.empleados > 0)
         .map(([dept, stats]) => {
@@ -338,7 +356,7 @@ FORMATO DEL REPORTE:
 Sé específico, usa datos concretos, y mantén un tono profesional pero empático. Los nombres de departamentos son reales pero NO menciones ningún dato personal individual.`;
 
     const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -361,5 +379,12 @@ Sé específico, usa datos concretos, y mantén un tono profesional pero empáti
     }
 
     const result = await response.json();
+
+    // SEGURIDAD: Log de uso de API
+    window.SecurityUtils?.SecurityLogger.log('Gemini API called', {
+        period: data.period,
+        departments: Object.keys(data.departamentos).length
+    });
+
     return result.candidates[0].content.parts[0].text;
 }
