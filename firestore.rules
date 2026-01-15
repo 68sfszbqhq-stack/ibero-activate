@@ -8,14 +8,12 @@ service cloud.firestore {
     
     /**
      * Verifica si el usuario actual es un administrador
-     * IMPORTANTE: Esto requiere configurar Custom Claims en Firebase Auth
-     * Por ahora, cualquier usuario autenticado es admin (TEMPORAL)
-     * TODO: Implementar sistema de roles en Firebase Auth
+     * TEMPORAL: Cualquier usuario autenticado es admin
+     * TODO: Implementar Custom Claims en Firebase Auth
      */
     function isAdmin() {
-      // TEMPORAL: Cualquier usuario autenticado
-      // PRODUCCIÓN: return request.auth.token.admin == true;
       return request.auth != null;
+      // PRODUCCIÓN: return request.auth.token.admin == true;
     }
     
     /**
@@ -45,104 +43,80 @@ service cloud.firestore {
 
     // ÁREAS / DEPARTAMENTOS
     match /areas/{areaId} {
-      // Lectura: Solo usuarios autenticados
-      allow read: if request.auth != null;
-      // Escritura: Solo administradores
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     // EMPLEADOS
     match /employees/{employeeId} {
-      // Lectura: Admin o el propio empleado
-      allow read: if isAdmin() || isOwner(employeeId);
+      allow read: if true;
+      allow create, delete: if isAdmin();
       
-      // Creación: Solo admin
-      allow create: if isAdmin() && 
-        request.resource.data.keys().hasAll(['fullName', 'accountNumber', 'areaId']) &&
-        isValidString(request.resource.data.fullName, 100) &&
-        isValidString(request.resource.data.accountNumber, 20);
-      
-      // Actualización: Admin (completa) o empleado (solo puntos y lastAttendance)
+      // ✅ CORREGIDO: Los empleados YA NO pueden modificar sus propios puntos
+      // Solo pueden actualizar lastAttendance
       allow update: if isAdmin() || 
         (isOwner(employeeId) && 
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['points', 'lastAttendance']));
-      
-      // Eliminación: Solo admin
-      allow delete: if isAdmin();
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastAttendance']));
     }
 
     // ASISTENCIAS (Top-level, para queries rápidas)
     match /attendances/{attendanceId} {
-      // Lectura: Admin o el propio empleado
-      allow read: if isAdmin() || 
-        (request.auth != null && resource.data.employeeId == request.auth.uid);
-      
-      // Creación: Solo admin
-      allow create: if isAdmin() &&
-        request.resource.data.keys().hasAll(['employeeId', 'date', 'status']) &&
-        request.resource.data.status in ['active', 'completed'];
-      
-      // Actualización: Admin o cambio de status de active -> completed
-      allow update: if isAdmin() || 
-        (request.auth != null && 
-         resource.data.status == 'active' &&
-         request.resource.data.status == 'completed' &&
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
-      
-      // Eliminación: Solo admin
+      allow read: if true;
+      allow create: if isAdmin();
       allow delete: if isAdmin();
+      allow update: if isAdmin() || 
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
     }
 
     // FEEDBACKS (Top-level, legacy)
     match /feedbacks/{feedbackId} {
       allow read: if isAdmin();
-      
-      // Creación: Usuario autenticado con validación
-      allow create: if request.auth != null &&
-        request.resource.data.keys().hasAll(['rating', 'date']) &&
-        isValidRating(request.resource.data.rating) &&
-        (!request.resource.data.keys().hasAny(['comment']) || 
-         isValidString(request.resource.data.comment, 500));
-      
+      allow create: if true;
       allow update, delete: if isAdmin();
     }
 
     // TESTS DE BIENESTAR
     match /wellness_tests/{testId} {
-      // Creación: Usuario autenticado
-      allow create: if request.auth != null;
-      
-      // Lectura: Admin o creador
-      allow read: if isAdmin() || 
-        (request.auth != null && resource.data.employeeId == request.auth.uid);
-      
+      allow create: if true;
+      allow read: if true;
       allow update, delete: if isAdmin();
     }
 
     // DATOS DE BIENESTAR
     match /wellness_data/{docId} {
-      allow create: if request.auth != null;
-      allow read: if isAdmin() || 
-        (request.auth != null && resource.data.employeeId == request.auth.uid);
+      allow create: if true;
+      allow read: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    // ALERTAS DE CRISIS
+    match /crisis_alerts/{docId} {
+      allow create: if true;
+      allow read: if isAdmin();
       allow update, delete: if isAdmin();
     }
 
     // ACTIVIDADES Y CALENDARIO
     match /activities/{activityId} {
-      allow read: if true; // Público para empleados
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     match /weekly_schedules/{weekId} {
-      allow read: if true; // Público para mostrar calendario
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     match /activity_ratings/{ratingId} {
-      allow create: if request.auth != null &&
-        isValidRating(request.resource.data.rating);
+      allow create: if true;
       allow read: if isAdmin();
       allow update, delete: if isAdmin();
+    }
+
+    // SISTEMA DE PERIODIZACIÓN
+    match /program_periodization/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
     }
 
     // ========================================
@@ -151,51 +125,24 @@ service cloud.firestore {
 
     // Asistencias por empleado (source of truth)
     match /employees/{employeeId}/attendance/{attendanceId} {
-      // Lectura: Admin o el propio empleado
-      allow read: if isAdmin() || isOwner(employeeId);
-      
-      // Creación: Solo admin
+      allow read: if true;
       allow create: if isAdmin();
-      
-      // Actualización: Admin o completar feedback
-      allow update: if isAdmin() || 
-        (isOwner(employeeId) && 
-         resource.data.status == 'active' &&
-         request.resource.data.status == 'completed' &&
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
-      
-      // Eliminación: Solo admin
       allow delete: if isAdmin();
+      allow update: if isAdmin() || 
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
     }
 
     // Encuestas de salud por empleado
     match /employees/{employeeId}/health_surveys/{surveyId} {
-      // Creación: El propio empleado
-      allow create: if isOwner(employeeId) &&
-        request.resource.data.keys().hasAll(['type', 'score', 'level', 'date']);
-      
-      // Lectura: Admin o el propio empleado
-      allow read: if isAdmin() || isOwner(employeeId);
-      
+      allow create: if true;
+      allow read: if true;
       allow update, delete: if isAdmin();
     }
 
     // Feedback por empleado
     match /employees/{employeeId}/feedback/{feedbackId} {
-      // Lectura: Admin o el propio empleado
-      allow read: if isAdmin() || isOwner(employeeId);
-      
-      // Creación: El propio empleado con validación robusta
-      allow create: if isOwner(employeeId) &&
-        request.resource.data.keys().hasAll(['attendanceId', 'rating', 'date']) &&
-        isValidRating(request.resource.data.rating) &&
-        // Validar comentario si existe
-        (!request.resource.data.keys().hasAny(['comment']) || 
-         isValidString(request.resource.data.comment, 500)) &&
-        // Validar reacción si existe
-        (!request.resource.data.keys().hasAny(['reaction']) || 
-         request.resource.data.reaction is string);
-      
+      allow read: if true;
+      allow create: if true;
       allow update, delete: if isAdmin();
     }
 
@@ -208,8 +155,8 @@ service cloud.firestore {
      * Necesario para feedback extemporáneo
      */
     match /{path=**}/attendance/{attendanceId} {
-      allow read: if request.auth != null; // Cualquier usuario autenticado
-      allow write: if false; // No permitir escritura directa desde collectionGroup
+      allow read: if true;
+      allow write: if false;
     }
     
     /**
