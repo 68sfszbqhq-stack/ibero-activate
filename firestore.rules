@@ -3,167 +3,105 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ========================================
-    // FUNCIONES HELPER PARA SEGURIDAD
+    // FUNCIÓN SIMPLE Y RÁPIDA
     // ========================================
     
-    /**
-     * Verifica si el usuario actual es un administrador
-     * TEMPORAL: Cualquier usuario autenticado es admin
-     * TODO: Implementar Custom Claims en Firebase Auth
-     */
-    function isAdmin() {
+    function isAuth() {
       return request.auth != null;
-      // PRODUCCIÓN: return request.auth.token.admin == true;
-    }
-    
-    /**
-     * Verifica si el usuario autenticado es el dueño del recurso
-     */
-    function isOwner(employeeId) {
-      return request.auth != null && request.auth.uid == employeeId;
-    }
-    
-    /**
-     * Valida que un campo sea una cadena de texto con longitud máxima
-     */
-    function isValidString(field, maxLength) {
-      return field is string && field.size() <= maxLength;
-    }
-    
-    /**
-     * Valida que un rating esté en el rango permitido
-     */
-    function isValidRating(rating) {
-      return rating is int && rating >= 1 && rating <= 5;
     }
 
     // ========================================
-    // REGLAS DE COLECCIONES
+    // REGLAS OPTIMIZADAS PARA VELOCIDAD
     // ========================================
 
-    // ÁREAS / DEPARTAMENTOS
+    // ÁREAS
     match /areas/{areaId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuth();
     }
 
-    // EMPLEADOS
+    // EMPLEADOS - REGLA SIMPLE Y RÁPIDA
     match /employees/{employeeId} {
       allow read: if true;
-      allow create, delete: if isAdmin();
-      
-      // ✅ CORREGIDO: Los empleados YA NO pueden modificar sus propios puntos
-      // Solo pueden actualizar lastAttendance
-      allow update: if isAdmin() || 
-        (isOwner(employeeId) && 
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastAttendance']));
+      allow create, delete: if isAuth();
+      // Solo admin puede modificar points
+      allow update: if isAuth() && 
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['points']) || 
+         request.resource.data.points == resource.data.points);
     }
 
-    // ASISTENCIAS (Top-level, para queries rápidas)
+    // ASISTENCIAS
     match /attendances/{attendanceId} {
-      allow read: if true;
-      allow create: if isAdmin();
-      allow delete: if isAdmin();
-      allow update: if isAdmin() || 
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+      allow read, write: if true;
     }
 
-    // FEEDBACKS (Top-level, legacy)
+    // FEEDBACKS
     match /feedbacks/{feedbackId} {
-      allow read: if isAdmin();
-      allow create: if true;
-      allow update, delete: if isAdmin();
+      allow read: if isAuth();
+      allow create, update, delete: if true;
     }
 
-    // TESTS DE BIENESTAR
+    // WELLNESS TESTS
     match /wellness_tests/{testId} {
-      allow create: if true;
-      allow read: if true;
-      allow update, delete: if isAdmin();
+      allow read, write: if true;
     }
 
-    // DATOS DE BIENESTAR
+    // WELLNESS DATA
     match /wellness_data/{docId} {
-      allow create: if true;
-      allow read: if true;
-      allow update, delete: if isAdmin();
+      allow read, write: if true;
     }
 
-    // ALERTAS DE CRISIS
+    // CRISIS ALERTS
     match /crisis_alerts/{docId} {
       allow create: if true;
-      allow read: if isAdmin();
-      allow update, delete: if isAdmin();
+      allow read, update, delete: if isAuth();
     }
 
-    // ACTIVIDADES Y CALENDARIO
+    // ACTIVIDADES
     match /activities/{activityId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuth();
     }
 
     match /weekly_schedules/{weekId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuth();
     }
 
     match /activity_ratings/{ratingId} {
-      allow create: if true;
-      allow read: if isAdmin();
-      allow update, delete: if isAdmin();
+      allow read, write: if true;
     }
 
-    // SISTEMA DE PERIODIZACIÓN
+    // PERIODIZACIÓN
     match /program_periodization/{document=**} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
+      allow read: if isAuth();
+      allow write: if isAuth();
     }
 
     // ========================================
-    // SUBCOLLECTIONS (Estructura Jerárquica)
+    // SUBCOLLECTIONS - SIMPLIFICADAS
     // ========================================
 
-    // Asistencias por empleado (source of truth)
     match /employees/{employeeId}/attendance/{attendanceId} {
-      allow read: if true;
-      allow create: if isAdmin();
-      allow delete: if isAdmin();
-      allow update: if isAdmin() || 
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+      allow read, write: if true;
     }
 
-    // Encuestas de salud por empleado
     match /employees/{employeeId}/health_surveys/{surveyId} {
-      allow create: if true;
-      allow read: if true;
-      allow update, delete: if isAdmin();
+      allow read, write: if true;
     }
 
-    // Feedback por empleado
     match /employees/{employeeId}/feedback/{feedbackId} {
-      allow read: if true;
-      allow create: if true;
-      allow update, delete: if isAdmin();
+      allow read, write: if true;
     }
 
-    // ========================================
     // COLLECTION GROUP QUERIES
-    // ========================================
-    
-    /**
-     * Permite queries de tipo collectionGroup('attendance')
-     * Necesario para feedback extemporáneo
-     */
     match /{path=**}/attendance/{attendanceId} {
       allow read: if true;
       allow write: if false;
     }
     
-    /**
-     * CollectionGroup para feedback
-     */
     match /{path=**}/feedback/{feedbackId} {
-      allow read: if isAdmin();
+      allow read: if isAuth();
       allow write: if false;
     }
   }

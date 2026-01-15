@@ -125,11 +125,11 @@
         </main>
     </div>
 
-    <!-- Security Utils (debe cargarse primero) -->
-    <script src="../js/security-utils.js"></script>
+    <!-- Security Utils (carga asíncrona para no bloquear) -->
+    <script defer src="../js/security-utils.js"></script>
 
-    <script src="../js/firebase-config.js"></script>
-    <script src="../js/attendance.js"></script>
+    <script defer src="../js/firebase-config.js"></script>
+    <script defer src="../js/attendance.js"></script>
 </body>
 
 </html>
