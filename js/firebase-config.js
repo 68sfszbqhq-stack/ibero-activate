@@ -1,13 +1,11 @@
 // ========================================
 // FIREBASE CONFIGURATION (Compat Mode)
 // ========================================
-// IMPORTANTE: Este archivo ahora contiene las credenciales directamente
-// Para mayor seguridad en el futuro, considera usar variables de entorno
 
 // Firebase Configuration
-// API Key original - funcional con todas las APIs habilitadas
+// Nueva API Key sin restricciones - creada 2026-01-16
 const firebaseConfig = {
-    apiKey: "AIzaSyCqQq-bXpNRwVDTlVjj27JWHEenmEUZUp4",
+    apiKey: "PEGA_AQUI_TU_NUEVA_API_KEY", // ← CAMBIA ESTO
     authDomain: "pausas-activas-ibero-2026.firebaseapp.com",
     projectId: "pausas-activas-ibero-2026",
     storageBucket: "pausas-activas-ibero-2026.firebasestorage.app",
@@ -30,32 +28,11 @@ const auth = firebase.auth();
 // ========================================
 // SEGURIDAD: RESTRICCIONES RECOMENDADAS
 // ========================================
-// 🔒 ANTES DE HACER PÚBLICO ESTE REPOSITORIO:
-//
-// 1. Ve a Google Cloud Console:
-//    https://console.cloud.google.com/
-//
-// 2. Navega a: APIs y servicios → Credenciales
-//
-// 3. Selecciona la API key y configura:
-//
-//    Application restrictions:
-//      • HTTP referrers (web sites)
-//      • Agregar dominios autorizados:
-//        - https://tu-dominio.com/*
-//        - http://localhost:*
-//        - http://127.0.0.1:*
-//
-//    API restrictions:
-//      • Restrict key
-//      • APIs permitidas:
-//        ✓ Cloud Firestore API
-//        ✓ Identity Toolkit API
-//        ✓ Token Service API
-//
-// 4. Firestore Rules también protegen tu base de datos
-//    (Ya actualizadas con control de acceso por roles)
-//
+// 1. Esta key NO tiene restricciones (para que funcione YA)
+// 2. Después puedes agregar restricciones en Google Cloud Console
+// 3. Firestore Rules protegen la base de datos
+// 4. Firebase Auth protege la autenticación
+
 // ========================================
 // NOTAS ADICIONALES
 // ========================================
@@ -63,9 +40,6 @@ const auth = firebase.auth();
 //     (Es normal que esté en el código del cliente)
 // 
 // 🔒  La VERDADERA seguridad viene de:
-//     - Restricciones de dominio en Google Cloud
 //     - Firestore Security Rules (ya implementadas)
 //     - Firebase Authentication
-//
-// 📘  Más info:
-//     https://firebase.google.com/docs/projects/api-keys
+//     - API restrictions (opcional, pueden agregarse después)
