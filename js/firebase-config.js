@@ -3,9 +3,10 @@
 // ========================================
 
 // Firebase Configuration
-// Nueva API Key sin restricciones - creada 2026-01-16
+// TEMPORAL: API Key original (ya tiene APIs habilitadas)
+// Mientras configuramos la nueva key con las APIs necesarias
 const firebaseConfig = {
-    apiKey: "AIzaSyCsq_wiKYvsrmiBawlj6TmQVeZ_vK-b0Rs", // ← CAMBIA ESTO
+    apiKey: "AIzaSyCqQq-bXpNRwVDTlVjj27JWHEenmEUZUp4", // Original - funciona
     authDomain: "pausas-activas-ibero-2026.firebaseapp.com",
     projectId: "pausas-activas-ibero-2026",
     storageBucket: "pausas-activas-ibero-2026.firebasestorage.app",
