@@ -69,7 +69,7 @@
 .input-wrapper input {
     width: 100%;
     padding: 12px 12px 12px 3rem;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-border);
     border-radius: 10px;
     font-size: 1rem;
     transition: var(--transition-fast);
@@ -123,7 +123,7 @@
 .sidebar {
     width: 260px;
     background: var(--white);
-    border-right: 1px solid #e5e7eb;
+    border-right: 1px solid var(--color-border);
     padding: 2rem 1rem;
     display: flex;
     flex-direction: column;
@@ -134,7 +134,7 @@
     align-items: center;
     gap: 0.8rem;
     padding: 0 1rem 2rem;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--color-bg-secondary);
     margin-bottom: 1rem;
 }
 
@@ -186,7 +186,7 @@
 
 .logout-btn:hover {
     background: #fef2f2;
-    color: #dc2626;
+    color: var(--color-danger);
 }
 
 .main-content {
@@ -224,7 +224,7 @@
     margin-bottom: 0.5rem;
     font-weight: 500;
     font-size: 0.9rem;
-    color: #6b7280;
+    color: var(--color-text-muted);
 }
 
 /* Select wrapper for Safari iOS compatibility */
@@ -238,7 +238,7 @@
 .filter-group input {
     width: 100%;
     padding: 12px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-border-dark);
     border-radius: 8px;
     background: var(--white);
     font-size: 16px;
@@ -354,8 +354,8 @@
 
 .account-number {
     font-size: 0.85rem;
-    color: #6b7280;
-    background: #f3f4f6;
+    color: var(--color-text-muted);
+    background: var(--color-bg-secondary);
     padding: 2px 8px;
     border-radius: 4px;
 }
@@ -371,7 +371,7 @@
 /* Program Periodization Summary Card */
 .program-summary-card {
     background: linear-gradient(135deg, #ffffff, #f9fafb);
-    border: 2px solid #e5e7eb;
+    border: 2px solid var(--color-border);
     border-radius: 16px;
     padding: 2rem;
     margin-bottom: 2rem;
@@ -388,7 +388,7 @@
 .program-icon {
     width: 70px;
     height: 70px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary));
     border-radius: 16px;
     display: flex;
     align-items: center;
@@ -405,7 +405,7 @@
 .program-tag {
     display: inline-block;
     background: #eef2ff;
-    color: #667eea;
+    color: var(--color-primary);
     padding: 0.4rem 0.9rem;
     border-radius: 8px;
     font-size: 0.85rem;
@@ -422,7 +422,7 @@
 
 .program-info p {
     margin: 0;
-    color: #6b7280;
+    color: var(--color-text-muted);
     font-size: 0.95rem;
 }
 
@@ -455,7 +455,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.8rem 1.5rem;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary));
     color: white;
     text-decoration: none;
     border-radius: 10px;
@@ -536,12 +536,12 @@
 .progress-wrapper {
     margin: 1rem 0 0.5rem 0;
     padding: 0.75rem 0;
-    border-top: 1px solid #f3f4f6;
+    border-top: 1px solid var(--color-bg-secondary);
 }
 
 .progress-label {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--color-text-muted);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -549,7 +549,7 @@
 
 .progress-bar {
     height: 8px;
-    background: #f3f4f6;
+    background: var(--color-bg-secondary);
     border-radius: 10px;
     overflow: hidden;
     margin: 0.5rem 0;
@@ -558,7 +558,7 @@
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #667eea, #764ba2);
+    background: linear-gradient(90deg, var(--color-primary), var(--color-primary));
     border-radius: 10px;
     transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
@@ -581,11 +581,11 @@
 
 .progress-text {
     font-weight: 600;
-    color: #667eea;
+    color: var(--color-primary);
 }
 
 .progress-status {
-    color: #6b7280;
+    color: var(--color-text-muted);
     font-size: 0.75rem;
 }
 
@@ -594,9 +594,9 @@
     margin-top: auto;
     padding: 0.6rem 1rem;
     background: transparent;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-border);
     border-radius: 8px;
-    color: #6b7280;
+    color: var(--color-text-muted);
     font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.2s;
@@ -659,11 +659,11 @@
 
 .modal-header {
     padding: 1.5rem 2rem;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--color-bg-secondary);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary) 100%);
     color: white;
 }
 
@@ -731,7 +731,7 @@
 
 .insight-card h4 {
     font-size: 0.85rem;
-    color: #6b7280;
+    color: var(--color-text-muted);
     margin-bottom: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -770,7 +770,7 @@ html {
         width: 100%;
         padding: 1rem;
         border-right: none;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid var(--color-border);
     }
 
     .sidebar-header {

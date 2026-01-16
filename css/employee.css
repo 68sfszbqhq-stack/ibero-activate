@@ -762,14 +762,14 @@
 }
 
 .happiness-btn:hover {
-    border-color: #c4161c;
+    border-color: var(--color-brand);
     background: #fef2f2;
     transform: translateY(-2px);
 }
 
 .happiness-btn.selected {
-    border-color: #c4161c;
-    background: linear-gradient(135deg, #c4161c 0%, #dc2626 100%);
+    border-color: var(--color-brand);
+    background: linear-gradient(135deg, var(--color-brand) 0%, #dc2626 100%);
     color: white;
 }
 
@@ -794,13 +794,13 @@
 }
 
 .happiness-btn-small:hover {
-    border-color: #c4161c;
+    border-color: var(--color-brand);
     background: #fef2f2;
 }
 
 .happiness-btn-small.selected {
-    border-color: #c4161c;
-    background: linear-gradient(135deg, #c4161c 0%, #dc2626 100%);
+    border-color: var(--color-brand);
+    background: linear-gradient(135deg, var(--color-brand) 0%, #dc2626 100%);
     color: white;
 }
 
@@ -838,12 +838,12 @@
 }
 
 .panas-item select:hover {
-    border-color: #c4161c;
+    border-color: var(--color-brand);
 }
 
 .panas-item select:focus {
     outline: none;
-    border-color: #c4161c;
+    border-color: var(--color-brand);
     box-shadow: 0 0 0 3px rgba(196, 22, 28, 0.1);
 }
 
@@ -881,12 +881,12 @@
 }
 
 .satisfaction-item select:hover {
-    border-color: #c4161c;
+    border-color: var(--color-brand);
 }
 
 .satisfaction-item select:focus {
     outline: none;
-    border-color: #c4161c;
+    border-color: var(--color-brand);
     box-shadow: 0 0 0 3px rgba(196, 22, 28, 0.1);
 }
 
