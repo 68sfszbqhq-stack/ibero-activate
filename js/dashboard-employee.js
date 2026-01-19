@@ -199,9 +199,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 border-radius: 8px;
                 font-size: 0.9rem;
                 font-weight: ${isToday ? '700' : '500'};
-                background: ${hasAttendance ? 'var(--primary)' : '#f3f4f6'};
-                color: ${hasAttendance ? 'white' : '#6b7280'};
-                border: ${isToday ? '2px solid var(--primary)' : 'none'};
+                background: ${hasAttendance ? '#10b981' : '#e5e7eb'};
+                color: ${hasAttendance ? 'white' : '#9ca3af'};
+                border: ${isToday ? '2px solid #10b981' : 'none'};
                 cursor: default;
             `;
             dayCell.textContent = day;
@@ -319,10 +319,10 @@ function renderBadges(badges) {
         const badgeDiv = document.createElement('div');
         badgeDiv.style.cssText = 'text-align: center; min-width: 80px;';
         badgeDiv.innerHTML = `
-        < div style = "font-size: 2.5rem; margin-bottom: 0.5rem;" > ${ badge.icon }</div >
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">${badge.icon}</div>
             <strong style="font-size: 0.75rem; display: block; margin-bottom: 0.25rem;">${badge.name}</strong>
             <span style="font-size: 0.7rem; color: #6b7280;">${badge.desc}</span>
-    `;
+        `;
         container.appendChild(badgeDiv);
     });
 }

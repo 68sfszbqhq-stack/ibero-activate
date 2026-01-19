@@ -7,7 +7,7 @@
 
     <!-- Content Security Policy para prevenir XSS -->
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://firestore.googleapis.com; img-src 'self' data: https:;">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://firestore.googleapis.com; img-src 'self' data: https: https://chart.googleapis.com;">
 
     <title>Pase de Lista - IBERO ACTÍVATE</title>
     <link rel="stylesheet" href="../css/design-system.css">
@@ -191,12 +191,11 @@
             const modal = document.getElementById('qr-modal');
             const qrContainer = document.getElementById('qr-code');
 
-            // Generate QR using Google Charts API
-            const feedbackUrl = 'https://68sfszbqhq-stack.github.io/ibero-activate/employee/feedback.html';
+            // Use static QR image
+            const qrImageUrl = '../assets/qr-feedback.png';
             const qrSize = 300;
-            const qrApiUrl = `https://chart.googleapis.com/chart?cht=qr&chs=${qrSize}x${qrSize}&chl=${encodeURIComponent(feedbackUrl)}&choe=UTF-8`;
 
-            qrContainer.innerHTML = `<img src="${qrApiUrl}" alt="QR Code" style="display: block; width: ${qrSize}px; height: ${qrSize}px; border-radius: 8px;">`;
+            qrContainer.innerHTML = `<img src="${qrImageUrl}" alt="QR Code" style="display: block; width: ${qrSize}px; height: ${qrSize}px; border-radius: 8px;">`;
 
             modal.style.display = 'flex';
         }

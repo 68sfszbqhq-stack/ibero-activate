@@ -41,6 +41,168 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (submitBtn) submitBtn.addEventListener('click', submitFeedback);
 
+    // --- BÚSQUEDA MANUAL ---
+    const manualToggle = document.getElementById('manual-login-toggle');
+    const manualContainer = document.getElementById('manual-search-container');
+    const manualInput = document.getElementById('manual-search-input');
+    const manualBtn = document.getElementById('manual-search-btn');
+    const manualResults = document.getElementById('manual-search-results');
+
+    if (manualToggle) {
+        manualToggle.addEventListener('click', () => {
+            manualContainer.classList.toggle('hidden');
+            if (!manualContainer.classList.contains('hidden')) {
+                manualInput.focus();
+            }
+        });
+    }
+
+    if (manualBtn) {
+        manualBtn.addEventListener('click', performManualSearch);
+    }
+
+    if (manualInput) {
+        manualInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performManualSearch();
+        });
+    }
+
+    async function performManualSearch() {
+        const query = manualInput.value.trim().toLowerCase();
+        if (query.length < 3) {
+            alert('Ingresa al menos 3 letras o números');
+            return;
+        }
+
+        manualResults.innerHTML = '<div style="text-align: center; padding: 1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Buscando...</div>';
+
+        try {
+            // Buscar en empleados (por nombre o cuenta)
+            // Firebase no tiene OR nativo simple, haremos 2 queries o buscaremos una heurística
+            // Por simplicidad buscaremos coincidencia de string básica en cliente si son pocos, o 2 queries
+
+            // Query 1: Por número de cuenta (exacto)
+            const snapshotAccount = await db.collection('employees')
+                .where('accountNumber', '==', query)
+                .get();
+
+            let results = [];
+            snapshotAccount.forEach(doc => results.push({ id: doc.id, ...doc.data() }));
+
+            // Si no hay resultados por cuenta, buscar por nombre (esto es caro en Firebase sin index, 
+            // pero asumiremos que el usuario pone el nombre completo o usamos '>=')
+            if (results.length === 0) {
+                // Hack para búsqueda de prefijo
+                const endQuery = query.replace(/.$/, c => String.fromCharCode(c.charCodeAt(0) + 1));
+                const snapshotName = await db.collection('employees')
+                    .where('name_lower', '>=', query)
+                    .where('name_lower', '<', endQuery)
+                    .limit(5)
+                    .get();
+
+                snapshotName.forEach(doc => results.push({ id: doc.id, ...doc.data() }));
+
+                // Fallback: Si no tenemos name_lower, buscar por 'name' (case sensitive, user must type correctly)
+                if (snapshotName.empty) {
+                    // Intentar búsqueda manual por nombre exacto o scan limitado (solo en dev)
+                    // Mejor: Buscar por cuenta es lo más seguro.
+                }
+            }
+
+            // Si sigue vacío, buscar una asistencia de HOY (tal vez ya se creó)
+            if (results.length === 0) {
+                // Intentar buscar asistencias Activas con ese nombre (en caso que no esté en employees collection aun? no debería)
+            }
+
+            renderManualResults(results);
+
+        } catch (error) {
+            console.error('Error en búsqueda manual:', error);
+            manualResults.innerHTML = '<p style="color: red; text-align: center;">Error al buscar</p>';
+        }
+    }
+
+    function renderManualResults(results) {
+        manualResults.innerHTML = '';
+
+        if (results.length === 0) {
+            manualResults.innerHTML = '<p style="text-align: center; color: #666;">No se encontraron empleados. Intenta con tu número de cuenta exacto.</p>';
+            return;
+        }
+
+        results.forEach(emp => {
+            const btn = document.createElement('button');
+            btn.className = 'magic-btn';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar-tiny';
+            avatar.textContent = getInitials(emp.name || 'Usuario');
+
+            const span = document.createElement('span');
+            span.textContent = emp.name;
+
+            const icon = document.createElement('i');
+            icon.className = 'fa-solid fa-chevron-right';
+
+            btn.appendChild(avatar);
+            btn.appendChild(span);
+            btn.appendChild(icon);
+
+            btn.addEventListener('click', async () => {
+                // Seleccionar al empleado (Login Manual)
+                const safeName = window.SecurityUtils ? window.SecurityUtils.escapeHTML(emp.name) : emp.name;
+
+                selectedEmployee = {
+                    id: emp.id,
+                    name: safeName
+                };
+
+                localStorage.setItem('currentEmployee', JSON.stringify(selectedEmployee));
+                profileAvatar.textContent = getInitials(safeName);
+                employeeName.textContent = safeName;
+
+                // Verificar si tiene asistencia activa HOY para vincularla
+                const today = new Date().toISOString().split('T')[0];
+                const activeAttendance = await db.collection('attendances')
+                    .where('date', '==', today)
+                    .where('employeeId', '==', emp.id)
+                    .where('status', '==', 'active')
+                    .limit(1)
+                    .get();
+
+                if (!activeAttendance.empty) {
+                    currentAttendanceId = activeAttendance.docs[0].id;
+                    welcomeSection.classList.add('hidden');
+                    feedbackForm.classList.remove('hidden');
+                } else {
+                    // No tiene asistencia activa.
+                    // Opción A: Alertar y redirigir al Dashboard (Login exitoso)
+                    // Opción B: Alertar "Espera a tu instructor"
+
+                    if (confirm(`Bienvenido ${safeName}. Has iniciado sesión.\n\nNo tienes una asistencia activa pendiente de feedback en este momento.\n\n¿Quieres ir a tu Dashboard?`)) {
+                        window.location.href = 'dashboard.html';
+                    } else {
+                        // Quedarse aquí logueado
+                        welcomeSection.classList.add('hidden');
+                        feedbackForm.classList.remove('hidden');
+                        document.getElementById('feedback-form').innerHTML = `
+                            <div style="text-align: center; padding: 2rem;">
+                                <h2>¡Hola ${safeName.split(' ')[0]}! 👋</h2>
+                                <p>Has iniciado sesión correctamente.</p>
+                                <p style="margin: 2rem 0; color: #666;">Cuando tu instructor pase lista, podrás dar feedback aquí.</p>
+                                <button onclick="window.location.href='dashboard.html'" class="btn-primary">Ir a Mi Perfil / Dashboard</button>
+                                <br><br>
+                                <button onclick="location.reload()" class="btn-secondary">Volver</button>
+                            </div>
+                        `;
+                    }
+                }
+            });
+
+            manualResults.appendChild(btn);
+        });
+    }
+
     // Rating & Emoji Logic (Igual que antes)
     // Rating & Emoji Logic (Igual que antes)
     setupInteractionLogic();

@@ -73,6 +73,28 @@
                             <div class="pulse-ring"></div>
                             <p>Esperando a que el instructor inicie...</p>
                         </div>
+
+                        <div
+                            style="margin-top: 2rem; text-align: center; border-top: 1px solid #eee; padding-top: 1rem;">
+                            <button id="manual-login-toggle" class="btn-text-small"
+                                style="font-size: 0.9rem; color: #6b7280;">
+                                ¿No apareces? encuéntrate aquí 🔍
+                            </button>
+                        </div>
+
+                        <div id="manual-search-container" class="hidden" style="margin-top: 1rem; text-align: left;">
+                            <label
+                                style="font-size: 0.9rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem; display: block;">Buscar
+                                por Nombre o Cuenta:</label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="text" id="manual-search-input" placeholder="Ej: Juan Pérez o 12345"
+                                    class="input-field" style="margin-bottom: 0 !important;">
+                                <button id="manual-search-btn" class="btn-primary"
+                                    style="padding: 0 1rem; width: auto;">Buscar</button>
+                            </div>
+                            <div id="manual-search-results" class="live-list-container"
+                                style="margin-top: 1rem; max-height: 200px; overflow-y: auto;"></div>
+                        </div>
                     </div>
                 </div>
 
