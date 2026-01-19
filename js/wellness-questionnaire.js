@@ -1,192 +1,83 @@
 // Wellness Questionnaires Logic for IBERO ACTÍVATE
+// UNIFIED VERSION - All questions in one form
 
 document.addEventListener('DOMContentLoaded', () => {
     // State
     let wellnessData = {
-        preHappiness: null,
-        postHappiness: null,
-        panasResponses: [],
-        satisfactionResponses: []
+        perceivedBenefit: null,
+        postFeeling: null,
+        wouldReturn: null
     };
 
-    // Elements
-    const preWellness = document.getElementById('pre-wellness');
-    const postWellness = document.getElementById('post-wellness');
-    const confirmPreBtn = document.getElementById('confirm-pre-wellness');
-    const submitPostBtn = document.getElementById('submit-post-wellness');
+    // Q1: Handle perceived benefit dropdown
+    const benefitSelect = document.getElementById('perceived-benefit');
+    if (benefitSelect) {
+        benefitSelect.addEventListener('change', (e) => {
+            wellnessData.perceivedBenefit = e.target.value;
+            console.log('Perceived benefit:', wellnessData.perceivedBenefit);
+        });
+    }
 
-    // ============= PRE-ACTIVITY HAPPINESS =============
+    // Q2: Handle post-activity feeling emoji clicks
+    document.querySelectorAll('.feeling-emoji-btn[data-feeling]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent form submission
 
-    // Handle PRE happiness button clicks
-    document.querySelectorAll('.happiness-btn[data-value]').forEach(btn => {
-        btn.addEventListener('click', () => {
             // Remove previous selection
-            document.querySelectorAll('.happiness-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('.feeling-emoji-btn').forEach(b => b.classList.remove('selected'));
 
             // Select current
             btn.classList.add('selected');
-            wellnessData.preHappiness = parseInt(btn.getAttribute('data-value'));
+            wellnessData.postFeeling = parseInt(btn.getAttribute('data-feeling'));
 
-            // Enable confirm button
-            confirmPreBtn.disabled = false;
+            console.log('Post feeling:', wellnessData.postFeeling);
         });
     });
 
-    // Confirm PRE wellness and show feedback form
-    confirmPreBtn.addEventListener('click', () => {
-        console.log('PRE Happiness:', wellnessData.preHappiness);
-        preWellness.classList.add('hidden');
+    // Q3: Handle would-return buttons
+    document.querySelectorAll('.would-return-btn[data-return]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent form submission
 
-        // Show feedback form
-        const feedbackForm = document.getElementById('feedback-form');
-        if (feedbackForm) {
-            feedbackForm.classList.remove('hidden');
-        }
-    });
-
-    // ============= POST-ACTIVITY QUESTIONNAIRES =============
-
-    // Handle POST happiness button clicks
-    document.querySelectorAll('.happiness-btn-small[data-post-happiness]').forEach(btn => {
-        btn.addEventListener('click', () => {
             // Remove previous selection
-            document.querySelectorAll('.happiness-btn-small').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('.would-return-btn').forEach(b => b.classList.remove('selected'));
 
             // Select current
             btn.classList.add('selected');
-            wellnessData.postHappiness = parseInt(btn.getAttribute('data-post-happiness'));
+            wellnessData.wouldReturn = btn.getAttribute('data-return');
 
-            checkPostQuestionnaire();
+            console.log('Would return:', wellnessData.wouldReturn);
         });
     });
-
-    // Check if all POST questions are answered
-    function checkPostQuestionnaire() {
-        const allPanasAnswered = Array.from(document.querySelectorAll('[data-panas]'))
-            .every(select => select.value !== '');
-
-        const allSatisfactionAnswered = Array.from(document.querySelectorAll('[data-satisfaction]'))
-            .every(select => select.value !== '');
-
-        const hasPostHappiness = wellnessData.postHappiness !== null;
-
-        submitPostBtn.disabled = !(allPanasAnswered && allSatisfactionAnswered && hasPostHappiness);
-    }
-
-    // Listen to PANAS changes
-    document.querySelectorAll('[data-panas]').forEach(select => {
-        select.addEventListener('change', checkPostQuestionnaire);
-    });
-
-    // Listen to Satisfaction changes
-    document.querySelectorAll('[data-satisfaction]').forEach(select => {
-        select.addEventListener('change', checkPostQuestionnaire);
-    });
-
-    // ============= SUBMIT POST WELLNESS =============
-
-    submitPostBtn.addEventListener('click', async () => {
-        // Collect PANAS responses
-        wellnessData.panasResponses = Array.from(document.querySelectorAll('[data-panas]'))
-            .map(select => parseInt(select.value));
-
-        // Collect Satisfaction responses
-        wellnessData.satisfactionResponses = Array.from(document.querySelectorAll('[data-satisfaction]'))
-            .map(select => parseInt(select.value));
-
-        // Calculate scores
-        const scores = calculateWellnessScores(wellnessData);
-
-        console.log('Wellness Data:', wellnessData);
-        console.log('Calculated Scores:', scores);
-
-        // Save to Firebase
-        await saveWellnessData(scores);
-
-        // Show success state
-        postWellness.classList.add('hidden');
-        const successState = document.getElementById('success-state');
-        if (successState) {
-            successState.classList.remove('hidden');
-        }
-    });
-
-    // ============= SCORE CALCULATION =============
-
-    function calculateWellnessScores(data) {
-        // PANAS calculation
-        const panasPositive = data.panasResponses.slice(0, 5).reduce((a, b) => a + b, 0); // Items 1-5
-        const panasNegative = data.panasResponses.slice(5, 10).reduce((a, b) => a + b, 0); // Items 6-10
-
-        // Satisfaction average
-        const satisfactionAvg = data.satisfactionResponses.reduce((a, b) => a + b, 0) / data.satisfactionResponses.length;
-
-        // Happiness change
-        const happinessChange = data.postHappiness - data.preHappiness;
-
-        return {
-            preHappiness: data.preHappiness,
-            postHappiness: data.postHappiness,
-            happinessChange: happinessChange,
-            panasPositive: panasPositive,
-            panasNegative: panasNegative,
-            panasResponses: data.panasResponses,
-            satisfaction: satisfactionAvg,
-            satisfactionResponses: data.satisfactionResponses
-        };
-    }
-
-    // ============= FIREBASE INTEGRATION =============
-
-    async function saveWellnessData(scores) {
-        const currentEmployee = JSON.parse(localStorage.getItem('currentEmployee'));
-
-        if (!currentEmployee) {
-            console.error('No employee found');
-            return;
-        }
-
-        try {
-            submitPostBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Guardando...';
-            submitPostBtn.disabled = true;
-
-            // Save to wellness_data collection
-            await db.collection('wellness_data').add({
-                employeeId: currentEmployee.id,
-                employeeName: currentEmployee.name,
-                employeeAccount: currentEmployee.accountNumber || '',
-                activityDate: new Date().toISOString().split('T')[0],
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-
-                // Scores
-                ...scores,
-
-                // Additional metadata
-                deviceType: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
-            });
-
-            console.log('✅ Wellness data saved successfully');
-            submitPostBtn.innerHTML = '✅ Guardado';
-
-        } catch (error) {
-            console.error('Error saving wellness data:', error);
-            alert('Error al guardar. Por favor intenta de nuevo.');
-            submitPostBtn.innerHTML = '📤 Enviar Respuestas';
-            submitPostBtn.disabled = false;
-        }
-    }
 
     // ============= PUBLIC API =============
 
     // Export functions for integration with existing feedback.js
     window.wellnessQuestionnaire = {
-        showPre: () => {
-            preWellness.classList.remove('hidden');
-        },
-        showPost: () => {
-            postWellness.classList.remove('hidden');
-        },
         getData: () => wellnessData,
-        getScores: () => calculateWellnessScores(wellnessData)
+        isComplete: () => {
+            // Check if all 3 required questions are answered
+            const hasBenefit = wellnessData.perceivedBenefit !== null && wellnessData.perceivedBenefit !== '';
+            const hasFeeling = wellnessData.postFeeling !== null;
+            const hasReturn = wellnessData.wouldReturn !== null;
+
+            return hasBenefit && hasFeeling && hasReturn;
+        },
+        reset: () => {
+            wellnessData = {
+                perceivedBenefit: null,
+                postFeeling: null,
+                wouldReturn: null
+            };
+
+            // Reset UI
+            const benefitSelect = document.getElementById('perceived-benefit');
+            if (benefitSelect) benefitSelect.value = '';
+
+            document.querySelectorAll('.feeling-emoji-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('.would-return-btn').forEach(b => b.classList.remove('selected'));
+        }
     };
+
+    console.log('✅ Wellness questionnaire module loaded (unified version)');
 });

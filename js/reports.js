@@ -333,68 +333,107 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const { start, end } = getDateRangeFeedback();
 
-            let query = db.collection('feedbacks');
+            feedbackTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">Cargando feedbacks...</td></tr>';
 
-            if (start && end) {
-                if (start === end) {
-                    query = query.where('date', '==', start);
-                } else {
-                    query = query.where('date', '>=', start).where('date', '<=', end);
-                }
-            } else {
-                // Default fallback if no date selected
-                query = query.orderBy('timestamp', 'desc').limit(50);
+            // Obtener todos los empleados
+            const employeesSnapshot = await db.collection('employees').get();
+
+            if (employeesSnapshot.empty) {
+                feedbackTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">No hay empleados registrados</td></tr>';
+                return;
             }
 
-            const snapshot = await query.get();
+            // Recolectar todos los feedbacks de todas las subcollecciones
+            const allFeedbacks = [];
+
+            for (const employeeDoc of employeesSnapshot.docs) {
+                const employeeData = employeeDoc.data();
+                const employeeId = employeeDoc.id;
+                const employeeName = employeeData.fullName || 'Desconocido';
+
+                // Query feedback subcollection for this employee
+                let feedbackQuery = db.collection('employees')
+                    .doc(employeeId)
+                    .collection('feedback');
+
+                // Apply date filters
+                if (start && end) {
+                    if (start === end) {
+                        feedbackQuery = feedbackQuery.where('date', '==', start);
+                    } else {
+                        feedbackQuery = feedbackQuery.where('date', '>=', start).where('date', '<=', end);
+                    }
+                }
+
+                const feedbackSnapshot = await feedbackQuery.get();
+
+                feedbackSnapshot.forEach(feedbackDoc => {
+                    allFeedbacks.push({
+                        id: feedbackDoc.id,
+                        employeeId: employeeId,
+                        employeeName: employeeName,
+                        ...feedbackDoc.data()
+                    });
+                });
+            }
+
+            // Clear loading message
             feedbackTableBody.innerHTML = '';
 
-            if (snapshot.empty) {
+            if (allFeedbacks.length === 0) {
                 feedbackTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">No hay feedbacks para este periodo</td></tr>';
                 return;
             }
 
-            // Get employee names for each feedback
-            const employeeIds = new Set();
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (data.employeeId) employeeIds.add(data.employeeId);
-            });
+            // Sort by timestamp desc
+            allFeedbacks.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
-            // Fetch employee data
-            const employeeMap = {};
-            const employeePromises = Array.from(employeeIds).map(async (id) => {
-                try {
-                    const empDoc = await db.collection('employees').doc(id).get();
-                    if (empDoc.exists) {
-                        employeeMap[id] = empDoc.data().fullName;
-                    }
-                } catch (e) {
-                    console.error('Error fetching employee:', e);
-                }
-            });
-            await Promise.all(employeePromises);
-
-            // Client-side sort by timestamp desc
-            const docs = [];
-            snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
-            docs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-
-            docs.forEach(data => {
-                const employeeName = employeeMap[data.employeeId] || 'Desconocido';
+            // Display feedbacks
+            allFeedbacks.forEach(data => {
                 const stars = '⭐'.repeat(data.rating || 0);
                 const reaction = data.reaction || '—';
                 const comment = data.comment || 'Sin comentario';
 
+                // NUEVO: Mostrar datos del wellness questionnaire
+                const perceivedBenefit = data.perceivedBenefit || 'N/A';
+                const postFeeling = data.postFeeling ? `${data.postFeeling}/5` : 'N/A';
+                const wouldReturn = data.wouldReturn || 'N/A';
+
+                // Map values to Spanish
+                const benefitMap = {
+                    'relajacion': '😌 Relajación',
+                    'energia': '⚡ Energía',
+                    'conexion': '🤝 Conexión social',
+                    'diversion': '🎉 Diversión',
+                    'aprendizaje': '💡 Aprendizaje'
+                };
+
+                const returnMap = {
+                    'definitivamente': '✅ Definitivamente',
+                    'probablemente': '👍 Probablemente',
+                    'no-seguro': '🤔 No seguro/a',
+                    'probablemente-no': '👎 Probablemente no'
+                };
+
+                const benefitDisplay = benefitMap[perceivedBenefit] || perceivedBenefit;
+                const returnDisplay = returnMap[wouldReturn] || wouldReturn;
+
                 const row = `
                     <tr style="border-bottom: 1px solid #f3f4f6;">
                         <td style="padding: 1rem;">${data.date}</td>
-                        <td style="padding: 1rem; font-weight: 500;">${employeeName}</td>
+                        <td style="padding: 1rem; font-weight: 500;">${data.employeeName}</td>
                         <td style="padding: 1rem; font-size: 1.2rem;">${stars}</td>
                         <td style="padding: 1rem; font-size: 1.5rem;">${reaction}</td>
-                        <td style="padding: 1rem; max-width: 300px; word-wrap: break-word;">${comment}</td>
+                        <td style="padding: 1rem; max-width: 400px;">
+                            <div style="margin-bottom: 0.5rem;"><strong>Comentario:</strong> ${comment}</div>
+                            <div style="font-size: 0.85rem; color: #666; border-top: 1px solid #e5e7eb; padding-top: 0.5rem;">
+                                <div style="margin-bottom: 0.25rem;"><strong>Beneficio percibido:</strong> ${benefitDisplay}</div>
+                                <div style="margin-bottom: 0.25rem;"><strong>Cómo se sintió:</strong> ${postFeeling}</div>
+                                <div><strong>Volvería a participar:</strong> ${returnDisplay}</div>
+                            </div>
+                        </td>
                         <td style="padding: 1rem;">
-                            <button onclick="deleteFeedback('${data.id}')" 
+                            <button onclick="deleteFeedback('${data.employeeId}', '${data.id}')" 
                                     style="background: #fee2e2; color: #dc2626; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;"
                                     title="Eliminar Feedback">
                                 <i class="fa-solid fa-trash"></i>
@@ -407,19 +446,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (e) {
             console.error('Error loading feedbacks:', e);
-            if (e.message.includes('index')) {
-                feedbackTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: red;">Falta índice en Firebase para este filtro.</td></tr>';
-            } else {
-                feedbackTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: red;">Error al cargar feedbacks: ' + e.message + '</td></tr>';
-            }
+            feedbackTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: red; padding: 2rem;">Error al cargar feedbacks: ${e.message}</td></tr>`;
         }
     }
 
     // Hacer global para onclick
-    window.deleteFeedback = async (id) => {
+    window.deleteFeedback = async (employeeId, feedbackId) => {
         if (confirm('¿Estás seguro de eliminar este feedback?')) {
             try {
-                await db.collection('feedbacks').doc(id).delete();
+                await db.collection('employees')
+                    .doc(employeeId)
+                    .collection('feedback')
+                    .doc(feedbackId)
+                    .delete();
                 alert('Feedback eliminado correctamente.');
                 loadFeedbacks(); // Recargar tabla
             } catch (e) {

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Toast Notifications</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 40px;
+            background: #f3f4f6;
+        }
+
+        .demo-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin-bottom: 30px;
+        }
+
+        button {
+            padding: 12px 24px;
+            margin: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-error {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-info {
+            background: #3b82f6;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="demo-container">
+        <h1>🎨 Demo de Notificaciones Toast</h1>
+        <p>Haz click en los botones para ver las diferentes notificaciones:</p>
+
+        <div>
+            <button class="btn-success" onclick="Toast.success('¡Operación completada con éxito!')">
+                ✅ Success
+            </button>
+
+            <button class="btn-error" onclick="Toast.error('Ha ocurrido un error. Por favor intenta nuevamente.')">
+                ❌ Error
+            </button>
+
+            <button class="btn-warning" onclick="Toast.warning('Atención: Verifica esta información.')">
+                ⚠️ Warning
+            </button>
+
+            <button class="btn-info" onclick="Toast.info('Información importante para ti.')">
+                ℹ️ Info
+            </button>
+        </div>
+
+        <div style="margin-top: 30px; padding: 20px; background: #f9fafb; border-radius: 8px;">
+            <h3>✨ Características:</h3>
+            <ul>
+                <li>✅ Animación suave de entrada y salida</li>
+                <li>✅ Auto-cierre después de 3-5 segundos</li>
+                <li>✅ Click para cerrar manualmente</li>
+                <li>✅ Colores según tipo de mensaje</li>
+                <li>✅ Stack de múltiples notificaciones</li>
+                <li>✅ No bloquea la interacción con la página</li>
+            </ul>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button onclick="showMultiple()" style="background: #8b5cf6; color: white;">
+                🎯 Mostrar Múltiples
+            </button>
+        </div>
+    </div>
+
+    <script src="../js/toast.js"></script>
+    <script>
+        function showMultiple() {
+            Toast.success('Primera notificación');
+            setTimeout(() => Toast.info('Segunda notificación'), 500);
+            setTimeout(() => Toast.warning('Tercera notificación'), 1000);
+            setTimeout(() => Toast.error('Cuarta notificación'), 1500);
+        }
+
+        // Auto show a welcome toast
+        setTimeout(() => {
+            Toast.info('¡Bienvenido al demo de notificaciones! 👋', 4000);
+        }, 500);
+    </script>
+</body>
+
+</html>

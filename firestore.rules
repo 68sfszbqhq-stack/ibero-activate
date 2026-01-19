@@ -24,7 +24,7 @@ service cloud.firestore {
     match /employees/{employeeId} {
       allow read: if true;
       allow create, delete: if isAuth();
-      // Solo admin puede modificar points
+      // Solo admin puede modificar points (protección de seguridad)
       allow update: if isAuth() && 
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['points']) || 
          request.resource.data.points == resource.data.points);
@@ -91,6 +91,15 @@ service cloud.firestore {
     }
 
     match /employees/{employeeId}/feedback/{feedbackId} {
+      allow read, write: if true;
+    }
+
+    // ANTIGRAVITY WELLNESS MODULE
+    match /employees/{employeeId}/wheel_of_life/{wheelId} {
+      allow read, write: if true;
+    }
+
+    match /employees/{employeeId}/daily_diary/{diaryId} {
       allow read, write: if true;
     }
 

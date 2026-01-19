@@ -410,6 +410,7 @@
         width: 100%;
     }
 }
+
 /* ==========================================
    Activity Banner Styles
    ========================================== */
@@ -437,7 +438,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
     pointer-events: none;
 }
 
@@ -661,20 +662,20 @@
         width: 95%;
         max-height: 95vh;
     }
-    
+
     .modal-body {
         padding: 2rem 1.5rem 1.5rem;
     }
-    
+
     .modal-title {
         font-size: 1.5rem;
     }
-    
+
     .modal-meta {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .meta-item {
         justify-content: center;
     }
@@ -894,25 +895,213 @@
     .happiness-scale {
         gap: 0.25rem;
     }
-    
+
     .happiness-btn {
         min-width: 50px;
         padding: 0.75rem 0.5rem;
     }
-    
+
     .happiness-btn .emoji {
         font-size: 1.5rem;
     }
-    
+
     .panas-item,
     .satisfaction-item {
         flex-direction: column;
         align-items: flex-start;
     }
-    
+
     .panas-item select,
     .satisfaction-item select {
         width: 100%;
         min-width: unset;
+    }
+}
+
+/* ==================== SIMPLIFIED QUESTIONNAIRE (OPTION B) ==================== */
+
+/* Q1: Emoji Feelings Grid */
+.emoji-feelings-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.feeling-emoji-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 0.5rem;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.feeling-emoji-btn .emoji-large {
+    font-size: 2.5rem;
+    line-height: 1;
+}
+
+.feeling-emoji-btn .feeling-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-align: center;
+}
+
+.feeling-emoji-btn:hover {
+    border-color: var(--color-brand);
+    background: #fef2f2;
+    transform: translateY(-2px);
+}
+
+.feeling-emoji-btn.selected {
+    border-color: var(--color-brand);
+    background: linear-gradient(135deg, var(--color-brand) 0%, #dc2626 100%);
+    color: white;
+    transform: scale(1.05);
+}
+
+.feeling-emoji-btn.selected .feeling-label {
+    color: white;
+}
+
+/* Q2: Perceived Benefit Select */
+.form-select {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    background: white;
+    color: #1e293b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.25rem;
+    padding-right: 2.5rem;
+}
+
+.form-select:hover {
+    border-color: #cbd5e1;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px rgba(196, 22, 28, 0.1);
+}
+
+/* Q3: Would Return Grid */
+.would-return-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.would-return-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.25rem 1rem;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.would-return-btn .return-icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.would-return-btn .return-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    text-align: center;
+}
+
+.would-return-btn:hover {
+    border-color: var(--color-brand);
+    background: #fef2f2;
+    transform: translateY(-2px);
+}
+
+.would-return-btn.selected {
+    border-color: var(--color-brand);
+    background: linear-gradient(135deg, var(--color-brand) 0%, #dc2626 100%);
+    color: white;
+}
+
+.would-return-btn.selected .return-label {
+    color: white;
+}
+
+/* Q4: Experience Comment Textarea */
+.form-textarea {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    font-size: 0.95rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    background: white;
+    color: #1e293b;
+    resize: vertical;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    line-height: 1.6;
+}
+
+.form-textarea:hover {
+    border-color: #cbd5e1;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px rgba(196, 22, 28, 0.1);
+}
+
+.form-textarea::placeholder {
+    color: #94a3b8;
+}
+
+/* Mobile Responsiveness for Option B */
+@media (max-width: 640px) {
+    .emoji-feelings-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+
+    .feeling-emoji-btn {
+        padding: 0.75rem 0.25rem;
+    }
+
+    .feeling-emoji-btn .emoji-large {
+        font-size: 2rem;
+    }
+
+    .feeling-emoji-btn .feeling-label {
+        font-size: 0.65rem;
+    }
+
+    .would-return-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .would-return-btn {
+        padding: 1rem;
     }
 }

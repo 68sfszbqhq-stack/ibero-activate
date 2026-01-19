@@ -15,8 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const feedbackForm = document.getElementById('feedback-form');
     const successState = document.getElementById('success-state');
     const welcomeSection = document.getElementById('welcome-section'); // Sección de bienvenida/búsqueda (ahora lista)
-    const preWellness = document.getElementById('pre-wellness');
-    const postWellness = document.getElementById('post-wellness');
+
 
     // Elementos del perfil seleccionado
     const profileAvatar = document.getElementById('profile-avatar');
@@ -193,14 +192,21 @@ document.addEventListener('DOMContentLoaded', () => {
         profileAvatar.textContent = getInitials(safeName);
         employeeName.textContent = safeName;
 
-        // NUEVO: Mostrar PRE-wellness questionnaire primero
+        // NUEVO: Mostrar formulario unificado directamente (sin PRE-wellness)
         welcomeSection.classList.add('hidden');
-        preWellness.classList.remove('hidden');
+        feedbackForm.classList.remove('hidden');
     }
 
     async function submitFeedback() {
         if (!currentRating) {
             alert('Por favor califica con estrellas ⭐');
+            return;
+        }
+
+        // NUEVO: Validar que las 3 preguntas del wellness estén completas
+        const wellnessComplete = window.wellnessQuestionnaire && window.wellnessQuestionnaire.isComplete();
+        if (!wellnessComplete) {
+            alert('⚠️ Por favor responde las 3 preguntas rápidas');
             return;
         }
 
@@ -225,6 +231,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('⚠️ Calificación inválida');
                 return;
             }
+
+            // Obtener datos del wellness questionnaire
+            const wellnessData = window.wellnessQuestionnaire ? window.wellnessQuestionnaire.getData() : {};
 
             // 0.1 SEGURIDAD: Verificar que la asistencia sigue activa (en subcollection)
             const attendanceDoc = await db.collection('employees')
@@ -257,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // 1. Guardar Feedback en subcollection (con datos sanitizados)
+            // 1. Guardar Feedback en subcollection (con datos sanitizados + wellness data)
             await db.collection('employees')
                 .doc(selectedEmployee.id)
                 .collection('feedback')
@@ -266,8 +275,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     rating: validRating,
                     reaction: currentEmoji,
                     comment: comment, // Ya sanitizado
+
+                    // NUEVO: Wellness data integrado
+                    perceivedBenefit: wellnessData.perceivedBenefit || null,
+                    postFeeling: wellnessData.postFeeling || null,
+                    wouldReturn: wellnessData.wouldReturn || null,
+
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    date: new Date().toISOString().split('T')[0]
+                    date: new Date().toISOString().split('T')[0],
+                    questionnaireVersion: 'unified-option-b'
                 });
 
 
@@ -294,8 +310,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log('Updated top-level attendance status');
 
+            // 3. Guardar wellness data también en colección separada para análisis
+            await db.collection('wellness_data').add({
+                employeeId: selectedEmployee.id,
+                employeeName: selectedEmployee.name,
+                attendanceId: currentAttendanceId,
+                activityDate: new Date().toISOString().split('T')[0],
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
 
-            // 3. Calcular puntos (Gamificación: 20 fijos + 10 si ganó)
+                // Wellness data
+                perceivedBenefit: wellnessData.perceivedBenefit,
+                postFeeling: wellnessData.postFeeling,
+                wouldReturn: wellnessData.wouldReturn,
+
+                // Metadata
+                deviceType: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+                questionnaireVersion: 'unified-option-b'
+            });
+
+            console.log('✅ Wellness data saved to analytics collection');
+
+            // 4. Calcular puntos (Gamificación: 20 fijos + 10 si ganó)
             let earnedPoints = 20;
             const commentLower = comment.toLowerCase();
 
@@ -309,22 +344,27 @@ document.addEventListener('DOMContentLoaded', () => {
             // TRACK LOCAL COMPLETED
             recentlyCompletedIds.add(currentAttendanceId);
 
-            // 4. GUARDAR PUNTOS EN EL EMPLEADO
+            // 5. GUARDAR PUNTOS EN EL EMPLEADO
             await db.collection('employees').doc(selectedEmployee.id).update({
                 points: firebase.firestore.FieldValue.increment(earnedPoints),
                 lastAttendance: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            // NUEVO: Mostrar POST-wellness questionnaire
+            // NUEVO: Ir directo al estado de éxito (sin POST-wellness separado)
             feedbackForm.classList.add('hidden');
-            postWellness.classList.remove('hidden');
+            successState.classList.remove('hidden');
+
+            // Reset wellness data
+            if (window.wellnessQuestionnaire) {
+                window.wellnessQuestionnaire.reset();
+            }
 
         } catch (error) {
             console.error('Error:', error);
             alert('Error al enviar. Intenta de nuevo.');
         } finally {
             submitBtn.disabled = false;
-            submitBtn.innerHTML = 'Enviar Calificación';
+            submitBtn.innerHTML = '📤 Enviar Feedback';
         }
     }
 
@@ -340,9 +380,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('comment').value = '';
         ratingText.textContent = 'Selecciona una calificación';
 
-        // Reset wellness questionnaires
-        preWellness.classList.add('hidden');
-        postWellness.classList.add('hidden');
+        // Reset wellness questionnaire (unified)
+        if (window.wellnessQuestionnaire) {
+            window.wellnessQuestionnaire.reset();
+        }
+
+        // Hide all sections, show welcome
         feedbackForm.classList.add('hidden');
         successState.classList.add('hidden');
         welcomeSection.classList.remove('hidden');

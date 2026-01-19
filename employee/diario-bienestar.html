@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Diario de Bienestar - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/employee.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        .kaizen-feed {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .kaizen-quote {
+            font-size: 1.2rem;
+            font-weight: 500;
+            font-style: italic;
+            margin-bottom: 0.5rem;
+        }
+
+        .kaizen-author {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .habit-tracker {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .water-glasses {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .glass-btn {
+            aspect-ratio: 1;
+            border: none;
+            background: #e5e7eb;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 2rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .glass-btn.filled {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .glass-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .mood-selector {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .mood-btn {
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .mood-btn:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .mood-btn.selected {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+
+        .mood-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .mood-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .weather-selector {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .weather-btn {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .weather-btn:hover {
+            border-color: var(--primary);
+        }
+
+        .weather-btn.selected {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+
+        .gratitude-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .gratitude-input,
+        .affirmation-input,
+        .reflection-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            font-family: inherit;
+            font-size: 0.95rem;
+        }
+
+        .reflection-input {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .wheel-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .wheel-locked {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .water-glasses {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .mood-selector {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="employee-container">
+        <header class="employee-header">
+            <div class="logo-small">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <span>IBERO ACTÍVATE</span>
+            </div>
+            <a href="dashboard.html" class="profile-link">
+                <i class="fa-solid fa-arrow-left"></i> Volver
+            </a>
+        </header>
+
+        <main class="feedback-content" style="align-items: flex-start;">
+            <div style="width: 100%; max-width: 900px;">
+
+                <!-- Kaizen Feed -->
+                <div class="kaizen-feed">
+                    <div class="kaizen-quote" id="kaizen-quote">
+                        "La mente no distingue entre realidad e imaginación. Planta las semillas correctas."
+                    </div>
+                    <div class="kaizen-author">— Filosofía Kaizen</div>
+                </div>
+
+                <!-- Page Title -->
+                <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">📓 Mi Diario de Bienestar</h1>
+                <p style="color: #666; margin-bottom: 2rem;">Construye hábitos que transforman tu vida, un día a la vez.
+                </p>
+
+                <!-- Date Display -->
+                <div
+                    style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center;">
+                    <i class="fa-solid fa-calendar-day" style="color: var(--primary);"></i>
+                    <strong id="today-date">Cargando...</strong>
+                </div>
+
+                <!-- Rueda de la Vida -->
+                <div class="wheel-container">
+                    <h2 style="font-size: 1.5rem; margin-bottom: 1rem;">
+                        <i class="fa-solid fa-chart-pie" style="color: var(--primary);"></i>
+                        Rueda de la Vida
+                    </h2>
+                    <p style="color: #666; margin-bottom: 1.5rem;">
+                        Evalúa tu satisfacción en 8 áreas clave del 1 al 10. Mueve los controles y el gráfico se
+                        actualizará en tiempo real. Al guardar, se bloquea hasta el final del cuatrimestre.
+                    </p>
+
+                    <div id="wheel-active-container">
+                        <!-- Chart -->
+                        <div style="max-width: 500px; margin: 0 auto 2rem;">
+                            <canvas id="wheelChart"></canvas>
+                        </div>
+
+                        <!-- Sliders para cada área -->
+                        <div id="wheel-sliders" style="display: grid; gap: 1.5rem;">
+                            <!-- Generated by JS -->
+                        </div>
+                    </div>
+
+                    <div id="wheel-locked-message" class="wheel-locked hidden">
+                        <i class="fa-solid fa-lock"
+                            style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+                        <h3>Evaluación Registrada</h3>
+                        <p>Tu evaluación inicial ha sido guardada. Podrás volver a evaluar al final del cuatrimestre
+                            para ver tu progreso.</p>
+                        <div style="max-width: 500px; margin: 2rem auto;">
+                            <canvas id="wheelChartLocked"></canvas>
+                        </div>
+                    </div>
+
+                    <button id="save-wheel-btn" class="btn-primary btn-block" style="margin-top: 1.5rem;">
+                        <i class="fa-solid fa-save"></i> Guardar Evaluación
+                    </button>
+                </div>
+
+                <!-- Trackers Diarios -->
+                <div class="habit-tracker">
+                    <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">
+                        <i class="fa-solid fa-droplet" style="color: #3b82f6;"></i>
+                        Hidratación (2 Litros)
+                    </h2>
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">Marca cada vaso de 250ml que tomes
+                    </p>
+                    <div class="water-glasses" id="water-tracker">
+                        <!-- Generated by JS -->
+                    </div>
+                </div>
+
+                <div class="habit-tracker">
+                    <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">
+                        <i class="fa-solid fa-face-smile" style="color: #f59e0b;"></i>
+                        ¿Cómo me siento hoy?
+                    </h2>
+                    <div class="mood-selector" id="mood-selector">
+                        <!-- Generated by JS -->
+                    </div>
+                </div>
+
+                <div class="habit-tracker">
+                    <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">
+                        <i class="fa-solid fa-cloud-sun" style="color: #06b6d4;"></i>
+                        Clima del Día
+                    </h2>
+                    <div class="weather-selector" id="weather-selector">
+                        <!-- Generated by JS -->
+                    </div>
+                </div>
+
+                <!-- Gratitud y Afirmaciones -->
+                <div class="gratitude-section">
+                    <h2 style="font-size: 1.5rem; margin-bottom: 1rem;">
+                        <i class="fa-solid fa-heart" style="color: #ef4444;"></i>
+                        3 Cosas por las que Agradezco Hoy
+                    </h2>
+                    <input type="text" class="gratitude-input" id="gratitude-1" placeholder="1. Hoy agradezco...">
+                    <input type="text" class="gratitude-input" id="gratitude-2" placeholder="2. Hoy agradezco...">
+                    <input type="text" class="gratitude-input" id="gratitude-3" placeholder="3. Hoy agradezco...">
+                </div>
+
+                <div class="gratitude-section">
+                    <h2 style="font-size: 1.5rem; margin-bottom: 1rem;">
+                        <i class="fa-solid fa-bolt" style="color: #8b5cf6;"></i>
+                        2 Afirmaciones Positivas
+                    </h2>
+                    <input type="text" class="affirmation-input" id="affirmation-1" placeholder="Yo soy...">
+                    <input type="text" class="affirmation-input" id="affirmation-2" placeholder="Yo puedo...">
+                </div>
+
+                <div class="gratitude-section">
+                    <h2 style="font-size: 1.5rem; margin-bottom: 1rem;">
+                        <i class="fa-solid fa-star" style="color: #fbbf24;"></i>
+                        Reflexión del Día
+                    </h2>
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                        ¿Qué visualizaste durante tu meditación o pausa activa?
+                    </p>
+                    <textarea class="reflection-input" id="reflection" placeholder="Hoy visualicé..."></textarea>
+                </div>
+
+                <!-- Save Button -->
+                <button id="save-diary-btn" class="btn-primary btn-block" style="margin-bottom: 2rem;">
+                    <i class="fa-solid fa-save"></i> Guardar Mi Diario del Día
+                </button>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/employee-access-validation.js"></script>
+    <script src="../js/toast.js"></script>
+    <script src="../js/diario-bienestar.js"></script>
+</body>
+
+</html>
