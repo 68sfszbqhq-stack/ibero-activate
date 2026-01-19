@@ -231,15 +231,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentCalendarMonth.setMonth(currentCalendarMonth.getMonth() + 1);
         renderMonthlyCalendar(allAttendances, currentCalendarMonth);
     });
-    border - radius: 50 %;
-    display: flex; align - items: center; justify - content: center; margin: 0 auto; ">
-                        ${ isAttended ? '<i class="fa-solid fa-check"></i>' : '-' }
-                    </div >
-                </div >
-        `;
-            weekGrid.innerHTML += dayHtml;
-        });
-    }
 });
 
 // CALCULAR RACHA (días consecutivos con asistencia)
