@@ -24,10 +24,8 @@ service cloud.firestore {
     match /employees/{employeeId} {
       allow read: if true;
       allow create, delete: if isAuth();
-      // Solo admin puede modificar points (protección de seguridad)
-      allow update: if isAuth() && 
-        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['points']) || 
-         request.resource.data.points == resource.data.points);
+      // MODIFICADO: Permitir actualización de puntos para Feedback
+      allow update: if true;
     }
 
     // ASISTENCIAS
@@ -94,7 +92,7 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // ANTIGRAVITY WELLNESS MODULE
+    // ANTIGRAVITY WELLNESS MODULE (NUEVO)
     match /employees/{employeeId}/wheel_of_life/{wheelId} {
       allow read, write: if true;
     }

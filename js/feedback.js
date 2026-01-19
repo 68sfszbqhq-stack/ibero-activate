@@ -32,6 +32,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inicializar Listener en Tiempo Real
     initRealTimeListener();
 
+    // Asegurar autenticación (Anónima) para cumplir reglas de Firestore "isAuth()"
+    auth.onAuthStateChanged(user => {
+        if (!user) {
+            console.log("Autenticando anónimamente para permisos...");
+            auth.signInAnonymously().catch(e => console.error("Error auth anon:", e));
+        }
+    });
+
     // Event Listeners UI
     if (changeUserBtn) changeUserBtn.addEventListener('click', resetSelection);
     if (newFeedbackBtn) newFeedbackBtn.addEventListener('click', () => {
