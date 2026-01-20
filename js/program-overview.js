@@ -393,9 +393,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const scheduledActivities = {};
             for (const week of monthWeeks) {
                 const weekId = getWeekIdForWeekNumber(week.week);
-                const scheduleDoc = await db.collection('weekly_schedules').doc(weekId).get();
+                console.log(`[PDF Mensual] Buscando actividades para Semana ${week.week} con ID: ${weekId}`);
+
+                let scheduleDoc = await db.collection('weekly_schedules').doc(weekId).get();
+
+                // If not found, try alternative formats
+                if (!scheduleDoc.exists) {
+                    const altWeekId = `week-${week.week}`;
+                    console.log(`  Intentando formato alternativo: ${altWeekId}`);
+                    scheduleDoc = await db.collection('weekly_schedules').doc(altWeekId).get();
+                }
+
                 if (scheduleDoc.exists) {
-                    scheduledActivities[week.week] = scheduleDoc.data().schedule || [];
+                    const activities = scheduleDoc.data().schedule || [];
+                    scheduledActivities[week.week] = activities;
+                    console.log(`  ✓ Encontradas ${activities.length} actividades`);
+                } else {
+                    console.log(`  ✗ No se encontraron actividades`);
+                    scheduledActivities[week.week] = [];
                 }
             }
 
@@ -519,9 +534,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const scheduledActivities = {};
             for (const week of programData.weeklySchedule) {
                 const weekId = getWeekIdForWeekNumber(week.week);
-                const scheduleDoc = await db.collection('weekly_schedules').doc(weekId).get();
+                console.log(`Buscando actividades para Semana ${week.week} con ID: ${weekId}`);
+
+                let scheduleDoc = await db.collection('weekly_schedules').doc(weekId).get();
+
+                // If not found, try alternative formats
+                if (!scheduleDoc.exists) {
+                    // Try with just the week number
+                    const altWeekId = `week-${week.week}`;
+                    console.log(`  Intentando formato alternativo: ${altWeekId}`);
+                    scheduleDoc = await db.collection('weekly_schedules').doc(altWeekId).get();
+                }
+
                 if (scheduleDoc.exists) {
-                    scheduledActivities[week.week] = scheduleDoc.data().schedule || [];
+                    const activities = scheduleDoc.data().schedule || [];
+                    scheduledActivities[week.week] = activities;
+                    console.log(`  ✓ Encontradas ${activities.length} actividades`);
+                } else {
+                    console.log(`  ✗ No se encontraron actividades`);
+                    scheduledActivities[week.week] = [];
                 }
             }
 
