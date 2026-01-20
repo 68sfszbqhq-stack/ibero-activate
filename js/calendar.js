@@ -227,6 +227,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         card.onclick = (e) => {
             e.stopPropagation();
+            showActivityDetail(item.activityId, item.location);
+        };
+
+        // Add double-click for edit
+        card.ondblclick = (e) => {
+            e.stopPropagation();
             openModal(item.day, null, item, index, e);
         };
 
@@ -596,5 +602,129 @@ document.addEventListener('DOMContentLoaded', () => {
         const G = Math.max(0, (num >> 8 & 0x00FF) - amt);
         const B = Math.max(0, (num & 0x0000FF) - amt);
         return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+    }
+
+    // --- ACTIVITY DETAIL PANEL FUNCTIONS ---
+
+    let currentActivityId = null; // Store current activity ID for editing
+
+    function showActivityDetail(activityId, location) {
+        const activity = activitiesMap[activityId];
+        if (!activity) {
+            console.error('Activity not found:', activityId);
+            return;
+        }
+
+        currentActivityId = activityId; // Store for edit button
+        const panel = document.getElementById('activity-detail-panel');
+
+        // Populate panel with activity data
+        document.getElementById('detail-activity-name').innerHTML = `${activity.emoji} ${activity.name}`;
+
+        // Image - try both imagen and imageUrl
+        const imageEl = document.getElementById('detail-activity-image');
+        const imageUrl = activity.imagen || activity.imageUrl;
+        if (imageUrl) {
+            imageEl.src = imageUrl;
+            imageEl.style.display = 'block';
+        } else {
+            imageEl.style.display = 'none';
+        }
+
+        // Meta tags
+        document.getElementById('detail-duration-value').textContent = `${activity.duration} minutos`;
+        document.getElementById('detail-category-value').textContent = activity.categoria || activity.category || 'General';
+        document.getElementById('detail-location-value').textContent = location || 'Por definir';
+
+        // Description
+        document.getElementById('detail-description').textContent = activity.description || 'Sin descripción disponible. Haz clic en el botón de editar para agregar una descripción.';
+
+        // Objective - try both objetivo and objective
+        const objetivo = activity.objetivo || activity.objective;
+        document.getElementById('detail-objective').textContent = objetivo || 'Sin objetivo definido. Haz clic en el botón de editar para agregar un objetivo.';
+
+        // Improvements - use specificBenefits
+        const improvementsContainer = document.getElementById('detail-improvements');
+        improvementsContainer.innerHTML = '';
+
+        const improvements = activity.specificBenefits || activity.whatImproves || [];
+
+        if (improvements && improvements.length > 0) {
+            const improvementIcons = {
+                'Salud Física': 'fa-heart-pulse',
+                'Salud Mental': 'fa-brain',
+                'Salud Emocional': 'fa-smile',
+                'Salud Ocupacional': 'fa-briefcase',
+                'Bienestar General': 'fa-star',
+                'Resistencia': 'fa-running',
+                'Fuerza': 'fa-dumbbell',
+                'Flexibilidad': 'fa-person-walking',
+                'Coordinación': 'fa-hands',
+                'Relajación': 'fa-spa',
+                'Concentración': 'fa-bullseye',
+                'Creatividad': 'fa-lightbulb',
+                'Trabajo en Equipo': 'fa-users',
+                'Comunicación': 'fa-comments',
+                'Liderazgo': 'fa-crown',
+                'Mejora postura': 'fa-user-check',
+                'Reduce dolor': 'fa-hand-holding-medical',
+                'Mejora movilidad': 'fa-person-walking',
+                'Activa circulación': 'fa-heart-circle-bolt',
+                'Reduce estrés': 'fa-spa',
+                'Mejora estado de ánimo': 'fa-face-smile',
+                'Aumenta energía': 'fa-bolt',
+                'Fomenta trabajo en equipo': 'fa-users',
+                'Mejora clima laboral': 'fa-building-user',
+                'Fomenta integración': 'fa-handshake'
+            };
+
+            improvements.forEach(improvement => {
+                const badge = document.createElement('span');
+                badge.className = 'improvement-badge';
+
+                // Find matching icon or use default
+                let icon = 'fa-check-circle';
+                for (const [key, value] of Object.entries(improvementIcons)) {
+                    if (improvement.toLowerCase().includes(key.toLowerCase())) {
+                        icon = value;
+                        break;
+                    }
+                }
+
+                badge.innerHTML = `<i class="fa-solid ${icon}"></i> ${improvement}`;
+                improvementsContainer.appendChild(badge);
+            });
+        } else {
+            improvementsContainer.innerHTML = '<p style="color: #9ca3af; font-style: italic;">No se especificaron mejoras. Haz clic en el botón de editar para agregar beneficios.</p>';
+        }
+
+        // Show panel with animation
+        panel.classList.remove('hidden');
+
+        // Smooth scroll to panel
+        setTimeout(() => {
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+
+    // Close detail panel button
+    const closeDetailBtn = document.getElementById('btn-close-detail');
+    if (closeDetailBtn) {
+        closeDetailBtn.addEventListener('click', () => {
+            const panel = document.getElementById('activity-detail-panel');
+            panel.classList.add('hidden');
+            currentActivityId = null;
+        });
+    }
+
+    // Edit activity button
+    const editActivityBtn = document.getElementById('btn-edit-activity');
+    if (editActivityBtn) {
+        editActivityBtn.addEventListener('click', () => {
+            if (currentActivityId) {
+                // Navigate to activities page with edit mode
+                window.location.href = `activities.html?edit=${currentActivityId}`;
+            }
+        });
     }
 });

@@ -162,11 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             card.addEventListener('click', () => {
-                // Navegar al calendario de esa semana
-                const startDate = new Date(programData.startDate);
-                startDate.setDate(startDate.getDate() + ((week.week - 1) * 7));
-                const weekParam = ProgramUtils.getWeekId(startDate);
-                window.location.href = `calendar.html?week=${weekParam}`;
+                showWeekDetail(week, phase, statusText);
             });
 
             container.appendChild(card);
@@ -268,5 +264,347 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         document.getElementById('phase-timeline').innerHTML = '';
         document.getElementById('weeks-grid').innerHTML = '';
+    }
+
+    // --- WEEK DETAIL PANEL FUNCTIONS ---
+
+    function showWeekDetail(week, phase, statusText) {
+        const panel = document.getElementById('week-detail-panel');
+        const header = panel.querySelector('.detail-panel-header');
+
+        // Update header with phase color
+        if (phase) {
+            header.style.background = `linear-gradient(135deg, ${phase.colorTheme}, ${ProgramUtils.darkenColor(phase.colorTheme, 20)})`;
+        }
+
+        // Update title
+        document.getElementById('detail-week-title').innerHTML = `<i class="fa-solid fa-calendar-week"></i> Semana ${week.week} - ${week.activity}`;
+
+        // Populate week information
+        document.getElementById('detail-week-number').textContent = `${week.week}/${programData.totalWeeks}`;
+        document.getElementById('detail-week-phase').textContent = phase ? phase.name : 'Sin fase';
+        document.getElementById('detail-week-status').textContent = statusText;
+        document.getElementById('detail-week-intensity').textContent = week.intensidad;
+        document.getElementById('detail-week-activity').textContent = week.activity;
+        document.getElementById('detail-week-objective').textContent = week.objetivo;
+
+        // Populate phase scientific content
+        if (phase) {
+            const scienceContent = document.getElementById('detail-week-science-content');
+            const justification = phase.justificacionCientifica.split('\n\n').map(para =>
+                `<p>${para.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`
+            ).join('');
+            scienceContent.innerHTML = justification;
+
+            // Populate phase objectives
+            const objectivesList = document.getElementById('detail-week-phase-objectives');
+            objectivesList.innerHTML = phase.objetivosFase.map(obj => `
+                <li>
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>${obj}</span>
+                </li>
+            `).join('');
+        } else {
+            document.getElementById('detail-week-science-content').innerHTML = '<p>No hay información científica disponible para esta semana.</p>';
+            document.getElementById('detail-week-phase-objectives').innerHTML = '<li>No hay objetivos definidos.</li>';
+        }
+
+        // Setup calendar navigation button
+        const calendarBtn = document.getElementById('btn-view-week-calendar');
+        calendarBtn.onclick = () => {
+            const startDate = new Date(programData.startDate);
+            startDate.setDate(startDate.getDate() + ((week.week - 1) * 7));
+            const weekParam = ProgramUtils.getWeekId(startDate);
+            window.location.href = `calendar.html?week=${weekParam}`;
+        };
+
+        // Show panel with animation
+        panel.classList.remove('hidden');
+
+        // Smooth scroll to panel
+        setTimeout(() => {
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+
+    // Close detail panel button
+    const closeWeekDetailBtn = document.getElementById('btn-close-week-detail');
+    if (closeWeekDetailBtn) {
+        closeWeekDetailBtn.addEventListener('click', () => {
+            const panel = document.getElementById('week-detail-panel');
+            panel.classList.add('hidden');
+        });
+    }
+
+    // --- PDF GENERATION FUNCTIONS ---
+
+    // Download Month PDF Button
+    const btnDownloadMonth = document.getElementById('btn-download-month-pdf');
+    if (btnDownloadMonth) {
+        btnDownloadMonth.addEventListener('click', () => generateMonthPDF());
+    }
+
+    // Download Full PDF Button
+    const btnDownloadFull = document.getElementById('btn-download-full-pdf');
+    if (btnDownloadFull) {
+        btnDownloadFull.addEventListener('click', () => generateFullPDF());
+    }
+
+    async function generateMonthPDF() {
+        if (!programData || !programContext) {
+            alert('No hay datos del programa disponibles');
+            return;
+        }
+
+        const btn = document.getElementById('btn-download-month-pdf');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando PDF...';
+
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Get current month weeks
+            const currentDate = new Date();
+            const currentMonth = currentDate.getMonth();
+            const currentYear = currentDate.getFullYear();
+
+            const monthWeeks = programData.weeklySchedule.filter(week => {
+                const startDate = new Date(programData.startDate);
+                startDate.setDate(startDate.getDate() + ((week.week - 1) * 7));
+                return startDate.getMonth() === currentMonth && startDate.getFullYear() === currentYear;
+            });
+
+            if (monthWeeks.length === 0) {
+                alert('No hay semanas programadas para el mes actual');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> <span>Descargar Plan del Mes Actual (PDF)</span>';
+                return;
+            }
+
+            // Get activities data
+            const activitiesSnapshot = await db.collection('activities').get();
+            const activitiesData = {};
+            activitiesSnapshot.forEach(doc => {
+                activitiesData[doc.id] = doc.data();
+            });
+
+            // Get scheduled activities for these weeks
+            const scheduledActivities = {};
+            for (const week of monthWeeks) {
+                const weekId = getWeekIdForWeekNumber(week.week);
+                const scheduleDoc = await db.collection('weekly_schedules').doc(weekId).get();
+                if (scheduleDoc.exists) {
+                    scheduledActivities[week.week] = scheduleDoc.data().schedule || [];
+                }
+            }
+
+            // Header
+            doc.setFontSize(20);
+            doc.setTextColor(102, 126, 234);
+            doc.text('IBERO ACTÍVATE', 105, 20, { align: 'center' });
+
+            doc.setFontSize(16);
+            doc.setTextColor(60, 60, 60);
+            const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            doc.text(`Plan del Mes: ${monthNames[currentMonth]} ${currentYear}`, 105, 30, { align: 'center' });
+
+            doc.setFontSize(10);
+            doc.setTextColor(120, 120, 120);
+            doc.text(`Generado: ${new Date().toLocaleDateString('es-ES')}`, 105, 37, { align: 'center' });
+
+            let yPos = 45;
+
+            // For each week in the month
+            monthWeeks.forEach((week, index) => {
+                const phase = programData.phases.find(p => p.phaseId === week.phase);
+
+                if (yPos > 250) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+
+                // Week header
+                doc.setFillColor(102, 126, 234);
+                doc.rect(15, yPos, 180, 10, 'F');
+                doc.setFontSize(12);
+                doc.setTextColor(255, 255, 255);
+                doc.text(`Semana ${week.week} - ${week.activity}`, 20, yPos + 7);
+
+                yPos += 15;
+
+                // Week details
+                doc.setFontSize(10);
+                doc.setTextColor(60, 60, 60);
+                doc.text(`Fase: ${phase ? phase.name : 'N/A'}`, 20, yPos);
+                doc.text(`Intensidad: ${week.intensidad}`, 120, yPos);
+                yPos += 6;
+                doc.text(`Objetivo: ${week.objetivo}`, 20, yPos);
+                yPos += 10;
+
+                // Scheduled activities table
+                const weekActivities = scheduledActivities[week.week] || [];
+                if (weekActivities.length > 0) {
+                    const tableData = weekActivities.map(item => {
+                        const activity = activitiesData[item.activityId];
+                        const dayNames = {
+                            'monday': 'Lunes',
+                            'tuesday': 'Martes',
+                            'wednesday': 'Miércoles',
+                            'thursday': 'Jueves',
+                            'friday': 'Viernes'
+                        };
+                        return [
+                            dayNames[item.day] || item.day,
+                            activity ? activity.name : 'Actividad desconocida',
+                            activity ? `${activity.duration} min` : '-',
+                            item.location || 'Por definir'
+                        ];
+                    });
+
+                    doc.autoTable({
+                        startY: yPos,
+                        head: [['Día', 'Actividad', 'Duración', 'Ubicación']],
+                        body: tableData,
+                        theme: 'grid',
+                        headStyles: { fillColor: [199, 210, 254], textColor: [67, 56, 202], fontStyle: 'bold' },
+                        styles: { fontSize: 9, cellPadding: 3 },
+                        margin: { left: 20, right: 20 }
+                    });
+
+                    yPos = doc.lastAutoTable.finalY + 10;
+                } else {
+                    doc.setTextColor(150, 150, 150);
+                    doc.setFontSize(9);
+                    doc.text('No hay actividades programadas para esta semana', 20, yPos);
+                    yPos += 10;
+                }
+            });
+
+            // Save PDF
+            doc.save(`IBERO_ACTIVATE_${monthNames[currentMonth]}_${currentYear}.pdf`);
+
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Error al generar el PDF: ' + error.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> <span>Descargar Plan del Mes Actual (PDF)</span>';
+        }
+    }
+
+    async function generateFullPDF() {
+        if (!programData) {
+            alert('No hay datos del programa disponibles');
+            return;
+        }
+
+        const btn = document.getElementById('btn-download-full-pdf');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando PDF...';
+
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Header
+            doc.setFontSize(22);
+            doc.setTextColor(102, 126, 234);
+            doc.text('IBERO ACTÍVATE', 105, 20, { align: 'center' });
+
+            doc.setFontSize(16);
+            doc.setTextColor(60, 60, 60);
+            doc.text('Programa Completo de 19 Semanas', 105, 30, { align: 'center' });
+
+            doc.setFontSize(10);
+            doc.setTextColor(120, 120, 120);
+            doc.text(`Generado: ${new Date().toLocaleDateString('es-ES')}`, 105, 37, { align: 'center' });
+
+            // Program overview
+            doc.setFontSize(11);
+            doc.setTextColor(60, 60, 60);
+            doc.text(`Inicio: ${new Date(programData.startDate).toLocaleDateString('es-ES')}`, 20, 50);
+            doc.text(`Duración: ${programData.totalWeeks} semanas`, 20, 57);
+
+            let yPos = 70;
+
+            // Phases overview
+            doc.setFontSize(14);
+            doc.setTextColor(102, 126, 234);
+            doc.text('Fases del Programa', 20, yPos);
+            yPos += 10;
+
+            programData.phases.forEach(phase => {
+                doc.setFontSize(11);
+                doc.setTextColor(60, 60, 60);
+                doc.setFont(undefined, 'bold');
+                doc.text(`${phase.name} (Semanas ${phase.weekRange[0]}-${phase.weekRange[1]})`, 25, yPos);
+                doc.setFont(undefined, 'normal');
+                yPos += 6;
+                doc.setFontSize(9);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Objetivo: ${phase.objetivoDominante}`, 30, yPos);
+                yPos += 8;
+            });
+
+            // Weekly schedule table
+            doc.addPage();
+            yPos = 20;
+
+            doc.setFontSize(14);
+            doc.setTextColor(102, 126, 234);
+            doc.text('Calendario Semanal Completo', 20, yPos);
+            yPos += 10;
+
+            const tableData = programData.weeklySchedule.map(week => {
+                const phase = programData.phases.find(p => p.phaseId === week.phase);
+                return [
+                    `S${week.week}`,
+                    phase ? phase.name : '-',
+                    week.activity,
+                    week.objetivo,
+                    week.intensidad
+                ];
+            });
+
+            doc.autoTable({
+                startY: yPos,
+                head: [['Sem', 'Fase', 'Actividad', 'Objetivo', 'Intensidad']],
+                body: tableData,
+                theme: 'striped',
+                headStyles: {
+                    fillColor: [102, 126, 234],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 10
+                },
+                styles: { fontSize: 8, cellPadding: 3 },
+                columnStyles: {
+                    0: { cellWidth: 15 },
+                    1: { cellWidth: 35 },
+                    2: { cellWidth: 45 },
+                    3: { cellWidth: 60 },
+                    4: { cellWidth: 25 }
+                },
+                margin: { left: 15, right: 15 }
+            });
+
+            // Save PDF
+            doc.save('IBERO_ACTIVATE_Plan_Completo_19_Semanas.pdf');
+
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Error al generar el PDF: ' + error.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-download"></i> <span>Descargar Plan Completo 19 Semanas (PDF)</span>';
+        }
+    }
+
+    function getWeekIdForWeekNumber(weekNumber) {
+        const startDate = new Date(programData.startDate);
+        startDate.setDate(startDate.getDate() + ((weekNumber - 1) * 7));
+        return ProgramUtils.getWeekId(startDate);
     }
 });

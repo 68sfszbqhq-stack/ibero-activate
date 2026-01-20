@@ -214,6 +214,264 @@
                 min-height: 150px;
             }
         }
+
+        /* Activity Detail Panel */
+        .activity-detail-panel {
+            background: linear-gradient(135deg, #ffffff, #f9fafb);
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            margin-top: 2rem;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: top center;
+        }
+
+        .activity-detail-panel.hidden {
+            display: none;
+            opacity: 0;
+            transform: scaleY(0.95);
+        }
+
+        .activity-detail-panel:not(.hidden) {
+            animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scaleY(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scaleY(1);
+            }
+        }
+
+        .detail-panel-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .detail-panel-header h2 {
+            color: white;
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .close-detail-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            transition: all 0.2s;
+        }
+
+        .close-detail-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .edit-activity-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .edit-activity-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .detail-panel-content {
+            padding: 2rem;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+
+        .detail-image-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .detail-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            transition: transform 0.3s;
+        }
+
+        .detail-image:hover {
+            transform: scale(1.02);
+        }
+
+        .detail-meta-tags {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .meta-tag {
+            background: linear-gradient(135deg, #f9fafb, #ffffff);
+            border: 1.5px solid #e5e7eb;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+            color: var(--text-dark);
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .meta-tag:hover {
+            border-color: var(--primary);
+            background: #eef2ff;
+            transform: translateX(4px);
+        }
+
+        .meta-tag i {
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .detail-info-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .detail-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1.5px solid #e5e7eb;
+            transition: all 0.2s;
+        }
+
+        .detail-section:hover {
+            border-color: #c7d2fe;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+        }
+
+        .detail-section h3 {
+            color: var(--primary);
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0 0 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .detail-section h3 i {
+            font-size: 1rem;
+        }
+
+        .detail-section p {
+            color: #4b5563;
+            line-height: 1.7;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .improvements-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .improvement-badge {
+            background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+            color: #4338ca;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1.5px solid #c7d2fe;
+            transition: all 0.2s;
+        }
+
+        .improvement-badge:hover {
+            background: linear-gradient(135deg, #c7d2fe, #a5b4fc);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(67, 56, 202, 0.2);
+        }
+
+        .improvement-badge i {
+            font-size: 0.9rem;
+        }
+
+        /* Responsive Detail Panel */
+        @media (max-width: 968px) {
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .detail-image {
+                height: 250px;
+            }
+
+            .detail-panel-content {
+                padding: 1.5rem;
+            }
+
+            .detail-panel-header h2 {
+                font-size: 1.25rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .detail-meta-tags {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .meta-tag {
+                flex: 1;
+                min-width: calc(50% - 0.375rem);
+            }
+
+            .detail-image {
+                height: 200px;
+            }
+        }
     </style>
 </head>
 
@@ -328,6 +586,55 @@
             <!-- Calendar Grid -->
             <div class="calendar-simple-grid" id="calendar-body">
                 <!-- Generated by JS -->
+            </div>
+
+            <!-- Activity Detail Panel -->
+            <div id="activity-detail-panel" class="activity-detail-panel hidden">
+                <div class="detail-panel-header">
+                    <h2 id="detail-activity-name">Detalles de la Actividad</h2>
+                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                        <button id="btn-edit-activity" class="edit-activity-btn" title="Editar actividad">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button id="btn-close-detail" class="close-detail-btn">
+                            <i class="fa-solid fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="detail-panel-content">
+                    <div class="detail-grid">
+                        <div class="detail-image-section">
+                            <img id="detail-activity-image" src="" alt="Imagen de actividad" class="detail-image">
+                            <div class="detail-meta-tags">
+                                <span class="meta-tag" id="detail-duration">
+                                    <i class="fa-solid fa-clock"></i> <span id="detail-duration-value">-</span>
+                                </span>
+                                <span class="meta-tag" id="detail-category">
+                                    <i class="fa-solid fa-tag"></i> <span id="detail-category-value">-</span>
+                                </span>
+                                <span class="meta-tag" id="detail-location">
+                                    <i class="fa-solid fa-location-dot"></i> <span id="detail-location-value">-</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-info-section">
+                            <div class="detail-section">
+                                <h3><i class="fa-solid fa-align-left"></i> Descripción</h3>
+                                <p id="detail-description">-</p>
+                            </div>
+                            <div class="detail-section">
+                                <h3><i class="fa-solid fa-bullseye"></i> Objetivo</h3>
+                                <p id="detail-objective">-</p>
+                            </div>
+                            <div class="detail-section">
+                                <h3><i class="fa-solid fa-heart-pulse"></i> Qué Mejora</h3>
+                                <div id="detail-improvements" class="improvements-list">
+                                    <!-- Generated by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
