@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importar Catálogo Completo (54 Actividades) - IBERO ACTÍVATE</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #c4161c;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            width: 100%;
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #progress {
+            background: #f0f0f0;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        #log {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin: 4px;
+        }
+
+        .cat-af {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .cat-fg {
+            background: #10b981;
+            color: white;
+        }
+
+        .cat-jm {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .cat-vd {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .cat-rc {
+            background: #ec4899;
+            color: white;
+        }
+
+        .cat-cr {
+            background: #f97316;
+            color: white;
+        }
+
+        .info-box {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📚 Importar Catálogo Completo</h1>
+        <p class="subtitle">54 Actividades Organizadas en 6 Categorías</p>
+
+        <div class="info-box">
+            <strong>Catálogo incluye:</strong><br>
+            <span class="category-badge cat-af">10 Activación (AF)</span>
+            <span class="category-badge cat-fg">12 Físicos/Grupal (FG)</span>
+            <span class="category-badge cat-jm">19 Mesa (JM)</span><br>
+            <span class="category-badge cat-vd">4 Digital (VD)</span>
+            <span class="category-badge cat-rc">5 Relax (RC)</span>
+            <span class="category-badge cat-cr">4 Caminatas (CR)</span>
+        </div>
+
+        <button id="importBtn" onclick="importarCatalogo()">
+            🚀 Importar las 54 Actividades
+        </button>
+
+        <div id="progress">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+
+    <script>
+        const logEl = document.getElementById('log');
+        const progressEl = document.getElementById('progress');
+        const progressFill = document.getElementById('progressFill');
+        const importBtn = document.getElementById('importBtn');
+
+        function log(msg, type = 'info') {
+            const colors = { success: '#10b981', error: '#ef4444', info: '#3b82f6', warn: '#f59e0b' };
+            logEl.innerHTML += `<div style="color: ${colors[type]}; margin: 2px 0;">${msg}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        // Helper function to parse duration
+        function parseDuration(durStr) {
+            if (typeof durStr === 'number') return durStr;
+            const match = durStr.match(/(\d+)/);
+            return match ? parseInt(match[1]) : 15;
+        }
+
+        importBtn.disabled = true;
+        importBtn.textContent = '⏳ Importando...';
+        progressEl.style.display = 'block';
+        logEl.innerHTML = '';
+
+        log('🚀 Iniciando importación de catálogo completo...', 'info');
+        log(`👤 Usuario: ${auth.currentUser.email}`, 'info');
+        log(`📦 Total de actividades: ${CATALOGO_COMPLETO.length}`, 'info');
+        log('', 'info');
+
+        let added = 0;
+        let updated = 0;
+        let errors = 0;
+
+        for (let i = 0; i < CATALOGO_COMPLETO.length; i++) {
+            const act = CATALOGO_COMPLETO[i];
+            const progress = ((i + 1) / CATALOGO_COMPLETO.length * 100).toFixed(0);
+            progressFill.style.width = progress + '%';
+            progressFill.textContent = progress + '%';
+
+            try {
+                // Convertir al formato completo
+                const actividadCompleta = {
+                    activityId: act.id,
+                    categoria: act.cat,
+                    name: act.name,
+                    objetivo: act.obj,
+                    duration: parseDuration(act.dur),
+                    materials: act.mat,
+                    imagen: act.img,
+                    instrucciones: act.inst,
+                    emoji: getEmoji(act.cat),
+                    type: getType(act.cat),
+                    intensity: getIntensity(act.cat),
+                    benefitType: getBenefitType(act.cat),
+                    specificBenefits: getSpecificBenefits(act.cat),
+                    description: act.obj
+                };
+
+                // Buscar si existe
+                const existing = await db.collection('activities')
+                    .where('activityId', '==', act.id)
+                    .get();
+
+                if (existing.empty) {
+                    await db.collection('activities').add({
+                        ...actividadCompleta,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    log(`✅ Agregada: ${act.id} - ${act.name}`, 'success');
+                    added++;
+                } else {
+                    const docId = existing.docs[0].id;
+                    await db.collection('activities').doc(docId).update({
+                        ...actividadCompleta,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    log(`🔄 Actualizada: ${act.id} - ${act.name}`, 'info');
+                    updated++;
+                }
+
+            } catch (error) {
+                log(`❌ Error con ${act.id}: ${error.message}`, 'error');
+                errors++;
+            }
+        }
+
+        log('', 'info');
+        log('✨ ¡Importación completada!', 'success');
+        log(`✅ Agregadas: ${added}`, 'success');
+        log(`🔄 Actualizadas: ${updated}`, 'info');
+        if (errors > 0) log(`❌ Errores: ${errors}`, 'error');
+
+        importBtn.textContent = '✅ Completado';
+        }
+
+        // Helper functions
+        function getEmoji(cat) {
+            const emojis = {
+                "Activación": "⚡",
+                "Físicos/Grupal": "🎈",
+                "Mesa": "🎴",
+                "Digital": "🎮",
+                "Relax": "🧘",
+                "Caminatas": "🚶"
+            };
+            return emojis[cat] || "⭐";
+        }
+
+        function getType(cat) {
+            const types = {
+                "Activación": "indoor",
+                "Físicos/Grupal": "outdoor",
+                "Mesa": "desk",
+                "Digital": "desk",
+                "Relax": "indoor",
+                "Caminatas": "outdoor"
+            };
+            return types[cat] || "indoor";
+        }
+
+        function getIntensity(cat) {
+            const intensities = {
+                "Activación": "moderada",
+                "Físicos/Grupal": "moderada",
+                "Mesa": "baja",
+                "Digital": "baja",
+                "Relax": "baja",
+                "Caminatas": "baja"
+            };
+            return intensities[cat] || "baja";
+        }
+
+        function getBenefitType(cat) {
+            const benefits = {
+                "Activación": ["Físico", "Psicológico"],
+                "Físicos/Grupal": ["Físico", "Social"],
+                "Mesa": ["Psicológico", "Social"],
+                "Digital": ["Psicológico", "Social"],
+                "Relax": ["Psicológico"],
+                "Caminatas": ["Físico", "Psicológico", "Social"]
+            };
+            return benefits[cat] || ["Físico"];
+        }
+
+        function getSpecificBenefits(cat) {
+            const benefits = {
+                "Activación": ["Aumenta energía", "Mejora estado de ánimo", "Activa circulación"],
+                "Físicos/Grupal": ["Fomenta trabajo en equipo", "Mejora coordinación", "Fomenta integración"],
+                "Mesa": ["Reduce estrés", "Mejora clima laboral", "Fomenta integración"],
+                "Digital": ["Estimula creatividad", "Mejora comunicación", "Reduce estrés"],
+                "Relax": ["Reduce estrés", "Mejora concentración", "Mejora estado de ánimo"],
+                "Caminatas": ["Reduce estrés", "Mejora concentración", "Mejora comunicación", "Activa circulación"]
+            };
+            return benefits[cat] || ["Mejora bienestar"];
+        }
+    </script>
+</body>
+
+</html>

@@ -16,6 +16,22 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@capacitor-mlkit/barcode-scanning": "^8.0.0",
+        "@capacitor/cli": "^8.0.1",
+        "@capacitor/core": "^8.0.1",
+        "@capacitor/ios": "^8.0.1",
         "firebase-admin": "^12.0.0"
+    },
+    "main": ".temp-streak-fix.js",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/68sfszbqhq-stack/ibero-activate.git"
+    },
+    "bugs": {
+        "url": "https://github.com/68sfszbqhq-stack/ibero-activate/issues"
+    },
+    "homepage": "https://github.com/68sfszbqhq-stack/ibero-activate#readme",
+    "devDependencies": {
+        "@capacitor/assets": "^3.0.5"
     }
 }

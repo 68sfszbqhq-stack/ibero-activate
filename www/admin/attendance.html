@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Content Security Policy para prevenir XSS -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://firestore.googleapis.com; img-src 'self' data: https: https://chart.googleapis.com;">
+
+    <title>Pase de Lista - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase SDKs (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- PWA Setup -->
+    <link rel="manifest" href="../manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="../assets/icon-192.png">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('../sw.js')
+                    .then(reg => console.log('SW registrado ✨'))
+                    .catch(err => console.log('SW falló ❌', err));
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <h2>IBERO ACTÍVATE</h2>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link ">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="program-overview.html" class="nav-link ">
+                        <i class="fa-solid fa-calendar-star"></i> Programa 19 Semanas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="calendar.html" class="nav-link ">
+                        <i class="fa-solid fa-calendar-days"></i> Calendario
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="ai-reports.html" class="nav-link ">
+                        <i class="fa-solid fa-sparkles"></i> Reportes IA
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="activities.html" class="nav-link ">
+                        <i class="fa-solid fa-dumbbell"></i> Actividades
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="attendance.html" class="nav-link active">
+                        <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="attendance-late.html" class="nav-link ">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Pase Extemporáneo
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="employees.html" class="nav-link ">
+                        <i class="fa-solid fa-user-plus"></i> Empleados
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="reports.html" class="nav-link ">
+                        <i class="fa-solid fa-file-pdf"></i> Reportes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link ">
+                        <i class="fa-solid fa-trophy"></i> Gamificación
+                    </a>
+                </li>
+            </ul>
+
+            <button onclick="logout()" class="nav-link logout-btn">
+                <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="page-header">
+                <div>
+                    <h1>Pase de Lista (En Vivo)</h1>
+                    <p>Toca un nombre para marcar asistencia al instante</p>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <!-- QR Code Button -->
+                    <button id="qr-btn" onclick="showQRModal()"
+                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 12px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fa-solid fa-qrcode" style="font-size: 1.2rem;"></i>
+                        <span>QR Feedback</span>
+                    </button>
+
+                    <div class="session-info"
+                        style="background: white; padding: 0.5rem 1rem; border-radius: 8px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s;"
+                        onclick="document.getElementById('date-picker').showPicker()">
+                        <i class="fa-regular fa-calendar"></i>
+                        <span id="current-date" style="font-weight: 600;">Cargando fecha...</span>
+                        <input type="date" id="date-picker"
+                            style="position: absolute; opacity: 0; pointer-events: none;" max="">
+                    </div>
+                </div>
+            </header>
+
+            <!-- QR Modal -->
+            <div id="qr-modal"
+                style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center;">
+                <div
+                    style="background: white; padding: 3rem; border-radius: 20px; text-align: center; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                    <h2 style="margin-bottom: 1rem; color: #1f2937;">
+                        <i class="fa-solid fa-mobile-screen-button" style="color: #667eea;"></i>
+                        Escanea para Dar Feedback
+                    </h2>
+                    <p style="color: #6b7280; margin-bottom: 2rem;">
+                        Los empleados pueden escanear este QR desde su celular para acceder al sistema de feedback
+                    </p>
+                    <div id="qr-code"
+                        style="display: inline-block; padding: 1.5rem; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <!-- QR will be generated here -->
+                    </div>
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+                        <small style="color: #6b7280; font-family: monospace;">
+                            https://68sfszbqhq-stack.github.io/ibero-activate/employee/feedback.html
+                        </small>
+                    </div>
+                    <button onclick="closeQRModal()"
+                        style="margin-top: 2rem; padding: 0.75rem 2rem; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+                        <i class="fa-solid fa-times"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+
+            <div class="filters-bar">
+                <div class="filter-group">
+                    <label for="area-dropdown">Seleccionar Área / Departamento</label>
+                    <!-- Wrapper label for Safari iOS compatibility -->
+                    <label class="select-wrapper" onclick="">
+                        <select id="area-dropdown">
+                            <option value="">-- Seleccione un área --</option>
+                            <!-- Cargado dinámicamente -->
+                        </select>
+                    </label>
+                </div>
+
+                <div class="filter-group">
+                    <label for="session-type">Tipo de Sesión</label>
+                    <select id="session-type">
+                        <option value="matutina">Pausa Matutina (10:00 AM)</option>
+                        <option value="vespertina">Pausa Vespertina (3:00 PM)</option>
+                        <option value="extra">Sesión Extraordinaria</option>
+                    </select>
+                </div>
+
+                <div class="filter-group" style="display: flex; flex-direction: column; justify-content: flex-end;">
+                    <div
+                        style="display: flex; align-items: center; gap: 0.5rem; background: white; padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid #e5e7eb; height: 42px;">
+                        <input type="checkbox" id="skip-feedback-toggle"
+                            style="width: 1.2rem; height: 1.2rem; cursor: pointer;">
+                        <label for="skip-feedback-toggle"
+                            style="margin: 0; cursor: pointer; font-size: 0.9rem; color: #374151; font-weight: 500;">
+                            Omitir Feedback (Auto +20 pts)
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="empty-state"
+                style="text-align: center; padding: 4rem 2rem; background: white; border-radius: 16px; margin-bottom: 2rem;">
+                <i class="fa-solid fa-users-viewfinder"
+                    style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
+                <h3 style="color: #4b5563;">Selecciona un área para comenzar</h3>
+                <p style="color: #9ca3af;">La lista se actualizará automáticamente.</p>
+            </div>
+
+            <div id="employee-list" class="employee-grid">
+                <!-- Tarjetas de empleados generadas dinámicamente -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Security Utils (carga asíncrona para no bloquear) -->
+    <script defer src="../js/security-utils.js"></script>
+
+    <script defer src="../js/firebase-config.js"></script>
+    <script defer src="../js/attendance.js"></script>
+
+    <!-- QR Code Script -->
+    <script>
+        function showQRModal() {
+            const modal = document.getElementById('qr-modal');
+            const qrContainer = document.getElementById('qr-code');
+
+            // Use static QR image
+            const qrImageUrl = '../assets/qr-feedback.png';
+            const qrSize = 300;
+
+            qrContainer.innerHTML = `<img src="${qrImageUrl}" alt="QR Code" style="display: block; width: ${qrSize}px; height: ${qrSize}px; border-radius: 8px;">`;
+
+            modal.style.display = 'flex';
+        }
+
+        function closeQRModal() {
+            document.getElementById('qr-modal').style.display = 'none';
+        }
+
+        // Close modal on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeQRModal();
+            }
+        });
+
+        // Close modal on background click
+        document.getElementById('qr-modal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'qr-modal') {
+                closeQRModal();
+            }
+        });
+    </script>
+</body>
+
+</html>

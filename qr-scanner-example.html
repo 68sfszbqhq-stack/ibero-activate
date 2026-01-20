@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Ejemplo - Escáner QR Nativo</title>
+    
+    <!-- Safe Area Support -->
+    <style>
+        :root {
+            --safe-area-top: env(safe-area-inset-top);
+            --safe-area-bottom: env(safe-area-inset-bottom);
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            padding-top: var(--safe-area-top);
+            padding-bottom: var(--safe-area-bottom);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .container {
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+        }
+        
+        .scan-button {
+            width: 100%;
+            padding: 1.5rem;
+            background: #FF6B35;
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+        
+        .scan-button:active {
+            transform: scale(0.98);
+        }
+        
+        .scan-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .result-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            display: none;
+        }
+        
+        .result-card.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #FF6B35;
+        }
+        
+        .result-data {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            word-break: break-all;
+            font-family: monospace;
+        }
+        
+        .error-message {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .error-message.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+        
+        .info-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        .info-box h3 {
+            margin-top: 0;
+            color: #FF6B35;
+        }
+        
+        .info-box ul {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+        
+        .icon {
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Escáner QR Nativo</h1>
+        
+        <button id="scan-btn" class="scan-button">
+            <span class="icon">📷</span>
+            <span>Escanear Código QR</span>
+        </button>
+        
+        <div id="result-card" class="result-card">
+            <div class="result-title">✅ Código Escaneado</div>
+            <div class="result-data" id="result-data"></div>
+        </div>
+        
+        <div id="error-message" class="error-message"></div>
+        
+        <div class="info-box">
+            <h3>ℹ️ Información</h3>
+            <p>Este ejemplo usa el plugin nativo de Capacitor MLKit para escanear códigos QR.</p>
+            <ul>
+                <li>✅ No pide permisos cada vez</li>
+                <li>✅ Escaneo instantáneo</li>
+                <li>✅ Interfaz nativa de iOS</li>
+                <li>✅ Funciona sin conexión</li>
+            </ul>
+            <p><strong>Nota:</strong> Requiere un dispositivo real, no funciona en simuladores.</p>
+        </div>
+    </div>
+
+    <script type="module">
+        // Importar la utilidad de escaneo
+        import { scanQRCode, isScannerAvailable } from './js/qr-scanner.js';
+        
+        const scanBtn = document.getElementById('scan-btn');
+        const resultCard = document.getElementById('result-card');
+        const resultData = document.getElementById('result-data');
+        const errorMessage = document.getElementById('error-message');
+        
+        // Verificar disponibilidad al cargar
+        async function checkAvailability() {
+            const available = await isScannerAvailable();
+            if (!available) {
+                scanBtn.disabled = true;
+                scanBtn.innerHTML = '<span>⚠️ Escáner no disponible</span>';
+                showError('El escáner QR no está disponible en este dispositivo o navegador.');
+            }
+        }
+        
+        // Función para mostrar error
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            resultCard.classList.remove('show');
+            
+            setTimeout(() => {
+                errorMessage.classList.remove('show');
+            }, 5000);
+        }
+        
+        // Función para mostrar resultado
+        function showResult(data) {
+            resultData.textContent = data;
+            resultCard.classList.add('show');
+            errorMessage.classList.remove('show');
+        }
+        
+        // Manejar clic en botón de escaneo
+        scanBtn.addEventListener('click', async () => {
+            try {
+                // Deshabilitar botón mientras escanea
+                scanBtn.disabled = true;
+                scanBtn.innerHTML = '<span class="icon">⏳</span><span>Escaneando...</span>';
+                
+                // Escanear código QR
+                const result = await scanQRCode();
+                
+                if (result.success) {
+                    showResult(result.data);
+                    
+                    // Aquí puedes agregar lógica adicional
+                    // Por ejemplo, validar el código, buscar en Firebase, etc.
+                    console.log('Código escaneado:', result.data);
+                } else {
+                    showError(result.error || 'No se pudo escanear el código QR');
+                }
+            } catch (error) {
+                console.error('Error al escanear:', error);
+                showError('Error inesperado al escanear: ' + error.message);
+            } finally {
+                // Rehabilitar botón
+                scanBtn.disabled = false;
+                scanBtn.innerHTML = '<span class="icon">📷</span><span>Escanear Código QR</span>';
+            }
+        });
+        
+        // Verificar disponibilidad al cargar la página
+        checkAvailability();
+    </script>
+</body>
+</html>

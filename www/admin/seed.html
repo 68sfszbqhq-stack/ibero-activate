@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargar Datos de Prueba - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        .seed-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        #seed-status {
+            margin-top: 1.5rem;
+            background: #1e1e1e;
+            color: #fff;
+            padding: 1rem;
+            border-radius: 8px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .info {
+            color: #60a5fa;
+        }
+
+        .success {
+            color: #4ade80;
+        }
+
+        .warning {
+            color: #facc15;
+        }
+
+        .error {
+            color: #f87171;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="landing-container" style="display: block; padding-top: 4rem;">
+        <div class="seed-container">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <i class="fa-solid fa-database"
+                    style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+                <h1>Cargar Datos de Prueba</h1>
+                <p>Este proceso creará Áreas y Empleados de ejemplo en tu base de datos de Firebase.</p>
+            </div>
+
+            <button id="seed-btn" onclick="seedDatabase()" class="btn-primary" style="width: 100%;">
+                <i class="fa-solid fa-play"></i> Iniciar Carga de Datos
+            </button>
+
+            <div id="seed-status">
+                <p class="info">Esperando inicio...</p>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;">
+                <a href="attendance.html" class="btn-secondary">Ir a Pase de Lista</a>
+                <a href="../index.html" class="btn-secondary">Volver al Inicio</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/seed-data.js"></script>
+</body>
+
+</html>

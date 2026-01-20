@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <!-- Content Security Policy para prevenir XSS -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://*.gstatic.com blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com https://r2cdn.perplexity.ai; connect-src 'self' https://*.googleapis.com https://*.gstatic.com; img-src 'self' data: https: blob:;">
+
+    <title>Feedback - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/employee.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+    <div class="employee-container">
+        <header class="employee-header">
+            <div class="logo-small">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <span>IBERO ACTÍVATE</span>
+            </div>
+            <div class="header-actions" style="display: flex; gap: 1rem;">
+                <a href="feedback-late.html" class="profile-link">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Feedback Extemporáneo
+                </a>
+                <a href="rankings.html" class="profile-link"
+                    style="background: rgba(196, 22, 28, 0.1); color: #c4161c;">
+                    <i class="fa-solid fa-trophy"></i> Rankings
+                </a>
+                <a href="dashboard.html" class="profile-link">
+                    <i class="fa-solid fa-user"></i> Mi Perfil
+                </a>
+            </div>
+        </header>
+
+        <main class="feedback-content">
+            <!-- Activity Banner (if scheduled for today) -->
+            <div id="activity-banner" class="activity-banner hidden" onclick="showActivityModal()">
+                <div class="banner-gradient"></div>
+                <div class="banner-content">
+                    <i class="fa-solid fa-calendar-day banner-icon"></i>
+                    <div class="banner-text">
+                        <h3>Actividad de Hoy</h3>
+                        <p id="activity-name">Cargando...</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right banner-arrow"></i>
+                </div>
+            </div>
+
+            <div class="feedback-card">
+                <div class="card-header">
+                    <div id="welcome-section" class="search-section">
+                        <h1 style="text-align: center; margin-bottom: 0.5rem;">¡Bienvenido a tu Pausa Activa!</h1>
+                        <p style="text-align: center; color: #666; margin-bottom: 2rem;">
+                            Espera a que tu instructor pase lista y tu nombre aparecerá aquí abajo mágicamente ✨
+                        </p>
+
+                        <div id="live-list" class="live-list-container">
+                            <!-- Aquí aparecerán los botones mágicos -->
+                        </div>
+
+                        <div id="waiting-message" class="waiting-state">
+                            <div class="pulse-ring"></div>
+                            <p>Esperando a que el instructor inicie...</p>
+                        </div>
+
+                        <div
+                            style="margin-top: 2rem; text-align: center; border-top: 1px solid #eee; padding-top: 1rem;">
+                            <button id="manual-login-toggle" class="btn-text-small"
+                                style="font-size: 0.9rem; color: #6b7280;">
+                                ¿No apareces? encuéntrate aquí 🔍
+                            </button>
+                        </div>
+
+                        <div id="manual-search-container" class="hidden" style="margin-top: 1rem; text-align: left;">
+                            <label
+                                style="font-size: 0.9rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem; display: block;">Buscar
+                                por Nombre o Cuenta:</label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="text" id="manual-search-input" placeholder="Ej: Juan Pérez o 12345"
+                                    class="input-field" style="margin-bottom: 0 !important;">
+                                <button id="manual-search-btn" class="btn-primary"
+                                    style="padding: 0 1rem; width: auto;">Buscar</button>
+                            </div>
+                            <div id="manual-search-results" class="live-list-container"
+                                style="margin-top: 1rem; max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paso 2: Formulario de Feedback UNIFICADO (Todo en uno) -->
+                <div id="feedback-form" class="hidden fade-in">
+                    <div class="selected-profile" style="justify-content: center;">
+                        <div class="avatar-medium" id="profile-avatar">JP</div>
+                        <div class="profile-details" style="text-align: left;">
+                            <h2 id="employee-name">Juan Pérez</h2>
+                            <span id="employee-account">#12345</span>
+                            <button id="change-user-btn" class="btn-text-small">Cambiar</button>
+                        </div>
+                    </div>
+
+                    <!-- Sección 1: Calificación con estrellas -->
+                    <div class="rating-section">
+                        <label>¿Cómo te sentiste?</label>
+                        <div class="star-rating">
+                            <i class="fa-solid fa-star star" data-rating="1"></i>
+                            <i class="fa-solid fa-star star" data-rating="2"></i>
+                            <i class="fa-solid fa-star star" data-rating="3"></i>
+                            <i class="fa-solid fa-star star" data-rating="4"></i>
+                            <i class="fa-solid fa-star star" data-rating="5"></i>
+                        </div>
+                        <p id="rating-text" class="rating-text">Selecciona una calificación</p>
+                    </div>
+
+                    <!-- Sección 2: Reacción emoji -->
+                    <div class="reaction-section" style="text-align: center;">
+                        <label>Selecciona tu reacción:</label>
+                        <div class="emoji-grid"
+                            style="justify-content: center; display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <button class="emoji-btn" data-emoji="😊">😊</button>
+                            <button class="emoji-btn" data-emoji="😄">😄</button>
+                            <button class="emoji-btn" data-emoji="🤩">🤩</button>
+                            <button class="emoji-btn" data-emoji="😌">😌</button>
+                            <button class="emoji-btn" data-emoji="💪">💪</button>
+                            <button class="emoji-btn" data-emoji="🔥">🔥</button>
+                        </div>
+                    </div>
+
+                    <!-- Divider -->
+                    <div style="border-top: 2px solid #e2e8f0; margin: 2rem 0;"></div>
+
+                    <!-- Sección 3: Preguntas simplificadas (Opción B) -->
+                    <h3 style="text-align: center; margin-bottom: 1.5rem; color: #1e293b;">📋 3 preguntas rápidas</h3>
+
+                    <!-- Q1: ¿Qué beneficio sentiste más? -->
+                    <div class="wellness-section" style="border: none; padding-bottom: 1rem;">
+                        <label for="perceived-benefit">1. ¿Qué beneficio sentiste más?</label>
+                        <select id="perceived-benefit" class="form-select">
+                            <option value="">-- Selecciona una opción --</option>
+                            <option value="relajacion">😌 Relajación</option>
+                            <option value="energia">⚡ Energía</option>
+                            <option value="conexion">🤝 Conexión social</option>
+                            <option value="diversion">🎉 Diversión</option>
+                            <option value="aprendizaje">💡 Aprendizaje</option>
+                        </select>
+                    </div>
+
+                    <!-- Q2: ¿Cómo te sientes ahora? -->
+                    <div class="wellness-section" style="border: none; padding-bottom: 1rem;">
+                        <label>2. ¿Cómo te sientes después de la actividad?</label>
+                        <div class="emoji-feelings-grid">
+                            <button class="feeling-emoji-btn" data-feeling="1" title="Muy mal">
+                                <span class="emoji-large">😫</span>
+                                <span class="feeling-label">Muy mal</span>
+                            </button>
+                            <button class="feeling-emoji-btn" data-feeling="2" title="Regular">
+                                <span class="emoji-large">😐</span>
+                                <span class="feeling-label">Regular</span>
+                            </button>
+                            <button class="feeling-emoji-btn" data-feeling="3" title="Bien">
+                                <span class="emoji-large">🙂</span>
+                                <span class="feeling-label">Bien</span>
+                            </button>
+                            <button class="feeling-emoji-btn" data-feeling="4" title="Muy bien">
+                                <span class="emoji-large">😊</span>
+                                <span class="feeling-label">Muy bien</span>
+                            </button>
+                            <button class="feeling-emoji-btn" data-feeling="5" title="Excelente">
+                                <span class="emoji-large">🤩</span>
+                                <span class="feeling-label">Excelente</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Q3: ¿Volverías a participar? -->
+                    <div class="wellness-section" style="border: none; padding-bottom: 1rem;">
+                        <label>3. ¿Volverías a participar?</label>
+                        <div class="would-return-grid">
+                            <button class="would-return-btn" data-return="definitivamente">
+                                <span class="return-icon">✅</span>
+                                <span class="return-label">Definitivamente</span>
+                            </button>
+                            <button class="would-return-btn" data-return="probablemente">
+                                <span class="return-icon">👍</span>
+                                <span class="return-label">Probablemente</span>
+                            </button>
+                            <button class="would-return-btn" data-return="no-seguro">
+                                <span class="return-icon">🤔</span>
+                                <span class="return-label">No estoy seguro/a</span>
+                            </button>
+                            <button class="would-return-btn" data-return="probablemente-no">
+                                <span class="return-icon">👎</span>
+                                <span class="return-label">Probablemente no</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Q4: Comentarios (ahora opcional) -->
+                    <div class="comment-section">
+                        <label for="comment">Comentarios adicionales (opcional):</label>
+                        <textarea id="comment" rows="3"
+                            placeholder="¿Qué te gustó más? ¿Algo que mejorarías?"></textarea>
+                    </div>
+
+                    <button id="submit-feedback" class="btn-primary btn-block">
+                        📤 Enviar Feedback
+                    </button>
+                </div>
+
+                <!-- Estado de Éxito -->
+                <div id="success-state" class="hidden fade-in text-center">
+                    <div class="success-icon">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <h2>¡Gracias por tu feedback!</h2>
+                    <p>Has ganado <span class="points-highlight">+<span id="earned-points">10</span> puntos</span></p>
+                    <div class="action-buttons">
+                        <a href="dashboard.html" class="btn-primary">Ver mi Progreso</a>
+                        <button id="new-feedback-btn" class="btn-secondary">Nuevo Feedback</button>
+                    </div>
+                </div>
+            </div>
+    </div>
+
+    <!-- Activity Detail Modal -->
+    <div id="activity-detail-modal" class="modal hidden">
+        <div class="modal-content activity-detail-modal">
+            <button class="modal-close" onclick="closeActivityModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="modal-header">
+                <img id="modal-activity-image" class="modal-image" src="" alt="Activity">
+                <div class="modal-emoji" id="modal-activity-emoji">⭐</div>
+            </div>
+
+            <div class="modal-body">
+                <h2 id="modal-activity-title" class="modal-title">Activity Name</h2>
+                <span id="modal-activity-category" class="category-badge">Categoría</span>
+
+                <div class="modal-meta">
+                    <span id="modal-activity-duration" class="meta-item"></span>
+                    <span id="modal-activity-type" class="meta-item"></span>
+                    <span id="modal-activity-intensity" class="meta-item"></span>
+                </div>
+
+                <div class="modal-section">
+                    <h3><i class="fa-solid fa-bullseye"></i> Objetivo</h3>
+                    <p id="modal-activity-description"></p>
+                </div>
+
+                <div class="modal-section">
+                    <h3><i class="fa-solid fa-box"></i> Materiales</h3>
+                    <p id="modal-activity-materials"></p>
+                </div>
+
+                <div class="modal-section">
+                    <h3><i class="fa-solid fa-list-check"></i> Instrucciones</h3>
+                    <ol id="modal-activity-instructions" class="instructions-list"></ol>
+                </div>
+
+                <div class="modal-section">
+                    <h3><i class="fa-solid fa-heart"></i> Beneficios</h3>
+                    <div id="modal-activity-benefits" class="benefits-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </main>
+
+
+    <!-- Security Utils (debe cargarse primero) -->
+    <script src="../js/security-utils.js"></script>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/feedback.js"></script>
+    <script src="../js/feedback-activity-banner.js"></script>
+    <script src="../js/wellness-questionnaire.js"></script>
+</body>
+
+</html>

@@ -19,6 +19,22 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- PWA Setup -->
+    <link rel="manifest" href="../manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="../assets/icon-192.png">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('../sw.js')
+                    .then(reg => console.log('SW registrado ✨'))
+                    .catch(err => console.log('SW falló ❌', err));
+            });
+        }
+    </script>
 </head>
 
 <body>
@@ -146,13 +162,10 @@
             <div class="filters-bar">
                 <div class="filter-group">
                     <label for="area-dropdown">Seleccionar Área / Departamento</label>
-                    <!-- Wrapper label for Safari iOS compatibility -->
-                    <label class="select-wrapper" onclick="">
-                        <select id="area-dropdown">
-                            <option value="">-- Seleccione un área --</option>
-                            <!-- Cargado dinámicamente -->
-                        </select>
-                    </label>
+                    <select id="area-dropdown">
+                        <option value="">-- Seleccione un área --</option>
+                        <!-- Cargado dinámicamente -->
+                    </select>
                 </div>
 
                 <div class="filter-group">

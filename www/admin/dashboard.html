@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Dashboard - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase & Chart.js -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <h2>IBERO ACTÍVATE</h2>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link active">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="program-overview.html" class="nav-link ">
+                        <i class="fa-solid fa-calendar-star"></i> Programa 19 Semanas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="calendar.html" class="nav-link ">
+                        <i class="fa-solid fa-calendar-days"></i> Calendario
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="ai-reports.html" class="nav-link ">
+                        <i class="fa-solid fa-sparkles"></i> Reportes IA
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="activities.html" class="nav-link ">
+                        <i class="fa-solid fa-dumbbell"></i> Actividades
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="attendance.html" class="nav-link ">
+                        <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="attendance-late.html" class="nav-link ">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Pase Extemporáneo
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="employees.html" class="nav-link ">
+                        <i class="fa-solid fa-user-plus"></i> Empleados
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="reports.html" class="nav-link ">
+                        <i class="fa-solid fa-file-pdf"></i> Reportes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link ">
+                        <i class="fa-solid fa-trophy"></i> Gamificación
+                    </a>
+                </li>
+            </ul>
+
+            <button onclick="logout()" class="nav-link logout-btn">
+                <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="page-header">
+                <div>
+                    <h1>Dashboard Semanal</h1>
+                    <p id="current-date-display">Resumen de actividad y participación</p>
+                </div>
+                <div class="week-selector">
+                    <button id="prev-week" class="btn-secondary"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span id="current-week-label" style="margin: 0 1rem; font-weight: 600;">Semana Actual</span>
+                    <button id="next-week" class="btn-secondary"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </header>
+
+            <!-- Program Periodization Summary -->
+            <div class="program-summary-card" id="program-summary" style="display: none;">
+                <div class="program-summary-content">
+                    <div class="program-icon">
+                        <i class="fa-solid fa-calendar-star"></i>
+                    </div>
+                    <div class="program-info">
+                        <div class="program-tag" id="program-week-tag">Semana 5/19</div>
+                        <h3 id="program-phase-name">Construcción de Base Física y Lúdica</h3>
+                        <p id="program-objective">Mesociclo de Desarrollo de Capacidades Coordinativas</p>
+                    </div>
+                    <div class="program-progress">
+                        <svg class="progress-ring" width="100" height="100">
+                            <circle class="progress-ring-bg" stroke="#e5e7eb" stroke-width="8" fill="transparent" r="42"
+                                cx="50" cy="50" />
+                            <circle class="progress-ring-circle" id="progress-circle" stroke="url(#gradient)"
+                                stroke-width="8" fill="transparent" r="42" cx="50" cy="50"
+                                style="stroke-dasharray: 263.89; stroke-dashoffset: 263.89; transition: stroke-dashoffset 0.6s ease;" />
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div class="progress-percentage" id="progress-percentage">26%</div>
+                    </div>
+                    <div class="program-actions">
+                        <a href="program-overview.html" class="btn-view-program">
+                            <i class="fa-solid fa-eye"></i>
+                            Ver Programa Completo
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+
+                <!-- Total Asistencias Card -->
+                <div class="stat-card card">
+                    <h3 style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Total Asistencias</h3>
+                    <div class="stat-main">
+                        <p class="stat-number" id="total-attendances"
+                            style="font-size: 2rem; font-weight: 700; color: var(--primary);">0</p>
+                        <canvas id="attendances-sparkline" class="mini-chart"></canvas>
+                    </div>
+                    <div class="stat-change" id="attendances-change"></div>
+                    <div class="progress-wrapper">
+                        <div class="progress-label">Meta mensual: <span id="attendances-goal-text">400</span></div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="attendances-progress" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span class="progress-text" id="attendances-progress-text">0%</span>
+                            <span class="progress-status" id="attendances-status"></span>
+                        </div>
+                    </div>
+                    <button class="btn-detail" data-metric="attendances">
+                        Ver análisis detallado <i class="fa-solid fa-chart-line"></i>
+                    </button>
+                </div>
+
+                <!-- Calificación Promedio Card -->
+                <div class="stat-card card">
+                    <h3 style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Calificación Promedio</h3>
+                    <div class="stat-main">
+                        <p class="stat-number" id="avg-rating"
+                            style="font-size: 2rem; font-weight: 700; color: var(--warning);">0.0 ⭐</p>
+                        <canvas id="rating-sparkline" class="mini-chart"></canvas>
+                    </div>
+                    <div class="stat-change" id="rating-change"></div>
+                    <div class="progress-wrapper">
+                        <div class="progress-label">Meta: 4.0+ ⭐</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="rating-progress" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span class="progress-text" id="rating-progress-text">0%</span>
+                            <span class="progress-status" id="rating-status"></span>
+                        </div>
+                    </div>
+                    <button class="btn-detail" data-metric="rating">
+                        Ver análisis detallado <i class="fa-solid fa-star"></i>
+                    </button>
+                </div>
+
+                <!-- Áreas Activas Card -->
+                <div class="stat-card card">
+                    <h3 style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Áreas Activas</h3>
+                    <div class="stat-main">
+                        <p class="stat-number" id="active-areas"
+                            style="font-size: 2rem; font-weight: 700; color: var(--accent);">0</p>
+                        <canvas id="areas-sparkline" class="mini-chart"></canvas>
+                    </div>
+                    <div class="stat-change" id="areas-change"></div>
+                    <div class="progress-wrapper">
+                        <div class="progress-label">Meta: 10/10 áreas</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="areas-progress" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span class="progress-text" id="areas-progress-text">0%</span>
+                            <span class="progress-status" id="areas-status"></span>
+                        </div>
+                    </div>
+                    <button class="btn-detail" data-metric="areas">
+                        Ver análisis detallado <i class="fa-solid fa-building"></i>
+                    </button>
+                </div>
+
+                <!-- Tasa de Feedback Card -->
+                <div class="stat-card card">
+                    <h3 style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Tasa de Feedback</h3>
+                    <div class="stat-main">
+                        <p class="stat-number" id="feedback-rate"
+                            style="font-size: 2rem; font-weight: 700; color: var(--secondary);">0%</p>
+                        <canvas id="feedback-sparkline" class="mini-chart"></canvas>
+                    </div>
+                    <div class="stat-change" id="feedback-change"></div>
+                    <div class="progress-wrapper">
+                        <div class="progress-label">Meta: 90%</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="feedback-progress" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span class="progress-text" id="feedback-progress-text">0%</span>
+                            <span class="progress-status" id="feedback-status"></span>
+                        </div>
+                    </div>
+                    <button class="btn-detail" data-metric="feedback">
+                        Ver análisis detallado <i class="fa-solid fa-comments"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Catalog Access Card -->
+            <div class="stat-card card" onclick="window.location.href='../employee/activities-showcase.html'"
+                onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'"
+                style="cursor: pointer; transition: transform 0.2s;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h3 style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Catálogo Visual</h3>
+                        <p class="stat-number" id="total-activities-count"
+                            style="font-size: 2rem; font-weight: 700; color: #8b5cf6;">--</p>
+                    </div>
+                    <i class="fa-solid fa-eye" style="font-size: 1.5rem; color: #ddd;"></i>
+                </div>
+                <p style="font-size: 0.8rem; color: #8b5cf6; margin-top: 0.5rem; font-weight: 600;">
+                    Ver Showcase <i class="fa-solid fa-arrow-right"></i>
+                </p>
+            </div>
+            <div style="grid-column: span 1; text-align: center; margin-top: -10px;">
+                <a href="activities.html"
+                    style="font-size: 0.75rem; color: #9ca3af; text-decoration: underline;">Administrar / Importar
+                    Catálogo</a>
+            </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-section"
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="chart-container card">
+            <h2 style="margin-bottom: 1rem; font-size: 1.2rem;">Participación por Área</h2>
+            <canvas id="area-chart"></canvas>
+        </div>
+        <div class="chart-container card">
+            <h2 style="margin-bottom: 1rem; font-size: 1.2rem;">Tendencia Semanal</h2>
+            <canvas id="trend-chart"></canvas>
+        </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="leaderboard card">
+        <h2 style="margin-bottom: 1.5rem; font-size: 1.2rem;">🏆 Top 10 Empleados</h2>
+        <div style="overflow-x: auto;">
+            <table id="leaderboard-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="text-align: left; border-bottom: 2px solid #f3f4f6;">
+                        <th style="padding: 1rem;">#</th>
+                        <th style="padding: 1rem;">Nombre</th>
+                        <th style="padding: 1rem;">Área</th>
+                        <th style="padding: 1rem;">Asistencias</th>
+                        <th style="padding: 1rem;">Rating</th>
+                        <th style="padding: 1rem;">Puntos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Filled by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Analysis Modal -->
+    <div id="analysis-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Análisis Detallado</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Dynamic content loaded here -->
+            </div>
+        </div>
+    </div>
+    </main>
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/dashboard-admin.js"></script>
+</body>
+
+</html>

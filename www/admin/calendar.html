@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario Semanal - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* Program Context Banner */
+        .program-context-banner {
+            background: linear-gradient(135deg, #f9fafb, #ffffff);
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .phase-badge {
+            background: var(--phase-color, #667eea);
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+        }
+
+        .week-info h1 {
+            font-size: 1.5rem;
+            margin: 0 0 0.25rem 0;
+            color: var(--text-dark);
+        }
+
+        .week-info p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        .science-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .science-link:hover {
+            color: #4c3ad6;
+            text-decoration: underline;
+        }
+
+        #fallback-header {
+            display: none;
+        }
+
+        @media (max-width: 968px) {
+            .program-context-banner {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .week-info h1 {
+                font-size: 1.25rem;
+            }
+        }
+
+        /* Simplified Calendar - 1 activity per day */
+        .calendar-simple-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: auto 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .day-header {
+            text-align: center;
+            font-weight: 700;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        .day-slot {
+            min-height: 200px;
+            background: white;
+            border: 2px solid #f3f4f6;
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .day-slot:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+
+        .activity-card {
+            background: linear-gradient(135deg, #f9fafb, #fff);
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        .activity-card:hover {
+            background: #eef2ff;
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .activity-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+        }
+
+        .activity-meta {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 12px;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 0.25rem;
+        }
+
+        .status-badge.completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-badge.missed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .btn-add-slot {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px dashed #d1d5db;
+            background: transparent;
+            color: #9ca3af;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-add-slot:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #f5f3ff;
+            border-style: solid;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .calendar-simple-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .day-header {
+                font-size: 0.9rem;
+                padding: 0.75rem;
+            }
+
+            .day-slot {
+                min-height: 150px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <h2>IBERO ACTÍVATE</h2>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link ">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="program-overview.html" class="nav-link ">
+                        <i class="fa-solid fa-calendar-star"></i> Programa 19 Semanas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="calendar.html" class="nav-link active">
+                        <i class="fa-solid fa-calendar-days"></i> Calendario
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="ai-reports.html" class="nav-link ">
+                        <i class="fa-solid fa-sparkles"></i> Reportes IA
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="activities.html" class="nav-link ">
+                        <i class="fa-solid fa-dumbbell"></i> Actividades
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="attendance.html" class="nav-link ">
+                        <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="attendance-late.html" class="nav-link ">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Pase Extemporáneo
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="employees.html" class="nav-link ">
+                        <i class="fa-solid fa-user-plus"></i> Empleados
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="reports.html" class="nav-link ">
+                        <i class="fa-solid fa-file-pdf"></i> Reportes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link ">
+                        <i class="fa-solid fa-trophy"></i> Gamificación
+                    </a>
+                </li>
+            </ul>
+
+            <button onclick="logout()" class="nav-link logout-btn">
+                <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Program Context Banner -->
+            <div class="program-context-banner" id="program-context-banner" style="display: none;">
+                <div class="phase-badge" id="phase-badge">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span id="phase-name-badge">Cargando...</span>
+                </div>
+                <div class="week-info">
+                    <h1 id="week-title">Calendario Semanal</h1>
+                    <p id="week-description">
+                        <strong id="objective-label">Objetivo:</strong> <span id="objective-value">-</span>
+                        • <a href="#" id="btn-view-science" class="science-link">
+                            <i class="fa-solid fa-flask"></i> Ver fundamentos científicos
+                        </a>
+                    </p>
+                </div>
+                <div class="week-selector">
+                    <button id="prev-week" class="btn-secondary"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span id="current-week-label" style="margin: 0 1rem; font-weight: 600;">Semana Actual</span>
+                    <button id="next-week" class="btn-secondary"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Fallback Header (si no hay programa configurado) -->
+            <header class="page-header" id="fallback-header">
+                <div>
+                    <h1>Calendario Semanal</h1>
+                    <p>Programa las actividades de la semana</p>
+                </div>
+                <div class="week-selector">
+                    <button id="prev-week-fallback" class="btn-secondary"><i
+                            class="fa-solid fa-chevron-left"></i></button>
+                    <span id="current-week-label-fallback" style="margin: 0 1rem; font-weight: 600;">Semana
+                        Actual</span>
+                    <button id="next-week-fallback" class="btn-secondary"><i
+                            class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </header>
+
+            <!-- Calendar Grid -->
+            <div class="calendar-simple-grid" id="calendar-body">
+                <!-- Generated by JS -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Quick Add Modal (Google Calendar Style) -->
+    <div id="schedule-modal" class="modal hidden">
+        <div class="modal-content quick-add-modal">
+            <div class="modal-header-compact">
+                <h3 id="modal-title">📅 Agregar Actividad</h3>
+                <button id="btn-close-modal" class="close-btn-compact">&times;</button>
+            </div>
+
+            <form id="schedule-form" class="quick-add-form">
+                <input type="hidden" id="schedule-id">
+                <input type="hidden" id="selected-day">
+                <input type="hidden" id="selected-time">
+
+                <!-- Actividad -->
+                <div class="form-field-inline">
+                    <i class="fa-solid fa-dumbbell field-icon"></i>
+                    <select id="activity-select" required class="input-inline">
+                        <option value="">Seleccionar actividad...</option>
+                    </select>
+                </div>
+
+                <!-- Ubicación (Hidden) -->
+                <div class="form-field-inline" style="display: none;">
+                    <i class="fa-solid fa-location-dot field-icon"></i>
+                    <input type="text" id="location" class="input-inline" placeholder="Ej: Explanada central">
+                </div>
+
+                <!-- Día y Hora (Hidden) -->
+                <div class="form-field-inline datetime-display" style="display: none;">
+                    <i class="fa-solid fa-calendar-day field-icon"></i>
+                    <input type="text" id="display-day" disabled class="input-inline-small">
+                    <i class="fa-solid fa-clock field-icon"></i>
+                    <input type="text" id="display-time" disabled class="input-inline-small">
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="modal-actions-compact">
+                    <button type="button" id="btn-delete-schedule" class="btn-delete-compact hidden">
+                        <i class="fa-solid fa-trash"></i> Eliminar
+                    </button>
+                    <div style="flex: 1;"></div>
+                    <button type="button" id="btn-cancel" class="btn-cancel-compact">Cancelar</button>
+                    <button type="submit" class="btn-save-compact">
+                        <i class="fa-solid fa-check"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        /* Google Calendar Style Modal (Popover) */
+        #schedule-modal {
+            background: transparent !important;
+            /* Sin overlay oscuro */
+            justify-content: flex-start !important;
+            align-items: flex-start !important;
+        }
+
+        .quick-add-modal {
+            max-width: 420px !important;
+            padding: 0 !important;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+            animation: popIn 0.15s cubic-bezier(0.2, 0, 0.2, 1);
+            margin: 0 !important;
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-header-compact {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, #f9fafb, white);
+        }
+
+        .modal-header-compact h3 {
+            margin: 0;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .close-btn-compact {
+            background: none;
+            border: none;
+            font-size: 1.75rem;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .close-btn-compact:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .quick-add-form {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background: white;
+        }
+
+        .form-field-inline {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.625rem 1rem;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 8px;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .form-field-inline:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(94, 59, 238, 0.1);
+        }
+
+        .field-icon {
+            color: #9ca3af;
+            font-size: 1rem;
+            min-width: 20px;
+        }
+
+        .input-inline {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 0.9375rem;
+            color: #1f2937;
+            background: transparent;
+        }
+
+        .input-inline::placeholder {
+            color: #9ca3af;
+        }
+
+        .datetime-display {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+
+        .input-inline-small {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 0.875rem;
+            color: #6b7280;
+            background: transparent;
+            font-weight: 500;
+        }
+
+        .modal-actions-compact {
+            display: flex;
+            gap: 0.75rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 0.5rem;
+        }
+
+        .btn-save-compact {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.625rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-save-compact:hover {
+            background: #4c3ad6;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(94, 59, 238, 0.3);
+        }
+
+        .btn-cancel-compact {
+            background: white;
+            color: #6b7280;
+            border: 1.5px solid #e5e7eb;
+            padding: 0.625rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-cancel-compact:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+
+        .btn-delete-compact {
+            background: white;
+            color: #ef4444;
+            border: 1.5px solid #fecaca;
+            padding: 0.625rem 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-delete-compact:hover {
+            background: #fef2f2;
+            border-color: #fca5a5;
+        }
+    </style>
+
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/calendar.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Dropdowns iOS - IBERO ACTÍVATE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .test-container {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: #f9fafb;
+            border-radius: 12px;
+        }
+
+        .test-section h2 {
+            font-size: 1rem;
+            color: #374151;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-badge.fixed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background-color: #ffffff;
+            font-size: 16px;
+            color: #1f2937;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.5;
+            min-height: 44px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+            /* Critical iOS fixes */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+
+            /* Custom dropdown arrow */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+
+            /* iOS Safari specific fixes */
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+
+            /* Ensure proper rendering */
+            transform: translate3d(0, 0, 0);
+            -webkit-transform: translate3d(0, 0, 0);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background-color: #fafbff;
+        }
+
+        select option {
+            background-color: #ffffff;
+            color: #1f2937;
+            padding: 12px;
+            font-size: 16px;
+        }
+
+        .result {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result strong {
+            color: #667eea;
+        }
+
+        .instructions {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .instructions h3 {
+            color: #1e40af;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .instructions ul {
+            margin-left: 1.5rem;
+            color: #1e40af;
+            font-size: 0.85rem;
+        }
+
+        .instructions li {
+            margin-bottom: 0.25rem;
+        }
+
+        .success-icon {
+            color: #10b981;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="test-container">
+        <h1>🧪 Prueba de Dropdowns iOS</h1>
+        <p class="subtitle">Verifica que los dropdowns funcionen correctamente en Safari iOS</p>
+
+        <div class="test-section">
+            <h2>
+                <span class="success-icon">✅</span>
+                Dropdown Arreglado
+                <span class="status-badge fixed">FIXED</span>
+            </h2>
+
+            <label for="area-test">Seleccionar Área / Departamento</label>
+            <select id="area-test">
+                <option value="">-- Seleccione un área --</option>
+                <option value="rectoría">Rectoría</option>
+                <option value="vicerrectoría">Vicerrectoría</option>
+                <option value="académica">Dirección Académica</option>
+                <option value="administrativa">Dirección Administrativa</option>
+                <option value="finanzas">Dirección de Finanzas</option>
+                <option value="rrhh">Recursos Humanos</option>
+                <option value="sistemas">Sistemas e Informática</option>
+                <option value="biblioteca">Biblioteca</option>
+                <option value="servicios">Servicios Generales</option>
+                <option value="comunicación">Comunicación Institucional</option>
+            </select>
+
+            <div class="result" id="result-area" style="display: none;">
+                <strong>Seleccionaste:</strong> <span id="selected-area"></span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>
+                <span class="success-icon">✅</span>
+                Tipo de Sesión
+                <span class="status-badge fixed">FIXED</span>
+            </h2>
+
+            <label for="session-test">Tipo de Sesión</label>
+            <select id="session-test">
+                <option value="matutina">Pausa Matutina (10:00 AM)</option>
+                <option value="vespertina">Pausa Vespertina (3:00 PM)</option>
+                <option value="extra">Sesión Extraordinaria</option>
+            </select>
+
+            <div class="result" id="result-session" style="display: none;">
+                <strong>Seleccionaste:</strong> <span id="selected-session"></span>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>📋 Instrucciones de Prueba:</h3>
+            <ul>
+                <li>Toca cualquier dropdown</li>
+                <li>Deberías ver el menú nativo de iOS con fondo blanco</li>
+                <li>Las opciones deben ser legibles</li>
+                <li>Selecciona una opción</li>
+                <li>El resultado debe aparecer abajo del dropdown</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Test area dropdown
+        document.getElementById('area-test').addEventListener('change', function (e) {
+            const resultDiv = document.getElementById('result-area');
+            const selectedSpan = document.getElementById('selected-area');
+
+            if (e.target.value) {
+                selectedSpan.textContent = e.target.options[e.target.selectedIndex].text;
+                resultDiv.style.display = 'block';
+            } else {
+                resultDiv.style.display = 'none';
+            }
+        });
+
+        // Test session dropdown
+        document.getElementById('session-test').addEventListener('change', function (e) {
+            const resultDiv = document.getElementById('result-session');
+            const selectedSpan = document.getElementById('selected-session');
+
+            selectedSpan.textContent = e.target.options[e.target.selectedIndex].text;
+            resultDiv.style.display = 'block';
+        });
+
+        // Log to console for debugging
+        console.log('✅ Página de prueba de dropdowns iOS cargada');
+        console.log('📱 User Agent:', navigator.userAgent);
+        console.log('🌐 Plataforma:', navigator.platform);
+    </script>
+</body>
+
+</html>

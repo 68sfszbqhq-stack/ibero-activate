@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro de Bienestar - Ibero 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+        }
+
+        .test-card {
+            transition: all 0.3s ease;
+        }
+
+        .test-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                        W
+                    </div>
+                    <span class="font-bold text-xl text-gray-800">Centro de Bienestar</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span id="user-name-display"
+                        class="text-sm font-medium text-gray-600 hidden sm:block">Cargando...</span>
+                    <a href="../index.html" class="text-gray-500 hover:text-gray-700 transition-colors">
+                        <i class="fa-solid fa-right-from-bracket text-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-5xl">
+
+        <!-- Welcome Section -->
+        <div class="text-center mb-12">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Tu Salud Mental Importa</h1>
+            <p class="text-gray-600 max-w-2xl mx-auto text-lg">
+                Este espacio es seguro y confidencial. Tus respuestas nos ayudan a entender cómo te sientes y a crear un
+                mejor ambiente para todos.
+                <span class="font-medium text-indigo-600">Solo el administrador tiene acceso a tus resultados.</span>
+            </p>
+        </div>
+
+        <!-- AI Wellness Expert Card -->
+        <div class="glass-card rounded-2xl p-6 mb-8 relative overflow-hidden cursor-pointer group hover:shadow-2xl transition-all duration-300"
+            onclick="window.location.href='wellness-expert.html'">
+            <div
+                class="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-indigo-400 to-purple-600 opacity-20 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110">
+            </div>
+
+            <div class="relative flex flex-col md:flex-row items-center gap-6">
+                <div
+                    class="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-xl flex-shrink-0">
+                    <i class="fa-solid fa-robot text-3xl"></i>
+                </div>
+
+                <div class="flex-grow text-center md:text-left">
+                    <h2
+                        class="text-2xl font-bold text-gray-800 mb-2 flex items-center justify-center md:justify-start gap-2">
+                        <i class="fa-solid fa-sparkles text-yellow-500"></i>
+                        Consulta a Nuestro Experto de IA
+                    </h2>
+                    <p class="text-gray-600 leading-relaxed">
+                        Obtén recomendaciones personalizadas con inteligencia artificial sobre tu salud física,
+                        emocional, laboral y mental basadas en tus evaluaciones completadas.
+                    </p>
+                </div>
+
+                <div class="flex-shrink-0">
+                    <span
+                        class="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg group-hover:shadow-xl transition-all">
+                        Comenzar <i class="fa-solid fa-arrow-right"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Grid -->
+        <div id="test-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Cards will be injected by JS -->
+        </div>
+
+        <!-- Test Interface (Hidden by default) -->
+        <div id="test-interface" class="hidden fixed inset-0 bg-gray-50 z-50 overflow-y-auto">
+            <div class="min-h-screen flex flex-col">
+                <!-- Test Header -->
+                <div class="bg-white shadow-sm sticky top-0 z-10 px-4 py-4">
+                    <div class="max-w-3xl mx-auto flex justify-between items-center">
+                        <button id="close-test-btn"
+                            class="text-gray-500 hover:text-gray-800 flex items-center gap-2 transition-colors">
+                            <i class="fa-solid fa-arrow-left"></i> Volver
+                        </button>
+                        <h2 id="test-title" class="text-xl font-bold text-gray-800">Título del Test</h2>
+                        <div class="w-8"></div> <!-- Spacer for centering -->
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="max-w-3xl mx-auto mt-4 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="h-full bg-indigo-600 transition-all duration-300"
+                            style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Questions Container -->
+                <div class="flex-grow container mx-auto px-4 py-8 max-w-3xl">
+                    <form id="test-form" class="space-y-8">
+                        <!-- Questions injected here -->
+                    </form>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="bg-white border-t border-gray-100 p-4 sticky bottom-0 z-10">
+                    <div class="max-w-3xl mx-auto flex justify-end">
+                        <button id="submit-test-btn"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl font-medium shadow-lg shadow-indigo-200 transition-all transform active:scale-95">
+                            Enviar Respuestas
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="success-modal"
+            class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+            <div
+                class="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-2xl transform transition-all scale-100">
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fa-solid fa-check text-3xl text-green-600"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">¡Gracias por compartir!</h3>
+                <p class="text-gray-600 mb-8">Tus respuestas han sido guardadas de forma segura. Apreciamos tu
+                    honestidad y participación.</p>
+                <button id="close-success-btn"
+                    class="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-xl font-medium transition-colors">
+                    Volver al Inicio
+                </button>
+            </div>
+        </div>
+
+        <!-- Consent Modal (MUST appear before any test) -->
+        <div id="consent-modal"
+            class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+                <div class="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-t-2xl">
+                    <h2 class="text-2xl font-bold flex items-center gap-3">
+                        <i class="fa-solid fa-shield-heart"></i>
+                        Consentimiento Informado
+                    </h2>
+                </div>
+
+                <div class="p-6 space-y-4 text-gray-700">
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                        <h3 class="font-bold text-blue-900 mb-2">📋 Propósito</h3>
+                        <p class="text-sm">Esta evaluación identifica factores de riesgo psicosocial en el entorno
+                            laboral para mejorar las condiciones de trabajo y promover el bienestar, en cumplimiento con
+                            la <strong>NOM-035-STPS-2018</strong>.</p>
+                    </div>
+
+                    <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                        <h3 class="font-bold text-green-900 mb-2">🔒 Confidencialidad</h3>
+                        <p class="text-sm">Tus respuestas son confidenciales. Solo personal autorizado de Recursos
+                            Humanos y profesionales de salud tendrán acceso. Los datos se usarán de forma agregada para
+                            mejoras organizacionales.</p>
+                    </div>
+
+                    <div class="bg-purple-50 border-l-4 border-purple-500 p-4 rounded">
+                        <h3 class="font-bold text-purple-900 mb-2">✋ Voluntariedad</h3>
+                        <p class="text-sm">Tu participación es completamente voluntaria. No habrá consecuencias
+                            negativas si decides no participar o retirarte en cualquier momento.</p>
+                    </div>
+
+                    <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
+                        <h3 class="font-bold text-amber-900 mb-2">🏥 Datos Sensibles de Salud</h3>
+                        <p class="text-sm">Esta evaluación incluye preguntas sobre estado emocional y salud mental.
+                            Estos datos están protegidos por la <strong>LFPDPPP</strong>. Nunca se usarán para
+                            decisiones de empleo o despido.</p>
+                    </div>
+
+                    <div class="bg-rose-50 border-l-4 border-rose-500 p-4 rounded">
+                        <h3 class="font-bold text-rose-900 mb-2">🆘 Protocolo de Seguimiento</h3>
+                        <p class="text-sm">Si tus respuestas indican necesidad de apoyo psicológico, serás contactado/a
+                            confidencialmente por un profesional de salud para ofrecerte recursos.</p>
+                    </div>
+
+                    <p class="text-xs text-gray-500 mt-4">
+                        <strong>Derechos ARCO:</strong> Tienes derecho a Acceder, Rectificar, Cancelar u Oponerte al
+                        tratamiento de tus datos.
+                        Para más información: <a href="#" class="text-indigo-600 underline">Aviso de Privacidad</a>
+                    </p>
+                </div>
+
+                <div class="p-6 pt-0">
+                    <label
+                        class="flex items-start gap-3 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                        <input type="checkbox" id="accept-consent" class="w-5 h-5 text-indigo-600 rounded mt-1"
+                            onchange="document.getElementById('btn-proceed-consent').disabled = !this.checked">
+                        <span class="text-sm text-gray-700 leading-relaxed">
+                            He leído y comprendido esta información. <strong>Acepto participar voluntariamente</strong>
+                            en esta evaluación y consiento el tratamiento de mis datos personales según lo descrito.
+                        </span>
+                    </label>
+                </div>
+
+                <div class="p-6 pt-0 flex gap-3">
+                    <button onclick="window.location.href='dashboard.html'"
+                        class="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+                        No acepto
+                    </button>
+                    <button id="btn-proceed-consent" disabled
+                        onclick="document.getElementById('consent-modal').classList.add('hidden')"
+                        class="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        Acepto y continuar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Crisis Modal (triggered by PHQ-9 Q9) -->
+        <div id="crisis-modal"
+            class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[80] flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl transform scale-100 transition-all">
+                <div class="bg-gradient-to-r from-rose-500 to-red-600 text-white p-6 rounded-t-2xl">
+                    <h2 class="text-2xl font-bold flex items-center gap-3">
+                        <i class="fa-solid fa-heart-pulse"></i>
+                        Apoyo Disponible
+                    </h2>
+                </div>
+
+                <div class="p-6 space-y-4">
+                    <p class="text-gray-700 leading-relaxed">
+                        Tus respuestas indican que podrías estar pasando por un momento difícil.
+                        <strong class="text-rose-600">No estás solo/a.</strong>
+                    </p>
+
+                    <div class="bg-rose-50 border border-rose-200 rounded-lg p-4 space-y-3">
+                        <h3 class="font-bold text-rose-900 flex items-center gap-2">
+                            <i class="fa-solid fa-phone-volume"></i>
+                            Recursos Inmediatos 24/7
+                        </h3>
+                        <ul class="space-y-2 text-sm text-gray-700">
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-phone text-rose-500 mt-1"></i>
+                                <div>
+                                    <strong>Línea de la Vida (CDMX):</strong><br>
+                                    <a href="tel:8009112000" class="text-rose-600 font-bold text-lg">800 911 2000</a>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-phone text-rose-500 mt-1"></i>
+                                <div>
+                                    <strong>SAPTEL (Salud Mental):</strong><br>
+                                    <a href="tel:5552598121" class="text-rose-600 font-bold text-lg">55 5259 8121</a>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-comments text-rose-500 mt-1"></i>
+                                <div>
+                                    <strong>Chat de Crisis:</strong><br>
+                                    <a href="https://chat.conadic.salud.gob.mx" target="_blank"
+                                        class="text-indigo-600 underline">chat.conadic.salud.gob.mx</a>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-hospital text-rose-500 mt-1"></i>
+                                <div>
+                                    <strong>Servicios Médicos IBERO:</strong> ext. 4444
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p class="text-sm text-blue-900">
+                            <i class="fa-solid fa-user-doctor mr-2"></i>
+                            <strong>Nuestro equipo de bienestar se pondrá en contacto contigo de forma confidencial en
+                                las próximas 24 horas</strong> para ofrecerte apoyo personalizado.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="p-6 pt-0">
+                    <button id="close-crisis-btn"
+                        class="w-full px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors">
+                        Entendido, gracias
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/employee-access-validation.js"></script>
+    <script src="../js/wellness.js"></script>
+</body>
+
+</html>

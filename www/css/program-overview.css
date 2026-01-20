@@ -1,0 +1,296 @@
+/* ========================================
+   PROGRAM OVERVIEW - SISTEMA DE 19 SEMANAS
+   Versión 2.0 - Paleta Optimizada
+   ========================================
+*/
+
+/* ===== CONTENEDOR PRINCIPAL ===== */
+.weeks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-xl);
+    margin-top: var(--spacing-2xl);
+}
+
+/* ===== TARJETA DE SEMANA ===== */
+.week-card {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    transition: all var(--transition-base);
+    position: relative;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Sistema de 3 colores (en lugar de 5+) */
+
+.week-card.active {
+    border: 2px solid var(--color-success);
+    background: var(--color-success-light);
+}
+
+.week-card.upcoming {
+    border: 2px solid var(--color-primary);
+    background: var(--color-primary-light);
+}
+
+.week-card.future {
+    border: 2px solid var(--color-border);
+    background: var(--color-bg);
+}
+
+.week-card.completed {
+    border: 2px solid var(--color-border-dark);
+    background: var(--color-bg-secondary);
+    opacity: 0.8;
+}
+
+.week-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+
+/* ===== HEADER DE SEMANA ===== */
+.week-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.week-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.week-card.active .week-number {
+    color: var(--color-success);
+}
+
+.week-card.upcoming .week-number {
+    color: var(--color-primary);
+}
+
+/* ===== BADGE DE FASE ===== */
+.phase-badge {
+    background: var(--color-primary);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.week-card.active .phase-badge {
+    background: var(--color-success);
+}
+
+/* ===== CONTENIDO DE SEMANA ===== */
+.week-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--spacing-sm);
+}
+
+.week-dates {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.week-dates i {
+    color: var(--color-text-light);
+}
+
+.week-focus {
+    font-size: 0.9rem;
+    color: var(--color-text);
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.5;
+}
+
+/* ===== ESTADÍSTICAS ===== */
+.week-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+.stat-item {
+    text-align: center;
+    padding: var(--spacing-sm);
+    background: var(--color-bg);
+    border-radius: var(--radius-md);
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text);
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ===== BARRA DE PROGRESO ===== */
+.week-progress {
+    margin-top: var(--spacing-lg);
+}
+
+.progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-xs);
+}
+
+.progress-value {
+    font-weight: 600;
+    color: var(--color-success);
+}
+
+.progress-bar-container {
+    background: var(--color-bg-secondary);
+    height: 8px;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: var(--color-success);
+    border-radius: var(--radius-full);
+    transition: width var(--transition-slow);
+}
+
+.week-card.upcoming .progress-bar-fill {
+    background: var(--color-primary);
+}
+
+/* ===== BADGES DE INTENSIDAD ===== */
+.intensity-badges {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+    margin-top: var(--spacing-md);
+}
+
+/* Usar clases del design-system.css */
+.intensity-low,
+.intensity-medium,
+.intensity-high {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+}
+
+/* ===== HEADER DE PÁGINA ===== */
+.program-header {
+    background: var(--color-primary);
+    color: white;
+    padding: var(--spacing-3xl);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-2xl);
+    position: relative;
+    overflow: hidden;
+}
+
+.program-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transform: translate(50%, -50%);
+}
+
+.program-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-md);
+    position: relative;
+    z-index: 1;
+}
+
+.program-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    position: relative;
+    z-index: 1;
+}
+
+/* ===== FILTROS ===== */
+.program-filters {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-2xl);
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-card);
+    color: var(--color-text);
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.filter-btn:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.filter-btn.active {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .weeks-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-lg);
+    }
+
+    .program-header {
+        padding: var(--spacing-2xl);
+    }
+
+    .program-title {
+        font-size: 1.5rem;
+    }
+
+    .program-subtitle {
+        font-size: 1rem;
+    }
+
+    .week-stats {
+        grid-template-columns: 1fr;
+    }
+}

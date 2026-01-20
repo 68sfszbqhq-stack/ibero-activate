@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Progreso - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/employee.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="employee-container">
+        <header class="employee-header">
+            <div class="logo-small">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <span>IBERO ACTÍVATE</span>
+            </div>
+            <a href="feedback.html" class="profile-link">
+                <i class="fa-solid fa-star"></i> Calificar Pausa
+            </a>
+        </header>
+
+        <main class="feedback-content" style="align-items: flex-start;">
+            <div class="dashboard-grid" style="width: 100%; max-width: 800px; display: grid; gap: 1.5rem;">
+
+                <!-- Profile Card -->
+                <div class="card" style="background: white; display: flex; align-items: center; gap: 1.5rem;">
+                    <div class="avatar-medium" style="width: 80px; height: 80px; font-size: 2rem;">JP</div>
+                    <div>
+                        <h1 id="dashboard-name" style="font-size: 1.5rem; margin-bottom: 0.2rem;">Cargando...</h1>
+                        <p id="dashboard-details" style="color: #666;">...</p>
+                    </div>
+                </div>
+
+                <!-- Stats Row -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                    <div class="card"
+                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <h3 style="font-size: 0.9rem; opacity: 0.9;">Puntos Semanales</h3>
+                        <p id="dashboard-points" style="font-size: 2.5rem; font-weight: 700;">--</p>
+                    </div>
+                    <div class="card" style="background: white;">
+                        <h3 style="font-size: 0.9rem; color: #666;">Racha Actual</h3>
+                        <p id="dashboard-streak" style="font-size: 2.5rem; font-weight: 700; color: var(--accent);">--
+                            <span style="font-size: 1rem;">días</span>
+                        </p>
+                    </div>
+                    <div class="card" style="background: white;">
+                        <h3 style="font-size: 0.9rem; color: #666;">Ranking</h3>
+                        <p id="dashboard-rank" style="font-size: 2.5rem; font-weight: 700; color: var(--warning);">--
+                        </p>
+                    </div>
+                    <!-- Wellness Link -->
+                    <a href="wellness.html" class="card"
+                        style="background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%); color: white; text-decoration: none; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                        <i class="fa-solid fa-brain" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                        <h3 style="font-size: 1.1rem; font-weight: 600;">Centro de Bienestar</h3>
+                    </a>
+                    <!-- AI Expert Link -->
+                    <a href="wellness-expert.html" class="card"
+                        style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); color: white; text-decoration: none; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                        <i class="fa-solid fa-robot" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                        <h3 style="font-size: 1.1rem; font-weight: 600;">Experto de IA</h3>
+                    </a>
+                    <!-- Wellness Diary Link (NUEVO - Módulo Antigravity) -->
+                    <a href="diario-bienestar.html" class="card"
+                        style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); color: white; text-decoration: none; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                        <i class="fa-solid fa-book-heart" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                        <h3 style="font-size: 1.1rem; font-weight: 600;">Mi Diario de Bienestar</h3>
+                    </a>
+                </div>
+
+                <!-- Monthly Calendar -->
+                <div class="card" style="background: white;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2 style="font-size: 1.2rem; margin: 0;">📅 Mi Calendario de Asistencias</h2>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button id="prev-month"
+                                style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--primary);">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <span id="calendar-month-year"
+                                style="font-weight: 600; min-width: 150px; text-align: center;"></span>
+                            <button id="next-month"
+                                style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--primary);">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="monthly-calendar"
+                        style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem;">
+                        <!-- Generated by JS -->
+                        <div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #666;">Cargando
+                            calendario...</div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem; font-size: 0.85rem; color: #666;">
+                        <div><span
+                                style="display: inline-block; width: 12px; height: 12px; background: #10b981; border-radius: 50%; margin-right: 0.5rem;"></span>Asistencias
+                        </div>
+                        <div><span
+                                style="display: inline-block; width: 12px; height: 12px; background: #e5e7eb; border-radius: 50%; margin-right: 0.5rem;"></span>Sin
+                            asistencia</div>
+                    </div>
+                </div>
+
+                <!-- Badges -->
+                <div class="card" style="background: white;">
+                    <h2 style="font-size: 1.2rem; margin-bottom: 1.5rem;">🎖️ Mis Insignias</h2>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <!-- Generated by JS based on real achievements -->
+                        <p style="width: 100%; text-align: center; color: #9ca3af; padding: 1rem;">Cargando insignias...
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/dashboard-employee.js"></script>
+</body>
+
+</html>

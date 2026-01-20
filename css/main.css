@@ -8,6 +8,14 @@
    ========================================
 */
 
+/* ===== SAFE AREA VARIABLES (iOS Notch Protection) ===== */
+:root {
+  --safe-area-top: env(safe-area-inset-top);
+  --safe-area-bottom: env(safe-area-inset-bottom);
+  --safe-area-left: env(safe-area-inset-left);
+  --safe-area-right: env(safe-area-inset-right);
+}
+
 /* ===== RESET BÁSICO ===== */
 * {
   margin: 0;
@@ -22,8 +30,9 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   min-height: 100dvh;
-  /* Mobile support */
-  padding-bottom: env(safe-area-inset-bottom);
+  /* iOS Safe Area Protection - Evita que el contenido quede debajo del notch */
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
   -webkit-text-size-adjust: 100%;
 }
 
@@ -296,7 +305,7 @@ body {
   justify-content: center;
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
-  lineheight: 1;
+  line-height: 1;
 }
 
 .close-btn:hover {

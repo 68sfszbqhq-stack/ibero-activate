@@ -1,0 +1,27 @@
+{
+  "appId": "com.ibero.activate",
+  "appName": "Ibero Activate",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
+      "backgroundColor": "#1a237e",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false,
+      "iosSpinnerStyle": "small",
+      "spinnerColor": "#FF6B35",
+      "splashFullScreen": true,
+      "splashImmersive": true
+    },
+    "BarcodeScanningPlugin": {
+      "presentationStyle": "fullscreen"
+    }
+  },
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#1a237e"
+  }
+}

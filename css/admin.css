@@ -231,7 +231,7 @@
 .select-wrapper {
     display: block;
     margin-bottom: 0;
-    cursor: pointer;
+    position: relative;
 }
 
 .filter-group select,
@@ -240,32 +240,53 @@
     padding: 12px;
     border: 1px solid var(--color-border-dark);
     border-radius: 8px;
-    background: var(--white);
+    background-color: #ffffff;
     font-size: 16px;
     /* Prevents zoom on iOS */
+    color: #1f2937;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    min-height: 44px;
+    /* iOS touch target minimum */
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    /* Critical iOS fixes */
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
+
+    /* Custom dropdown arrow */
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
     padding-right: 36px;
-    cursor: pointer;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    min-height: 44px;
-    /* iOS touch target minimum */
-    -webkit-tap-highlight-color: rgba(102, 126, 234, 0.1);
-    /* Safari iOS specific fixes */
-    position: relative;
-    z-index: 1;
+
+    /* iOS Safari specific fixes */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+
+    /* Ensure proper rendering */
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
 }
 
-/* Force pointer cursor on Safari */
+/* Force proper styling on Safari */
 .filter-group select {
     cursor: pointer !important;
-    -webkit-touch-callout: none;
+    /* Remove any iOS default styling */
+    -webkit-border-radius: 8px;
+    border-radius: 8px;
+}
+
+/* iOS select option styling */
+.filter-group select option {
+    background-color: #ffffff;
+    color: #1f2937;
+    padding: 12px;
+    font-size: 16px;
 }
 
 .filter-group select:focus,

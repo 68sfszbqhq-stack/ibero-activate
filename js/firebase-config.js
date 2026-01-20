@@ -23,6 +23,16 @@ firebase.initializeApp(firebaseConfig);
 // Firestore
 const db = firebase.firestore();
 
+// HABILITAR PERSISTENCIA OFFLINE (Soporte Offline)
+db.enablePersistence({ synchronizeTabs: true })
+    .catch((err) => {
+        if (err.code == 'failed-precondition') {
+            console.warn('La persistencia falló (probablemente múltiples pestañas abiertas)');
+        } else if (err.code == 'unimplemented') {
+            console.warn('El navegador no soporta persistencia');
+        }
+    });
+
 // Authentication
 const auth = firebase.auth();
 

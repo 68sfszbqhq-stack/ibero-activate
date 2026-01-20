@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Extemporáneo - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/employee.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+    <div class="employee-container">
+        <header class="employee-header">
+            <div class="logo-small">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <span>IBERO ACTÍVATE</span>
+            </div>
+            <div class="header-actions" style="display: flex; gap: 1rem;">
+                <a href="feedback.html" class="profile-link">
+                    <i class="fa-solid fa-comment"></i> Feedback En Vivo
+                </a>
+                <a href="rankings.html" class="profile-link">
+                    <i class="fa-solid fa-trophy"></i> Rankings
+                </a>
+                <a href="dashboard.html" class="profile-link">
+                    <i class="fa-solid fa-user"></i> Mi Perfil
+                </a>
+            </div>
+        </header>
+
+        <main class="feedback-content">
+            <div class="feedback-card">
+                <div class="card-header">
+                    <div id="welcome-section" class="search-section">
+                        <h1 style="text-align: center; margin-bottom: 0.5rem;">Feedback Extemporáneo</h1>
+                        <p style="text-align: center; color: #666; margin-bottom: 2rem;">
+                            Selecciona la fecha de tu sesión y haz click en tu nombre para dar feedback
+                        </p>
+
+                        <!-- Selector de Fecha -->
+                        <div style="max-width: 400px; margin: 0 auto 2rem;">
+                            <div class="session-info"
+                                style="background: white; padding: 0.75rem 1rem; border-radius: 8px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s; border: 2px solid #e5e7eb;"
+                                onclick="document.getElementById('date-picker').showPicker()">
+                                <i class="fa-regular fa-calendar"></i>
+                                <span id="current-date" style="font-weight: 600;">Selecciona una fecha...</span>
+                                <input type="date" id="date-picker"
+                                    style="position: absolute; opacity: 0; pointer-events: none;">
+                            </div>
+                        </div>
+
+                        <!-- Lista de empleados con asistencia pendiente -->
+                        <div id="live-list" class="live-list-container">
+                            <!-- Aquí aparecerán los botones con nombres mágicamente -->
+                        </div>
+
+                        <!-- Estados -->
+                        <div id="waiting-message" class="waiting-state">
+                            <div class="pulse-ring"></div>
+                            <p>Selecciona una fecha para ver tus asistencias pendientes</p>
+                        </div>
+
+                        <div id="empty-state" class="hidden"
+                            style="text-align: center; padding: 2rem; margin-top: 2rem; background: #f9fafb; border-radius: 12px;">
+                            <i class="fa-solid fa-inbox"
+                                style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
+                            <h3 style="color: #6b7280;">No hay asistencias pendientes</h3>
+                            <p style="color: #9ca3af;">No se encontraron asistencias sin feedback para esta fecha</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulario de Feedback (Oculto inicialmente) -->
+                <div id="feedback-form" class="hidden fade-in">
+                    <div class="selected-profile" style="justify-content: center;">
+                        <div class="avatar-medium" id="profile-avatar">JP</div>
+                        <div class="profile-details" style="text-align: left;">
+                            <h2 id="employee-name">Juan Pérez</h2>
+                            <span id="employee-account">#12345</span>
+                            <span id="session-date"
+                                style="display: block; color: #666; font-size: 0.9rem; margin-top: 0.25rem;">
+                                <i class="fa-regular fa-calendar"></i> <span id="attendance-date"></span>
+                            </span>
+                            <button id="change-user-btn" class="btn-text-small">Cambiar</button>
+                        </div>
+                    </div>
+
+                    <div class="rating-section">
+                        <label>¿Cómo te sentiste?</label>
+                        <div class="star-rating">
+                            <i class="fa-solid fa-star star" data-rating="1"></i>
+                            <i class="fa-solid fa-star star" data-rating="2"></i>
+                            <i class="fa-solid fa-star star" data-rating="3"></i>
+                            <i class="fa-solid fa-star star" data-rating="4"></i>
+                            <i class="fa-solid fa-star star" data-rating="5"></i>
+                        </div>
+                        <p id="rating-text" class="rating-text">Selecciona una calificación</p>
+                    </div>
+
+                    <div class="reaction-section" style="text-align: center;">
+                        <label>Selecciona tu reacción:</label>
+                        <div class="emoji-grid"
+                            style="justify-content: center; display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <button class="emoji-btn" data-emoji="😊">😊</button>
+                            <button class="emoji-btn" data-emoji="😄">😄</button>
+                            <button class="emoji-btn" data-emoji="🤩">🤩</button>
+                            <button class="emoji-btn" data-emoji="😌">😌</button>
+                            <button class="emoji-btn" data-emoji="💪">💪</button>
+                            <button class="emoji-btn" data-emoji="🔥">🔥</button>
+                        </div>
+                    </div>
+
+                    <div class="comment-section">
+                        <label for="comment">Comentarios (opcional):</label>
+                        <textarea id="comment" rows="3"
+                            placeholder="Cuéntanos qué te pareció la dinámica..."></textarea>
+                    </div>
+
+                    <button id="submit-feedback" class="btn-primary btn-block">
+                        📤 Enviar Feedback
+                    </button>
+                </div>
+
+                <!-- Estado de Éxito -->
+                <div id="success-state" class="hidden fade-in text-center">
+                    <div class="success-icon">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <h2>¡Gracias por tu feedback!</h2>
+                    <p>Has ganado <span class="points-highlight">+<span id="earned-points">10</span> puntos</span></p>
+                    <div class="action-buttons">
+                        <a href="dashboard.html" class="btn-primary">Ver mi Progreso</a>
+                        <button id="new-feedback-btn" class="btn-secondary">Nuevo Feedback</button>
+                    </div>
+                </div>
+            </div>
+    </div>
+    </main>
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/feedback-late.js"></script>
+</body>
+
+</html>
