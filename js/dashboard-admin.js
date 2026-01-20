@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProgramSummary(); // Program Periodization
     setupDetailButtons();
     setupModalClose();
+    setupRealtimeListeners(); // NEW: Real-time updates
 
     async function loadDashboardData() {
         try {
@@ -153,6 +154,40 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error cargando dashboard:', error);
         }
+    }
+
+    // NEW: Setup real-time listeners for automatic updates
+    function setupRealtimeListeners() {
+        console.log('🔄 Configurando listeners en tiempo real...');
+
+        // Listen to all employees' attendance subcollections
+        db.collection('employees').get().then(employeesSnapshot => {
+            employeesSnapshot.forEach(empDoc => {
+                const empId = empDoc.id;
+
+                // Listen to attendance changes
+                db.collection('employees')
+                    .doc(empId)
+                    .collection('attendance')
+                    .onSnapshot(() => {
+                        console.log('✨ Cambio detectado en asistencias - Actualizando dashboard...');
+                        loadDashboardData();
+                    }, error => {
+                        console.error('Error en listener de attendance:', error);
+                    });
+
+                // Listen to feedback changes
+                db.collection('employees')
+                    .doc(empId)
+                    .collection('feedback')
+                    .onSnapshot(() => {
+                        console.log('✨ Cambio detectado en feedback - Actualizando dashboard...');
+                        loadDashboardData();
+                    }, error => {
+                        console.error('Error en listener de feedback:', error);
+                    });
+            });
+        });
     }
 
     function calculateAndDisplayChanges(attendances, feedbacks, totalAtt, avgRating, activeAreas, feedbackRate) {
