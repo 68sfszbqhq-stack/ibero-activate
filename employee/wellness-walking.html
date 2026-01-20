@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Progreso de Caminatas | IBERO ACTÍVATE</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/sidebar.css">
+    <link rel="stylesheet" href="../css/wellness-walking.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Firebase (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <!-- Google API Client (para Google Fit) -->
+    <script src="https://apis.google.com/js/api.js"></script>
+
+    <meta name="description"
+        content="Seguimiento de caminatas basado en evidencia científica - 7,000 pasos para salud óptima">
+</head>
+
+<body>
+    <!-- Sidebar de Navegación -->
+    <div id="sidebar-container"></div>
+
+    <!-- Contenido Principal -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="page-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <i class="fas fa-walking"></i>
+                    <div>
+                        <h1>Mi Progreso de Caminatas</h1>
+                        <p class="subtitle">Basado en Evidencia Científica</p>
+                    </div>
+                </div>
+                <button class="btn-sync" onclick="showSyncOptions()">
+                    <i class="fas fa-sync-alt"></i>
+                    Sincronizar
+                </button>
+            </div>
+        </header>
+
+        <!-- Tarjeta de Meta Diaria -->
+        <section class="wellness-card main-goal-card">
+            <div class="card-header">
+                <h2>Mi Meta de Hoy</h2>
+                <span class="evidence-badge" title="Basado en investigación científica">
+                    <i class="fas fa-flask"></i> Evidence-Based
+                </span>
+            </div>
+
+            <div class="goal-container">
+                <!-- Círculo de Progreso -->
+                <div class="progress-circle" id="steps-circle" style="--progress: 0%">
+                    <div class="circle-content">
+                        <span class="step-count" id="current-steps">0</span>
+                        <small>de 7,000 pasos</small>
+                        <div class="percentage" id="percentage">0%</div>
+                    </div>
+                </div>
+
+                <!-- Información de Salud -->
+                <div class="health-info">
+                    <div class="health-insight">
+                        <i class="fas fa-heart-pulse"></i>
+                        <p id="health-tip">Comienza hoy. 7,000 pasos reducen tu mortalidad en un 50-70%.</p>
+                    </div>
+
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <i class="fas fa-fire"></i>
+                            <div>
+                                <span class="metric-value" id="calories-today">0</span>
+                                <span class="metric-label">Calorías</span>
+                            </div>
+                        </div>
+                        <div class="metric-item">
+                            <i class="fas fa-route"></i>
+                            <div>
+                                <span class="metric-value" id="distance-today">0</span>
+                                <span class="metric-label">km</span>
+                            </div>
+                        </div>
+                        <div class="metric-item">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <span class="metric-value" id="duration-today">0</span>
+                                <span class="metric-label">minutos</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Indicador de Caminata Continua -->
+                    <div class="continuous-indicator" id="continuous-indicator" style="display: none;">
+                        <i class="fas fa-check-circle"></i>
+                        <span>¡Caminata continua de 15+ minutos! Beneficio cardiovascular adicional.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Opciones de Sincronización -->
+        <section class="sync-options" id="sync-options" style="display: none;">
+            <div class="wellness-card">
+                <h3>Sincronizar Datos</h3>
+
+                <!-- Google Fit -->
+                <div class="sync-option">
+                    <div class="sync-icon google-fit">
+                        <i class="fab fa-google"></i>
+                    </div>
+                    <div class="sync-details">
+                        <h4>Google Fit</h4>
+                        <p>Sincroniza automáticamente tus pasos desde tu dispositivo Android</p>
+                    </div>
+                    <button class="btn-primary" onclick="syncWithGoogleFit()">
+                        <i class="fas fa-sync"></i> Conectar
+                    </button>
+                </div>
+
+                <!-- Entrada Manual (iOS) -->
+                <div class="sync-option">
+                    <div class="sync-icon apple-health">
+                        <i class="fab fa-apple"></i>
+                    </div>
+                    <div class="sync-details">
+                        <h4>Apple Health (Manual)</h4>
+                        <p>Ingresa tus pasos desde la app Salud de iPhone</p>
+                    </div>
+                    <button class="btn-secondary" onclick="showManualEntry()">
+                        <i class="fas fa-keyboard"></i> Ingresar
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Formulario de Entrada Manual -->
+        <section class="manual-entry" id="manual-entry" style="display: none;">
+            <div class="wellness-card">
+                <div class="card-header">
+                    <h3>Registrar Pasos Manualmente</h3>
+                    <button class="btn-close" onclick="hideManualEntry()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <form onsubmit="event.preventDefault(); saveManualSteps();">
+                    <div class="form-group">
+                        <label for="manual-steps">
+                            <i class="fas fa-shoe-prints"></i>
+                            Número de Pasos
+                        </label>
+                        <input type="number" id="manual-steps" class="form-control" placeholder="Ej: 5000" min="0"
+                            required>
+                        <small class="form-hint">Abre tu app "Salud" en iPhone y copia el número de pasos de hoy</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="manual-duration">
+                            <i class="fas fa-stopwatch"></i>
+                            Duración (minutos) - Opcional
+                        </label>
+                        <input type="number" id="manual-duration" class="form-control" placeholder="Ej: 20" min="0">
+                    </div>
+
+                    <div class="form-check">
+                        <input type="checkbox" id="continuous-walk" class="form-check-input">
+                        <label for="continuous-walk" class="form-check-label">
+                            <i class="fas fa-running"></i>
+                            ¿Caminaste más de 15 minutos seguidos?
+                            <span class="badge-bonus">+Bonus Cardiovascular</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-primary btn-block">
+                        <i class="fas fa-save"></i>
+                        Guardar Pasos
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Resumen Semanal/Mensual -->
+        <section class="wellness-card summary-card">
+            <div class="card-header">
+                <h3>Resumen de los Últimos 30 Días</h3>
+                <div class="view-toggle">
+                    <button class="active" data-view="30">30 días</button>
+                    <button data-view="7">7 días</button>
+                </div>
+            </div>
+
+            <div class="summary-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-value" id="avg-steps">0</span>
+                        <span class="stat-label">Promedio de Pasos</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon success">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-value" id="days-with-goal">0</span>
+                        <span class="stat-label">Días con Meta</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon warning">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-value" id="continuous-sessions">0</span>
+                        <span class="stat-label">Sesiones Continuas</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon info">
+                        <i class="fas fa-shoe-prints"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-value" id="total-steps">0</span>
+                        <span class="stat-label">Pasos Totales</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Badges de Logros -->
+        <section class="wellness-card badges-card">
+            <div class="card-header">
+                <h3>Mis Logros</h3>
+                <span class="badge-count" id="badge-count">0 insignias</span>
+            </div>
+
+            <div class="badges-container" id="wellness-badges">
+                <!-- Los badges se cargarán dinámicamente -->
+                <div class="no-badges">
+                    <i class="fas fa-medal"></i>
+                    <p>¡Comienza a caminar para desbloquear insignias!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Información Científica -->
+        <section class="wellness-card science-card">
+            <div class="card-header">
+                <h3>¿Por qué 7,000 pasos?</h3>
+                <i class="fas fa-book-medical"></i>
+            </div>
+
+            <div class="science-content">
+                <div class="science-fact">
+                    <div class="fact-icon">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <div class="fact-text">
+                        <h4>Reducción de Mortalidad</h4>
+                        <p>7,000 pasos diarios se asocian con una reducción del 50-70% en la mortalidad por todas las
+                            causas.</p>
+                    </div>
+                </div>
+
+                <div class="science-fact">
+                    <div class="fact-icon">
+                        <i class="fas fa-running"></i>
+                    </div>
+                    <div class="fact-text">
+                        <h4>Caminatas Continuas</h4>
+                        <p>15+ minutos de caminata continua proporcionan beneficios cardiovasculares adicionales,
+                            reduciendo la mortalidad a menos del 1%.</p>
+                    </div>
+                </div>
+
+                <div class="science-fact">
+                    <div class="fact-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="fact-text">
+                        <h4>Salud Mental</h4>
+                        <p>La actividad física regular mejora el estado de ánimo, reduce el estrés y aumenta la
+                            productividad laboral.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p id="loading-message">Cargando...</p>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-check.js"></script>
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/walking-tracker.js"></script>
+    <script src="../js/wellness-walking-ui.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicializar Datos de Prueba - Walking Tracker</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f3f4f6;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+
+        .info {
+            background: #dbeafe;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+            margin-bottom: 1.5rem;
+        }
+
+        .warning {
+            background: #fef3c7;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #f59e0b;
+            margin-bottom: 1.5rem;
+        }
+
+        button {
+            background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .log {
+            background: #1f2937;
+            color: #10b981;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 1.5rem;
+            display: none;
+        }
+
+        .log.active {
+            display: block;
+        }
+
+        .log-line {
+            margin: 0.25rem 0;
+        }
+
+        .success {
+            color: #10b981;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+
+        .info-log {
+            color: #3b82f6;
+        }
+    </style>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🏃 Inicializar Datos de Prueba - Walking Tracker</h1>
+
+        <div class="info">
+            <strong>ℹ️ Información:</strong><br>
+            Este script creará datos de ejemplo para probar el sistema de seguimiento de caminatas.
+            Se generarán sesiones de caminata de los últimos 30 días con datos realistas.
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Advertencia:</strong><br>
+            Solo ejecuta esto en un ambiente de desarrollo o pruebas.
+            Los datos se crearán para el usuario actualmente autenticado.
+        </div>
+
+        <p><strong>Usuario autenticado:</strong> <span id="current-user">Verificando...</span></p>
+
+        <button id="init-btn" onclick="initializeSampleData()" disabled>
+            Generar Datos de Prueba
+        </button>
+
+        <div class="log" id="log"></div>
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script>
+        const logElement = document.getElementById('log');
+        const initBtn = document.getElementById('init-btn');
+        const currentUserElement = document.getElementById('current-user');
+
+        let currentUser = null;
+
+        // Verificar autenticación
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                currentUserElement.textContent = user.email;
+                initBtn.disabled = false;
+            } else {
+                currentUserElement.textContent = 'No autenticado - Por favor inicia sesión primero';
+                initBtn.disabled = true;
+            }
+        });
+
+        function log(message, type = 'info') {
+            logElement.classList.add('active');
+            const line = document.createElement('div');
+            line.className = `log-line ${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logElement.appendChild(line);
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        async function initializeSampleData() {
+            if (!currentUser) {
+                alert('Por favor inicia sesión primero');
+                return;
+            }
+
+            initBtn.disabled = true;
+            logElement.innerHTML = '';
+
+            try {
+                log('🚀 Iniciando generación de datos de prueba...', 'info-log');
+
+                // Obtener email del usuario
+                const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                const userEmail = userDoc.data()?.email || currentUser.email;
+
+                log(`👤 Usuario: ${userEmail}`, 'info-log');
+
+                // Generar datos de los últimos 30 días
+                const today = new Date();
+                const sessionsToCreate = [];
+
+                for (let i = 0; i < 30; i++) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - i);
+                    const dateString = date.toISOString().split('T')[0];
+
+                    // Probabilidad del 70% de tener datos ese día
+                    if (Math.random() > 0.3) {
+                        // Generar pasos aleatorios entre 3,000 y 12,000
+                        const steps = Math.floor(Math.random() * 9000) + 3000;
+                        const meetsGoal = steps >= 7000;
+
+                        // Duración aleatoria entre 0 y 60 minutos
+                        const duration = Math.floor(Math.random() * 60);
+                        const isContinuous = duration >= 15;
+
+                        // Calcular métricas
+                        const distance = (steps / 1250).toFixed(2);
+                        let calories = Math.round(steps * 0.04);
+                        if (isContinuous) calories = Math.round(calories * 1.2);
+
+                        const sessionData = {
+                            collaboratorEmail: userEmail,
+                            date: dateString,
+                            timestamp: firebase.firestore.Timestamp.fromDate(date),
+                            metrics: {
+                                steps: steps,
+                                distance_km: parseFloat(distance),
+                                calories: calories,
+                                duration_mins: duration,
+                                intensity: isContinuous ? 'brisk_walking' : 'moderate'
+                            },
+                            physiological: {
+                                avg_heart_rate: duration > 0 ? Math.floor(Math.random() * 30) + 90 : null,
+                                max_heart_rate: duration > 0 ? Math.floor(Math.random() * 40) + 110 : null
+                            },
+                            source: 'SampleData',
+                            is_continuous: isContinuous,
+                            meets_goal: meetsGoal
+                        };
+
+                        sessionsToCreate.push({ date: dateString, data: sessionData });
+                    }
+                }
+
+                log(`📊 Generando ${sessionsToCreate.length} sesiones de caminata...`, 'info-log');
+
+                // Crear sesiones en Firestore
+                let created = 0;
+                for (const session of sessionsToCreate) {
+                    await db.collection('walking_stats').add(session.data);
+                    created++;
+
+                    if (created % 5 === 0) {
+                        log(`✅ Creadas ${created}/${sessionsToCreate.length} sesiones`, 'success');
+                    }
+                }
+
+                log(`✅ Todas las sesiones creadas exitosamente`, 'success');
+
+                // Crear resumen en wellness_records
+                log('📝 Creando resumen en wellness_records...', 'info-log');
+
+                const dailyStats = {};
+                let badges = ['pioneer'];
+                let daysWithGoal = 0;
+                let continuousSessions = 0;
+
+                sessionsToCreate.forEach(session => {
+                    const data = session.data;
+                    dailyStats[session.date] = {
+                        steps: data.metrics.steps,
+                        continuous_walk_minutes: data.metrics.duration_mins,
+                        calories: data.metrics.calories,
+                        distance_km: data.metrics.distance_km,
+                        heart_rate_avg: data.physiological.avg_heart_rate,
+                        source: data.source,
+                        is_continuous: data.is_continuous,
+                        meets_goal: data.meets_goal
+                    };
+
+                    if (data.meets_goal) {
+                        daysWithGoal++;
+                        if (!badges.includes('7k_club')) badges.push('7k_club');
+                    }
+
+                    if (data.is_continuous) {
+                        continuousSessions++;
+                        if (!badges.includes('continuous_walker')) badges.push('continuous_walker');
+                    }
+                });
+
+                // Verificar badges adicionales
+                if (daysWithGoal >= 5) badges.push('week_warrior');
+                if (daysWithGoal >= 20) badges.push('month_master');
+
+                await db.collection('wellness_records').doc(userEmail).set({
+                    daily_stats: dailyStats,
+                    badges: badges,
+                    last_sync: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+
+                log(`✅ Resumen creado con ${badges.length} badges`, 'success');
+                log(`🏆 Badges desbloqueados: ${badges.join(', ')}`, 'success');
+
+                // Estadísticas finales
+                log('', 'info-log');
+                log('📈 RESUMEN DE DATOS GENERADOS:', 'info-log');
+                log(`   • Sesiones totales: ${sessionsToCreate.length}`, 'info-log');
+                log(`   • Días con meta alcanzada: ${daysWithGoal}`, 'info-log');
+                log(`   • Sesiones continuas (15+ min): ${continuousSessions}`, 'info-log');
+                log(`   • Badges desbloqueados: ${badges.length}`, 'info-log');
+                log('', 'info-log');
+                log('🎉 ¡Datos de prueba generados exitosamente!', 'success');
+                log('👉 Ahora puedes ir a employee/wellness-walking.html para ver los resultados', 'info-log');
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                console.error('Error completo:', error);
+            } finally {
+                initBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+
+</html>

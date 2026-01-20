@@ -111,5 +111,39 @@ service cloud.firestore {
       allow read: if isAuth();
       allow write: if false;
     }
+
+    // ========================================
+    // WELLNESS WALKING TRACKER (NUEVO)
+    // ========================================
+    
+    // Estadísticas de caminatas
+    match /walking_stats/{statId} {
+      // Permitir lectura solo al dueño de los datos
+      allow read: if isAuth() && 
+                     resource.data.collaboratorEmail == request.auth.token.email;
+      
+      // Permitir escritura solo al dueño
+      allow create: if isAuth() && 
+                       request.resource.data.collaboratorEmail == request.auth.token.email;
+      
+      // Permitir actualización solo al dueño
+      allow update: if isAuth() && 
+                       resource.data.collaboratorEmail == request.auth.token.email;
+      
+      // No permitir eliminación (mantener historial)
+      allow delete: if false;
+    }
+    
+    // Registros de bienestar (resumen por usuario)
+    match /wellness_records/{email} {
+      // Permitir lectura solo al dueño
+      allow read: if isAuth() && 
+                     email == request.auth.token.email;
+      
+      // Permitir escritura solo al dueño
+      allow write: if isAuth() && 
+                      email == request.auth.token.email;
+    }
+
   }
 }
