@@ -407,12 +407,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            const programStartDate = new Date(programData.startDate);
-            const programStartWeek = ProgramUtils.getWeekId(programStartDate).match(/W(\d+)/)[1];
-            const startCalendarWeek = parseInt(programStartWeek);
+            // Use first available week in Firebase as starting point
+            const availableWeeks = Object.keys(weekIdMap)
+                .map(w => parseInt(w))
+                .filter(w => w >= 2 && w <= 52)
+                .sort((a, b) => a - b);
+            const firstAvailableWeek = availableWeeks[0];
 
             for (const week of monthWeeks) {
-                const calendarWeek = startCalendarWeek + (week.week - 1);
+                const calendarWeek = firstAvailableWeek + (week.week - 1);
                 const weekId = weekIdMap[calendarWeek];
 
                 console.log(`[PDF Mensual] Semana ${week.week} → W${calendarWeek} → ID: ${weekId || 'NO ENCONTRADO'}`);
@@ -571,16 +574,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log('=== Mapa de IDs de semanas encontradas en Firebase ===', weekIdMap);
 
-            // Now match program weeks to calendar weeks
-            const programStartDate = new Date(programData.startDate);
-            const programStartWeek = ProgramUtils.getWeekId(programStartDate).match(/W(\d+)/)[1];
-            const startCalendarWeek = parseInt(programStartWeek);
+            // Find the first available week in Firebase for 2026 (this is where Week 1 should start)
+            const availableWeeks = Object.keys(weekIdMap)
+                .map(w => parseInt(w))
+                .filter(w => w >= 2 && w <= 52) // Only 2026 weeks, ignore 2025
+                .sort((a, b) => a - b);
 
-            console.log(`Programa inicia en semana calendario: W${startCalendarWeek}`);
+            const firstAvailableWeek = availableWeeks[0];
+
+            console.log(`Primera semana disponible en Firebase para 2026: W${firstAvailableWeek}`);
+            console.log(`=== Semana 1 del programa se mapeará a W${firstAvailableWeek} ===`);
 
             for (const week of programData.weeklySchedule) {
-                // Calculate which calendar week this program week corresponds to
-                const calendarWeek = startCalendarWeek + (week.week - 1);
+                // Map program week to calendar week starting from first available week
+                const calendarWeek = firstAvailableWeek + (week.week - 1);
                 const weekId = weekIdMap[calendarWeek];
 
                 console.log(`Semana ${week.week} del programa → Semana W${calendarWeek} del calendario → ID: ${weekId || 'NO ENCONTRADO'}`);
