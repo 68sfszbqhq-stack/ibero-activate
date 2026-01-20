@@ -3,8 +3,8 @@
 // Configuración de usuarios con roles
 const USER_ROLES = {
     '716276@iberopuebla.mx': 'admin',  // Tu usuario - admin completo
-    // Agrega aquí el email de tu jefe con rol 'viewer'
-    // 'jefe@iberopuebla.mx': 'viewer'
+    '710029@iberopuebla.mx': 'viewer'  // Jefe - solo lectura
+    // Agrega más usuarios aquí según sea necesario
 };
 
 // Permisos por rol
