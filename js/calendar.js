@@ -223,6 +223,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${item.location ? `<span>📍 ${item.location}</span>` : ''}
             </div>
             ${statusBadge}
+            <button class="btn-delete-activity" title="Eliminar actividad" onclick="event.stopPropagation(); deleteScheduledActivity(${index})">
+                <i class="fa-solid fa-trash"></i>
+            </button>
         `;
 
         card.onclick = (e) => {
@@ -727,4 +730,51 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Delete scheduled activity function
+    window.deleteScheduledActivity = async function (index) {
+        if (!currentSchedule || !currentSchedule[index]) {
+            alert('Error: No se pudo encontrar la actividad');
+            return;
+        }
+
+        const item = currentSchedule[index];
+        const activity = activitiesMap[item.activityId];
+        const activityName = activity ? activity.name : 'esta actividad';
+
+        const dayNames = {
+            'monday': 'Lunes',
+            'tuesday': 'Martes',
+            'wednesday': 'Miércoles',
+            'thursday': 'Jueves',
+            'friday': 'Viernes'
+        };
+        const dayName = dayNames[item.day] || item.day;
+
+        if (!confirm(`¿Estás seguro de eliminar "${activityName}" del ${dayName}?`)) {
+            return;
+        }
+
+        try {
+            // Remove from array
+            currentSchedule.splice(index, 1);
+
+            // Update Firebase
+            await db.collection('weekly_schedules')
+                .doc(currentWeekId)
+                .update({
+                    schedule: currentSchedule,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+            console.log('✓ Actividad eliminada del calendario');
+
+            // Reload schedule to update UI
+            loadSchedule();
+
+        } catch (error) {
+            console.error('Error eliminando actividad:', error);
+            alert('Error al eliminar la actividad. Intenta de nuevo.');
+        }
+    };
 });
