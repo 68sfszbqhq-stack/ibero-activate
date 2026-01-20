@@ -516,4 +516,72 @@ document.addEventListener('DOMContentLoaded', () => {
         var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
         return weekNo;
     }
+
+    // Mark "No Attendance" - When admin visits area but nobody shows up
+    window.markNoAttendance = async function () {
+        const areaId = areaDropdown.value;
+        const sessionType = document.getElementById('session-type').value;
+
+        if (!areaId) {
+            alert('⚠️ Por favor selecciona un área primero');
+            return;
+        }
+
+        // Get area name
+        const areaSelect = document.getElementById('area-dropdown');
+        const areaName = areaSelect.options[areaSelect.selectedIndex].text;
+
+        const selectedDate = currentDate.toISOString().split('T')[0];
+
+        const confirmMsg = `¿Confirmar que pasaste al área "${areaName}" pero no hubo asistencia?\n\n` +
+            `Fecha: ${currentDate.toLocaleDateString('es-ES')}\n` +
+            `Sesión: ${sessionType}\n\n` +
+            `Esto quedará registrado para fines de seguimiento.`;
+
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+
+        const btn = document.getElementById('btn-no-attendance');
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+
+        try {
+            // Create a special record in a "no_attendance_logs" collection
+            await db.collection('no_attendance_logs').add({
+                areaId: areaId,
+                areaName: areaName,
+                date: selectedDate,
+                sessionType: sessionType,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                weekNumber: getWeekNumber(currentDate),
+                year: currentDate.getFullYear(),
+                adminEmail: auth.currentUser ? auth.currentUser.email : 'unknown'
+            });
+
+            showToast(`✓ Registrado: Sin asistencia en ${areaName}`);
+
+            // Optional: Show a visual confirmation
+            const emptyState = document.getElementById('empty-state');
+            if (emptyState) {
+                emptyState.innerHTML = `
+                    <i class="fa-solid fa-circle-check" style="font-size: 3rem; color: #f59e0b; margin-bottom: 1rem;"></i>
+                    <h3 style="color: #4b5563;">Registrado: Sin Asistencia</h3>
+                    <p style="color: #9ca3af;">Área: ${areaName}</p>
+                    <p style="color: #9ca3af;">Fecha: ${currentDate.toLocaleDateString('es-ES')}</p>
+                    <p style="color: #9ca3af;">Sesión: ${sessionType}</p>
+                `;
+                emptyState.style.display = 'block';
+                employeeList.innerHTML = '';
+            }
+
+        } catch (error) {
+            console.error('Error registrando sin asistencia:', error);
+            alert('Error al guardar el registro. Intenta de nuevo.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
+    };
 });
