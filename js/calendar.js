@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let activitiesMap = {}; // id -> data
     let programData = null; // Program periodization data
     let currentProgramContext = null; // Current week and phase info
+    let currentSchedule = []; // Current week's schedule
+    let currentWeekId = null; // Current week ID for Firebase
     console.log("Calendar JS Loaded - Simplified v3.0");
 
     // --- FUNCTIONS DEFINED EARLY TO AVOID REFERENCE ERRORS ---
@@ -179,19 +181,24 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.activity-card').forEach(el => el.remove());
 
         const weekId = getWeekId(currentWeekStart);
+        currentWeekId = weekId; // Store globally
         console.log("Loading schedule for:", weekId);
 
         try {
             const doc = await db.collection('weekly_schedules').doc(weekId).get();
             if (doc.exists) {
                 const schedule = doc.data().schedule || [];
+                currentSchedule = schedule; // Store globally
 
                 // Process all items in parallel
                 const renderPromises = schedule.map((item, index) => renderScheduleItem(item, index));
                 await Promise.all(renderPromises);
+            } else {
+                currentSchedule = []; // Empty schedule
             }
         } catch (error) {
             console.error("Error loading schedule:", error);
+            currentSchedule = [];
         }
     }
 
