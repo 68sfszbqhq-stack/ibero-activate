@@ -391,25 +391,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Get scheduled activities for these weeks
             const scheduledActivities = {};
-            for (const week of monthWeeks) {
-                const weekId = getWeekIdForWeekNumber(week.week);
-                console.log(`[PDF Mensual] Buscando actividades para Semana ${week.week} con ID: ${weekId}`);
 
-                let scheduleDoc = await db.collection('weekly_schedules').doc(weekId).get();
+            // First, get all week IDs from Firebase to map them correctly
+            const allSchedules = await db.collection('weekly_schedules').get();
+            const weekIdMap = {};
 
-                // If not found, try alternative formats
-                if (!scheduleDoc.exists) {
-                    const altWeekId = `week-${week.week}`;
-                    console.log(`  Intentando formato alternativo: ${altWeekId}`);
-                    scheduleDoc = await db.collection('weekly_schedules').doc(altWeekId).get();
+            allSchedules.forEach(doc => {
+                const docId = doc.id;
+                const weekMatch = docId.match(/W(\d+)/);
+                if (weekMatch) {
+                    const calendarWeek = parseInt(weekMatch[1]);
+                    if (!weekIdMap[calendarWeek]) {
+                        weekIdMap[calendarWeek] = docId;
+                    }
                 }
+            });
 
-                if (scheduleDoc.exists) {
-                    const activities = scheduleDoc.data().schedule || [];
-                    scheduledActivities[week.week] = activities;
-                    console.log(`  ✓ Encontradas ${activities.length} actividades`);
+            const programStartDate = new Date(programData.startDate);
+            const programStartWeek = ProgramUtils.getWeekId(programStartDate).match(/W(\d+)/)[1];
+            const startCalendarWeek = parseInt(programStartWeek);
+
+            for (const week of monthWeeks) {
+                const calendarWeek = startCalendarWeek + (week.week - 1);
+                const weekId = weekIdMap[calendarWeek];
+
+                console.log(`[PDF Mensual] Semana ${week.week} → W${calendarWeek} → ID: ${weekId || 'NO ENCONTRADO'}`);
+
+                if (weekId) {
+                    const scheduleDoc = await db.collection('weekly_schedules').doc(weekId).get();
+                    if (scheduleDoc.exists) {
+                        const activities = scheduleDoc.data().schedule || [];
+                        scheduledActivities[week.week] = activities;
+                        console.log(`  ✓ Encontradas ${activities.length} actividades`);
+                    } else {
+                        scheduledActivities[week.week] = [];
+                    }
                 } else {
-                    console.log(`  ✗ No se encontraron actividades`);
+                    console.log(`  ✗ No se encontró el ID`);
                     scheduledActivities[week.week] = [];
                 }
             }
@@ -532,26 +550,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Get all scheduled activities for all weeks
             const scheduledActivities = {};
-            for (const week of programData.weeklySchedule) {
-                const weekId = getWeekIdForWeekNumber(week.week);
-                console.log(`Buscando actividades para Semana ${week.week} con ID: ${weekId}`);
 
-                let scheduleDoc = await db.collection('weekly_schedules').doc(weekId).get();
+            // First, get all week IDs from Firebase to map them correctly
+            const allSchedules = await db.collection('weekly_schedules').get();
+            const weekIdMap = {};
 
-                // If not found, try alternative formats
-                if (!scheduleDoc.exists) {
-                    // Try with just the week number
-                    const altWeekId = `week-${week.week}`;
-                    console.log(`  Intentando formato alternativo: ${altWeekId}`);
-                    scheduleDoc = await db.collection('weekly_schedules').doc(altWeekId).get();
+            allSchedules.forEach(doc => {
+                // Try to extract week number from various patterns
+                const docId = doc.id;
+                const weekMatch = docId.match(/W(\d+)/);  // Matches 2026-W3, 2026-W10, etc.
+
+                if (weekMatch) {
+                    const calendarWeek = parseInt(weekMatch[1]);
+                    // Store the document ID for this calendar week
+                    if (!weekIdMap[calendarWeek]) {
+                        weekIdMap[calendarWeek] = docId;
+                    }
                 }
+            });
 
-                if (scheduleDoc.exists) {
-                    const activities = scheduleDoc.data().schedule || [];
-                    scheduledActivities[week.week] = activities;
-                    console.log(`  ✓ Encontradas ${activities.length} actividades`);
+            console.log('=== Mapa de IDs de semanas encontradas en Firebase ===', weekIdMap);
+
+            // Now match program weeks to calendar weeks
+            const programStartDate = new Date(programData.startDate);
+            const programStartWeek = ProgramUtils.getWeekId(programStartDate).match(/W(\d+)/)[1];
+            const startCalendarWeek = parseInt(programStartWeek);
+
+            console.log(`Programa inicia en semana calendario: W${startCalendarWeek}`);
+
+            for (const week of programData.weeklySchedule) {
+                // Calculate which calendar week this program week corresponds to
+                const calendarWeek = startCalendarWeek + (week.week - 1);
+                const weekId = weekIdMap[calendarWeek];
+
+                console.log(`Semana ${week.week} del programa → Semana W${calendarWeek} del calendario → ID: ${weekId || 'NO ENCONTRADO'}`);
+
+                if (weekId) {
+                    const scheduleDoc = await db.collection('weekly_schedules').doc(weekId).get();
+                    if (scheduleDoc.exists) {
+                        const activities = scheduleDoc.data().schedule || [];
+                        scheduledActivities[week.week] = activities;
+                        console.log(`  ✓ Encontradas ${activities.length} actividades`);
+                    } else {
+                        scheduledActivities[week.week] = [];
+                    }
                 } else {
-                    console.log(`  ✗ No se encontraron actividades`);
+                    console.log(`  ✗ No se encontró el ID de semana en Firebase`);
                     scheduledActivities[week.week] = [];
                 }
             }
