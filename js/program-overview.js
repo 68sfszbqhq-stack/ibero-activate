@@ -502,13 +502,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const btn = document.getElementById('btn-download-full-pdf');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando PDF...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando PDF completo...';
 
         try {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            // Header
+            // Get activities data
+            const activitiesSnapshot = await db.collection('activities').get();
+            const activitiesData = {};
+            activitiesSnapshot.forEach(doc => {
+                activitiesData[doc.id] = doc.data();
+            });
+
+            // Get all scheduled activities for all weeks
+            const scheduledActivities = {};
+            for (const week of programData.weeklySchedule) {
+                const weekId = getWeekIdForWeekNumber(week.week);
+                const scheduleDoc = await db.collection('weekly_schedules').doc(weekId).get();
+                if (scheduleDoc.exists) {
+                    scheduledActivities[week.week] = scheduleDoc.data().schedule || [];
+                }
+            }
+
+            // Header - Page 1
             doc.setFontSize(22);
             doc.setTextColor(102, 126, 234);
             doc.text('IBERO ACTÍVATE', 105, 20, { align: 'center' });
@@ -536,6 +553,10 @@ document.addEventListener('DOMContentLoaded', () => {
             yPos += 10;
 
             programData.phases.forEach(phase => {
+                if (yPos > 270) {
+                    doc.addPage();
+                    yPos = 20;
+                }
                 doc.setFontSize(11);
                 doc.setTextColor(60, 60, 60);
                 doc.setFont(undefined, 'bold');
@@ -548,47 +569,125 @@ document.addEventListener('DOMContentLoaded', () => {
                 yPos += 8;
             });
 
-            // Weekly schedule table
+            // Weekly schedule with daily activities
             doc.addPage();
             yPos = 20;
 
-            doc.setFontSize(14);
+            doc.setFontSize(16);
             doc.setTextColor(102, 126, 234);
-            doc.text('Calendario Semanal Completo', 20, yPos);
-            yPos += 10;
+            doc.text('Calendario Detallado - 19 Semanas', 105, yPos, { align: 'center' });
+            yPos += 15;
 
-            const tableData = programData.weeklySchedule.map(week => {
+            // For each week
+            programData.weeklySchedule.forEach((week, index) => {
                 const phase = programData.phases.find(p => p.phaseId === week.phase);
-                return [
-                    `S${week.week}`,
-                    phase ? phase.name : '-',
-                    week.activity,
-                    week.objetivo,
-                    week.intensidad
-                ];
+
+                // Check if we need a new page
+                if (yPos > 240) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+
+                // Week header with color
+                const phaseColor = phase ? hexToRgb(phase.colorTheme) : [102, 126, 234];
+                doc.setFillColor(phaseColor[0], phaseColor[1], phaseColor[2]);
+                doc.rect(15, yPos, 180, 10, 'F');
+                doc.setFontSize(12);
+                doc.setTextColor(255, 255, 255);
+                doc.setFont(undefined, 'bold');
+                doc.text(`Semana ${week.week}: ${week.activity}`, 20, yPos + 7);
+                doc.setFont(undefined, 'normal');
+
+                yPos += 15;
+
+                // Week details
+                doc.setFontSize(9);
+                doc.setTextColor(60, 60, 60);
+                doc.text(`Fase: ${phase ? phase.name : 'N/A'}`, 20, yPos);
+                doc.text(`Intensidad: ${week.intensidad}`, 100, yPos);
+                yPos += 5;
+
+                // Wrap objective text if too long
+                const objectiveLines = doc.splitTextToSize(`Objetivo: ${week.objetivo}`, 170);
+                doc.text(objectiveLines, 20, yPos);
+                yPos += (objectiveLines.length * 5) + 5;
+
+                // Daily activities table
+                const weekActivities = scheduledActivities[week.week] || [];
+                if (weekActivities.length > 0) {
+                    const tableData = weekActivities.map(item => {
+                        const activity = activitiesData[item.activityId];
+                        const dayNames = {
+                            'monday': 'Lunes',
+                            'tuesday': 'Martes',
+                            'wednesday': 'Miércoles',
+                            'thursday': 'Jueves',
+                            'friday': 'Viernes'
+                        };
+
+                        const activityName = activity ? activity.name : 'Actividad desconocida';
+                        const description = activity ? (activity.description || activity.objetivo || '-') : '-';
+
+                        return [
+                            dayNames[item.day] || item.day,
+                            activityName,
+                            activity ? `${activity.duration} min` : '-',
+                            item.location || 'Por definir',
+                            description.substring(0, 80) + (description.length > 80 ? '...' : '')
+                        ];
+                    });
+
+                    doc.autoTable({
+                        startY: yPos,
+                        head: [['Día', 'Actividad', 'Duración', 'Ubicación', 'Descripción']],
+                        body: tableData,
+                        theme: 'grid',
+                        headStyles: {
+                            fillColor: [phaseColor[0], phaseColor[1], phaseColor[2]],
+                            textColor: [255, 255, 255],
+                            fontStyle: 'bold',
+                            fontSize: 8
+                        },
+                        styles: {
+                            fontSize: 7,
+                            cellPadding: 2,
+                            overflow: 'linebreak'
+                        },
+                        columnStyles: {
+                            0: { cellWidth: 20 },
+                            1: { cellWidth: 35 },
+                            2: { cellWidth: 18 },
+                            3: { cellWidth: 25 },
+                            4: { cellWidth: 82 }
+                        },
+                        margin: { left: 15, right: 15 }
+                    });
+
+                    yPos = doc.lastAutoTable.finalY + 8;
+                } else {
+                    doc.setTextColor(150, 150, 150);
+                    doc.setFontSize(8);
+                    doc.text('⚠ No hay actividades programadas para esta semana', 20, yPos);
+                    yPos += 10;
+                }
+
+                // Add separator line
+                if (index < programData.weeklySchedule.length - 1) {
+                    doc.setDrawColor(220, 220, 220);
+                    doc.line(15, yPos, 195, yPos);
+                    yPos += 5;
+                }
             });
 
-            doc.autoTable({
-                startY: yPos,
-                head: [['Sem', 'Fase', 'Actividad', 'Objetivo', 'Intensidad']],
-                body: tableData,
-                theme: 'striped',
-                headStyles: {
-                    fillColor: [102, 126, 234],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10
-                },
-                styles: { fontSize: 8, cellPadding: 3 },
-                columnStyles: {
-                    0: { cellWidth: 15 },
-                    1: { cellWidth: 35 },
-                    2: { cellWidth: 45 },
-                    3: { cellWidth: 60 },
-                    4: { cellWidth: 25 }
-                },
-                margin: { left: 15, right: 15 }
-            });
+            // Footer on last page
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`Página ${i} de ${totalPages}`, 105, 287, { align: 'center' });
+                doc.text('IBERO ACTÍVATE - Programa de Bienestar Integral', 105, 292, { align: 'center' });
+            }
 
             // Save PDF
             doc.save('IBERO_ACTIVATE_Plan_Completo_19_Semanas.pdf');
@@ -600,6 +699,17 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-download"></i> <span>Descargar Plan Completo 19 Semanas (PDF)</span>';
         }
+    }
+
+    // Helper function to convert hex to RGB
+    function hexToRgb(hex) {
+        if (!hex) return [102, 126, 234];
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? [
+            parseInt(result[1], 16),
+            parseInt(result[2], 16),
+            parseInt(result[3], 16)
+        ] : [102, 126, 234];
     }
 
     function getWeekIdForWeekNumber(weekNumber) {
