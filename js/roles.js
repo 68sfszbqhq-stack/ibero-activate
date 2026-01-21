@@ -53,6 +53,23 @@ function applyRoleRestrictions() {
 
     // Si es viewer, ocultar/deshabilitar elementos de edición
     if (role === 'viewer') {
+        // Ocultar elementos del menú sidebar
+        const menuItemsToHide = [
+            'a[href="attendance.html"]',      // Pase de Lista
+            'a[href="attendance-late.html"]', // Pase Extemporáneo
+            'a[href="employees.html"]'        // Empleados
+        ];
+
+        menuItemsToHide.forEach(selector => {
+            const menuItem = document.querySelector(selector);
+            if (menuItem) {
+                const listItem = menuItem.closest('.nav-item');
+                if (listItem) {
+                    listItem.style.display = 'none';
+                }
+            }
+        });
+
         // Ocultar botones de crear
         document.querySelectorAll('[data-action="create"], .btn-create, #btn-new-activity, #btn-import-catalog').forEach(btn => {
             if (btn) {
