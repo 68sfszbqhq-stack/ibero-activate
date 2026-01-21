@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Macrociclo | IBERO ACTÍVATE</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/health-module.css">
+    <link rel="stylesheet" href="../css/macrocycle.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Firebase (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <meta name="description" content="Sigue tu progreso en el macrociclo de 19 semanas hacia los 7,000 pasos">
+</head>
+
+<body class="macrocycle-page">
+
+    <!-- Header -->
+    <header class="macrocycle-header">
+        <div class="header-content">
+            <button class="back-btn" onclick="window.location.href='dashboard.html'">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div class="header-title">
+                <h1>🏆 Ruta a los 7K</h1>
+                <p>Macrociclo de 19 Semanas</p>
+            </div>
+            <button class="info-btn" id="info-btn" title="Información del programa">
+                <i class="fas fa-info-circle"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="macrocycle-container">
+
+        <!-- Current Phase Card -->
+        <div class="current-phase-card">
+            <div class="phase-badge" id="phase-badge">
+                <span class="phase-icon" id="phase-icon">🌱</span>
+                <span class="phase-number">Fase <span id="phase-num">1</span>/4</span>
+            </div>
+
+            <div class="phase-info">
+                <h2 id="phase-name">Adaptación Anatómica</h2>
+                <p id="phase-description">Preparar articulaciones y sistema cardiovascular</p>
+            </div>
+
+            <div class="phase-progress">
+                <div class="progress-header">
+                    <span>Semana <span id="current-week">1</span> de <span id="total-weeks">5</span></span>
+                    <span id="progress-percent">20%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="phase-progress-bar"></div>
+                </div>
+            </div>
+
+            <div class="phase-stats">
+                <div class="phase-stat">
+                    <div class="stat-icon steps">
+                        <i class="fas fa-shoe-prints"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Meta Diaria</span>
+                        <span class="stat-value" id="daily-goal">3,000</span>
+                        <span class="stat-unit">pasos</span>
+                    </div>
+                </div>
+
+                <div class="phase-stat">
+                    <div class="stat-icon habit">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Hábito Prioritario</span>
+                        <span class="stat-value-text" id="habit-priority">Hidratación</span>
+                    </div>
+                </div>
+
+                <div class="phase-stat">
+                    <div class="stat-icon days">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Días en Fase</span>
+                        <span class="stat-value" id="days-in-phase">0</span>
+                        <span class="stat-unit">días</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Chart -->
+        <div class="chart-card">
+            <div class="card-header">
+                <h3><i class="fas fa-chart-line"></i> Evolución de Pasos (Últimos 30 Días)</h3>
+                <div class="chart-legend">
+                    <span class="legend-item">
+                        <span class="legend-dot actual"></span>
+                        Pasos Reales
+                    </span>
+                    <span class="legend-item">
+                        <span class="legend-dot goal"></span>
+                        Meta de Fase
+                    </span>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="steps-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="timeline-card">
+            <h3><i class="fas fa-route"></i> Timeline del Macrociclo</h3>
+
+            <div class="timeline">
+                <!-- Fase 1 -->
+                <div class="timeline-phase" data-phase="1">
+                    <div class="phase-marker">
+                        <div class="marker-icon">🌱</div>
+                        <div class="marker-line"></div>
+                    </div>
+                    <div class="phase-content">
+                        <div class="phase-header">
+                            <h4>Fase 1: Adaptación Anatómica</h4>
+                            <span class="phase-weeks">Semanas 1-5</span>
+                        </div>
+                        <div class="phase-details">
+                            <div class="detail-item">
+                                <i class="fas fa-bullseye"></i>
+                                <span>Meta: 3,000 pasos/día</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-droplet"></i>
+                                <span>Hidratación (8 vasos)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fase 2 -->
+                <div class="timeline-phase" data-phase="2">
+                    <div class="phase-marker">
+                        <div class="marker-icon">💪</div>
+                        <div class="marker-line"></div>
+                    </div>
+                    <div class="phase-content">
+                        <div class="phase-header">
+                            <h4>Fase 2: Base de Resistencia</h4>
+                            <span class="phase-weeks">Semanas 6-10</span>
+                        </div>
+                        <div class="phase-details">
+                            <div class="detail-item">
+                                <i class="fas fa-bullseye"></i>
+                                <span>Meta: 4,500 pasos/día</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-clock"></i>
+                                <span>Caminata continua >15 min</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fase 3 -->
+                <div class="timeline-phase" data-phase="3">
+                    <div class="phase-marker">
+                        <div class="marker-icon">🔥</div>
+                        <div class="marker-line"></div>
+                    </div>
+                    <div class="phase-content">
+                        <div class="phase-header">
+                            <h4>Fase 3: Intensificación</h4>
+                            <span class="phase-weeks">Semanas 11-15</span>
+                        </div>
+                        <div class="phase-details">
+                            <div class="detail-item">
+                                <i class="fas fa-bullseye"></i>
+                                <span>Meta: 6,000 pasos/día</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-apple-whole"></i>
+                                <span>Nutrición Balanceada</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fase 4 -->
+                <div class="timeline-phase" data-phase="4">
+                    <div class="phase-marker">
+                        <div class="marker-icon">🏆</div>
+                        <div class="marker-line last"></div>
+                    </div>
+                    <div class="phase-content">
+                        <div class="phase-header">
+                            <h4>Fase 4: Consolidación</h4>
+                            <span class="phase-weeks">Semanas 16-19</span>
+                        </div>
+                        <div class="phase-details">
+                            <div class="detail-item">
+                                <i class="fas fa-bullseye"></i>
+                                <span>Meta: 7,000 pasos/día</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-trophy"></i>
+                                <span>Meta Final 7K Club</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations Card -->
+        <div class="recommendations-card">
+            <h3><i class="fas fa-lightbulb"></i> Recomendaciones para tu Fase Actual</h3>
+
+            <div class="recommendations-grid" id="recommendations-grid">
+                <!-- Recomendaciones generadas dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Next Phase Preview -->
+        <div class="next-phase-card" id="next-phase-card" style="display: none;">
+            <div class="next-phase-header">
+                <i class="fas fa-arrow-right"></i>
+                <h3>Próxima Fase</h3>
+            </div>
+            <div class="next-phase-content">
+                <div class="next-phase-icon" id="next-phase-icon">💪</div>
+                <div class="next-phase-info">
+                    <h4 id="next-phase-name">Base de Resistencia</h4>
+                    <p id="next-phase-desc">Desarrollar capacidad aeróbica</p>
+                    <div class="next-phase-stats">
+                        <span><i class="fas fa-shoe-prints"></i> <strong id="next-phase-goal">4,500</strong>
+                            pasos/día</span>
+                        <span><i class="fas fa-calendar"></i> Comienza en <strong id="days-to-next">28</strong>
+                            días</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Info Modal -->
+    <div class="info-modal" id="info-modal">
+        <div class="modal-overlay" onclick="closeInfoModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📚 Sobre el Macrociclo "Ruta a los 7K"</h2>
+                <button class="close-modal-btn" onclick="closeInfoModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="info-section">
+                    <h3>🎯 ¿Qué es un Macrociclo?</h3>
+                    <p>Un macrociclo es un programa de entrenamiento estructurado en fases progresivas. Nuestro programa
+                        de 19 semanas te guía desde la adaptación inicial hasta alcanzar la meta científicamente
+                        validada de 7,000 pasos diarios.</p>
+                </div>
+
+                <div class="info-section">
+                    <h3>🔬 Evidencia Científica</h3>
+                    <p>Estudios recientes demuestran que <strong>7,000 pasos diarios</strong> reducen el riesgo de
+                        mortalidad en un 50-70%. Además, caminatas continuas de <strong>15+ minutos</strong> ofrecen
+                        beneficios cardiovasculares adicionales.</p>
+                </div>
+
+                <div class="info-section">
+                    <h3>📊 Las 4 Fases</h3>
+                    <ul>
+                        <li><strong>Fase 1 (Semanas 1-5):</strong> Adaptación Anatómica - 3,000 pasos</li>
+                        <li><strong>Fase 2 (Semanas 6-10):</strong> Base de Resistencia - 4,500 pasos</li>
+                        <li><strong>Fase 3 (Semanas 11-15):</strong> Intensificación - 6,000 pasos</li>
+                        <li><strong>Fase 4 (Semanas 16-19):</strong> Consolidación - 7,000 pasos</li>
+                    </ul>
+                </div>
+
+                <div class="info-section">
+                    <h3>💡 Consejos para el Éxito</h3>
+                    <ul>
+                        <li>Sé constante: la clave está en la regularidad, no en la perfección</li>
+                        <li>Escucha a tu cuerpo: descansa si sientes dolor</li>
+                        <li>Celebra los pequeños logros: cada paso cuenta</li>
+                        <li>Mantén tus hábitos prioritarios de cada fase</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/health-profile.js"></script>
+    <script src="../js/daily-habits.js"></script>
+    <script src="../js/macrocycle-dashboard-ui.js"></script>
+</body>
+
+</html>
