@@ -18,26 +18,43 @@ document.addEventListener('DOMContentLoaded', () => {
         // Mostrar loading state
         showLoadingState();
 
+        // Timeout de seguridad: si no carga en 10 segundos, mostrar error
+        const timeoutId = setTimeout(() => {
+            console.error('⏱️ Timeout: La carga tomó más de 10 segundos');
+            showErrorMessage('La carga está tomando más tiempo del esperado. Por favor, recarga la página.');
+        }, 10000);
+
         try {
+            console.log('📊 [Program Overview] Iniciando carga de datos...');
+
             programData = await ProgramUtils.loadProgramData();
+            console.log('📊 [Program Overview] Datos cargados:', programData ? 'SÍ' : 'NO');
 
             if (!programData) {
+                clearTimeout(timeoutId);
                 showNoProgramMessage();
                 return;
             }
 
             // Validar integridad de datos
+            console.log('📊 [Program Overview] Validando datos...');
             const validation = ProgramUtils.validateProgramData(programData);
+            console.log('📊 [Program Overview] Validación:', validation.valid ? 'OK' : 'FALLÓ');
+
             if (!validation.valid) {
+                clearTimeout(timeoutId);
                 console.error('Program data validation failed:', validation.errors);
                 showErrorMessage('Los datos del programa están incompletos o son inválidos.');
                 return;
             }
 
             // Calcular contexto actual
+            console.log('📊 [Program Overview] Calculando contexto...');
             programContext = ProgramUtils.calculateProgramWeek(programData);
+            console.log('📊 [Program Overview] Contexto:', programContext);
 
             if (!programContext) {
+                clearTimeout(timeoutId);
                 showErrorMessage('No se pudo calcular el contexto del programa.');
                 return;
             }
@@ -45,13 +62,22 @@ document.addEventListener('DOMContentLoaded', () => {
             currentWeekNumber = programContext.weekNumber;
             currentPhase = programContext.phase;
 
+            console.log('📊 [Program Overview] Renderizando UI...');
+            console.log('  - Semana actual:', currentWeekNumber);
+            console.log('  - Fase actual:', currentPhase?.name);
+
             renderHeroSection();
             renderPhaseTimeline();
             renderWeeksGrid();
 
+            clearTimeout(timeoutId);
+            console.log('✅ [Program Overview] Carga completada exitosamente');
+
         } catch (error) {
-            console.error('Error loading program data:', error);
-            showErrorMessage();
+            clearTimeout(timeoutId);
+            console.error('❌ [Program Overview] Error loading program data:', error);
+            console.error('Stack trace:', error.stack);
+            showErrorMessage('Error al cargar el programa: ' + error.message);
         }
     }
 
