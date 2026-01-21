@@ -15,8 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let programContext = null;
 
     async function loadProgramData() {
-        // Mostrar loading state
-        showLoadingState();
+        // NO mostrar loading state - dejar el hero como está
+        // showLoadingState();
 
         // Timeout de seguridad: si no carga en 10 segundos, mostrar error
         const timeoutId = setTimeout(() => {
