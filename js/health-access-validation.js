@@ -1,53 +1,24 @@
 /**
- * MÓDULO DE VALIDACIÓN SIMPLE PARA PÁGINAS DE SALUD
- * 
- * Este módulo solo verifica autenticación de Firebase
- * NO redirige a feedback - permite acceso libre a módulos de salud
+ * VALIDACIÓN MÍNIMA - SOLO MUESTRA NOMBRE
+ * NO REDIRIGE - ACCESO LIBRE
  */
 
-(async function validateHealthAccess() {
+(function simpleHealthAccess() {
     // Esperar a que Firebase esté listo
-    auth.onAuthStateChanged(async (user) => {
-        if (!user) {
-            // No hay usuario autenticado - redirigir a login
-            console.warn('⚠️ Usuario no autenticado');
-            window.location.href = '../index.html';
-            return;
-        }
-
-        try {
-            // Obtener datos del usuario desde Firestore
-            const userDoc = await db.collection('users').doc(user.uid).get();
-
-            if (!userDoc.exists) {
-                console.warn('⚠️ Usuario no encontrado en Firestore');
-                window.location.href = '../index.html';
-                return;
+    if (typeof auth !== 'undefined') {
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                try {
+                    // Intentar obtener nombre del usuario
+                    const userDoc = await db.collection('users').doc(user.uid).get();
+                    const userName = userDoc.exists ? userDoc.data().name : user.email;
+                    console.log('✅ Acceso permitido para:', userName);
+                } catch (error) {
+                    console.log('✅ Acceso permitido para:', user.email);
+                }
+            } else {
+                console.log('ℹ️ Usuario no autenticado - acceso libre');
             }
-
-            const userData = userDoc.data();
-
-            // Verificar que sea un empleado (no admin)
-            if (userData.role && userData.role !== 'employee') {
-                console.log('ℹ️ Usuario con rol:', userData.role);
-            }
-
-            // Acceso permitido - mostrar nombre
-            console.log('✅ Acceso permitido para:', userData.name || user.email);
-
-            // Guardar en localStorage para uso posterior
-            if (!localStorage.getItem('currentEmployee')) {
-                localStorage.setItem('currentEmployee', JSON.stringify({
-                    id: user.uid,
-                    name: userData.name || user.email,
-                    email: userData.email || user.email,
-                    area: userData.area || 'Sin área'
-                }));
-            }
-
-        } catch (error) {
-            console.error('❌ Error verificando acceso:', error);
-            // No redirigir en caso de error - permitir acceso
-        }
-    });
+        });
+    }
 })();
