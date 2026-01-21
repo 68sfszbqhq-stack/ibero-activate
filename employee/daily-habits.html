@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Hábitos Diarios | IBERO ACTÍVATE</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/health-module.css">
+    <link rel="stylesheet" href="../css/daily-habits.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Firebase (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <meta name="description" content="Registra tus hábitos diarios de salud: hidratación, nutrición y actividad física">
+</head>
+
+<body class="habits-page">
+
+    <!-- Header -->
+    <header class="habits-header">
+        <div class="header-content">
+            <button class="back-btn" onclick="window.location.href='dashboard.html'">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div class="header-title">
+                <h1>💪 Mis Hábitos Diarios</h1>
+                <p id="current-date">Cargando...</p>
+            </div>
+            <button class="sync-btn" id="sync-walking-btn" title="Sincronizar con Walking Tracker">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="habits-container">
+
+        <!-- Wellness Score Card -->
+        <div class="wellness-score-card">
+            <div class="score-header">
+                <div>
+                    <h2>Wellness Score de Hoy</h2>
+                    <p class="score-subtitle">Puntuación basada en tus hábitos</p>
+                </div>
+                <div class="score-circle" id="score-circle">
+                    <svg width="120" height="120">
+                        <circle cx="60" cy="60" r="54" fill="none" stroke="#e5e7eb" stroke-width="8" />
+                        <circle id="score-progress" cx="60" cy="60" r="54" fill="none" stroke="#10b981" stroke-width="8"
+                            stroke-dasharray="339.292" stroke-dashoffset="339.292" transform="rotate(-90 60 60)"
+                            stroke-linecap="round" />
+                    </svg>
+                    <div class="score-value">
+                        <span id="score-number">0</span>
+                        <small>/100</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="score-breakdown">
+                <div class="breakdown-item">
+                    <div class="breakdown-icon hydration">
+                        <i class="fas fa-droplet"></i>
+                    </div>
+                    <div class="breakdown-info">
+                        <span class="breakdown-label">Hidratación</span>
+                        <span class="breakdown-value" id="hydration-score">0/30</span>
+                    </div>
+                </div>
+
+                <div class="breakdown-item">
+                    <div class="breakdown-icon nutrition">
+                        <i class="fas fa-apple-whole"></i>
+                    </div>
+                    <div class="breakdown-info">
+                        <span class="breakdown-label">Nutrición</span>
+                        <span class="breakdown-value" id="nutrition-score">0/30</span>
+                    </div>
+                </div>
+
+                <div class="breakdown-item">
+                    <div class="breakdown-icon activity">
+                        <i class="fas fa-person-walking"></i>
+                    </div>
+                    <div class="breakdown-info">
+                        <span class="breakdown-label">Actividad</span>
+                        <span class="breakdown-value" id="activity-score">0/30</span>
+                    </div>
+                </div>
+
+                <div class="breakdown-item">
+                    <div class="breakdown-icon continuous">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="breakdown-info">
+                        <span class="breakdown-label">Continuo</span>
+                        <span class="breakdown-value" id="continuous-score">0/10</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hydration Tracker -->
+        <div class="habit-card">
+            <div class="card-header">
+                <div class="card-icon hydration">
+                    <i class="fas fa-droplet"></i>
+                </div>
+                <div>
+                    <h3>💧 Hidratación</h3>
+                    <p>Meta: 8 vasos de agua al día</p>
+                </div>
+            </div>
+
+            <div class="water-tracker">
+                <div class="glasses-container" id="glasses-container">
+                    <!-- Vasos generados dinámicamente -->
+                </div>
+
+                <div class="hydration-stats">
+                    <div class="stat">
+                        <span class="stat-value" id="glasses-count">0</span>
+                        <span class="stat-label">Vasos</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="water-ml">0</span>
+                        <span class="stat-label">ml</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="hydration-percent">0%</span>
+                        <span class="stat-label">Meta</span>
+                    </div>
+                </div>
+
+                <div class="hydration-message" id="hydration-message">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Haz clic en los vasos para registrar tu consumo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nutrition Tracker -->
+        <div class="habit-card">
+            <div class="card-header">
+                <div class="card-icon nutrition">
+                    <i class="fas fa-apple-whole"></i>
+                </div>
+                <div>
+                    <h3>🍎 Nutrición</h3>
+                    <p>¿Cómo fue tu alimentación hoy?</p>
+                </div>
+            </div>
+
+            <div class="nutrition-selector">
+                <button class="nutrition-option" data-quality="nutritivo">
+                    <div class="option-emoji">🍎</div>
+                    <div class="option-label">Nutritivo</div>
+                    <div class="option-description">Frutas, verduras, proteína</div>
+                    <div class="option-points">30 puntos</div>
+                </button>
+
+                <button class="nutrition-option" data-quality="balanceado">
+                    <div class="option-emoji">🥗</div>
+                    <div class="option-label">Balanceado</div>
+                    <div class="option-description">Comida equilibrada</div>
+                    <div class="option-points">25 puntos</div>
+                </button>
+
+                <button class="nutrition-option" data-quality="antojo">
+                    <div class="option-emoji">🍔</div>
+                    <div class="option-label">Antojo</div>
+                    <div class="option-description">Comida rápida o dulces</div>
+                    <div class="option-points">10 puntos</div>
+                </button>
+            </div>
+
+            <div class="nutrition-notes" style="display: none;" id="nutrition-notes-container">
+                <label for="nutrition-notes">Notas adicionales (opcional)</label>
+                <textarea id="nutrition-notes" placeholder="Ej: Ensalada de pollo, arroz integral..."
+                    rows="2"></textarea>
+            </div>
+        </div>
+
+        <!-- Physical Activity Tracker -->
+        <div class="habit-card">
+            <div class="card-header">
+                <div class="card-icon activity">
+                    <i class="fas fa-person-walking"></i>
+                </div>
+                <div>
+                    <h3>🏃 Actividad Física</h3>
+                    <p>Pasos y caminata del día</p>
+                </div>
+            </div>
+
+            <div class="activity-tracker">
+                <div class="activity-stats">
+                    <div class="activity-stat-card">
+                        <i class="fas fa-shoe-prints"></i>
+                        <div>
+                            <span class="stat-value" id="steps-count">0</span>
+                            <span class="stat-label">Pasos</span>
+                        </div>
+                    </div>
+
+                    <div class="activity-stat-card">
+                        <i class="fas fa-bullseye"></i>
+                        <div>
+                            <span class="stat-value" id="step-goal">7,000</span>
+                            <span class="stat-label">Meta</span>
+                        </div>
+                    </div>
+
+                    <div class="activity-stat-card">
+                        <i class="fas fa-clock"></i>
+                        <div>
+                            <span class="stat-value" id="duration-mins">0</span>
+                            <span class="stat-label">Minutos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="continuous-walk-toggle">
+                    <label class="toggle-container">
+                        <input type="checkbox" id="continuous-walk-checkbox">
+                        <span class="toggle-slider"></span>
+                        <div class="toggle-label">
+                            <i class="fas fa-heart-pulse"></i>
+                            <div>
+                                <strong>Caminata Continua (15+ min)</strong>
+                                <small>Beneficio cardiovascular adicional</small>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="sync-info" id="sync-info">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Sincronizado con Walking Tracker</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Health Insights -->
+        <div class="insights-card" id="insights-card">
+            <div class="card-header">
+                <div class="card-icon insights">
+                    <i class="fas fa-lightbulb"></i>
+                </div>
+                <div>
+                    <h3>💡 Recomendaciones Personalizadas</h3>
+                    <p>Basadas en tu perfil y hábitos</p>
+                </div>
+            </div>
+
+            <div class="insights-container" id="insights-container">
+                <!-- Insights generados dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="save-section">
+            <button class="btn-save" id="save-habits-btn">
+                <i class="fas fa-check"></i>
+                Guardar Hábitos del Día
+            </button>
+            <p class="save-hint">Los cambios se guardan automáticamente</p>
+        </div>
+
+    </main>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Guardando tus hábitos...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/health-profile.js"></script>
+    <script src="../js/daily-habits.js"></script>
+    <script src="../js/health-insights.js"></script>
+    <script src="../js/daily-habits-ui.js"></script>
+</body>
+
+</html>
