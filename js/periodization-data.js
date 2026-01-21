@@ -1,4 +1,5 @@
 // IBERO ACTÍVATE - Datos del Sistema de Periodización Científica (19 Semanas)
+// Última actualización: 2026-01-21 15:50 - Nombres actualizados
 
 const PERIODIZATION_DATA = {
     programName: "IBERO ACTÍVATE - Macrociclo de Bienestar Integral",
