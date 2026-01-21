@@ -413,11 +413,11 @@ function getHealthInsight(currentSteps, goalSteps = WALKING_GOALS.DAILY_STEPS) {
     } else if (percentage >= 75) {
         return `💪 ¡Casi lo logras! Solo ${goalSteps - currentSteps} pasos más.`;
     } else if (percentage >= 50) {
-        return `🚶 Vas por buen camino. ${goalSteps - currentSteps} pasos para tu meta.';
+        return `🚶 Vas por buen camino. ${goalSteps - currentSteps} pasos para tu meta.`;
     } else if (percentage >= 25) {
-        return `⭐ Buen inicio.Cada paso cuenta para tu salud cardiovascular.`;
+        return `⭐ Buen inicio. Cada paso cuenta para tu salud cardiovascular.`;
     } else {
-        return `🌟 Comienza hoy. 7,000 pasos reducen tu mortalidad en un 50 - 70 %.`;
+        return `🌟 Comienza hoy. 7,000 pasos reducen tu mortalidad en un 50-70%.`;
     }
 }
 
@@ -428,21 +428,21 @@ async function loadWalkingDashboard() {
     try {
         const user = auth.currentUser;
         if (!user) return;
-        
+
         const userDoc = await db.collection('users').doc(user.uid).get();
         const userEmail = userDoc.data()?.email || user.email;
-        
+
         // Obtener estadísticas
         const stats = await getUserWalkingStats(userEmail, 30);
-        
+
         if (!stats) {
             console.error('No se pudieron cargar las estadísticas');
             return;
         }
-        
+
         // Actualizar UI
         updateWalkingDashboardUI(stats);
-        
+
     } catch (error) {
         console.error('❌ Error al cargar dashboard:', error);
     }
@@ -455,29 +455,29 @@ function updateWalkingDashboardUI(stats) {
     // Pasos de hoy
     const today = new Date().toISOString().split('T')[0];
     const todayStats = stats.daily_stats[today] || { steps: 0 };
-    
+
     // Actualizar contador de pasos
     const stepsElement = document.getElementById('current-steps');
     if (stepsElement) {
         stepsElement.textContent = todayStats.steps.toLocaleString();
     }
-    
+
     // Actualizar progreso circular
     const progressPercentage = (todayStats.steps / WALKING_GOALS.DAILY_STEPS) * 100;
     const progressCircle = document.getElementById('steps-circle');
     if (progressCircle) {
-        progressCircle.style.setProperty('--progress', `${ Math.min(progressPercentage, 100) }% `);
+        progressCircle.style.setProperty('--progress', `${Math.min(progressPercentage, 100)}% `);
     }
-    
+
     // Actualizar mensaje motivacional
     const healthTip = document.getElementById('health-tip');
     if (healthTip) {
         healthTip.textContent = getHealthInsight(todayStats.steps);
     }
-    
+
     // Actualizar resumen semanal/mensual
     updateSummaryStats(stats.summary);
-    
+
     // Actualizar badges
     updateBadges(stats.badges);
 }
@@ -490,7 +490,7 @@ function updateSummaryStats(summary) {
         'continuous-sessions': summary.continuous_sessions,
         'total-steps': summary.total_steps.toLocaleString()
     };
-    
+
     Object.entries(elements).forEach(([id, value]) => {
         const element = document.getElementById(id);
         if (element) {
@@ -503,7 +503,7 @@ function updateSummaryStats(summary) {
 function updateBadges(badges) {
     const badgesContainer = document.getElementById('wellness-badges');
     if (!badgesContainer) return;
-    
+
     const badgeDefinitions = {
         '7k_club': {
             icon: '🏆',
@@ -521,11 +521,11 @@ function updateBadges(badges) {
             description: 'Primero en usar el sistema de bienestar'
         }
     };
-    
+
     badgesContainer.innerHTML = badges.map(badgeId => {
         const badge = badgeDefinitions[badgeId];
         if (!badge) return '';
-        
+
         return `
             < div class="badge-card" >
                 <div class="badge-icon">${badge.icon}</div>
@@ -551,7 +551,7 @@ function hideLoading() {
 
 function showToast(message, type = 'info') {
     // Implementar según tu sistema de UI
-    console.log(`Toast[${ type }]: `, message);
+    console.log(`Toast[${type}]: `, message);
 }
 
 // ========================================
