@@ -67,10 +67,11 @@ function applyRoleRestrictions() {
             }
         });
 
-        // Ocultar botones de eliminar
+        // Ocultar botones de eliminar (INCLUYENDO LOS DINÁMICOS)
         document.querySelectorAll('[data-action="delete"], .btn-delete, .delete-btn, .btn-delete-activity, .btn-delete-compact').forEach(btn => {
             if (btn) {
                 btn.style.display = 'none';
+                btn.remove(); // Eliminar completamente del DOM
             }
         });
 
@@ -105,7 +106,46 @@ function applyRoleRestrictions() {
 
         // Mostrar notificación
         showViewerNotification();
+
+        // Observar cambios en el DOM para aplicar restricciones a elementos dinámicos
+        observeDOMChanges(role);
     }
+}
+
+// Observar cambios en el DOM para contenido dinámico
+function observeDOMChanges(role) {
+    if (role !== 'viewer') return;
+
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === 1) { // Es un elemento
+                    // Ocultar botones de eliminar que se agreguen dinámicamente
+                    if (node.classList && (
+                        node.classList.contains('btn-delete-activity') ||
+                        node.classList.contains('btn-delete') ||
+                        node.classList.contains('delete-btn') ||
+                        node.classList.contains('btn-delete-compact')
+                    )) {
+                        node.remove();
+                    }
+
+                    // Buscar botones de eliminar dentro del nodo agregado
+                    if (node.querySelectorAll) {
+                        node.querySelectorAll('.btn-delete-activity, .btn-delete, .delete-btn, .btn-delete-compact').forEach(btn => {
+                            btn.remove();
+                        });
+                    }
+                }
+            });
+        });
+    });
+
+    // Observar todo el body
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
 }
 
 // Mostrar notificación de modo solo lectura
