@@ -238,14 +238,11 @@ document.addEventListener('DOMContentLoaded', () => {
             docs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
             docs.forEach(data => {
-                const dateObj = data.timestamp ? data.timestamp.toDate() : new Date();
-                const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 const areaName = areasMap[data.areaId] || '---';
 
                 const row = `
                     <tr style="border-bottom: 1px solid #f3f4f6;">
                         <td style="padding: 1rem;">${data.date}</td>
-                        <td style="padding: 1rem;">${timeStr}</td>
                         <td style="padding: 1rem; font-weight: 500;">${data.employeeName}</td>
                         <td style="padding: 1rem;">${areaName}</td>
                         <td style="padding: 1rem;">
