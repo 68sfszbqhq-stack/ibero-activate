@@ -29,7 +29,31 @@ async function loadMacrocycleData() {
         const profileResult = await window.healthProfile.getHealthProfile();
 
         if (!profileResult.exists) {
-            window.location.href = 'health-onboarding.html';
+            // NO redirigir - mostrar mensaje útil
+            console.error('❌ No se encontró perfil de salud');
+            console.log('📋 Resultado completo:', profileResult);
+            showToast('No se encontró tu perfil de salud. Verifica la consola para más detalles.', 'warning');
+
+            // Mostrar datos de prueba para que pueda ver el dashboard
+            phaseData = {
+                phase: 1,
+                phaseName: 'Adaptación Anatómica',
+                description: 'Preparar articulaciones y sistema cardiovascular',
+                currentWeek: 1,
+                totalWeeks: 5,
+                progress: 20,
+                stepGoal: 3000,
+                habitPriority: 'Hidratación',
+                startDate: new Date().toISOString(),
+                endDate: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString(),
+                color: 'linear-gradient(135deg, #10b981, #059669)',
+                icon: '🌱'
+            };
+
+            updateCurrentPhase();
+            updatePhaseStats();
+            updateNextPhase();
+            loadRecommendations();
             return;
         }
 
@@ -43,7 +67,7 @@ async function loadMacrocycleData() {
 
     } catch (error) {
         console.error('Error al cargar macrociclo:', error);
-        showToast('Error al cargar datos del macrociclo', 'error');
+        showToast('Error al cargar datos del macrociclo: ' + error.message, 'error');
     }
 }
 
