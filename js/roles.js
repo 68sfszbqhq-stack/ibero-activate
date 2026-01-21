@@ -225,10 +225,31 @@ function showViewerNotification() {
 document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => {
         if (user) {
-            // Esperar un poco para que el DOM se renderice completamente
+            // Aplicar inmediatamente
+            applyRoleRestrictions();
+
+            // Reaplicar después de 500ms (por si el sidebar se renderiza tarde)
             setTimeout(() => {
                 applyRoleRestrictions();
             }, 500);
+
+            // Reaplicar después de 1 segundo (para asegurar)
+            setTimeout(() => {
+                applyRoleRestrictions();
+            }, 1000);
+
+            // Observar cambios en el sidebar para reaplicar restricciones
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar) {
+                const observer = new MutationObserver(() => {
+                    applyRoleRestrictions();
+                });
+
+                observer.observe(sidebar, {
+                    childList: true,
+                    subtree: true
+                });
+            }
         }
     });
 });
