@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Salud | Admin IBERO ACTÍVATE</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/health-module.css">
+    <link rel="stylesheet" href="../css/admin-health.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Firebase (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <meta name="description" content="Panel administrativo de salud poblacional">
+</head>
+
+<body class="admin-health-page">
+
+    <!-- Header -->
+    <header class="admin-health-header">
+        <div class="header-content">
+            <button class="back-btn" onclick="window.location.href='dashboard.html'">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div class="header-title">
+                <h1>🏥 Dashboard de Salud Poblacional</h1>
+                <p>Vista general del bienestar organizacional</p>
+            </div>
+            <button class="export-btn" id="export-btn">
+                <i class="fas fa-file-pdf"></i>
+                Exportar Reporte
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="admin-health-container">
+
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="summary-card">
+                <div class="card-icon users">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="card-info">
+                    <span class="card-label">Total Colaboradores</span>
+                    <span class="card-value" id="total-users">0</span>
+                </div>
+            </div>
+
+            <div class="summary-card">
+                <div class="card-icon health">
+                    <i class="fas fa-heartbeat"></i>
+                </div>
+                <div class="card-info">
+                    <span class="card-label">Con Perfil de Salud</span>
+                    <span class="card-value" id="users-with-profile">0</span>
+                    <span class="card-percent" id="profile-percent">0%</span>
+                </div>
+            </div>
+
+            <div class="summary-card">
+                <div class="card-icon bmi">
+                    <i class="fas fa-weight-scale"></i>
+                </div>
+                <div class="card-info">
+                    <span class="card-label">IMC Promedio</span>
+                    <span class="card-value" id="avg-bmi">0</span>
+                    <span class="card-category" id="avg-bmi-category">--</span>
+                </div>
+            </div>
+
+            <div class="summary-card">
+                <div class="card-icon wellness">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="card-info">
+                    <span class="card-label">Wellness Score Promedio</span>
+                    <span class="card-value" id="avg-wellness">0</span>
+                    <span class="card-unit">/100</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- BMI Distribution -->
+        <div class="chart-card">
+            <div class="card-header">
+                <h3><i class="fas fa-chart-pie"></i> Distribución de IMC</h3>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="all">Todos</button>
+                    <button class="filter-btn" data-filter="area">Por Área</button>
+                </div>
+            </div>
+            <div class="chart-grid">
+                <div class="chart-container">
+                    <canvas id="bmi-distribution-chart"></canvas>
+                </div>
+                <div class="bmi-stats">
+                    <div class="bmi-stat-item">
+                        <div class="stat-color underweight"></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Bajo Peso</span>
+                            <span class="stat-value" id="bmi-underweight">0</span>
+                            <span class="stat-percent" id="bmi-underweight-percent">0%</span>
+                        </div>
+                    </div>
+                    <div class="bmi-stat-item">
+                        <div class="stat-color normal"></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Normal</span>
+                            <span class="stat-value" id="bmi-normal">0</span>
+                            <span class="stat-percent" id="bmi-normal-percent">0%</span>
+                        </div>
+                    </div>
+                    <div class="bmi-stat-item">
+                        <div class="stat-color overweight"></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Sobrepeso</span>
+                            <span class="stat-value" id="bmi-overweight">0</span>
+                            <span class="stat-percent" id="bmi-overweight-percent">0%</span>
+                        </div>
+                    </div>
+                    <div class="bmi-stat-item">
+                        <div class="stat-color obese"></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Obesidad</span>
+                            <span class="stat-value" id="bmi-obese">0</span>
+                            <span class="stat-percent" id="bmi-obese-percent">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Health Alerts -->
+        <div class="alerts-card">
+            <div class="card-header">
+                <h3><i class="fas fa-exclamation-triangle"></i> Alertas de Salud</h3>
+                <span class="alert-count" id="alert-count">0 alertas</span>
+            </div>
+            <div class="alerts-container" id="alerts-container">
+                <!-- Alertas generadas dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Macrocycle Progress -->
+        <div class="macrocycle-card">
+            <div class="card-header">
+                <h3><i class="fas fa-route"></i> Progreso del Macrociclo</h3>
+            </div>
+            <div class="macrocycle-grid">
+                <div class="phase-progress-item">
+                    <div class="phase-icon phase-1">🌱</div>
+                    <div class="phase-info">
+                        <span class="phase-name">Fase 1: Adaptación</span>
+                        <div class="phase-bar">
+                            <div class="phase-bar-fill" id="phase-1-fill"></div>
+                        </div>
+                        <span class="phase-count" id="phase-1-count">0 usuarios</span>
+                    </div>
+                </div>
+
+                <div class="phase-progress-item">
+                    <div class="phase-icon phase-2">💪</div>
+                    <div class="phase-info">
+                        <span class="phase-name">Fase 2: Resistencia</span>
+                        <div class="phase-bar">
+                            <div class="phase-bar-fill" id="phase-2-fill"></div>
+                        </div>
+                        <span class="phase-count" id="phase-2-count">0 usuarios</span>
+                    </div>
+                </div>
+
+                <div class="phase-progress-item">
+                    <div class="phase-icon phase-3">🔥</div>
+                    <div class="phase-info">
+                        <span class="phase-name">Fase 3: Intensificación</span>
+                        <div class="phase-bar">
+                            <div class="phase-bar-fill" id="phase-3-fill"></div>
+                        </div>
+                        <span class="phase-count" id="phase-3-count">0 usuarios</span>
+                    </div>
+                </div>
+
+                <div class="phase-progress-item">
+                    <div class="phase-icon phase-4">🏆</div>
+                    <div class="phase-info">
+                        <span class="phase-name">Fase 4: Consolidación</span>
+                        <div class="phase-bar">
+                            <div class="phase-bar-fill" id="phase-4-fill"></div>
+                        </div>
+                        <span class="phase-count" id="phase-4-count">0 usuarios</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Medical Conditions -->
+        <div class="conditions-card">
+            <div class="card-header">
+                <h3><i class="fas fa-notes-medical"></i> Condiciones Médicas Prevalentes</h3>
+            </div>
+            <div class="conditions-grid">
+                <div class="condition-item">
+                    <div class="condition-icon diabetes">
+                        <i class="fas fa-syringe"></i>
+                    </div>
+                    <div class="condition-info">
+                        <span class="condition-name">Diabetes</span>
+                        <span class="condition-count" id="diabetes-count">0</span>
+                        <span class="condition-percent" id="diabetes-percent">0%</span>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <div class="condition-icon hypertension">
+                        <i class="fas fa-heart-pulse"></i>
+                    </div>
+                    <div class="condition-info">
+                        <span class="condition-name">Hipertensión</span>
+                        <span class="condition-count" id="hypertension-count">0</span>
+                        <span class="condition-percent" id="hypertension-percent">0%</span>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <div class="condition-icon asthma">
+                        <i class="fas fa-lungs"></i>
+                    </div>
+                    <div class="condition-info">
+                        <span class="condition-name">Asma</span>
+                        <span class="condition-count" id="asthma-count">0</span>
+                        <span class="condition-percent" id="asthma-percent">0%</span>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <div class="condition-icon back-injury">
+                        <i class="fas fa-person-walking-with-cane"></i>
+                    </div>
+                    <div class="condition-info">
+                        <span class="condition-name">Lesión de Espalda</span>
+                        <span class="condition-count" id="back-injury-count">0</span>
+                        <span class="condition-percent" id="back-injury-percent">0%</span>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <div class="condition-icon heart-disease">
+                        <i class="fas fa-heart-crack"></i>
+                    </div>
+                    <div class="condition-info">
+                        <span class="condition-name">Enfermedad Cardíaca</span>
+                        <span class="condition-count" id="heart-disease-count">0</span>
+                        <span class="condition-percent" id="heart-disease-percent">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cardiovascular Risk -->
+        <div class="risk-card">
+            <div class="card-header">
+                <h3><i class="fas fa-heart"></i> Riesgo Cardiovascular</h3>
+            </div>
+            <div class="risk-grid">
+                <div class="risk-item low">
+                    <div class="risk-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="risk-info">
+                        <span class="risk-label">Bajo</span>
+                        <span class="risk-count" id="risk-low-count">0</span>
+                        <span class="risk-percent" id="risk-low-percent">0%</span>
+                    </div>
+                </div>
+
+                <div class="risk-item medium">
+                    <div class="risk-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="risk-info">
+                        <span class="risk-label">Medio</span>
+                        <span class="risk-count" id="risk-medium-count">0</span>
+                        <span class="risk-percent" id="risk-medium-percent">0%</span>
+                    </div>
+                </div>
+
+                <div class="risk-item high">
+                    <div class="risk-icon">
+                        <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="risk-info">
+                        <span class="risk-label">Alto</span>
+                        <span class="risk-count" id="risk-high-count">0</span>
+                        <span class="risk-percent" id="risk-high-percent">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <p>Cargando datos de salud...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/health-profile.js"></script>
+    <script src="../js/admin-health-dashboard.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,703 @@
+/* ========================================
+   ADMIN HEALTH DASHBOARD STYLES
+   ========================================
+   Estilos para el panel administrativo de salud
+   ======================================== */
+
+/* ===== PÁGINA ADMIN HEALTH ===== */
+.admin-health-page {
+    background: #f9fafb;
+    min-height: 100vh;
+}
+
+/* ===== HEADER ===== */
+.admin-health-header {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.admin-health-header .header-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.export-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.export-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+/* ===== MAIN CONTAINER ===== */
+.admin-health-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1.5rem;
+}
+
+/* ===== SUMMARY CARDS ===== */
+.summary-cards {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.2s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1);
+}
+
+.summary-card .card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.card-icon.users {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.card-icon.health {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.card-icon.bmi {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.card-icon.wellness {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.card-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.card-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.card-percent,
+.card-unit {
+    font-size: 0.875rem;
+    color: #9ca3af;
+}
+
+.card-category {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+/* ===== CHART CARD ===== */
+.chart-card {
+    grid-column: 1 / 9;
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.chart-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.chart-card h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filter-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+    border-color: #10b981;
+    color: #10b981;
+}
+
+.filter-btn.active {
+    background: #10b981;
+    border-color: #10b981;
+    color: white;
+}
+
+.chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2rem;
+    align-items: center;
+}
+
+.chart-container {
+    height: 300px;
+    position: relative;
+}
+
+.bmi-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.bmi-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stat-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.stat-color.underweight {
+    background: #3b82f6;
+}
+
+.stat-color.normal {
+    background: #10b981;
+}
+
+.stat-color.overweight {
+    background: #f59e0b;
+}
+
+.stat-color.obese {
+    background: #ef4444;
+}
+
+.bmi-stat-item .stat-info {
+    flex: 1;
+}
+
+.bmi-stat-item .stat-label {
+    display: block;
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.bmi-stat-item .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-right: 0.5rem;
+}
+
+.bmi-stat-item .stat-percent {
+    font-size: 0.875rem;
+    color: #9ca3af;
+}
+
+/* ===== ALERTS CARD ===== */
+.alerts-card {
+    grid-column: 9 / -1;
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    max-height: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.alerts-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.alerts-card h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.alert-count {
+    padding: 0.25rem 0.75rem;
+    background: #fef2f2;
+    color: #dc2626;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.alerts-container {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.alert-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    border-left: 4px solid;
+}
+
+.alert-item.alert-warning {
+    background: #fef3c7;
+    border-color: #f59e0b;
+}
+
+.alert-item.alert-danger {
+    background: #fef2f2;
+    border-color: #ef4444;
+}
+
+.alert-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.alert-warning .alert-icon {
+    background: #fbbf24;
+    color: white;
+}
+
+.alert-danger .alert-icon {
+    background: #ef4444;
+    color: white;
+}
+
+.alert-content {
+    flex: 1;
+}
+
+.alert-user {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.alert-message {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+}
+
+.alert-action {
+    font-size: 0.875rem;
+    color: #3b82f6;
+    font-weight: 500;
+}
+
+.no-alerts {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    color: #9ca3af;
+    text-align: center;
+}
+
+.no-alerts i {
+    font-size: 3rem;
+    color: #10b981;
+    margin-bottom: 1rem;
+}
+
+/* ===== MACROCYCLE CARD ===== */
+.macrocycle-card {
+    grid-column: 1 / 7;
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.macrocycle-card h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.macrocycle-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.phase-progress-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.phase-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.phase-icon.phase-1 {
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+}
+
+.phase-icon.phase-2 {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+}
+
+.phase-icon.phase-3 {
+    background: linear-gradient(135deg, #fed7aa, #fdba74);
+}
+
+.phase-icon.phase-4 {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+}
+
+.phase-info {
+    flex: 1;
+}
+
+.phase-name {
+    display: block;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.phase-bar {
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.phase-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    border-radius: 999px;
+    transition: width 0.6s ease;
+}
+
+.phase-count {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+/* ===== CONDITIONS CARD ===== */
+.conditions-card {
+    grid-column: 7 / -1;
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.conditions-card h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.conditions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.condition-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 12px;
+}
+
+.condition-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.condition-icon.diabetes {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.condition-icon.hypertension {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.condition-icon.asthma {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.condition-icon.back-injury {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.condition-icon.heart-disease {
+    background: linear-gradient(135deg, #ec4899, #db2777);
+}
+
+.condition-info {
+    flex: 1;
+}
+
+.condition-name {
+    display: block;
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.condition-count {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-right: 0.5rem;
+}
+
+.condition-percent {
+    font-size: 0.875rem;
+    color: #9ca3af;
+}
+
+/* ===== RISK CARD ===== */
+.risk-card {
+    grid-column: 1 / -1;
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.risk-card h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.risk-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.risk-item {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    border-radius: 16px;
+}
+
+.risk-item.low {
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+}
+
+.risk-item.medium {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+}
+
+.risk-item.high {
+    background: linear-gradient(135deg, #fef2f2, #fecaca);
+}
+
+.risk-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.risk-item.low .risk-icon {
+    background: #10b981;
+    color: white;
+}
+
+.risk-item.medium .risk-icon {
+    background: #f59e0b;
+    color: white;
+}
+
+.risk-item.high .risk-icon {
+    background: #ef4444;
+    color: white;
+}
+
+.risk-info {
+    flex: 1;
+}
+
+.risk-label {
+    display: block;
+    font-size: 1rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+}
+
+.risk-count {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-right: 0.5rem;
+}
+
+.risk-percent {
+    font-size: 1.125rem;
+    color: #9ca3af;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+    .summary-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .chart-card {
+        grid-column: 1 / -1;
+    }
+
+    .alerts-card {
+        grid-column: 1 / -1;
+    }
+
+    .macrocycle-card,
+    .conditions-card {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .summary-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .conditions-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .risk-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .export-btn span {
+        display: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .admin-health-container {
+        padding: 1rem;
+    }
+}
