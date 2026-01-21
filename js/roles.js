@@ -104,6 +104,13 @@
                 }
             });
 
+            // Ocultar botones de acción específicos de páginas
+            document.querySelectorAll('#generate-report-btn, #btn-no-attendance, #qr-btn').forEach(btn => {
+                if (btn) {
+                    btn.style.display = 'none';
+                }
+            });
+
             // Ocultar botones de editar
             document.querySelectorAll('[data-action="edit"], .btn-edit, .edit-btn').forEach(btn => {
                 if (btn) {
