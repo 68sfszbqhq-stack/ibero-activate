@@ -1,0 +1,798 @@
+/* ========================================
+   HEALTH MODULE STYLES - FASE 2
+   ========================================
+   Estilos para el módulo de salud biométrica
+   Incluye onboarding, perfil, hábitos y macrociclo
+   ======================================== */
+
+/* ===== VARIABLES ===== */
+:root {
+    --health-primary: #10b981;
+    --health-secondary: #059669;
+    --health-accent: #34d399;
+    --health-danger: #ef4444;
+    --health-warning: #f59e0b;
+    --health-info: #3b82f6;
+    --health-success: #10b981;
+
+    --bmi-underweight: #3b82f6;
+    --bmi-normal: #10b981;
+    --bmi-overweight: #f59e0b;
+    --bmi-obese: #ef4444;
+}
+
+/* ===== ONBOARDING MODAL ===== */
+.health-onboarding-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.health-onboarding-modal.active {
+    display: flex;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+}
+
+.onboarding-container {
+    position: relative;
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    max-width: 700px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 2.5rem;
+    animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== HEADER ===== */
+.onboarding-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.header-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--health-primary), var(--health-secondary));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2.5rem;
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.onboarding-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.onboarding-header p {
+    color: #6b7280;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+/* ===== PROGRESS BAR ===== */
+.progress-container {
+    margin-bottom: 2.5rem;
+}
+
+.progress-bar {
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--health-primary), var(--health-accent));
+    border-radius: 999px;
+    transition: width 0.4s ease;
+}
+
+.progress-text {
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* ===== FORM STEPS ===== */
+.form-step {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.form-step.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.form-step h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.step-description {
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+/* ===== FORM GROUPS ===== */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.form-group label i {
+    color: var(--health-primary);
+    margin-right: 0.5rem;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--health-primary);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.form-control.error {
+    border-color: var(--health-danger);
+}
+
+.form-hint {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--health-primary);
+    font-weight: 500;
+}
+
+.error-message {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    color: var(--health-danger);
+    font-size: 0.875rem;
+}
+
+.error-message i {
+    font-size: 1rem;
+}
+
+/* ===== FORM ROW ===== */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 640px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== RADIO GROUP ===== */
+.radio-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.radio-option {
+    flex: 1;
+    min-width: 140px;
+}
+
+.radio-option input[type="radio"] {
+    display: none;
+}
+
+.radio-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.radio-label i {
+    font-size: 1.5rem;
+    color: #9ca3af;
+    transition: color 0.2s ease;
+}
+
+.radio-option input[type="radio"]:checked+.radio-label {
+    border-color: var(--health-primary);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.radio-option input[type="radio"]:checked+.radio-label i {
+    color: var(--health-primary);
+}
+
+.radio-label:hover {
+    border-color: var(--health-accent);
+}
+
+/* ===== BMI CALCULATOR ===== */
+.bmi-calculator {
+    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+    border: 2px solid var(--health-accent);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.bmi-result {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.bmi-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--health-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    color: white;
+}
+
+.bmi-info h3 {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.bmi-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.bmi-category {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.bmi-bar {
+    position: relative;
+    height: 40px;
+    background: linear-gradient(to right,
+            var(--bmi-underweight) 0%,
+            var(--bmi-underweight) 20%,
+            var(--bmi-normal) 20%,
+            var(--bmi-normal) 50%,
+            var(--bmi-overweight) 50%,
+            var(--bmi-overweight) 75%,
+            var(--bmi-obese) 75%,
+            var(--bmi-obese) 100%);
+    border-radius: 999px;
+    margin-bottom: 0.5rem;
+}
+
+.bmi-indicator {
+    position: absolute;
+    top: -8px;
+    width: 4px;
+    height: 56px;
+    background: #1f2937;
+    border-radius: 2px;
+    transition: left 0.4s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+.bmi-indicator::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid #1f2937;
+}
+
+.bmi-ranges {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 0.5rem;
+}
+
+.bmi-ranges .range {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.ideal-weight {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 12px;
+    margin-top: 1rem;
+}
+
+.ideal-weight i {
+    color: var(--health-primary);
+    font-size: 1.25rem;
+}
+
+.ideal-weight span {
+    color: #6b7280;
+}
+
+.ideal-weight strong {
+    color: #1f2937;
+}
+
+/* ===== MEDICAL CONDITIONS ===== */
+.medical-conditions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.condition-checkbox {
+    display: block;
+    cursor: pointer;
+}
+
+.condition-checkbox input[type="checkbox"] {
+    display: none;
+}
+
+.condition-label {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.condition-label i {
+    font-size: 1.5rem;
+    color: #9ca3af;
+    transition: color 0.2s ease;
+}
+
+.condition-label strong {
+    display: block;
+    color: #1f2937;
+    font-size: 1rem;
+}
+
+.condition-label small {
+    display: block;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.condition-checkbox input[type="checkbox"]:checked+.condition-label {
+    border-color: var(--health-primary);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.condition-checkbox input[type="checkbox"]:checked+.condition-label i {
+    color: var(--health-primary);
+}
+
+.condition-label:hover {
+    border-color: var(--health-accent);
+}
+
+/* ===== SUMMARY CARD ===== */
+.summary-card {
+    background: #f9fafb;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.summary-card h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+}
+
+.summary-section {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.summary-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.summary-section h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+}
+
+.summary-item span {
+    color: #6b7280;
+}
+
+.summary-item strong {
+    color: #1f2937;
+}
+
+.bmi-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+}
+
+.condition-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    margin: 0.25rem;
+    font-size: 0.875rem;
+    color: #1f2937;
+}
+
+.condition-tag i {
+    color: var(--health-success);
+}
+
+.macrocycle-info {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    border-radius: 12px;
+    border: 2px solid var(--health-accent);
+}
+
+.info-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--health-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.macrocycle-info h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.macrocycle-info p {
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.macrocycle-info strong {
+    color: var(--health-primary);
+}
+
+.privacy-notice {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: #eff6ff;
+    border-radius: 12px;
+    border: 1px solid #bfdbfe;
+}
+
+.privacy-notice i {
+    color: var(--health-info);
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.privacy-notice p {
+    color: #1e40af;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ===== NAVIGATION BUTTONS ===== */
+.form-navigation {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-success {
+    flex: 1;
+    padding: 0.875rem 1.5rem;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: var(--health-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--health-secondary);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+}
+
+.btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.btn-secondary:hover {
+    background: #e5e7eb;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--health-primary), var(--health-secondary));
+    color: white;
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);
+}
+
+/* ===== LOADING OVERLAY ===== */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(255, 255, 255, 0.2);
+    border-top-color: var(--health-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-overlay p {
+    color: white;
+    margin-top: 1.5rem;
+    font-size: 1.125rem;
+}
+
+/* ===== TOAST NOTIFICATIONS ===== */
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 10001;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.toast i {
+    font-size: 1.25rem;
+}
+
+.toast-success {
+    border-left: 4px solid var(--health-success);
+}
+
+.toast-success i {
+    color: var(--health-success);
+}
+
+.toast-error {
+    border-left: 4px solid var(--health-danger);
+}
+
+.toast-error i {
+    color: var(--health-danger);
+}
+
+.toast-warning {
+    border-left: 4px solid var(--health-warning);
+}
+
+.toast-warning i {
+    color: var(--health-warning);
+}
+
+.toast-info {
+    border-left: 4px solid var(--health-info);
+}
+
+.toast-info i {
+    color: var(--health-info);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 640px) {
+    .onboarding-container {
+        padding: 1.5rem;
+        max-height: 95vh;
+    }
+
+    .onboarding-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .radio-group {
+        flex-direction: column;
+    }
+
+    .radio-option {
+        min-width: 100%;
+    }
+
+    .form-navigation {
+        flex-direction: column-reverse;
+    }
+
+    .toast {
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+    }
+}

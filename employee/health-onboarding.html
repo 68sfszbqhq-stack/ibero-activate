@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil de Salud | IBERO ACTÍVATE</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/health-module.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Firebase (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <meta name="description" content="Completa tu perfil de salud para recibir recomendaciones personalizadas">
+</head>
+
+<body>
+    <!-- Modal de Onboarding -->
+    <div class="health-onboarding-modal active" id="onboarding-modal">
+        <div class="modal-overlay"></div>
+
+        <div class="onboarding-container">
+            <!-- Header -->
+            <div class="onboarding-header">
+                <div class="header-icon">
+                    <i class="fas fa-heartbeat"></i>
+                </div>
+                <h1>Bienvenido a tu Perfil de Salud</h1>
+                <p>Completa tu información para recibir recomendaciones personalizadas basadas en evidencia científica
+                </p>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+                <p class="progress-text">Paso <span id="current-step">1</span> de 4</p>
+            </div>
+
+            <!-- Form Steps -->
+            <form id="health-onboarding-form">
+
+                <!-- Step 1: Datos Básicos -->
+                <div class="form-step active" data-step="1">
+                    <h2>📋 Datos Básicos</h2>
+
+                    <div class="form-group">
+                        <label for="gender">
+                            <i class="fas fa-venus-mars"></i>
+                            Género
+                        </label>
+                        <div class="radio-group">
+                            <label class="radio-option">
+                                <input type="radio" name="gender" value="M" required>
+                                <span class="radio-label">
+                                    <i class="fas fa-mars"></i>
+                                    Masculino
+                                </span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="gender" value="F" required>
+                                <span class="radio-label">
+                                    <i class="fas fa-venus"></i>
+                                    Femenino
+                                </span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="gender" value="O">
+                                <span class="radio-label">
+                                    <i class="fas fa-genderless"></i>
+                                    Otro
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="birth_date">
+                            <i class="fas fa-calendar"></i>
+                            Fecha de Nacimiento
+                        </label>
+                        <input type="date" id="birth_date" name="birth_date" class="form-control" max="2008-01-01"
+                            required>
+                        <small class="form-hint" id="age-display"></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="blood_type">
+                            <i class="fas fa-tint"></i>
+                            Tipo de Sangre (Opcional)
+                        </label>
+                        <select id="blood_type" name="blood_type" class="form-control">
+                            <option value="">Selecciona...</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Step 2: Datos Biométricos -->
+                <div class="form-step" data-step="2">
+                    <h2>📏 Datos Biométricos</h2>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="height_cm">
+                                <i class="fas fa-ruler-vertical"></i>
+                                Altura (cm)
+                            </label>
+                            <input type="number" id="height_cm" name="height_cm" class="form-control"
+                                placeholder="Ej: 175" min="100" max="250" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="weight_initial">
+                                <i class="fas fa-weight"></i>
+                                Peso (kg)
+                            </label>
+                            <input type="number" id="weight_initial" name="weight_initial" class="form-control"
+                                placeholder="Ej: 70" min="30" max="300" step="0.1" required>
+                        </div>
+                    </div>
+
+                    <!-- Calculadora de IMC en Vivo -->
+                    <div class="bmi-calculator" id="bmi-calculator" style="display: none;">
+                        <div class="bmi-result">
+                            <div class="bmi-icon">
+                                <i class="fas fa-heartbeat"></i>
+                            </div>
+                            <div class="bmi-info">
+                                <h3>Tu IMC</h3>
+                                <div class="bmi-value" id="bmi-value">--</div>
+                                <div class="bmi-category" id="bmi-category">--</div>
+                            </div>
+                        </div>
+
+                        <div class="bmi-bar">
+                            <div class="bmi-indicator" id="bmi-indicator"></div>
+                            <div class="bmi-ranges">
+                                <span class="range underweight">Bajo</span>
+                                <span class="range normal">Normal</span>
+                                <span class="range overweight">Sobrepeso</span>
+                                <span class="range obese">Obesidad</span>
+                            </div>
+                        </div>
+
+                        <div class="ideal-weight" id="ideal-weight">
+                            <i class="fas fa-bullseye"></i>
+                            <span>Peso ideal: <strong id="ideal-range">--</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Condiciones Médicas -->
+                <div class="form-step" data-step="3">
+                    <h2>🏥 Condiciones Médicas</h2>
+                    <p class="step-description">Selecciona las condiciones que apliquen. Esta información nos ayuda a
+                        personalizar tus recomendaciones.</p>
+
+                    <div class="medical-conditions">
+                        <label class="condition-checkbox">
+                            <input type="checkbox" name="diabetes" id="diabetes">
+                            <span class="condition-label">
+                                <i class="fas fa-syringe"></i>
+                                <div>
+                                    <strong>Diabetes</strong>
+                                    <small>Tipo 1 o Tipo 2</small>
+                                </div>
+                            </span>
+                        </label>
+
+                        <label class="condition-checkbox">
+                            <input type="checkbox" name="hypertension" id="hypertension">
+                            <span class="condition-label">
+                                <i class="fas fa-heart-pulse"></i>
+                                <div>
+                                    <strong>Hipertensión</strong>
+                                    <small>Presión arterial alta</small>
+                                </div>
+                            </span>
+                        </label>
+
+                        <label class="condition-checkbox">
+                            <input type="checkbox" name="asthma" id="asthma">
+                            <span class="condition-label">
+                                <i class="fas fa-lungs"></i>
+                                <div>
+                                    <strong>Asma</strong>
+                                    <small>Dificultad respiratoria</small>
+                                </div>
+                            </span>
+                        </label>
+
+                        <label class="condition-checkbox">
+                            <input type="checkbox" name="back_injury" id="back_injury">
+                            <span class="condition-label">
+                                <i class="fas fa-person-walking-with-cane"></i>
+                                <div>
+                                    <strong>Lesión de Espalda</strong>
+                                    <small>Lumbar o cervical</small>
+                                </div>
+                            </span>
+                        </label>
+
+                        <label class="condition-checkbox">
+                            <input type="checkbox" name="heart_disease" id="heart_disease">
+                            <span class="condition-label">
+                                <i class="fas fa-heart-crack"></i>
+                                <div>
+                                    <strong>Enfermedad Cardíaca</strong>
+                                    <small>Problemas del corazón</small>
+                                </div>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="other_conditions">
+                            <i class="fas fa-notes-medical"></i>
+                            Otras Condiciones (Opcional)
+                        </label>
+                        <textarea id="other_conditions" name="other_conditions" class="form-control" rows="3"
+                            placeholder="Describe cualquier otra condición médica relevante..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Step 4: Confirmación -->
+                <div class="form-step" data-step="4">
+                    <h2>✅ Confirmación</h2>
+
+                    <div class="summary-card">
+                        <h3>Resumen de tu Perfil</h3>
+
+                        <div class="summary-section">
+                            <h4><i class="fas fa-user"></i> Datos Personales</h4>
+                            <div class="summary-item">
+                                <span>Género:</span>
+                                <strong id="summary-gender">--</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>Edad:</span>
+                                <strong id="summary-age">--</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>Tipo de Sangre:</span>
+                                <strong id="summary-blood">--</strong>
+                            </div>
+                        </div>
+
+                        <div class="summary-section">
+                            <h4><i class="fas fa-chart-line"></i> Datos Biométricos</h4>
+                            <div class="summary-item">
+                                <span>Altura:</span>
+                                <strong id="summary-height">--</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>Peso:</span>
+                                <strong id="summary-weight">--</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>IMC:</span>
+                                <strong id="summary-bmi" class="bmi-badge">--</strong>
+                            </div>
+                        </div>
+
+                        <div class="summary-section">
+                            <h4><i class="fas fa-heartbeat"></i> Condiciones Médicas</h4>
+                            <div id="summary-conditions">
+                                <p class="text-muted">Ninguna condición seleccionada</p>
+                            </div>
+                        </div>
+
+                        <div class="macrocycle-info">
+                            <div class="info-icon">
+                                <i class="fas fa-route"></i>
+                            </div>
+                            <div>
+                                <h4>🌱 Comenzarás en: Fase de Adaptación Anatómica</h4>
+                                <p>Meta inicial: <strong>3,000 pasos diarios</strong></p>
+                                <p>Hábito prioritario: <strong>Hidratación (8 vasos de agua)</strong></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="privacy-notice">
+                        <i class="fas fa-shield-halved"></i>
+                        <p>Tus datos de salud están protegidos y solo tú puedes acceder a ellos. Usamos esta información
+                            únicamente para personalizar tus recomendaciones de bienestar.</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="form-navigation">
+                    <button type="button" class="btn-secondary" id="btn-prev" style="display: none;">
+                        <i class="fas fa-arrow-left"></i>
+                        Anterior
+                    </button>
+
+                    <button type="button" class="btn-primary" id="btn-next">
+                        Siguiente
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+
+                    <button type="submit" class="btn-success" id="btn-submit" style="display: none;">
+                        <i class="fas fa-check"></i>
+                        Completar Perfil
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Creando tu perfil de salud...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/health-profile.js"></script>
+    <script src="../js/health-onboarding-ui.js"></script>
+</body>
+
+</html>
