@@ -167,6 +167,39 @@ body {
   gap: var(--spacing-sm);
 }
 
+/* ===== WALKING CARD STYLES ===== */
+
+.walking-card {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+}
+
+.walking-card .icon-wrapper {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.walking-card:hover .icon-wrapper {
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.walking-card h2,
+.walking-card p {
+  color: white;
+}
+
+.walking-card .btn-text {
+  color: white;
+}
+
+.walking-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.3), 0 10px 10px -5px rgba(16, 185, 129, 0.2);
+  border-color: transparent;
+}
+
 .landing-footer {
   margin-top: 4rem;
   color: var(--color-text-light);
