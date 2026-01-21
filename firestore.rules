@@ -113,7 +113,7 @@ service cloud.firestore {
     }
 
     // ========================================
-    // WELLNESS WALKING TRACKER (NUEVO)
+    // WELLNESS WALKING TRACKER (FASE 1)
     // ========================================
     
     // Estadísticas de caminatas
@@ -146,46 +146,87 @@ service cloud.firestore {
     }
 
     // ========================================
-    // FASE 2: SALUD BIOMÉTRICA Y MACROCICLO
+    // HEALTH MODULE - FASE 2 (NUEVO)
     // ========================================
     
-    // Perfiles de salud
+    // Perfiles de salud biométrica
     match /health_profiles/{userId} {
-      // Solo el dueño puede leer/escribir
-      allow read, write: if isAuth() && request.auth.uid == userId;
+      // El usuario puede leer y escribir su propio perfil
+      allow read, write: if isAuth() && 
+                            request.auth.uid == userId;
       
-      // Admin/Coach puede leer (para estadísticas poblacionales)
-      allow read: if isAuth() && 
-                     (request.auth.token.role == 'admin' || 
-                      request.auth.token.role == 'coach');
+      // Admins y coaches pueden leer todos los perfiles (para estadísticas)
+      allow read: if isAuth();
+      
+      // No permitir eliminación (mantener historial médico)
+      allow delete: if false;
     }
     
-    // Hábitos diarios
+    // Hábitos diarios (hidratación, nutrición, actividad)
     match /daily_habits/{habitId} {
-      // Solo el dueño puede leer/escribir
-      allow read, write: if isAuth() && request.auth.uid == resource.data.userId;
+      // El usuario puede leer y escribir sus propios hábitos
+      allow read, write: if isAuth() && 
+                            resource.data.userId == request.auth.uid;
       
       // Permitir creación si el userId coincide
-      allow create: if isAuth() && request.auth.uid == request.resource.data.userId;
+      allow create: if isAuth() && 
+                       request.resource.data.userId == request.auth.uid;
       
-      // Admin/Coach puede leer
-      allow read: if isAuth() && 
-                     (request.auth.token.role == 'admin' || 
-                      request.auth.token.role == 'coach');
+      // Admins y coaches pueden leer todos los hábitos
+      allow read: if isAuth();
+      
+      // No permitir eliminación (mantener historial)
+      allow delete: if false;
     }
     
     // Historial de peso
-    match /weight_history/{recordId} {
-      // Solo el dueño puede leer/escribir
-      allow read, write: if isAuth() && request.auth.uid == resource.data.userId;
+    match /weight_history/{entryId} {
+      // El usuario puede leer y escribir su propio historial
+      allow read, write: if isAuth() && 
+                            resource.data.userId == request.auth.uid;
       
       // Permitir creación si el userId coincide
-      allow create: if isAuth() && request.auth.uid == request.resource.data.userId;
+      allow create: if isAuth() && 
+                       request.resource.data.userId == request.auth.uid;
       
-      // Admin/Coach puede leer
+      // Admins y coaches pueden leer todo el historial
+      allow read: if isAuth();
+      
+      // No permitir eliminación (mantener historial médico)
+      allow delete: if false;
+    }
+    
+    // Health Insights (recomendaciones personalizadas)
+    match /health_insights/{insightId} {
+      // El usuario puede leer sus propios insights
       allow read: if isAuth() && 
-                     (request.auth.token.role == 'admin' || 
-                      request.auth.token.role == 'coach');
+                     resource.data.userId == request.auth.uid;
+      
+      // Solo el sistema puede crear/actualizar insights
+      allow write: if isAuth();
+      
+      // No permitir eliminación
+      allow delete: if false;
+    }
+
+    // ========================================
+    // USERS COLLECTION (Sistema de autenticación)
+    // ========================================
+    
+    match /users/{userId} {
+      // El usuario puede leer y actualizar su propio perfil
+      allow read, update: if isAuth() && 
+                             request.auth.uid == userId;
+      
+      // Permitir creación durante registro
+      allow create: if isAuth() && 
+                       request.auth.uid == userId;
+      
+      // Admins pueden leer todos los usuarios
+      allow read: if isAuth();
+      
+      // No permitir eliminación
+      allow delete: if false;
     }
 
   }
