@@ -68,7 +68,7 @@ function applyRoleRestrictions() {
         });
 
         // Ocultar botones de eliminar
-        document.querySelectorAll('[data-action="delete"], .btn-delete, .delete-btn').forEach(btn => {
+        document.querySelectorAll('[data-action="delete"], .btn-delete, .delete-btn, .btn-delete-activity, .btn-delete-compact').forEach(btn => {
             if (btn) {
                 btn.style.display = 'none';
             }
