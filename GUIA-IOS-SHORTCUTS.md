@@ -42,11 +42,20 @@ El sistema web **YA está preparado** para recibir datos de iPhone. Solo falta c
 
 #### Acción 3: Crear URL
 1. Busca: **"URL"**
-2. Escribe exactamente esto:
+2. Escribe **EXACTAMENTE** esto (copia y pega):
    ```
    https://68sfszbqhq-stack.github.io/ibero-activate/employee/wellness-walking.html?pasos=
    ```
-3. **IMPORTANTE:** Después del `=`, toca el botón de **"Variables"** y selecciona **"Resultado de estadística"**
+3. **⚠️ IMPORTANTE:** 
+   - Después del `=`, **NO escribas nada más**
+   - Toca el botón de **"Variables"** (parece una varita mágica)
+   - Selecciona **"Resultado de estadística"** (del paso 2)
+   - La URL final debe verse así:
+     ```
+     ...wellness-walking.html?pasos=[Resultado de estadística]
+     ```
+   - **NO debe quedar:** `?pasos=` (sin variable)
+   - **SÍ debe quedar:** `?pasos=[Resultado de estadística]`
 
 #### Acción 4: Abrir URL
 1. Busca: **"Abrir URL"**
@@ -137,6 +146,20 @@ Para registrar automáticamente si caminaste 15+ minutos seguidos:
 ---
 
 ## 🔧 SOLUCIÓN DE PROBLEMAS
+
+### "Error 35: URL no existe" o "No se puede abrir la URL"
+**Causa:** La variable no está conectada correctamente en la URL.
+
+**Solución:**
+1. Abre el atajo y ve a la Acción 3 (URL)
+2. Verifica que después de `?pasos=` haya una **variable azul** que diga `[Resultado de estadística]`
+3. Si solo dice `?pasos=` (sin nada después), elimina la acción y créala de nuevo
+4. **Pasos correctos:**
+   - Escribe: `https://68sfszbqhq-stack.github.io/ibero-activate/employee/wellness-walking.html?pasos=`
+   - Toca **después** del `=`
+   - Toca el botón de **Variables** (varita mágica)
+   - Selecciona **"Resultado de estadística"**
+   - Debe quedar: `...?pasos=[Resultado de estadística]` (con la variable en azul)
 
 ### "No se puede acceder a los datos de Salud"
 **Solución:**
