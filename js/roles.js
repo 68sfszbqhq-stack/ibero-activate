@@ -222,34 +222,17 @@ function showViewerNotification() {
 }
 
 // Aplicar restricciones cuando el DOM esté listo
+// Aplicar restricciones cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => {
         if (user) {
             // Aplicar inmediatamente
             applyRoleRestrictions();
-
-            // Reaplicar después de 500ms (por si el sidebar se renderiza tarde)
-            setTimeout(() => {
-                applyRoleRestrictions();
-            }, 500);
-
-            // Reaplicar después de 1 segundo (para asegurar)
+            
+            // Reaplicar después de 1 segundo (para asegurar que el sidebar esté renderizado)
             setTimeout(() => {
                 applyRoleRestrictions();
             }, 1000);
-
-            // Observar cambios en el sidebar para reaplicar restricciones
-            const sidebar = document.querySelector('.sidebar');
-            if (sidebar) {
-                const observer = new MutationObserver(() => {
-                    applyRoleRestrictions();
-                });
-
-                observer.observe(sidebar, {
-                    childList: true,
-                    subtree: true
-                });
-            }
         }
     });
 });
