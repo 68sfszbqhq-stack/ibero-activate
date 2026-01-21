@@ -32,14 +32,15 @@ async function checkExistingProfile() {
     try {
         const user = auth.currentUser;
         if (!user) {
-            window.location.href = 'feedback.html';
+            // Solo esperar a que se autentique, NO redirigir
+            console.log('⏳ Esperando autenticación...');
             return;
         }
 
         const needsOnboarding = await window.healthProfile.needsHealthOnboarding();
         if (!needsOnboarding) {
-            // Ya tiene perfil, redirigir al dashboard de salud
-            window.location.href = 'health-profile.html';
+            // Ya tiene perfil, redirigir al dashboard de macrociclo
+            window.location.href = 'macrocycle-dashboard.html';
         }
     } catch (error) {
         console.error('Error al verificar perfil:', error);
