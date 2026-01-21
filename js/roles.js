@@ -65,22 +65,37 @@
 
         // Si es viewer, ocultar/deshabilitar elementos de edición
         if (role === 'viewer') {
-            // Ocultar elementos del menú sidebar
-            const menuItemsToHide = [
-                'a[href="attendance.html"]',      // Pase de Lista
-                'a[href="attendance-late.html"]', // Pase Extemporáneo
-                'a[href="employees.html"]'        // Empleados
-            ];
-
-            menuItemsToHide.forEach(selector => {
-                const menuItem = document.querySelector(selector);
-                if (menuItem) {
-                    const listItem = menuItem.closest('.nav-item');
-                    if (listItem) {
-                        listItem.style.display = 'none';
+            // SOLUCIÓN DEFINITIVA: Inyectar CSS para ocultar elementos del menú
+            // Esto es más robusto que manipular el DOM con JavaScript
+            const styleId = 'viewer-restrictions-style';
+            if (!document.getElementById(styleId)) {
+                const style = document.createElement('style');
+                style.id = styleId;
+                style.textContent = `
+                    /* Ocultar elementos del menú para viewers */
+                    .nav-menu a[href="attendance.html"],
+                    .nav-menu a[href="attendance-late.html"],
+                    .nav-menu a[href="employees.html"] {
+                        display: none !important;
                     }
-                }
-            });
+                    
+                    /* Ocultar el nav-item completo */
+                    .nav-menu a[href="attendance.html"].nav-link,
+                    .nav-menu a[href="attendance-late.html"].nav-link,
+                    .nav-menu a[href="employees.html"].nav-link {
+                        display: none !important;
+                    }
+                    
+                    /* Ocultar el li padre también */
+                    .nav-item:has(a[href="attendance.html"]),
+                    .nav-item:has(a[href="attendance-late.html"]),
+                    .nav-item:has(a[href="employees.html"]) {
+                        display: none !important;
+                    }
+                `;
+                document.head.appendChild(style);
+                console.log('✅ CSS de restricciones de viewer inyectado');
+            }
 
             // Ocultar botones de crear
             document.querySelectorAll('[data-action="create"], .btn-create, #btn-new-activity, #btn-import-catalog').forEach(btn => {
@@ -244,14 +259,16 @@
 
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
-                console.log('Usuario autenticado, aplicando restricciones de rol...');
+                console.log('✅ Usuario autenticado:', user.email);
+                console.log('✅ Rol:', getUserRole(user.email));
+
                 // Aplicar inmediatamente
                 applyRoleRestrictions();
 
-                // Reaplicar después de 1 segundo (para asegurar que el sidebar esté renderizado)
-                setTimeout(() => {
-                    applyRoleRestrictions();
-                }, 1000);
+                // Reaplicar varias veces para asegurar que se aplique
+                setTimeout(() => applyRoleRestrictions(), 500);
+                setTimeout(() => applyRoleRestrictions(), 1000);
+                setTimeout(() => applyRoleRestrictions(), 2000);
             }
         });
     }
