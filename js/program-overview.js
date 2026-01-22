@@ -613,26 +613,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const firstAvailableWeek = availableWeeks[0];
 
             console.log(`Primera semana disponible en Firebase para 2026: W${firstAvailableWeek}`);
-            console.log(`=== Semana 1 del programa se mapeará a W${firstAvailableWeek} ===`);
+
+            // Build schedule and collect used images
+            const usedImages = new Set();
 
             for (const week of programData.weeklySchedule) {
                 // Map program week to calendar week starting from first available week
                 const calendarWeek = firstAvailableWeek + (week.week - 1);
                 const weekId = weekIdMap[calendarWeek];
 
-                console.log(`Semana ${week.week} del programa → Semana W${calendarWeek} del calendario → ID: ${weekId || 'NO ENCONTRADO'}`);
-
                 if (weekId) {
                     const scheduleDoc = await db.collection('weekly_schedules').doc(weekId).get();
                     if (scheduleDoc.exists) {
                         const activities = scheduleDoc.data().schedule || [];
                         scheduledActivities[week.week] = activities;
-                        console.log(`  ✓ Encontradas ${activities.length} actividades`);
                     } else {
                         scheduledActivities[week.week] = [];
                     }
                 } else {
-                    console.log(`  ✗ No se encontró el ID de semana en Firebase`);
                     scheduledActivities[week.week] = [];
                 }
             }
@@ -748,14 +746,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             dayNames[item.day] || item.day,
                             activityName,
                             activity ? `${activity.duration} min` : '-',
-                            item.location || 'Por definir',
-                            description.substring(0, 80) + (description.length > 80 ? '...' : '')
+                            description // FULL DESCRIPTION (no truncation)
                         ];
                     });
 
                     doc.autoTable({
                         startY: yPos,
-                        head: [['Día', 'Actividad', 'Duración', 'Ubicación', 'Descripción']],
+                        head: [['Día', 'Actividad', 'Duración', 'Descripción']],
                         body: tableData,
                         theme: 'grid',
                         headStyles: {
@@ -770,11 +767,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             overflow: 'linebreak'
                         },
                         columnStyles: {
-                            0: { cellWidth: 20 },
-                            1: { cellWidth: 35 },
-                            2: { cellWidth: 18 },
-                            3: { cellWidth: 25 },
-                            4: { cellWidth: 82 }
+                            0: { cellWidth: 25 },
+                            1: { cellWidth: 45 },
+                            2: { cellWidth: 20 },
+                            3: { cellWidth: 90 }
                         },
                         margin: { left: 15, right: 15 }
                     });
