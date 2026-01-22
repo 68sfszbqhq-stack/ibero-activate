@@ -508,6 +508,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Scheduled activities table
                 const weekActivities = scheduledActivities[week.week] || [];
                 if (weekActivities.length > 0) {
+                    // Sort activities by day
+                    const dayOrder = { 'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6, 'sunday': 7 };
+                    weekActivities.sort((a, b) => (dayOrder[a.day] || 99) - (dayOrder[b.day] || 99));
+
                     const tableData = weekActivities.map(item => {
                         const activity = activitiesData[item.activityId];
                         const dayNames = {
@@ -723,6 +727,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Daily activities table
                 const weekActivities = scheduledActivities[week.week] || [];
                 if (weekActivities.length > 0) {
+                    // Sort activities by day
+                    const dayOrder = { 'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6, 'sunday': 7 };
+                    weekActivities.sort((a, b) => (dayOrder[a.day] || 99) - (dayOrder[b.day] || 99));
+
                     const tableData = weekActivities.map(item => {
                         const activity = activitiesData[item.activityId];
                         const dayNames = {
