@@ -24,11 +24,16 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // HABILITAR PERSISTENCIA OFFLINE (Soporte Offline)
+// HABILITAR PERSISTENCIA OFFLINE (Soporte Offline)
+// Nota: enablePersistence puede mostrar advertencias de deprecación en versiones nuevas.
+// Si causa problemas, comentar este bloque.
 db.enablePersistence({ synchronizeTabs: true })
     .catch((err) => {
         if (err.code == 'failed-precondition') {
-            console.warn('La persistencia falló (probablemente múltiples pestañas abiertas)');
+            // Múltiples pestañas abiertas
+            console.warn('Persistencia offline deshabilitada (múltiples pestañas)');
         } else if (err.code == 'unimplemented') {
+            // Navegador no soportado
             console.warn('El navegador no soporta persistencia');
         }
     });

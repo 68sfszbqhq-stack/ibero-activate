@@ -59,29 +59,71 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadAreas() {
+        const container = document.getElementById('area-buttons-container');
+        if (!container) return;
+
         try {
             const snapshot = await db.collection('areas').get();
-            // SEGURIDAD XSS: Limpiar y crear opciones de forma segura
-            areaDropdown.innerHTML = '';
+            container.innerHTML = ''; // Limpiar mensaje de carga
 
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = 'Selecciona un Área...';
-            areaDropdown.appendChild(defaultOption);
-
+            let areas = [];
             snapshot.forEach(doc => {
-                const area = doc.data();
-                const option = document.createElement('option');
-                option.value = doc.id;
-                // Sanitizar nombre del área
-                option.textContent = window.SecurityUtils
+                areas.push({ id: doc.id, ...doc.data() });
+            });
+
+            // ORDENAR SEGÚN RECORRIDO POR DÍAS
+            // TODO: Implementar lógica de ruta cuando el admin confirme el recorrido
+            areas = sortAreasByRoute(areas);
+
+            if (areas.length === 0) {
+                container.innerHTML = '<div style="color: #999; width: 100%; text-align: center;">No hay áreas registradas</div>';
+                return;
+            }
+
+            areas.forEach(area => {
+                const btn = document.createElement('button');
+                btn.className = 'area-btn';
+                btn.dataset.id = area.id;
+
+                // Icono por defecto
+                const iconContent = '<i class="fa-solid fa-building"></i>';
+
+                const safeName = window.SecurityUtils
                     ? window.SecurityUtils.escapeHTML(area.name)
                     : area.name;
-                areaDropdown.appendChild(option);
+
+                btn.innerHTML = `${iconContent} ${safeName}`;
+
+                btn.addEventListener('click', () => {
+                    selectArea(area.id, btn);
+                });
+
+                container.appendChild(btn);
             });
+
         } catch (error) {
             console.error('Error cargando áreas:', error);
+            container.innerHTML = '<div style="color: #ef4444;">Error al cargar áreas</div>';
         }
+    }
+
+    function sortAreasByRoute(areas) {
+        // Aquí implementaremos la lógica del recorrido
+        // Por ahora, orden alfabético
+        return areas.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    function selectArea(areaId, btnElement) {
+        // Actualizar input oculto para compatibilidad
+        const hiddenInput = document.getElementById('area-dropdown');
+        if (hiddenInput) hiddenInput.value = areaId;
+
+        // Actualizar visualmente
+        document.querySelectorAll('.area-btn').forEach(b => b.classList.remove('active'));
+        if (btnElement) btnElement.classList.add('active');
+
+        // Cargar empleados
+        loadEmployees();
     }
 
     let unsubscribe = null; // Para detener el listener cuando cambie la fecha/área
@@ -508,6 +550,223 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { toast.style.opacity = '0'; }, 3000);
     }
 
+    // CONFIGURACIÓN DEL RECORRIDO SEMANAL
+    // 0 = Domingo, 1 = Lunes, ... 6 = Sábado
+    // NOTA: El sistema intentará coincidir estos nombres con los de la base de datos (ignorando mayúsculas/acentos)
+    const WEEKLY_ROUTE = {
+        1: [ // LUNES
+            'PLANTA FÍSICA',
+            'ADMISIONES',
+            'DIRECCION DE PERSONAL',
+            'TESORERIA', // Único agregado aquí
+            'COMPRAS',
+            'EDUCACIÓN CONTINUA',
+            'EGRESADOS',
+            'DEPARTAMENTO CIENCIAS DE LA SALUD',
+            'HUMANIDADES',
+            'INSTITUTO DE INVESTIGACIONES EN MEDIO AMBIENTE'
+        ],
+        2: [ // MARTES
+            'SERVICIOS ESCOLARES',
+            'DIRECCIONES GENERALES', // ← Nuevo, justo después de Servicios Escolares
+            'NEGOCIOS',
+            'IDIT',
+            'PROTECCIÓN UNIVERSITARIA',
+            'AIDEL',
+            'SERVICIO SOCIAL',
+            'DADA',
+            'PLANEACIÓN Y EVALUACIÓN',
+            'CENTRO DE PARTICIPACIÓN Y DIFUSIÓN UNIVERSITARIA',
+            'MEDIOS UNIVERSITARIOS'
+        ],
+        3: [ // MIÉRCOLES
+            'PLANTA FÍSICA',
+            'ADMISIONES',
+            'DIRECCION DE PERSONAL',
+            'TESORERIA',
+            'FORMACIÓN DE PROFESORES',
+            'EDUCACIÓN CONTINUA',
+            'EGRESADOS',
+            'DEPARTAMENTO CIENCIAS DE LA SALUD',
+            'HUMANIDADES',
+            'INSTITUTO DE INVESTIGACIONES EN MEDIO AMBIENTE'
+        ],
+        4: [ // JUEVES (Igual que Martes)
+            'SERVICIOS ESCOLARES',
+            'DIRECCIONES GENERALES', // ← Nuevo
+            'NEGOCIOS',
+            'IDIT',
+            'PROTECCIÓN UNIVERSITARIA',
+            'AIDEL',
+            'SERVICIO SOCIAL',
+            'DADA',
+            'PLANEACIÓN Y EVALUACIÓN',
+            'CENTRO DE PARTICIPACIÓN Y DIFUSIÓN UNIVERSITARIA',
+            'MEDIOS UNIVERSITARIOS'
+        ],
+        5: [ // VIERNES
+            'VILLAS IBERO',
+            'PREPARATORIA IBERO',
+            // --- NUEVOS DE VIERNES ---
+            'MARKETING',
+            'DIRECCION DE COMUNICACION INSTITUCIONAL',
+            'DEFENSORIA DE LOS DERECHOS UNIVERSITARIOS',
+            'IBERO ACTIVATE',
+            'LAINES',
+            'OFICINA DE ATEN TECNOLOGICA'
+        ]
+    };
+
+    // Helper para generar horarios
+    function getTimeSlot(index, startHour = 10, startMinute = 0, durationMinutes = 20) {
+        const startDate = new Date();
+        startDate.setHours(startHour, startMinute, 0, 0);
+
+        // Sumar tiempo según el índice
+        const slotStart = new Date(startDate.getTime() + index * durationMinutes * 60000);
+        const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60000);
+
+        // Formatear HH:MM
+        const formatTime = (date) => date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // Limitar hasta las 13:00 si se pasa (opcional, pero pedido por usuario "hasta las 13:00")
+        if (slotStart.getHours() >= 13) return null; // O manejar overflow
+
+        return `${formatTime(slotStart)} - ${formatTime(slotEnd)}`;
+    }
+
+    async function loadAreas() {
+        const container = document.getElementById('area-buttons-container');
+        if (!container) return;
+
+        try {
+            const snapshot = await db.collection('areas').get();
+            container.innerHTML = ''; // Limpiar mensaje de carga
+
+            let areas = [];
+            snapshot.forEach(doc => {
+                areas.push({ id: doc.id, ...doc.data() }); // Normaliza nombres aquí si es necesario
+            });
+
+            // 1. Identificar Día Actual
+            const today = new Date().getDay(); // 0(Dom) - 6(Sab)
+
+            // 2. Definir Clase de Color según el día
+            let colorClass = '';
+            if (today === 1 || today === 3) colorClass = 'day-mon-wed'; // Lunes/Miercoles (Azul)
+            else if (today === 2 || today === 4) colorClass = 'day-tue-thu'; // Martes/Jueves (Verde)
+            else if (today === 5) colorClass = 'day-fri'; // Viernes (Morado)
+
+            // 3. Separar Rutas de Hoy vs Otros
+            const todaysRoute = WEEKLY_ROUTE[today] || [];
+
+            // Normalizar string para comparación
+            const normalize = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+            // Mapa rápido de la ruta
+            const routeMap = new Map();
+            todaysRoute.forEach((name, index) => routeMap.set(normalize(name), index));
+
+            const inRouteAreas = [];
+            const otherAreas = [];
+
+            areas.forEach(area => {
+                const normName = normalize(area.name);
+                // Búsqueda exacta o parcial
+                let isInRoute = routeMap.has(normName);
+                let routeIndex = routeMap.get(normName);
+
+                if (!isInRoute) {
+                    for (const [routeItem, index] of routeMap.entries()) {
+                        if (normName.includes(routeItem) || routeItem.includes(normName)) {
+                            isInRoute = true;
+                            routeIndex = index;
+                            break;
+                        }
+                    }
+                }
+
+                if (isInRoute) {
+                    area._routeIndex = routeIndex;
+                    inRouteAreas.push(area);
+                } else {
+                    otherAreas.push(area);
+                }
+            });
+
+            // Ordenar grupos
+            inRouteAreas.sort((a, b) => a._routeIndex - b._routeIndex);
+            otherAreas.sort((a, b) => a.name.localeCompare(b.name));
+
+
+            // 4. Renderizar: Grupo HOY (Con color)
+            if (inRouteAreas.length > 0) {
+                inRouteAreas.forEach((area, index) => {
+                    // Calcular horario solo para los que están en ruta
+                    const timeSlot = getTimeSlot(index);
+                    createAreaButton(area, container, colorClass, timeSlot);
+                });
+            } else {
+                container.innerHTML += '<div style="width:100%; text-align:center; color:#9ca3af; font-size:0.9rem; padding:0.5rem;">Hoy no hay ruta programada (o es fin de semana)</div>';
+            }
+
+            // 5. Separador (si hay otras áreas)
+            if (otherAreas.length > 0) {
+                const separator = document.createElement('div');
+                separator.className = 'areas-separator';
+                separator.innerHTML = '<span>Otras Áreas</span>';
+                container.appendChild(separator);
+
+                // 6. Renderizar: Otros (Sin color especial)
+                otherAreas.forEach(area => {
+                    createAreaButton(area, container, ''); // Sin clase extra (blanco/gris)
+                });
+            }
+
+            if (areas.length === 0) {
+                container.innerHTML = '<div style="color: #999; width: 100%; text-align: center;">No hay áreas registradas</div>';
+            }
+
+        } catch (error) {
+            console.error('Error cargando áreas:', error);
+            container.innerHTML = '<div style="color: #ef4444;">Error al cargar áreas</div>';
+        }
+    }
+
+    function createAreaButton(area, container, extraClass, timeSlot = null) {
+        const btn = document.createElement('button');
+        btn.className = `area-btn ${extraClass}`;
+        btn.dataset.id = area.id;
+
+        // Icono por defecto
+        const iconContent = '<i class="fa-solid fa-building"></i>';
+
+        const safeName = window.SecurityUtils
+            ? window.SecurityUtils.escapeHTML(area.name)
+            : area.name;
+
+        // Layout: Nombre arriba, Horario (si existe) pequeño al lado o abajo
+        // Usaremos flex en CSS, aquí solo estructura HTML
+        let html = `<div style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.2;">
+                        <span>${iconContent} ${safeName}</span>`;
+
+        if (timeSlot) {
+            html += `<span style="font-size:0.75rem; opacity:0.85; margin-left:1.4rem; font-weight:400;">${timeSlot}</span>`;
+        }
+
+        html += `</div>`;
+
+        btn.innerHTML = html;
+        // Ajustar estilo del botón para permitir dos líneas
+        btn.style.alignItems = 'center';
+
+        btn.addEventListener('click', () => {
+            selectArea(area.id, btn);
+        });
+
+        container.appendChild(btn);
+    }
+
     // Helper: Week Number
     function getWeekNumber(d) {
         d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -519,7 +778,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Mark "No Attendance" - When admin visits area but nobody shows up
     window.markNoAttendance = async function () {
-        const areaId = areaDropdown.value;
+        const areaId = areaDropdown.value; // Note: This might need update if using buttons, but let's keep it safe for now as we have a hidden input
         const sessionType = document.getElementById('session-type').value;
 
         if (!areaId) {
@@ -528,8 +787,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Get area name
-        const areaSelect = document.getElementById('area-dropdown');
-        const areaName = areaSelect.options[areaSelect.selectedIndex].text;
+        // Since we are using buttons now, we need to get the name differently if the select is hidden/empty
+        // However, the hidden input is updated with ID. To get name, we might need to find the button or store it.
+        // For now let's try to get it from the select if populated, or find the active button.
+        let areaName = 'Área Desconocida';
+        const activeBtn = document.querySelector('.area-btn.active');
+        if (activeBtn) {
+            areaName = activeBtn.innerText.trim();
+        } else {
+            const areaSelect = document.getElementById('area-dropdown');
+            if (areaSelect && areaSelect.options.length > 0 && areaSelect.selectedIndex >= 0) {
+                areaName = areaSelect.options[areaSelect.selectedIndex].text;
+            }
+        }
 
         const selectedDate = currentDate.toISOString().split('T')[0];
 

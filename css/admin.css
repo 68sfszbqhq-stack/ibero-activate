@@ -873,3 +873,94 @@ html {
         padding: 2rem 1.5rem;
     }
 }
+/* Area Buttons Grid */
+.area-buttons-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.area-btn {
+    background: white;
+    border: 1px solid #e5e7eb;
+    padding: 0.6rem 1.2rem;
+    border-radius: 12px; /* iOS style rounded corners */
+    font-weight: 600;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.area-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border-color: #c7d2fe;
+}
+
+.area-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Colores por día para botones de área */
+.area-btn.day-mon-wed {
+    background: linear-gradient(135deg, #3b82f6, #2563eb); /* Azul */
+    color: white;
+    border-color: #1d4ed8;
+}
+
+.area-btn.day-tue-thu {
+    background: linear-gradient(135deg, #10b981, #059669); /* Verde */
+    color: white;
+    border-color: #047857;
+}
+
+.area-btn.day-fri {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed); /* Morado */
+    color: white;
+    border-color: #6d28d9;
+}
+
+/* Hover effects for colored buttons */
+.area-btn.day-mon-wed:hover,
+.area-btn.day-tue-thu:hover,
+.area-btn.day-fri:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Active state for colored buttons (adds a ring) */
+.area-btn.day-mon-wed.active,
+.area-btn.day-tue-thu.active,
+.area-btn.day-fri.active {
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.5), 0 4px 12px rgba(0,0,0,0.3); 
+    border-color: white;
+}
+
+/* Separator Line */
+.areas-separator {
+    width: 100%;
+    margin: 1.5rem 0 1rem 0;
+    border-top: 1px dashed #d1d5db;
+    position: relative;
+    text-align: center;
+}
+
+.areas-separator span {
+    position: relative;
+    top: -12px;
+    background: white; /* Match container bg */
+    padding: 0 10px;
+    color: #9ca3af;
+    font-size: 0.8rem;
+    font-weight: 500;
+}

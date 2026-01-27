@@ -162,10 +162,12 @@
             <div class="filters-bar">
                 <div class="filter-group">
                     <label for="area-dropdown">Seleccionar Área / Departamento</label>
-                    <select id="area-dropdown">
-                        <option value="">-- Seleccione un área --</option>
-                        <!-- Cargado dinámicamente -->
-                    </select>
+                    <div id="area-buttons-container" class="area-buttons-grid">
+                        <!-- Botones de áreas generados dinámicamente -->
+                        <div style="text-align: center; color: #9ca3af; padding: 1rem;">Cargando áreas...</div>
+                    </div>
+                    <!-- Hidden input to maintain compatibility with existing JS logic if needed (optional, but good practice is to update JS) -->
+                    <input type="hidden" id="area-dropdown" value="">
                 </div>
 
                 <div class="filter-group">
@@ -218,6 +220,7 @@
     <script defer src="../js/firebase-config.js"></script>
     <script src="../js/roles.js"></script>
     <script defer src="../js/attendance.js"></script>
+    <script src="../js/create-area-helper.js"></script> <!-- Auto-crear área faltante -->
 
     <!-- QR Code Script -->
     <script>
