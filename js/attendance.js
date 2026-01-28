@@ -289,6 +289,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!card) return;
 
         const iconContainer = card.querySelector('.card-icon');
+        // Limpiar botones previos de reset si existen
+        const existingReset = card.querySelector('.reset-btn-overlay');
+        if (existingReset) existingReset.remove();
 
         // Limpiar clases de estado previo
         card.classList.remove('selected', 'completed');
@@ -303,10 +306,31 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (status === 'completed') {
             // FEEDBACK RECIBIDO (Ciclo completo)
             card.classList.add('selected', 'completed');
-            // Doble Check O Check Azul/Diferente
+            // Doble Check
             iconContainer.innerHTML = '<i class="fa-solid fa-check-double" style="color: #4CAF50;"></i>';
             card.style.borderColor = '#4CAF50';
             card.style.backgroundColor = '#e8f5e9'; // Verde clarito
+
+            // --- BOTÓN DE RESET/ELIMINAR (SOLICITADO POR USUARIO) ---
+            const resetBtn = document.createElement('button');
+            resetBtn.className = 'reset-btn-overlay';
+            resetBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+            resetBtn.title = 'Eliminar asistencia y feedback (Reset)';
+            resetBtn.style.cssText = `
+                position: absolute; top: 10px; right: 10px;
+                background: #fee2e2; color: #ef4444; border: 1px solid #fecaca;
+                border-radius: 50%; width: 28px; height: 28px;
+                display: flex; align-items: center; justify-content: center;
+                cursor: pointer; font-size: 12px; z-index: 10;
+            `;
+
+            resetBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Evitar que dispare el toggle
+                deleteAttendanceRecord(id);
+            });
+
+            card.style.position = 'relative'; // Asegurar posicionamiento
+            card.appendChild(resetBtn);
 
         } else {
             // AUSENTE
@@ -315,8 +339,49 @@ document.addEventListener('DOMContentLoaded', () => {
             card.style.backgroundColor = '#fff';
         }
 
-        // Guardar status actual en dataset para lógica de toggle
+        // Guardar status actual
         card.dataset.status = status || 'absent';
+    }
+
+    // Nueva función para borrar explícitamente desde el botón
+    async function deleteAttendanceRecord(employeeId) {
+        const confirmDelete = confirm('⚠️ ¿Estás seguro de ELIMINAR la asistencia y feedback de hoy para este empleado?');
+        if (!confirmDelete) return;
+
+        const selectedDate = currentDate.toISOString().split('T')[0] || new Date().toLocaleDateString('en-CA'); // Fallback YYYY-MM-DD
+
+        try {
+            const batch = db.batch();
+
+            // 1. Buscar y Borrar de employees/{id}/attendance
+            const attSnapshot = await db.collection('employees').doc(employeeId).collection('attendance')
+                .where('date', '==', selectedDate).get();
+
+            attSnapshot.forEach(doc => batch.delete(doc.ref));
+
+            // 2. Buscar y Borrar de attendances (top-level)
+            const topSnapshot = await db.collection('attendances')
+                .where('employeeId', '==', employeeId)
+                .where('date', '==', selectedDate).get();
+
+            topSnapshot.forEach(doc => batch.delete(doc.ref));
+
+            // 3. Buscar y Borrar Feedback
+            const feedSnapshot = await db.collection('employees').doc(employeeId).collection('feedback')
+                .where('date', '==', selectedDate).get();
+
+            feedSnapshot.forEach(doc => batch.delete(doc.ref));
+
+            await batch.commit();
+            showToast('🗑️ Registro eliminado correctamente');
+
+            // Forzar actualización visual inmediata (limpiar status)
+            updateEmployeeCardStatus(employeeId, null);
+
+        } catch (error) {
+            console.error('Error borrando registro:', error);
+            alert('Error al eliminar: ' + error.message);
+        }
     }
 
     async function toggleAttendance(card, employeeId, employeeData) {

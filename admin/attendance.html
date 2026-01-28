@@ -6,8 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Content Security Policy para prevenir XSS -->
-    <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://firestore.googleapis.com; img-src 'self' data: https: https://chart.googleapis.com;">
+    <meta http-equiv="Content-Security-Policy" content="
+            default-src 'self'; 
+            script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com; 
+            style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; 
+            font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; 
+            connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com; 
+            img-src 'self' data: https:;
+        ">
 
     <title>Pase de Lista - IBERO ACTÍVATE</title>
     <link rel="stylesheet" href="../css/design-system.css">
