@@ -43,7 +43,7 @@ function generateRoutesSimplePDF() {
     yPos = 55;
 
     // --- CONTENT DEFINITION ---
-    // Datos actualizados según la conversación del usuario
+    // Datos actualizados y MUY ESPECÍFICOS (Sin abreviaturas)
     const allRoutes = [
         {
             day: 'Lunes y Miércoles',
@@ -53,10 +53,10 @@ function generateRoutesSimplePDF() {
                 { time: '10:20 - 10:40', name: 'ADMISIONES' },
                 { time: '10:40 - 11:00', name: 'DIRECCIÓN DE PERSONAL' },
                 { time: '11:00 - 11:20', name: 'TESORERÍA' },
-                { time: '11:20 - 11:40', name: 'COMPRAS / F. PROFESORES' },
+                { time: '11:20 - 11:40', name: 'DIRECCIÓN DE SERVICIOS GENERALES (COMPRAS) Y FORMACIÓN DE PROFESORES' },
                 { time: '11:40 - 12:00', name: 'EDUCACIÓN CONTINUA' },
                 { time: '12:00 - 12:20', name: 'EGRESADOS' },
-                { time: '12:20 - 12:40', name: 'CIENCIAS DE SALUD + HUMANIDADES + INSTITUTO' }
+                { time: '12:20 - 12:40', name: 'DEPARTAMENTO CIENCIAS DE LA SALUD, HUMANIDADES, INSTITUTO DE INVESTIGACIONES EN MEDIO AMBIENTE' }
             ]
         },
         {
@@ -64,12 +64,12 @@ function generateRoutesSimplePDF() {
             color: [16, 185, 129], // Verde
             areas: [
                 { time: '10:00 - 10:20', name: 'SERVICIOS ESCOLARES' },
-                { time: '10:20 - 10:40', name: 'DIR. GENERALES + HUMANIDADES + C. SOCIALES' },
-                { time: '10:40 - 11:00', name: 'IDIT' },
-                { time: '11:00 - 11:20', name: 'PROTECCIÓN UNIVERSITARIA' },
-                { time: '11:20 - 11:40', name: 'AIDEL + SERV. SOCIAL + REFLEXIÓN + DADA' },
-                { time: '11:40 - 12:00', name: 'PLANEACIÓN Y EVALUACIÓN + C. PARTICIPACIÓN' },
-                { time: '12:00 - 12:20', name: 'MEDIOS UNIVERSITARIOS' }
+                { time: '10:20 - 11:00', name: 'DIRECCIONES GENERALES, HUMANIDADES, DEPARTAMENTO DE CIENCIAS SOCIALES' },
+                { time: '11:00 - 11:20', name: 'IDIT' },
+                { time: '11:20 - 11:40', name: 'PROTECCIÓN UNIVERSITARIA' },
+                { time: '11:40 - 12:00', name: 'AIDEL, SERVICIO SOCIAL, REFLEXIÓN UNIVERSITARIA, DADA' },
+                { time: '12:00 - 12:30', name: 'PLANEACIÓN Y EVALUACIÓN, CENTRO DE PARTICIPACIÓN Y DIFUSIÓN UNIVERSITARIA' },
+                { time: '12:30 - 13:00', name: 'MEDIOS UNIVERSITARIOS' }
             ]
         },
         {
@@ -79,11 +79,11 @@ function generateRoutesSimplePDF() {
                 { time: '10:00 - 10:20', name: 'VILLAS IBERO' },
                 { time: '10:20 - 10:40', name: 'PREPARATORIA IBERO' },
                 { time: '10:40 - 11:00', name: 'MARKETING' },
-                { time: '11:00 - 11:20', name: 'DIR. COMUNICACIÓN INSTITUCIONAL' },
-                { time: '11:20 - 11:40', name: 'DEFENSORÍA DERECHOS UNIVERSITARIOS' },
+                { time: '11:00 - 11:20', name: 'DIRECCIÓN DE COMUNICACIÓN INSTITUCIONAL' },
+                { time: '11:20 - 11:40', name: 'DEFENSORÍA DE LOS DERECHOS UNIVERSITARIOS' },
                 { time: '11:40 - 12:00', name: 'IBERO ACTÍVATE' },
-                { time: '12:00 - 12:20', name: 'NUTRICIÓN + LAINES' },
-                { time: '12:20 - 12:40', name: 'OFICINA DE ATEN TECNOLÓGICA' }
+                { time: '12:00 - 12:20', name: 'NUTRICIÓN, LAINES' },
+                { time: '12:20 - 12:40', name: 'OFICINA DE ATENCIÓN TECNOLÓGICA' }
             ]
         }
     ];
