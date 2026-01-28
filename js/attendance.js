@@ -653,12 +653,14 @@ document.addEventListener('DOMContentLoaded', () => {
         ],
         2: [ // MARTES
             'SERVICIOS ESCOLARES',
-            'DIRECCIONES GENERALES', // ← Nuevo, justo después de Servicios Escolares
-            'NEGOCIOS',
+            'DIRECCIONES GENERALES',
+            'HUMANIDADES', // Tocado por usuario
+            'DEPARTAMENTO DE CIENCIAS SOCIALES', // Agregado
             'IDIT',
             'PROTECCIÓN UNIVERSITARIA',
             'AIDEL',
             'SERVICIO SOCIAL',
+            'REFLEXIÓN UNIVERSITARIA', // Agregado
             'DADA',
             'PLANEACIÓN Y EVALUACIÓN',
             'CENTRO DE PARTICIPACIÓN Y DIFUSIÓN UNIVERSITARIA',
@@ -678,12 +680,14 @@ document.addEventListener('DOMContentLoaded', () => {
         ],
         4: [ // JUEVES (Igual que Martes)
             'SERVICIOS ESCOLARES',
-            'DIRECCIONES GENERALES', // ← Nuevo
-            'NEGOCIOS',
+            'DIRECCIONES GENERALES',
+            'HUMANIDADES',
+            'DEPARTAMENTO DE CIENCIAS SOCIALES',
             'IDIT',
             'PROTECCIÓN UNIVERSITARIA',
             'AIDEL',
             'SERVICIO SOCIAL',
+            'REFLEXIÓN UNIVERSITARIA',
             'DADA',
             'PLANEACIÓN Y EVALUACIÓN',
             'CENTRO DE PARTICIPACIÓN Y DIFUSIÓN UNIVERSITARIA',
@@ -697,6 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'DIRECCION DE COMUNICACION INSTITUCIONAL',
             'DEFENSORIA DE LOS DERECHOS UNIVERSITARIOS',
             'IBERO ACTIVATE',
+            'NUTRICIÓN', // Agregado
             'LAINES',
             'OFICINA DE ATEN TECNOLOGICA'
         ]
@@ -787,8 +792,52 @@ document.addEventListener('DOMContentLoaded', () => {
             // 4. Renderizar: Grupo HOY (Con color)
             if (inRouteAreas.length > 0) {
                 inRouteAreas.forEach((area, index) => {
+                    let effectiveIndex = index;
+
+                    // LÓGICA ESPECIAL: Agrupar horarios (Lunes/Miércoles)
+                    // Ciencias de la Salud + Humanidades + Instituto -> Mismo horario
+                    const name = normalize(area.name);
+                    const isMonWed = (new Date().getDay() === 1 || new Date().getDay() === 3);
+                    const isTueThu = (new Date().getDay() === 2 || new Date().getDay() === 4);
+                    const isFri = (new Date().getDay() === 5);
+
+                    if (isMonWed) {
+                        if (name.includes('humanidades') || name.includes('instituto de investigaciones')) {
+                            const leaderIndex = inRouteAreas.findIndex(a => normalize(a.name).includes('ciencias de la salud'));
+                            if (leaderIndex !== -1) effectiveIndex = leaderIndex;
+                        }
+                    }
+
+                    if (isTueThu) {
+                        // Grupo 1: Direcciones Generales + Humanidades + Ciencias Sociales
+                        if (name.includes('humanidades') || name.includes('ciencias sociales')) {
+                            const leaderIndex = inRouteAreas.findIndex(a => normalize(a.name).includes('direcciones generales'));
+                            if (leaderIndex !== -1) effectiveIndex = leaderIndex;
+                        }
+
+                        // Grupo 2: Servicio Social + AIDEL + Reflexión + DADA
+                        if (name.includes('servicio social') || name.includes('reflexion universitaria') || name.includes('dada')) {
+                            const leaderIndex = inRouteAreas.findIndex(a => normalize(a.name).includes('aidel'));
+                            if (leaderIndex !== -1) effectiveIndex = leaderIndex;
+                        }
+
+                        // Grupo 3: Planeación + Centro de Participación
+                        if (name.includes('centro de participacion')) {
+                            const leaderIndex = inRouteAreas.findIndex(a => normalize(a.name).includes('planeacion y evaluacion'));
+                            if (leaderIndex !== -1) effectiveIndex = leaderIndex;
+                        }
+                    }
+
+                    if (isFri) {
+                        // Grupo: Nutrición + Laines
+                        if (name.includes('laines')) {
+                            const leaderIndex = inRouteAreas.findIndex(a => normalize(a.name).includes('nutricion'));
+                            if (leaderIndex !== -1) effectiveIndex = leaderIndex;
+                        }
+                    }
+
                     // Calcular horario solo para los que están en ruta
-                    const timeSlot = getTimeSlot(index);
+                    const timeSlot = getTimeSlot(effectiveIndex);
                     createAreaButton(area, container, colorClass, timeSlot);
                 });
             } else {
