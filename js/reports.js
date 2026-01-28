@@ -32,9 +32,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inicializar
     loadAreas().then(() => {
         loadEmployees();
-        // Set default date to today
-        filterDateInput.value = new Date().toISOString().split('T')[0];
-        filterDateInputFeedback.value = new Date().toISOString().split('T')[0];
+        loadEmployees();
+
+        // Inicializar fecha con TIMEZONE LOCAL
+        // (Evita que a las 10pm cambie a mañana por UTC)
+        const now = new Date();
+        // Ajustar al offset local en minutos, convertidos a ms
+        // .getTimezoneOffset() devuleve minutos positivos si estamos DETRÁS de UTC (ej. Mexico es UTC-6 -> 360)
+        // Restamos el offset para obtener la hora local en formato ISO simulado
+        const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+        const todayStr = localDate.toISOString().split('T')[0];
+
+        filterDateInput.value = todayStr;
+        filterDateInputFeedback.value = todayStr;
+
         loadAttendance();
         loadFeedbacks();
     });
