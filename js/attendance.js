@@ -23,9 +23,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     updateDateDisplay();
 
+    // Obtener fecha local en formato YYYY-MM-DD
+    const getLocalDateString = () => {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     // Establecer fecha máxima (hoy) en el date picker
-    datePicker.max = new Date().toISOString().split('T')[0];
-    datePicker.value = currentDate.toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
+    datePicker.max = todayStr;
+    datePicker.value = todayStr;
 
     // Cargar Áreas
     loadAreas();
@@ -316,9 +326,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const currentStatus = card.dataset.status || 'absent';
         const selectedDate = currentDate.toISOString().split('T')[0];
-        const areaId = areaDropdown.value;
+
+        // Obtener ID del área de forma segura (re-query por si acaso)
+        const hiddenInput = document.getElementById('area-dropdown');
+        const areaId = hiddenInput ? hiddenInput.value : '';
+
+        if (!areaId) {
+            alert('Error: No se ha seleccionado un área válida. Por favor recarga la página.');
+            card.classList.remove('processing');
+            return;
+        }
 
         try {
+
             if (currentStatus === 'absent') {
                 // MARCAR ASISTENCIA
                 // Primero verificar si ya existe una asistencia para este empleado en esta fecha
