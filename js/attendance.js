@@ -297,40 +297,65 @@ document.addEventListener('DOMContentLoaded', () => {
         card.classList.remove('selected', 'completed');
 
         if (status === 'active') {
-            // ASISTENCIA MARCADA (Pendiente de feedback)
+            // ASISTENCIA MARCADA (Pendiente de feedback) - AHORA EN VERDE TAMBIÉN
             card.classList.add('selected');
-            iconContainer.innerHTML = '<i class="fa-solid fa-check-circle"></i>';
-            card.style.borderColor = 'var(--primary)';
-            card.style.backgroundColor = 'var(--light-bg)';
+            // Check simple pero VERDE
+            iconContainer.innerHTML = '<i class="fa-solid fa-check" style="color: #4CAF50; font-size: 1.2rem;"></i>';
+            card.style.borderColor = '#4CAF50';
+            card.style.backgroundColor = '#e8f5e9'; // Verde clarito (Igual que completed)
+            // Añadir botón borrar también aquí por si se equivocan rápido
+            const existingReset = card.querySelector('.reset-btn-overlay');
+            if (!existingReset) {
+                const resetBtn = document.createElement('button');
+                resetBtn.className = 'reset-btn-overlay';
+                resetBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                resetBtn.title = 'Eliminar asistencia';
+                resetBtn.style.cssText = `
+                    position: absolute; top: 10px; right: 10px;
+                    background: #fee2e2; color: #ef4444; border: 1px solid #fecaca;
+                    border-radius: 50%; width: 28px; height: 28px;
+                    display: flex; align-items: center; justify-content: center;
+                    cursor: pointer; font-size: 12px; z-index: 10;
+                `;
+                resetBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteAttendanceRecord(id);
+                });
+                card.style.position = 'relative';
+                card.appendChild(resetBtn);
+            }
 
         } else if (status === 'completed') {
             // FEEDBACK RECIBIDO (Ciclo completo)
             card.classList.add('selected', 'completed');
             // Doble Check
-            iconContainer.innerHTML = '<i class="fa-solid fa-check-double" style="color: #4CAF50;"></i>';
+            iconContainer.innerHTML = '<i class="fa-solid fa-check-double" style="color: #4CAF50; font-size: 1.2rem;"></i>';
             card.style.borderColor = '#4CAF50';
-            card.style.backgroundColor = '#e8f5e9'; // Verde clarito
+            card.style.backgroundColor = '#e8f5e9';
 
-            // --- BOTÓN DE RESET/ELIMINAR (SOLICITADO POR USUARIO) ---
-            const resetBtn = document.createElement('button');
-            resetBtn.className = 'reset-btn-overlay';
-            resetBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
-            resetBtn.title = 'Eliminar asistencia y feedback (Reset)';
-            resetBtn.style.cssText = `
-                position: absolute; top: 10px; right: 10px;
-                background: #fee2e2; color: #ef4444; border: 1px solid #fecaca;
-                border-radius: 50%; width: 28px; height: 28px;
-                display: flex; align-items: center; justify-content: center;
-                cursor: pointer; font-size: 12px; z-index: 10;
-            `;
-
-            resetBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Evitar que dispare el toggle
-                deleteAttendanceRecord(id);
-            });
-
-            card.style.position = 'relative'; // Asegurar posicionamiento
-            card.appendChild(resetBtn);
+            // --- BOTÓN DE RESET/ELIMINAR ---
+            // (Ya estaba implementado, se mantiene igual por lógica de función, 
+            // pero aseguro que se renderice si entra aquí directo)
+            const existingReset = card.querySelector('.reset-btn-overlay');
+            if (!existingReset) {
+                const resetBtn = document.createElement('button');
+                resetBtn.className = 'reset-btn-overlay';
+                resetBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                resetBtn.title = 'Eliminar asistencia y feedback (Reset)';
+                resetBtn.style.cssText = `
+                    position: absolute; top: 10px; right: 10px;
+                    background: #fee2e2; color: #ef4444; border: 1px solid #fecaca;
+                    border-radius: 50%; width: 28px; height: 28px;
+                    display: flex; align-items: center; justify-content: center;
+                    cursor: pointer; font-size: 12px; z-index: 10;
+                `;
+                resetBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteAttendanceRecord(id);
+                });
+                card.style.position = 'relative';
+                card.appendChild(resetBtn);
+            }
 
         } else {
             // AUSENTE
@@ -497,6 +522,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const skipFeedback = document.getElementById('skip-feedback-toggle').checked;
                     const status = skipFeedback ? 'completed' : 'active';
 
+                    // --- OPTIMISTIC UI UPDATE ---
+                    // Marcar visualmente AL INSTANTE para que el usuario sienta que "ya quedó"
+                    updateEmployeeCardStatus(employeeId, status); // Use the determined status
+                    // ----------------------------
+
                     const attendanceData = {
                         employeeId: employeeId,
                         employeeName: employeeData.fullName,
@@ -585,12 +615,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const batch = db.batch();
 
-                // Eliminar asistencias en subcollection
+                // Eliminar asistencias en subcollection y calcular puntos a restar
+                let pointsToDeduct = 0;
+
                 snapshot.docs.forEach(doc => {
+                    const data = doc.data();
+                    // Si estaba completada, restar los 20 puntos que se ganaron
+                    if (data.status === 'completed') {
+                        pointsToDeduct += 20;
+                    }
+
                     batch.delete(doc.ref);
                     // Intento borrar por ID directo si coincide
                     batch.delete(db.collection('attendances').doc(doc.id));
                 });
+
+                // Restar puntos al empleado si corresponde
+                if (pointsToDeduct > 0) {
+                    const empRef = db.collection('employees').doc(employeeId);
+                    batch.update(empRef, {
+                        points: firebase.firestore.FieldValue.increment(-pointsToDeduct)
+                    });
+                }
 
                 // Eliminar asistencias en top-level
                 topLevelSnapshot.docs.forEach(doc => {
