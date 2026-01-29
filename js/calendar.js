@@ -729,8 +729,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // B. Compress Image
                 console.log("Comprimiendo imagen...", fileToUpload.size / 1024 / 1024, "MB");
                 const options = {
-                    maxSizeMB: 1, // Max size 1MB
-                    maxWidthOrHeight: 1920, // Max dimension 1920px
+                    maxSizeMB: 0.3, // Max size 300KB (reduced to avoid Firestore 1MB doc limit)
+                    maxWidthOrHeight: 1280, // Max dimension 1280px
                     useWebWorker: true
                 };
 
