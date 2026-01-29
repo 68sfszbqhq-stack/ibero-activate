@@ -34,7 +34,8 @@ async function saveWalkingSession(sessionData) {
 
         // Obtener email del colaborador
         const userDoc = await db.collection('users').doc(user.uid).get();
-        const userEmail = userDoc.data()?.email || user.email;
+        // PRIORIDAD: Auth Email
+        const userEmail = user.email || userDoc.data()?.email;
 
         // Validar datos mínimos
         if (!sessionData.steps || sessionData.steps < 0) {
@@ -296,7 +297,33 @@ async function getStepsFromGoogleFit(date = null) {
 // Sincronizar con Google Fit
 async function syncWithGoogleFit() {
     try {
-        showLoading('Sincronizando con Google Fit...');
+        showLoading('Sincronizando...');
+
+        // 1. Intentar Sincronización Nativa (Capacitor)
+        if (window.NativeHealth && window.NativeHealth.isNative()) {
+            console.log('Detectado entorno nativo. Intentando HealthKit/Google Fit nativo...');
+            const hasPermission = await window.NativeHealth.requestPermissions();
+            if (hasPermission) {
+                const nativeSteps = await window.NativeHealth.getTodaySteps();
+                if (nativeSteps !== null && nativeSteps > 0) {
+                    const result = await saveWalkingSession({
+                        steps: nativeSteps,
+                        source: 'HealthKit/Native',
+                        duration_mins: 0
+                    });
+
+                    if (result.success) {
+                        showToast('✅ Sincronizado con Salud: ' + nativeSteps + ' pasos', 'success');
+                        await loadWalkingDashboard();
+                        hideLoading();
+                        return; // Terminar aquí si fue exitoso
+                    }
+                }
+            }
+        }
+
+        // 2. Fallback a Google Fit Web API
+        showLoading('Conectando a Google Fit Web...');
 
         // Autenticar si no está autenticado
         if (!googleFitAccessToken) {
@@ -430,10 +457,19 @@ async function loadWalkingDashboard() {
         if (!user) return;
 
         const userDoc = await db.collection('users').doc(user.uid).get();
-        const userEmail = userDoc.data()?.email || user.email;
+        // PRIORIDAD: Auth Email
+        const userEmail = user.email || userDoc.data()?.email;
+
+        console.log('🔍 Debug Auth:', user.email);
+        console.log('🔍 Debug Firestore:', userDoc.data()?.email);
+
+        if (user.email && userDoc.data()?.email && user.email !== userDoc.data()?.email) {
+            console.warn('⚠️ ALERTA: El email de Autenticación no coincide con el de Firestore. Usando Auth:', user.email);
+        }
 
         // Obtener estadísticas
         const stats = await getUserWalkingStats(userEmail, 30);
+        globalStatsCache = stats; // Cachear para historial
 
         if (!stats) {
             console.error('No se pudieron cargar las estadísticas');
@@ -552,6 +588,51 @@ function hideLoading() {
 function showToast(message, type = 'info') {
     // Implementar según tu sistema de UI
     console.log(`Toast[${type}]: `, message);
+}
+
+// ========================================
+// HISTORIAL
+// ========================================
+let globalStatsCache = null;
+
+function showHistoryModal() {
+    const modal = document.getElementById('history-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        if (globalStatsCache) {
+            renderHistoryTable(globalStatsCache.daily_stats);
+        }
+    }
+}
+
+function renderHistoryTable(dailyStats) {
+    const tbody = document.getElementById('history-table-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    // Ordenar fechas descendente
+    const sortedDates = Object.keys(dailyStats).sort((a, b) => new Date(b) - new Date(a));
+
+    if (sortedDates.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center;">No hay registros aún</td></tr>';
+        return;
+    }
+
+    sortedDates.forEach(date => {
+        const entry = dailyStats[date];
+        const row = document.createElement('tr');
+        row.style.borderBottom = '1px solid #f0f0f0';
+
+        row.innerHTML = `
+            <td style="padding: 12px;">${new Date(date).toLocaleDateString()}</td>
+            <td style="padding: 12px; font-weight: bold;">${entry.steps.toLocaleString()}</td>
+            <td style="padding: 12px;">${entry.distance_km || '-'} km</td>
+            <td style="padding: 12px;">${entry.is_continuous ? '<span style="color:green">Sí</span>' : 'No'}</td>
+            <td style="padding: 12px; font-size: 0.85em; color: #888;">${entry.source || 'Manual'}</td>
+        `;
+        tbody.appendChild(row);
+    });
 }
 
 // ========================================

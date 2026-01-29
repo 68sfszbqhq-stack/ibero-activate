@@ -724,9 +724,9 @@ document.addEventListener('DOMContentLoaded', () => {
             'HUMANIDADES',
             'INSTITUTO DE INVESTIGACIONES EN MEDIO AMBIENTE'
         ],
-        4: [ // JUEVES (Igual que Martes)
+        4: [ // JUEVES
             'SERVICIOS ESCOLARES',
-            'DIRECCIONES GENERALES',
+            'PREPARATORIA IBERO',
             'HUMANIDADES',
             'DEPARTAMENTO DE CIENCIAS SOCIALES',
             'IDIT',
@@ -774,7 +774,16 @@ document.addEventListener('DOMContentLoaded', () => {
             // Definir mapping líder -> tiempo
             // Usamos 'includes' para ser flexibles
             if (name.includes('servicios escolares')) return TUESDAY_SCHEDULE_MAP[0].time;
-            if (name.includes('direcciones generales') || name.includes('humanidades') || name.includes('ciencias sociales')) return TUESDAY_SCHEDULE_MAP[1].time;
+
+            // JUEVES: Preparatoria IBERO en lugar de Direcciones Generales
+            if (dayIndex === 4) {
+                if (name.includes('preparatoria ibero')) return '10:20 - 11:00';
+                if (name.includes('humanidades') || name.includes('ciencias sociales')) return '10:20 - 11:00';
+            } else {
+                // MARTES: Direcciones Generales con Humanidades y C. Sociales
+                if (name.includes('direcciones generales') || name.includes('humanidades') || name.includes('ciencias sociales')) return TUESDAY_SCHEDULE_MAP[1].time;
+            }
+
             if (name.includes('idit')) return TUESDAY_SCHEDULE_MAP[2].time;
             if (name.includes('proteccion universitaria')) return TUESDAY_SCHEDULE_MAP[3].time;
             if (name.includes('aidel') || name.includes('servicio social') || name.includes('reflexion') || name.includes('dada')) return TUESDAY_SCHEDULE_MAP[4].time;

@@ -134,14 +134,10 @@ service cloud.firestore {
       allow delete: if false;
     }
     
-    // Registros de bienestar (resumen por usuario)
-    match /wellness_records/{email} {
-      // Permitir lectura solo al dueño
-      allow read: if isAuth() && 
-                     email == request.auth.token.email;
-      
-      // Permitir escritura solo al dueño
-      allow write: if isAuth() && 
+    // Registros de bienestar (resumen por usuario y dia)
+    match /wellness_records/{email}/{document=**} {
+      // Permitir lectura/escritura a todo el árbol si el email coincide
+      allow read, write: if isAuth() && 
                       email == request.auth.token.email;
     }
 

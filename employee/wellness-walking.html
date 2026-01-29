@@ -12,6 +12,21 @@
     <!-- CSS -->
     <link rel="stylesheet" href="../css/design-system.css">
     <link rel="stylesheet" href="../css/wellness-walking.css">
+    <style>
+        .page-header {
+            background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url('../assets/health-header.png');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .page-header h1,
+        .page-header p,
+        .page-header i {
+            color: white !important;
+        }
+    </style>
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -47,10 +62,15 @@
                         <p class="subtitle">Basado en Evidencia Científica</p>
                     </div>
                 </div>
-                <button class="btn-sync" onclick="showSyncOptions()">
-                    <i class="fas fa-sync-alt"></i>
-                    Sincronizar
-                </button>
+                <div class="header-actions" style="display: flex; gap: 10px;">
+                    <button class="btn-sync" onclick="showHistoryModal()"
+                        style="background: rgba(255,255,255,0.2); backdrop-filter: blur(5px);">
+                        <i class="fas fa-history"></i> Historial
+                    </button>
+                    <button class="btn-sync" onclick="showSyncOptions()">
+                        <i class="fas fa-sync-alt"></i> Sincronizar
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -316,8 +336,39 @@
     <!-- Toast Notifications -->
     <div class="toast-container" id="toast-container"></div>
 
+    <!-- History Modal -->
+    <div id="history-modal" class="loading-overlay" style="display: none; align-items: flex-start; padding-top: 50px;">
+        <div class="wellness-card"
+            style="width: 90%; max-width: 800px; max-height: 85vh; overflow-y: auto; background: white;">
+            <div class="card-header"
+                style="position: sticky; top: 0; background: white; z-index: 10; padding-bottom: 10px; border-bottom: 1px solid #eee;">
+                <h3>Historial de Caminatas</h3>
+                <button class="btn-close" onclick="document.getElementById('history-modal').style.display='none'">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="history-content" style="margin-top: 20px;">
+                <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #eee; color: #666;">
+                            <th style="padding: 10px;">Fecha</th>
+                            <th style="padding: 10px;">Pasos</th>
+                            <th style="padding: 10px;">Distancia</th>
+                            <th style="padding: 10px;">Continuo</th>
+                            <th style="padding: 10px;">Fuente</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="../js/firebase-config.js"></script>
+    <script src="../js/native-health-integration.js"></script>
     <script src="../js/walking-tracker.js"></script>
     <script src="../js/ios-sync.js"></script>
     <script src="../js/wellness-walking-ui.js"></script>

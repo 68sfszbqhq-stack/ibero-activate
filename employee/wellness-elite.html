@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Elite Bio-Metrics | IBERO</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../css/wellness-elite.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+
+    <!-- === HEADER === -->
+    <header class="elite-header">
+        <div class="user-greeting">
+            <h1 class="gradient-text" id="greeting-text">Hola, Campeón</h1>
+            <p id="date-display">Cargando...</p>
+        </div>
+        <div class="header-stats">
+            <!-- Battery representation of Body Battery/Recovery -->
+            <div class="battery-indicator" id="body-battery">
+                <i class="fa-solid fa-bolt"></i>
+                <span>--%</span>
+            </div>
+            <div class="profile-pic" onclick="switchView('profile')">
+                <div
+                    style="width: 36px; height: 36px; background: #334155; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,0.1);">
+                    <i class="fa-solid fa-user" style="font-size: 0.9rem;"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- === VISTA: HOME (DASHBOARD) === -->
+    <section id="view-home" class="view-section active">
+        <div class="dashboard-grid">
+
+            <!-- RECOVERY CARD -->
+            <div class="metric-card card-recovery" onclick="showDetail('recovery')">
+                <div class="metric-header">
+                    <span class="metric-title">Recuperación</span>
+                    <i class="fa-solid fa-chevron-right" style="opacity: 0.5;"></i>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-value-lg" id="score-recovery">--%</div>
+                    <div class="metric-subtext">Tu cuerpo está listo para rendir.</div>
+                </div>
+                <!-- Visual Decoration -->
+                <div style="position: absolute; right: -20px; bottom: -20px; opacity: 0.1; font-size: 8rem;">
+                    <i class="fa-solid fa-battery-full"></i>
+                </div>
+            </div>
+
+            <!-- STRAIN CARD -->
+            <div class="metric-card card-strain" onclick="showDetail('strain')">
+                <div class="metric-header">
+                    <span class="metric-title">Esfuerzo (Strain)</span>
+                    <i class="fa-solid fa-chevron-right" style="opacity: 0.5;"></i>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-value-lg" id="score-strain">0.0</div>
+                    <div class="metric-subtext">Basado en <span id="steps-display">0</span> pasos</div>
+
+                    <!-- Progress Bar Simple -->
+                    <div
+                        style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 15px; overflow: hidden;">
+                        <div id="strain-bar" style="width: 0%; height: 100%; background: var(--color-strain);"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SLEEP CARD -->
+            <div class="metric-card card-sleep" onclick="showDetail('sleep')">
+                <div class="metric-header">
+                    <span class="metric-title">Sueño</span>
+                    <i class="fa-solid fa-chevron-right" style="opacity: 0.5;"></i>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-value-lg" id="score-sleep">--</div>
+                    <div class="metric-subtext">Horas estimadas</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- MICRO METRICS -->
+        <div class="micro-metrics">
+            <div class="micro-card">
+                <div class="micro-icon"><i class="fa-solid fa-heart-pulse" style="color: #f43f5e;"></i></div>
+                <div class="micro-value" id="val-hrv">--</div>
+                <div class="micro-label">HRV (ms)</div>
+            </div>
+            <div class="micro-card">
+                <div class="micro-icon"><i class="fa-solid fa-lungs" style="color: #0ea5e9;"></i></div>
+                <div class="micro-value" id="val-rhr">--</div>
+                <div class="micro-label">RHR (bpm)</div>
+            </div>
+            <div class="micro-card">
+                <div class="micro-icon"><i class="fa-solid fa-fire" style="color: #f97316;"></i></div>
+                <div class="micro-value" id="val-cals">0</div>
+                <div class="micro-label">Kcal</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- === VISTA: COACH === -->
+    <section id="view-coach" class="view-section">
+        <div class="chat-container">
+            <div class="ai-message">
+                <strong><i class="fa-solid fa-robot"></i> Coach Virtual</strong><br>
+                Analizando tus métricas de hoy... Tu recuperación parece alta. ¿Quieres que planejemos un entrenamiento
+                intenso?
+            </div>
+            <!-- Chat history goes here -->
+        </div>
+    </section>
+
+    <!-- === VISTA: COMMUNITY === -->
+    <section id="view-community" class="view-section">
+        <div class="dashboard-grid" style="padding-top: 20px;">
+            <div class="metric-card">
+                <h3>Tabla de Líderes (Strain)</h3>
+                <p style="color: #94a3b8;">Próximamente: Compite con tu equipo en nivel de esfuerzo.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- === VISTA: PROFILE === -->
+    <section id="view-profile" class="view-section">
+        <div class="dashboard-grid" style="padding-top: 20px;">
+            <div class="metric-card">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div
+                        style="width: 80px; height: 80px; background: var(--bg-app); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 2px solid var(--color-strain);">
+                        <i class="fa-solid fa-user" style="font-size: 2rem; color: var(--text-primary);"></i>
+                    </div>
+                    <h2 style="margin: 10px 0 5px;">Usuario</h2>
+                    <p style="color: var(--text-secondary);">Configuración</p>
+                </div>
+
+                <div class="action-btn"
+                    style="width: 100%; text-align: left; display: flex; align-items: center; gap: 15px; margin-bottom: 10px; background: rgba(255,255,255,0.03);">
+                    <i class="fa-brands fa-apple" style="font-size: 1.5rem; color: white; margin: 0;"></i>
+                    <div style="flex-grow: 1;">
+                        <strong>Sincronización Salud</strong>
+                        <div style="font-size: 0.8rem; color: #94a3b8;">Apple Health / Google Fit</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+
+                <div class="action-btn" onclick="window.location.href='../index.html'"
+                    style="width: 100%; text-align: left; display: flex; align-items: center; gap: 15px; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">
+                    <i class="fa-solid fa-right-from-bracket" style="font-size: 1.2rem; color: #ef4444; margin: 0;"></i>
+                    <span style="color: #ef4444;">Cerrar Sesión</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- === MODALS (Action Sheet Targets) === -->
+
+    <!-- JOURNAL MODAL -->
+    <div id="journal-modal" class="action-sheet-overlay">
+        <div class="action-sheet" style="height: 80vh; overflow-y: auto;">
+            <div class="metric-header">
+                <span class="metric-title">Diario Matutino</span>
+                <i class="fa-solid fa-times" onclick="toggleModal('journal-modal')"
+                    style="font-size: 1.5rem; cursor: pointer;"></i>
+            </div>
+
+            <form id="journal-form" onsubmit="handleJournalSubmit(event)">
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; margin-bottom: 10px; color: var(--text-secondary);">¿Cómo
+                        dormiste?</label>
+                    <div style="display: flex; gap: 10px; justify-content: space-between;">
+                        <button type="button" class="action-btn" style="flex: 1;"
+                            onclick="selectOption(this, 'sleep_quality', 100)">Bien</button>
+                        <button type="button" class="action-btn" style="flex: 1;"
+                            onclick="selectOption(this, 'sleep_quality', 50)">Regular</button>
+                        <button type="button" class="action-btn" style="flex: 1;"
+                            onclick="selectOption(this, 'sleep_quality', 0)">Mal</button>
+                    </div>
+                    <input type="hidden" name="sleep_quality" id="input_sleep_quality">
+                </div>
+
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; margin-bottom: 10px; color: var(--text-secondary);">Estrés al
+                        despertar (1-10)</label>
+                    <input type="range" name="stress" min="1" max="10" value="5"
+                        style="width: 100%; accent-color: var(--color-strain);">
+                    <div
+                        style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); margin-top: 5px;">
+                        <span>Zen</span>
+                        <span>Pánico</span>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; margin-bottom: 10px; color: var(--text-secondary);">Factores
+                        (Selecciona si aplica)</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button type="button" class="action-btn" style="padding: 10px 15px; font-size: 0.9rem;"
+                            onclick="toggleTag(this, 'alcohol')">🍷 Alcohol</button>
+                        <button type="button" class="action-btn" style="padding: 10px 15px; font-size: 0.9rem;"
+                            onclick="toggleTag(this, 'late_meal')">🍕 Cena Tarde</button>
+                        <button type="button" class="action-btn" style="padding: 10px 15px; font-size: 0.9rem;"
+                            onclick="toggleTag(this, 'soreness')">🤕 Dolor Muscular</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="nav-fab"
+                    style="width: 100%; border-radius: 12px; font-size: 1.1rem; border: none;">
+                    Guardar y Recalcular
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- WORKOUT MODAL -->
+    <div id="workout-modal" class="action-sheet-overlay">
+        <div class="action-sheet"
+            style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+            <div style="font-size: 5rem; font-weight: 800; font-variant-numeric: tabular-nums;" id="timer-display">00:00
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 30px;">Tiempo Transcurrido</p>
+
+            <div id="workout-controls" style="display: flex; gap: 20px;">
+                <button class="nav-fab" style="width: 80px; height: 80px; background: var(--color-recovery);"
+                    onclick="startWorkout()">
+                    <i class="fa-solid fa-play"></i>
+                </button>
+            </div>
+            <button class="action-btn" onclick="toggleModal('workout-modal')"
+                style="margin-top: 30px; border: none; background: transparent;">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- DETAIL MODAL -->
+    <div id="detail-modal" class="action-sheet-overlay">
+        <div class="action-sheet" style="height: 70vh;">
+            <div class="metric-header">
+                <span class="metric-title" id="detail-title">Detalle</span>
+                <i class="fa-solid fa-times" onclick="toggleModal('detail-modal')"
+                    style="font-size: 1.5rem; cursor: pointer;"></i>
+            </div>
+            <div id="detail-content">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- === ACTION OVERLAY === -->
+    <div id="action-overlay" class="action-sheet-overlay" onclick="toggleActionSheet()">
+        <div class="action-sheet" onclick="event.stopPropagation()">
+            <h3 style="margin-top: 0; margin-bottom: 20px; color: var(--text-primary);">Acciones Rápidas</h3>
+            <div class="action-grid">
+                <div class="action-btn" onclick="toggleModal('workout-modal'); toggleActionSheet()">
+                    <i class="fa-solid fa-person-running"></i>
+                    Entrenar
+                </div>
+                <div class="action-btn" onclick="toggleModal('journal-modal'); toggleActionSheet()">
+                    <i class="fa-solid fa-book-medical"></i>
+                    Diario
+                </div>
+                <div class="action-btn" onclick="alert('Próximamente: Integración con báscula inteligente')">
+                    <i class="fa-solid fa-plus"></i>
+                    Biometría
+                </div>
+                <div class="action-btn">
+                    <i class="fa-solid fa-utensils"></i>
+                    Nutrición
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- === BOTTOM NAVIGATION === -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchView('home')">
+            <i class="fa-solid fa-house-pulse"></i>
+            Home
+        </button>
+        <button class="nav-item" onclick="switchView('coach')">
+            <i class="fa-solid fa-robot"></i>
+            Coach
+        </button>
+
+        <!-- Pulse Action Button -->
+        <div class="nav-fab-container">
+            <button class="nav-fab" onclick="toggleActionSheet()">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+        </div>
+
+        <button class="nav-item" onclick="switchView('community')">
+            <i class="fa-solid fa-users"></i>
+            Club
+        </button>
+        <button class="nav-item" onclick="switchView('profile')">
+            <i class="fa-solid fa-user-gear"></i>
+            Perfil
+        </button>
+    </nav>
+
+    <!-- Scripts -->
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/native-health-integration.js"></script>
+    <script src="../js/wellness-elite.js"></script>
+
+</body>
+
+</html>

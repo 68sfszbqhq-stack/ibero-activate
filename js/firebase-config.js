@@ -41,6 +41,9 @@ db.enablePersistence({ synchronizeTabs: true })
 // Authentication
 const auth = firebase.auth();
 
+// Storage
+const storage = firebase.storage();
+
 // ========================================
 // SEGURIDAD: RESTRICCIONES RECOMENDADAS
 // ========================================
