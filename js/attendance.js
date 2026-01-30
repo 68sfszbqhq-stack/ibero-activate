@@ -959,17 +959,25 @@ document.addEventListener('DOMContentLoaded', () => {
             inRouteAreas.sort((a, b) => a._effectiveSort - b._effectiveSort);
             otherAreas.sort((a, b) => a.name.localeCompare(b.name));
 
-            // Render
+            // Render - ALWAYS show both groups
+            // 1. First render today's route areas (with color and time)
             if (inRouteAreas.length > 0) {
                 inRouteAreas.forEach((area, index) => {
                     // Pass explicit arguments to new getTimeSlot
                     const timeSlot = getTimeSlot(index, today, area.name, null);
                     createAreaButton(area, container, colorClass, timeSlot);
                 });
-            } else {
-                container.appendChild(separator);
+            }
 
-                // 6. Renderizar: Otros (Sin color especial)
+            // 2. Then add separator if we have both groups
+            if (inRouteAreas.length > 0 && otherAreas.length > 0) {
+                const separator = document.createElement('div');
+                separator.style.cssText = 'width: 100%; border-top: 2px solid #e5e7eb; margin: 1rem 0; grid-column: 1 / -1;';
+                container.appendChild(separator);
+            }
+
+            // 3. Finally render other areas (without special color)
+            if (otherAreas.length > 0) {
                 otherAreas.forEach(area => {
                     createAreaButton(area, container, ''); // Sin clase extra (blanco/gris)
                 });
