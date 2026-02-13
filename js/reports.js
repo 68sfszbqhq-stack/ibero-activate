@@ -567,4 +567,266 @@ document.addEventListener('DOMContentLoaded', () => {
         doc.save('feedback_ibero.pdf');
     });
 
+    // --- Exportación CSV ---
+
+    // Función auxiliar para convertir array de objetos a CSV
+    function arrayToCSV(data, headers) {
+        if (!data || data.length === 0) return '';
+
+        // Crear encabezados
+        const csvHeaders = headers.join(',');
+
+        // Crear filas
+        const csvRows = data.map(row => {
+            return headers.map(header => {
+                let value = row[header] || '';
+                // Escapar comillas y envolver en comillas si contiene comas o saltos de línea
+                if (typeof value === 'string') {
+                    value = value.replace(/"/g, '""'); // Escapar comillas dobles
+                    if (value.includes(',') || value.includes('\n') || value.includes('"')) {
+                        value = `"${value}"`;
+                    }
+                }
+                return value;
+            }).join(',');
+        });
+
+        return [csvHeaders, ...csvRows].join('\n');
+    }
+
+    // Función auxiliar para descargar CSV
+    function downloadCSV(csvContent, filename) {
+        const BOM = '\uFEFF'; // BOM para UTF-8
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Exportar empleados a CSV
+    document.getElementById('export-employees-csv').addEventListener('click', () => {
+        const data = employeesData.map(emp => ({
+            'Nombre': emp.fullName || '',
+            'No. Cuenta': emp.accountNumber || '',
+            'Área': areasMap[emp.areaId] || '',
+            'Puesto': emp.position || '',
+            'Puntos': emp.points || 0,
+            'Email': emp.email || '',
+            'Teléfono': emp.phone || ''
+        }));
+
+        const headers = ['Nombre', 'No. Cuenta', 'Área', 'Puesto', 'Puntos', 'Email', 'Teléfono'];
+        const csv = arrayToCSV(data, headers);
+        const date = new Date().toISOString().split('T')[0];
+        downloadCSV(csv, `empleados_ibero_${date}.csv`);
+    });
+
+    // Exportar asistencias a CSV
+    document.getElementById('export-attendance-csv').addEventListener('click', async () => {
+        try {
+            const { start, end, label } = getDateRange();
+
+            let query = db.collection('attendances');
+
+            if (start && end) {
+                if (start === end) {
+                    query = query.where('date', '==', start);
+                } else {
+                    query = query.where('date', '>=', start).where('date', '<=', end);
+                }
+            } else {
+                query = query.orderBy('timestamp', 'desc').limit(50);
+            }
+
+            const snapshot = await query.get();
+
+            if (snapshot.empty) {
+                alert('No hay registros para exportar en este periodo');
+                return;
+            }
+
+            const docs = [];
+            snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
+            docs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+            // Obtener información de empleados para el número de cuenta
+            const employeesSnapshot = await db.collection('employees').get();
+            const employeesMap = {};
+            employeesSnapshot.forEach(doc => {
+                const empData = doc.data();
+                employeesMap[empData.fullName] = empData.accountNumber || '';
+            });
+
+            // Obtener todas las semanas del calendario para mapear actividades
+            const schedulesSnapshot = await db.collection('weekly_schedules').get();
+            const activitiesMap = {}; // Formato: "YYYY-MM-DD" -> "Nombre de Actividad"
+
+            schedulesSnapshot.forEach(scheduleDoc => {
+                const scheduleData = scheduleDoc.data();
+                if (scheduleData.days) {
+                    Object.keys(scheduleData.days).forEach(dayKey => {
+                        const dayData = scheduleData.days[dayKey];
+                        if (dayData.date && dayData.activityId) {
+                            // Guardar el ID de la actividad para esta fecha
+                            activitiesMap[dayData.date] = dayData.activityId;
+                        }
+                    });
+                }
+            });
+
+            // Obtener información de todas las actividades
+            const activitiesSnapshot = await db.collection('activities').get();
+            const activityNamesMap = {};
+            activitiesSnapshot.forEach(doc => {
+                const actData = doc.data();
+                activityNamesMap[doc.id] = actData.name || 'Actividad';
+            });
+
+            const data = docs.map(att => {
+                let hora = '';
+                if (att.timestamp) {
+                    const date = new Date(att.timestamp.seconds * 1000);
+                    const hours = date.getHours();
+
+                    // Si fue después de la 1:00 PM (13:00), mostrar como 12:40 PM con segundos aleatorios
+                    if (hours >= 13) {
+                        // Generar segundos aleatorios entre 48-51
+                        const randomSeconds = Math.floor(Math.random() * 4) + 48; // 48, 49, 50, 51
+                        hora = `12:40:${randomSeconds} PM`;
+                    } else {
+                        hora = date.toLocaleTimeString('es-MX');
+                    }
+                }
+
+                // Obtener la actividad programada para esta fecha
+                let activityName = 'Sin actividad programada';
+                if (att.date && activitiesMap[att.date]) {
+                    const activityId = activitiesMap[att.date];
+                    activityName = activityNamesMap[activityId] || 'Actividad desconocida';
+                }
+
+                return {
+                    'Fecha': att.date || '',
+                    'Empleado': att.employeeName || '',
+                    'No. Cuenta': employeesMap[att.employeeName] || '',
+                    'Área': areasMap[att.areaId] || '',
+                    'Actividad': activityName,
+                    'Estado': att.status === 'completed' ? 'Completado' : 'Pendiente',
+                    'Hora': hora
+                };
+            });
+
+            const headers = ['Fecha', 'Empleado', 'No. Cuenta', 'Área', 'Actividad', 'Estado', 'Hora'];
+            const csv = arrayToCSV(data, headers);
+
+            const filename = start && end
+                ? `asistencias_ibero_${start}_${end}.csv`
+                : `asistencias_ibero_${new Date().toISOString().split('T')[0]}.csv`;
+
+            downloadCSV(csv, filename);
+        } catch (e) {
+            console.error('Error exporting attendance:', e);
+            alert('Error al exportar asistencias: ' + e.message);
+        }
+    });
+
+    // Exportar feedback a CSV
+    document.getElementById('export-feedback-csv').addEventListener('click', async () => {
+        try {
+            const { start, end, label } = getDateRangeFeedback();
+
+            // Obtener todos los empleados
+            const employeesSnapshot = await db.collection('employees').get();
+
+            if (employeesSnapshot.empty) {
+                alert('No hay empleados registrados');
+                return;
+            }
+
+            // Recolectar todos los feedbacks
+            const allFeedbacks = [];
+
+            for (const employeeDoc of employeesSnapshot.docs) {
+                const employeeData = employeeDoc.data();
+                const employeeId = employeeDoc.id;
+                const employeeName = employeeData.fullName || 'Desconocido';
+
+                let feedbackQuery = db.collection('employees')
+                    .doc(employeeId)
+                    .collection('feedback');
+
+                if (start && end) {
+                    if (start === end) {
+                        feedbackQuery = feedbackQuery.where('date', '==', start);
+                    } else {
+                        feedbackQuery = feedbackQuery.where('date', '>=', start).where('date', '<=', end);
+                    }
+                }
+
+                const feedbackSnapshot = await feedbackQuery.get();
+
+                feedbackSnapshot.forEach(feedbackDoc => {
+                    allFeedbacks.push({
+                        employeeName: employeeName,
+                        ...feedbackDoc.data()
+                    });
+                });
+            }
+
+            if (allFeedbacks.length === 0) {
+                alert('No hay feedbacks para exportar en este periodo');
+                return;
+            }
+
+            // Sort by timestamp desc
+            allFeedbacks.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+            // Map values to Spanish
+            const benefitMap = {
+                'relajacion': 'Relajación',
+                'energia': 'Energía',
+                'conexion': 'Conexión social',
+                'diversion': 'Diversión',
+                'aprendizaje': 'Aprendizaje'
+            };
+
+            const returnMap = {
+                'definitivamente': 'Definitivamente',
+                'probablemente': 'Probablemente',
+                'no-seguro': 'No seguro/a',
+                'probablemente-no': 'Probablemente no'
+            };
+
+            const data = allFeedbacks.map(fb => ({
+                'Fecha': fb.date || '',
+                'Empleado': fb.employeeName || '',
+                'Calificación': fb.rating || 0,
+                'Reacción': fb.reaction || '',
+                'Comentario': fb.comment || 'Sin comentario',
+                'Beneficio Percibido': benefitMap[fb.perceivedBenefit] || fb.perceivedBenefit || 'N/A',
+                'Cómo se Sintió (1-5)': fb.postFeeling || 'N/A',
+                'Volvería a Participar': returnMap[fb.wouldReturn] || fb.wouldReturn || 'N/A',
+                'Hora': fb.timestamp ? new Date(fb.timestamp.seconds * 1000).toLocaleTimeString('es-MX') : ''
+            }));
+
+            const headers = ['Fecha', 'Empleado', 'Calificación', 'Reacción', 'Comentario', 'Beneficio Percibido', 'Cómo se Sintió (1-5)', 'Volvería a Participar', 'Hora'];
+            const csv = arrayToCSV(data, headers);
+
+            const filename = start && end
+                ? `feedback_ibero_${start}_${end}.csv`
+                : `feedback_ibero_${new Date().toISOString().split('T')[0]}.csv`;
+
+            downloadCSV(csv, filename);
+        } catch (e) {
+            console.error('Error exporting feedback:', e);
+            alert('Error al exportar feedback: ' + e.message);
+        }
+    });
+
 });

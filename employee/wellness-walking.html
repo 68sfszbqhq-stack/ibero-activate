@@ -4,14 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Progreso de Caminatas | IBERO ACTÍVATE</title>
+    <title>Sesión de Caminata | IBERO ACTÍVATE</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../assets/favicon.png">
 
     <!-- CSS -->
     <link rel="stylesheet" href="../css/design-system.css">
-    <link rel="stylesheet" href="../css/wellness-walking.css">
+
+    <!-- Estilos específicos para el nuevo wizard -->
     <style>
         .page-header {
             background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url('../assets/health-header.png');
@@ -19,12 +20,190 @@
             background-position: center;
             color: white;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            padding: 3rem 1rem;
+            border-radius: 0 0 2rem 2rem;
+            margin-bottom: 2rem;
         }
 
-        .page-header h1,
-        .page-header p,
-        .page-header i {
-            color: white !important;
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            background: #e5e7eb;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .step-dot.active {
+            background: var(--primary-color, #4f46e5);
+            transform: scale(1.2);
+        }
+
+        .wizard-step {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .wizard-step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .mood-selector,
+        .weather-selector {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .selection-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 80px;
+        }
+
+        .selection-btn i {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: #6b7280;
+        }
+
+        .selection-btn.selected {
+            border-color: var(--primary-color, #4f46e5);
+            background: #eff6ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .selection-btn.selected i {
+            color: var(--primary-color, #4f46e5);
+        }
+
+        .borg-scale-container {
+            display: grid;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .borg-item {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .borg-item:hover {
+            background: #f3f4f6;
+        }
+
+        .borg-item.selected {
+            background: #e0e7ff;
+            border: 1px solid #4f46e5;
+        }
+
+        .borg-value {
+            font-weight: bold;
+            width: 30px;
+            text-align: center;
+            margin-right: 1rem;
+            color: #4f46e5;
+        }
+
+        .timer-display {
+            font-size: 4rem;
+            font-weight: 700;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            color: #1f2937;
+            margin: 2rem 0;
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 20px rgba(79, 70, 229, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+            }
+        }
+
+        /* Utility classes for layout */
+        .wellness-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color, #4f46e5);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+        }
+
+        .btn-secondary {
+            background-color: white;
+            color: #374151;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            margin-top: 0.25rem;
         }
     </style>
 
@@ -41,9 +220,6 @@
 
     <!-- Google API Client (para Google Fit) -->
     <script src="https://apis.google.com/js/api.js"></script>
-
-    <meta name="description"
-        content="Seguimiento de caminatas basado en evidencia científica - 7,000 pasos para salud óptima">
 </head>
 
 <body>
@@ -55,307 +231,320 @@
         <!-- Header -->
         <header class="page-header">
             <div class="header-content">
-                <div class="header-title">
-                    <i class="fas fa-walking"></i>
-                    <div>
-                        <h1>Mi Progreso de Caminatas</h1>
-                        <p class="subtitle">Basado en Evidencia Científica</p>
-                    </div>
-                </div>
-                <div class="header-actions" style="display: flex; gap: 10px;">
-                    <button class="btn-sync" onclick="showHistoryModal()"
-                        style="background: rgba(255,255,255,0.2); backdrop-filter: blur(5px);">
-                        <i class="fas fa-history"></i> Historial
-                    </button>
-                    <button class="btn-sync" onclick="showSyncOptions()">
-                        <i class="fas fa-sync-alt"></i> Sincronizar
-                    </button>
-                </div>
+                <i class="fas fa-hiking fa-3x mb-3"></i>
+                <h1>Sesión de Caminata</h1>
+                <p class="subtitle">Conecta cuerpo y mente a cada paso</p>
+            </div>
+            <div style="margin-top: 1rem;">
+                <button class="btn-secondary" style="width: auto; padding: 0.5rem 1rem;"
+                    onclick="document.getElementById('history-modal').style.display='flex'">
+                    <i class="fas fa-history"></i> Ver Historial
+                </button>
             </div>
         </header>
 
-        <!-- Tarjeta de Meta Diaria -->
-        <section class="wellness-card main-goal-card">
-            <div class="card-header">
-                <h2>Mi Meta de Hoy</h2>
-                <span class="evidence-badge" title="Basado en investigación científica">
-                    <i class="fas fa-flask"></i> Evidence-Based
-                </span>
+        <!-- WIZARD CONTAINER -->
+        <div class="max-w-3xl mx-auto px-4" style="max-width: 800px; margin: 0 auto;">
+
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step-dot active" id="dot-1"></div>
+                <div class="step-dot" id="dot-2"></div>
+                <div class="step-dot" id="dot-3"></div>
             </div>
 
-            <div class="goal-container">
-                <!-- Círculo de Progreso -->
-                <div class="progress-circle" id="steps-circle" style="--progress: 0%">
-                    <div class="circle-content">
-                        <span class="step-count" id="current-steps">0</span>
-                        <small>de 7,000 pasos</small>
-                        <div class="percentage" id="percentage">0%</div>
-                    </div>
+            <!-- STEP 1: PREPARACIÓN -->
+            <section id="step-1" class="wizard-step active wellness-card">
+                <div class="card-header text-center block mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">1. Preparación</h2>
+                    <p class="text-gray-500">Antes de empezar, conecta con tu entorno.</p>
                 </div>
 
-                <!-- Información de Salud -->
-                <div class="health-info">
-                    <div class="health-insight">
-                        <i class="fas fa-heart-pulse"></i>
-                        <p id="health-tip">Comienza hoy. 7,000 pasos reducen tu mortalidad en un 50-70%.</p>
-                    </div>
-
-                    <div class="metrics-grid">
-                        <div class="metric-item">
-                            <i class="fas fa-fire"></i>
-                            <div>
-                                <span class="metric-value" id="calories-today">0</span>
-                                <span class="metric-label">Calorías</span>
-                            </div>
+                <!-- Clima -->
+                <div class="form-group mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">¿Cómo está el clima?</label>
+                    <div class="weather-selector" id="weather-selector">
+                        <div class="selection-btn" onclick="selectOption('weather', 'sunny', this)">
+                            <i class="fas fa-sun text-yellow-500"></i>
+                            <span>Soleado</span>
                         </div>
-                        <div class="metric-item">
-                            <i class="fas fa-route"></i>
-                            <div>
-                                <span class="metric-value" id="distance-today">0</span>
-                                <span class="metric-label">km</span>
-                            </div>
+                        <div class="selection-btn" onclick="selectOption('weather', 'cloudy', this)">
+                            <i class="fas fa-cloud text-gray-400"></i>
+                            <span>Nublado</span>
                         </div>
-                        <div class="metric-item">
-                            <i class="fas fa-clock"></i>
-                            <div>
-                                <span class="metric-value" id="duration-today">0</span>
-                                <span class="metric-label">minutos</span>
-                            </div>
+                        <div class="selection-btn" onclick="selectOption('weather', 'rain', this)">
+                            <i class="fas fa-cloud-rain text-blue-400"></i>
+                            <span>Lluvia</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('weather', 'cold', this)">
+                            <i class="fas fa-snowflake text-cyan-300"></i>
+                            <span>Frío</span>
                         </div>
                     </div>
-
-                    <!-- Indicador de Caminata Continua -->
-                    <div class="continuous-indicator" id="continuous-indicator" style="display: none;">
-                        <i class="fas fa-check-circle"></i>
-                        <span>¡Caminata continua de 15+ minutos! Beneficio cardiovascular adicional.</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Opciones de Sincronización -->
-        <section class="sync-options" id="sync-options" style="display: none;">
-            <div class="wellness-card">
-                <h3>Sincronizar Datos</h3>
-
-                <!-- Google Fit -->
-                <div class="sync-option">
-                    <div class="sync-icon google-fit">
-                        <i class="fab fa-google"></i>
-                    </div>
-                    <div class="sync-details">
-                        <h4>Google Fit</h4>
-                        <p>Sincroniza automáticamente tus pasos desde tu dispositivo Android</p>
-                    </div>
-                    <button class="btn-primary" onclick="syncWithGoogleFit()">
-                        <i class="fas fa-sync"></i> Conectar
-                    </button>
+                    <input type="hidden" id="input_weather">
                 </div>
 
-                <!-- Entrada Manual (iOS) -->
-                <div class="sync-option">
-                    <div class="sync-icon apple-health">
-                        <i class="fab fa-apple"></i>
+                <!-- Emoción Inicial -->
+                <div class="form-group mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">¿Cómo te sientes ahora?</label>
+                    <div class="mood-selector" id="mood-pre-selector">
+                        <div class="selection-btn" onclick="selectOption('mood_pre', 'stressed', this)">
+                            <i class="fas fa-tired text-red-400"></i>
+                            <span>Estresado</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('mood_pre', 'tired', this)">
+                            <i class="fas fa-battery-quarter text-orange-400"></i>
+                            <span>Cansado</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('mood_pre', 'neutral', this)">
+                            <i class="fas fa-meh text-gray-400"></i>
+                            <span>Neutral</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('mood_pre', 'good', this)">
+                            <i class="fas fa-smile text-green-500"></i>
+                            <span>Bien</span>
+                        </div>
                     </div>
-                    <div class="sync-details">
-                        <h4>Apple Health (Manual)</h4>
-                        <p>Ingresa tus pasos desde la app Salud de iPhone</p>
-                    </div>
-                    <button class="btn-secondary" onclick="showManualEntry()">
-                        <i class="fas fa-keyboard"></i> Ingresar
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- Formulario de Entrada Manual -->
-        <section class="manual-entry" id="manual-entry" style="display: none;">
-            <div class="wellness-card">
-                <div class="card-header">
-                    <h3>Registrar Pasos Manualmente</h3>
-                    <button class="btn-close" onclick="hideManualEntry()">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <input type="hidden" id="input_mood_pre">
                 </div>
 
-                <form onsubmit="event.preventDefault(); saveManualSteps();">
-                    <div class="form-group">
-                        <label for="manual-steps">
-                            <i class="fas fa-shoe-prints"></i>
-                            Número de Pasos
+                <!-- Hidratación -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Hidratación Previa</label>
+                    <div class="flex gap-4" style="display: flex; gap: 1rem;">
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 flex-1"
+                            style="flex: 1; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem;">
+                            <input type="radio" name="hydration" value="low" class="mr-2">
+                            <span>Poca (Sed)</span>
                         </label>
-                        <input type="number" id="manual-steps" class="form-control" placeholder="Ej: 5000" min="0"
-                            required>
-                        <small class="form-hint">Abre tu app "Salud" en iPhone y copia el número de pasos de hoy</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="manual-duration">
-                            <i class="fas fa-stopwatch"></i>
-                            Duración (minutos) - Opcional
-                        </label>
-                        <input type="number" id="manual-duration" class="form-control" placeholder="Ej: 20" min="0">
-                    </div>
-
-                    <div class="form-check">
-                        <input type="checkbox" id="continuous-walk" class="form-check-input">
-                        <label for="continuous-walk" class="form-check-label">
-                            <i class="fas fa-running"></i>
-                            ¿Caminaste más de 15 minutos seguidos?
-                            <span class="badge-bonus">+Bonus Cardiovascular</span>
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 flex-1"
+                            style="flex: 1; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem;">
+                            <input type="radio" name="hydration" value="optimal" class="mr-2" checked>
+                            <span>Óptima</span>
                         </label>
                     </div>
+                </div>
 
-                    <button type="submit" class="btn-primary btn-block">
-                        <i class="fas fa-save"></i>
-                        Guardar Pasos
+                <div class="mt-8" style="margin-top: 2rem;">
+                    <button class="btn-primary" onclick="nextStep(2)">
+                        Continuar a Actividad <i class="fas fa-arrow-right ml-2"></i>
                     </button>
-                </form>
-            </div>
-        </section>
+                </div>
+            </section>
 
-        <!-- Resumen Semanal/Mensual -->
-        <section class="wellness-card summary-card">
-            <div class="card-header">
-                <h3>Resumen de los Últimos 30 Días</h3>
-                <div class="view-toggle">
-                    <button class="active" data-view="30">30 días</button>
-                    <button data-view="7">7 días</button>
+            <!-- STEP 2: ACTIVIDAD -->
+            <section id="step-2" class="wizard-step wellness-card text-center">
+                <div class="card-header block mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">2. Tu Caminata</h2>
+                    <p class="text-gray-500">Registra tu actividad (Manual o Cronómetro)</p>
+                </div>
+
+                <!-- Timer Section -->
+                <div id="timer-section" class="py-8" style="padding: 2rem 0;">
+                    <div class="timer-display" id="timer-display">00:00:00</div>
+
+                    <button id="btn-timer-toggle"
+                        class="btn-primary rounded-full w-20 h-20 flex items-center justify-center mx-auto text-2xl shadow-lg transition-transform hover:scale-110"
+                        style="width: 80px; height: 80px; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center;"
+                        onclick="toggleTimer()">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <p class="text-sm text-gray-400 mt-4" id="timer-status">Presiona para iniciar</p>
+                </div>
+
+                <!-- Manual Entry Data Form -->
+                <div id="activity-data-form" class="text-left mt-6 pt-6 border-t border-gray-100"
+                    style="text-align: left; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #f3f4f6;">
+                    <div class="form-group mb-4" style="margin-bottom: 1rem;">
+                        <label style="font-weight: 600;">Pasos Totales</label>
+                        <input type="number" id="input_steps" class="form-control text-lg" placeholder="Ej: 3500">
+                        <small class="text-gray-400">Consultar podómetro o app Salud</small>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4"
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label>Distancia (km)</label>
+                            <input type="number" id="input_distance" class="form-control" step="0.01"
+                                placeholder="Ej: 2.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Cadencia (opcional)</label>
+                            <input type="number" id="input_cadence" class="form-control" placeholder="ZPM">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex gap-4" style="margin-top: 2rem; display: flex; gap: 1rem;">
+                    <button class="btn-secondary flex-1" onclick="prevStep(1)">Atrás</button>
+                    <button class="btn-primary flex-1" onclick="validateStep2()">
+                        Terminar y Reflexionar <i class="fas fa-check ml-2"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- STEP 3: REFLEXIÓN -->
+            <section id="step-3" class="wizard-step wellness-card">
+                <div class="card-header text-center block mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">3. Reflexión Post-Caminata</h2>
+                    <p class="text-gray-500">Lo que no se mide, no se mejora. ¿Cómo te sentiste?</p>
+                </div>
+
+                <!-- Escala de Borg -->
+                <div class="form-group mb-6">
+                    <label class="block font-bold mb-2">Esfuerzo Percibido (Escala de Borg)</label>
+                    <p class="text-sm text-gray-500 mb-3">Del 0 (Nada) al 10 (Extremo)</p>
+                    <div class="borg-scale-container" id="borg-selector">
+                        <div class="borg-item" onclick="selectBorg(3, this)"><span class="borg-value">3</span> Leve
+                            (Puedo cantar)</div>
+                        <div class="borg-item" onclick="selectBorg(5, this)"><span class="borg-value">5</span> Moderado
+                            (Puedo hablar)</div>
+                        <div class="borg-item" onclick="selectBorg(7, this)"><span class="borg-value">7</span> Vigoroso
+                            (Me falta aire)</div>
+                        <div class="borg-item" onclick="selectBorg(9, this)"><span class="borg-value">9</span> Muy Duro
+                            (No puedo hablar)</div>
+                    </div>
+                    <input type="hidden" id="input_borg">
+                </div>
+
+                <!-- Emoción Final -->
+                <div class="form-group mb-6">
+                    <label class="block font-bold mb-2">¿Cómo te sientes AHORA?</label>
+                    <div class="mood-selector" id="mood-post-selector">
+                        <div class="selection-btn" onclick="selectOption('mood_post', 'relaxed', this)">
+                            <i class="fas fa-spa text-purple-400"></i>
+                            <span>Relajado</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('mood_post', 'energized', this)">
+                            <i class="fas fa-bolt text-yellow-500"></i>
+                            <span>Energizado</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('mood_post', 'happy', this)">
+                            <i class="fas fa-smile-beam text-green-500"></i>
+                            <span>Feliz</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('mood_post', 'tired', this)">
+                            <i class="fas fa-bed text-gray-400"></i>
+                            <span>Igual</span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="input_mood_post">
+                </div>
+
+                <!-- Diario de Gratitud -->
+                <div class="form-group mb-6">
+                    <label class="block font-bold mb-2"><i class="fas fa-pen-fancy mr-2"></i>Diario de Gratitud</label>
+                    <textarea id="input_gratitude" class="form-control" rows="3"
+                        placeholder="Escribe un pensamiento, algo que viste o algo por lo que estás agradecido..."></textarea>
+                </div>
+
+                <div class="mt-8 flex gap-4" style="margin-top: 2rem; display: flex; gap: 1rem;">
+                    <button class="btn-secondary flex-1" onclick="prevStep(2)">Atrás</button>
+                    <button class="btn-primary flex-1" onclick="submitSession()">
+                        Guardar Sesión <i class="fas fa-save ml-2"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- NUEVO: Gráfico de Impacto Emocional -->
+            <div class="wellness-card mb-6" id="mood-impact-section" style="display:none;">
+                <div class="card-header mb-4">
+                    <h3 class="font-bold text-gray-800"><i class="fas fa-heart-pulse text-pink-500 mr-2"></i>Tu Impacto
+                        Emocional</h3>
+                    <p class="text-sm text-gray-500">Cómo te sientes ANTES vs DESPUÉS de caminar</p>
+                </div>
+                <div class="mood-chart-container"
+                    style="display: flex; align-items: flex-end; justify-content: space-around; height: 150px; padding-top: 20px;">
+                    <!-- Barras se generarán por JS -->
+                    <p class="text-center text-gray-400 w-full">Registra más sesiones para ver tu evolución emocional.
+                    </p>
                 </div>
             </div>
 
-            <div class="summary-stats">
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="stat-content">
-                        <span class="stat-value" id="avg-steps">0</span>
-                        <span class="stat-label">Promedio de Pasos</span>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon success">
-                        <i class="fas fa-trophy"></i>
-                    </div>
-                    <div class="stat-content">
-                        <span class="stat-value" id="days-with-goal">0</span>
-                        <span class="stat-label">Días con Meta</span>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon warning">
-                        <i class="fas fa-bolt"></i>
-                    </div>
-                    <div class="stat-content">
-                        <span class="stat-value" id="continuous-sessions">0</span>
-                        <span class="stat-label">Sesiones Continuas</span>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon info">
-                        <i class="fas fa-shoe-prints"></i>
-                    </div>
-                    <div class="stat-content">
-                        <span class="stat-value" id="total-steps">0</span>
-                        <span class="stat-label">Pasos Totales</span>
-                    </div>
-                </div>
+            <div id="wellness-badges" class="badges-container mt-6">
+                <!-- Badges render here -->
             </div>
-        </section>
+        </div>
 
-        <!-- Badges de Logros -->
-        <section class="wellness-card badges-card">
-            <div class="card-header">
-                <h3>Mis Logros</h3>
-                <span class="badge-count" id="badge-count">0 insignias</span>
-            </div>
-
-            <div class="badges-container" id="wellness-badges">
-                <!-- Los badges se cargarán dinámicamente -->
-                <div class="no-badges">
-                    <i class="fas fa-medal"></i>
-                    <p>¡Comienza a caminar para desbloquear insignias!</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Información Científica -->
-        <section class="wellness-card science-card">
-            <div class="card-header">
-                <h3>¿Por qué 7,000 pasos?</h3>
-                <i class="fas fa-book-medical"></i>
-            </div>
-
-            <div class="science-content">
-                <div class="science-fact">
-                    <div class="fact-icon">
-                        <i class="fas fa-heartbeat"></i>
-                    </div>
-                    <div class="fact-text">
-                        <h4>Reducción de Mortalidad</h4>
-                        <p>7,000 pasos diarios se asocian con una reducción del 50-70% en la mortalidad por todas las
-                            causas.</p>
-                    </div>
-                </div>
-
-                <div class="science-fact">
-                    <div class="fact-icon">
-                        <i class="fas fa-running"></i>
-                    </div>
-                    <div class="fact-text">
-                        <h4>Caminatas Continuas</h4>
-                        <p>15+ minutos de caminata continua proporcionan beneficios cardiovasculares adicionales,
-                            reduciendo la mortalidad a menos del 1%.</p>
-                    </div>
-                </div>
-
-                <div class="science-fact">
-                    <div class="fact-icon">
-                        <i class="fas fa-brain"></i>
-                    </div>
-                    <div class="fact-text">
-                        <h4>Salud Mental</h4>
-                        <p>La actividad física regular mejora el estado de ánimo, reduce el estrés y aumenta la
-                            productividad laboral.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
     </main>
 
     <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loading-overlay" style="display: none;">
-        <div class="spinner"></div>
-        <p id="loading-message">Cargando...</p>
+    <div class="loading-overlay" id="loading-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 100; flex-direction: column; align-items: center; justify-content: center;">
+        <div class="spinner"
+            style="border: 4px solid #f3f3f3; border-top: 4px solid #4f46e5; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;">
+        </div>
+        <p id="loading-message" style="margin-top: 1rem; color: #4b5563;">Guardando tu esfuerzo...</p>
     </div>
 
-    <!-- Toast Notifications -->
-    <div class="toast-container" id="toast-container"></div>
+    <style>
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .mood-bar-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .mood-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            height: 100px;
+        }
+
+        .bar {
+            width: 20px;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.5s ease;
+            position: relative;
+        }
+
+        .bar-pre {
+            background-color: #e5e7eb;
+        }
+
+        .bar-post {
+            background-color: #ec4899;
+        }
+
+        .mood-date {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+    </style>
 
     <!-- History Modal -->
-    <div id="history-modal" class="loading-overlay" style="display: none; align-items: flex-start; padding-top: 50px;">
+    <div id="history-modal" class="loading-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 50; align-items: flex-start; padding-top: 50px; justify-content: center;">
         <div class="wellness-card"
-            style="width: 90%; max-width: 800px; max-height: 85vh; overflow-y: auto; background: white;">
+            style="width: 90%; max-width: 800px; max-height: 85vh; overflow-y: auto; background: white; margin-top: 0;">
             <div class="card-header"
-                style="position: sticky; top: 0; background: white; z-index: 10; padding-bottom: 10px; border-bottom: 1px solid #eee;">
-                <h3>Historial de Caminatas</h3>
-                <button class="btn-close" onclick="document.getElementById('history-modal').style.display='none'">
+                style="position: sticky; top: 0; background: white; z-index: 10; padding-bottom: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 1.25rem; font-weight: bold;">Historial de Sesiones</h3>
+                <button class="btn-close" onclick="document.getElementById('history-modal').style.display='none'"
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer; color: #6b7280;">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="history-content" style="margin-top: 20px;">
                 <table style="width: 100%; text-align: left; border-collapse: collapse;">
                     <thead>
-                        <tr style="border-bottom: 2px solid #eee; color: #666;">
+                        <tr style="border-bottom: 2px solid #eee; color: #6b7280; font-size: 0.875rem;">
                             <th style="padding: 10px;">Fecha</th>
-                            <th style="padding: 10px;">Pasos</th>
-                            <th style="padding: 10px;">Distancia</th>
-                            <th style="padding: 10px;">Continuo</th>
-                            <th style="padding: 10px;">Fuente</th>
+                            <th style="padding: 10px;">Actividad</th>
+                            <th style="padding: 10px;">Esfuerzo</th>
+                            <th style="padding: 10px;">Ánimo Final</th>
                         </tr>
                     </thead>
                     <tbody id="history-table-body">
@@ -368,10 +557,312 @@
 
     <!-- Scripts -->
     <script src="../js/firebase-config.js"></script>
-    <script src="../js/native-health-integration.js"></script>
     <script src="../js/walking-tracker.js"></script>
-    <script src="../js/ios-sync.js"></script>
-    <script src="../js/wellness-walking-ui.js"></script>
+
+    <!-- Script específico del Wizard de UI & GPS -->
+    <script>
+        // Referencia global al tracker
+        const tracker = window.gpsTracker;
+        let timerInterval;
+        let seconds = 0;
+        let isRunning = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Cargar datos iniciales y MOOD CHART
+            if (window.loadWalkingDashboard) window.loadWalkingDashboard();
+            loadMoodHistory(); // Nueva función para cargar historial visual
+
+            showStep(1);
+        });
+
+        // ==========================================
+        // WIZARD LOGIC
+        // ==========================================
+        function showStep(step) {
+            document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+            document.getElementById(`step-${step}`).classList.add('active');
+
+            // Update dots
+            document.querySelectorAll('.step-dot').forEach((el, index) => {
+                if (index + 1 === step) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function nextStep(step) {
+            // Validate step 1 specifically
+            if (step === 2) {
+                const moodPre = document.getElementById('input_mood_pre').value;
+                if (!moodPre) {
+                    alert("Por favor, selecciona cómo te sientes antes de empezar.");
+                    return;
+                }
+            }
+            showStep(step);
+        }
+
+        function prevStep(step) {
+            showStep(step);
+        }
+
+        function selectOption(category, value, elem) {
+            const input = document.getElementById(`input_${category}`);
+            if (input) input.value = value;
+
+            // Visual feedback
+            const container = elem.parentElement;
+            container.querySelectorAll('.selection-btn').forEach(btn => btn.classList.remove('selected'));
+            elem.classList.add('selected');
+        }
+
+        function selectBorg(value, elem) {
+            const input = document.getElementById('input_borg');
+            if (input) input.value = value;
+
+            const container = document.getElementById('borg-selector');
+            container.querySelectorAll('.borg-item').forEach(btn => btn.classList.remove('selected'));
+            elem.classList.add('selected');
+        }
+
+        // ==========================================
+        // GPS & TIMER LOGIC
+        // ==========================================
+        function toggleTimer() {
+            const btn = document.getElementById('btn-timer-toggle');
+            const icon = btn.querySelector('i');
+            const status = document.getElementById('timer-status');
+
+            if (isRunning) {
+                // --- STOP ---
+                clearInterval(timerInterval);
+                isRunning = false;
+
+                // Detener GPS
+                const stats = tracker.stop();
+
+                // Actualizar UI Final
+                status.textContent = `Finalizado: ${stats.distance_km}km | ${stats.steps} pasos`;
+                btn.classList.remove('pulse-animation');
+                btn.style.background = '#4f46e5';
+                icon.className = 'fas fa-play'; // Reset to Play
+
+                // Llenar inputs automáticamente
+                document.getElementById('input_steps').value = stats.steps;
+                document.getElementById('input_distance').value = stats.distance_km;
+                document.getElementById('input_cadence').value = stats.avg_cadence;
+
+            } else {
+                // --- START ---
+                // Iniciar GPS
+                const started = tracker.start((metrics) => {
+                    // Update realtime metrics
+                    document.getElementById('input_steps').value = metrics.steps;
+                    document.getElementById('input_distance').value = metrics.distance;
+                    document.getElementById('input_cadence').value = metrics.cadence;
+
+                    status.textContent = `Registrando: ${metrics.distance}km | ${metrics.speed} km/h`;
+                });
+
+                if (!started) {
+                    status.textContent = "Error: GPS no disponible. Verifica permisos.";
+                    // Aún así permitimos el timer manual
+                }
+
+                isRunning = true;
+                btn.classList.add('pulse-animation');
+                btn.style.background = '#ef4444'; // Red for Stop
+                icon.className = 'fas fa-pause'; // Show Pause icon
+                if (started) status.textContent = 'Buscando señal GPS...';
+                else status.textContent = 'Cronómetro iniciado (Sin GPS)';
+
+                // Timer Loop
+                timerInterval = setInterval(() => {
+                    seconds++;
+                    const hrs = Math.floor(seconds / 3600);
+                    const mins = Math.floor((seconds % 3600) / 60);
+                    const secs = seconds % 60;
+                    document.getElementById('timer-display').textContent =
+                        `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+        }
+
+        function validateStep2() {
+            // Si el cronómetro sigue corriendo, detenerlo
+            if (isRunning) toggleTimer();
+
+            const stepsInput = document.getElementById('input_steps');
+            const steps = stepsInput ? stepsInput.value : 0;
+
+            // Validación suave: alertar pero permitir continuar
+            if (!steps || steps <= 0) {
+                if (!confirm("No se han registrado pasos. ¿Deseas continuar de todos modos?")) {
+                    stepsInput.focus();
+                    return;
+                }
+            }
+            nextStep(3);
+        }
+
+        async function submitSession() {
+            const getVal = (id) => document.getElementById(id)?.value;
+            const hydrationEl = document.querySelector('input[name="hydration"]:checked');
+
+            const data = {
+                // Step 1
+                weather: getVal('input_weather'),
+                moodPre: getVal('input_mood_pre'),
+                hydration: hydrationEl ? hydrationEl.value : 'unknown',
+
+                // Step 2 (Resultados GPS)
+                steps: getVal('input_steps'),
+                distance: getVal('input_distance'),
+                cadence: getVal('input_cadence'),
+                duration: Math.ceil(seconds / 60) || 1,
+
+                // Step 3
+                borgScale: getVal('input_borg'),
+                moodPost: getVal('input_mood_post'),
+                gratitudeText: getVal('input_gratitude')
+            };
+
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+
+            try {
+                if (typeof window.saveChiWalkingSession === 'function') {
+                    const result = await window.saveChiWalkingSession(data);
+
+                    if (result.success) {
+                        alert("¡Sesión guardada! Has completado tu práctica de hoy.");
+                        location.reload();
+                    } else {
+                        alert("Error: " + result.error);
+                    }
+                } else {
+                    alert("Error: Configuración incompleta (Función de guardado no encontrada).");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error inesperado: " + e.message);
+            } finally {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+            }
+        }
+
+        // ==========================================
+        // MOOD CHART & HISTORY VISUALIZATION
+        // ==========================================
+        async function loadMoodHistory() {
+            try {
+                // Wait for auth
+                let user = firebase.auth().currentUser;
+                if (!user) {
+                    setTimeout(() => {
+                        user = firebase.auth().currentUser;
+                        if (user) loadMoodHistory();
+                    }, 1500);
+                    return;
+                }
+
+                // Fetch stats manually
+                const snapshot = await db.collection('wellness_records')
+                    .doc(user.email)
+                    .collection('chi_sessions')
+                    .orderBy('timestamp', 'desc')
+                    .limit(5)
+                    .get();
+
+                const sessions = [];
+                snapshot.forEach(doc => sessions.unshift(doc.data())); // Orden cronológico
+
+                renderMoodChart(sessions);
+                renderHistoryTable(sessions.slice().reverse()); // Tabla en orden inverso
+
+            } catch (e) { console.error("Error loading mood history", e); }
+        }
+
+        function renderMoodChart(sessions) {
+            const container = document.querySelector('.mood-chart-container');
+            if (!sessions.length || !container) return;
+
+            container.innerHTML = '';
+            const section = document.getElementById('mood-impact-section');
+            if (section) section.style.display = 'block';
+
+            const moodValue = (m) => {
+                const map = { 'stressed': 1, 'tired': 2, 'neutral': 3, 'good': 4, 'relaxed': 4, 'happy': 5, 'energized': 5 };
+                return map[m] || 2;
+            };
+
+            const moodColor = (val) => {
+                if (val <= 2) return '#ef4444'; // Red
+                if (val == 3) return '#fbbf24'; // Yellow
+                return '#10b981'; // Green
+            };
+
+            sessions.forEach(s => {
+                const pre = moodValue(s.tech_values?.mindful?.mood_pre);
+                const post = moodValue(s.tech_values?.mindful?.mood_post);
+                const date = new Date(s.date).toLocaleDateString(undefined, { weekday: 'short' });
+
+                const html = `
+                <div class="mood-bar-group">
+                    <div class="mood-bars">
+                        <div class="bar bar-pre" style="height: ${pre * 20}%; background-color: #9ca3af;" title="Antes: ${s.tech_values?.mindful?.mood_pre}"></div>
+                        <div class="bar bar-post" style="height: ${post * 20}%; background-color: ${moodColor(post)}" title="Después: ${s.tech_values?.mindful?.mood_post}"></div>
+                    </div>
+                    <span class="mood-date">${date}</span>
+                </div>`;
+                container.innerHTML += html;
+            });
+        }
+
+        function renderHistoryTable(sessions) {
+            const tbody = document.getElementById('history-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            sessions.forEach(s => {
+                const row = document.createElement('tr');
+                row.className = "border-b border-gray-100 hover:bg-gray-50";
+
+                const weatherMap = {
+                    'sunny': '<i class="fas fa-sun text-yellow-500"></i>',
+                    'cloudy': '<i class="fas fa-cloud text-gray-400"></i>',
+                    'rain': '<i class="fas fa-cloud-rain text-blue-400"></i>',
+                    'cold': '<i class="fas fa-snowflake text-cyan-300"></i>'
+                };
+                const wIcon = weatherMap[s.tech_values?.context?.weather] || '<i class="fas fa-cloud"></i>';
+
+                const moodMap = {
+                    'happy': '<i class="fas fa-smile text-green-500"></i>',
+                    'energized': '<i class="fas fa-bolt text-yellow-500"></i>',
+                    'relaxed': '<i class="fas fa-spa text-purple-400"></i>',
+                    'neutral': '<i class="fas fa-meh text-gray-400"></i>',
+                    'tired': '<i class="fas fa-bed text-gray-400"></i>',
+                    'stressed': '<i class="fas fa-tired text-red-400"></i>'
+                };
+                const mIcon = moodMap[s.tech_values?.mindful?.mood_post] || '<i class="fas fa-user"></i>';
+
+                row.innerHTML = `
+                    <td class="p-3 text-sm">${new Date(s.date).toLocaleDateString()}</td>
+                    <td class="p-3">
+                        <div class="font-bold text-gray-800">${s.tech_values?.performance?.steps || 0} pasos</div>
+                        <div class="text-xs text-gray-500">${wIcon} ${(s.tech_values?.performance?.distance_km || 0).toFixed(2)}km</div>
+                    </td>
+                    <td class="p-3 text-sm">
+                        <span class="px-2 py-1 rounded bg-gray-100 font-bold text-gray-700">${s.tech_values?.perception?.borg_scale || '-'}</span>
+                    </td>
+                    <td class="p-3 text-lg text-center">${mIcon}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    </script>
 </body>
 
 </html>

@@ -120,9 +120,15 @@
                     <div class="card-header"
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                         <h2>Empleados Registrados</h2>
-                        <button id="export-employees" class="btn-primary">
-                            <i class="fa-solid fa-file-pdf"></i> Exportar PDF
-                        </button>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button id="export-employees" class="btn-primary">
+                                <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+                            </button>
+                            <button id="export-employees-csv" class="btn-primary"
+                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                            </button>
+                        </div>
                     </div>
                     <div class="table-container" style="overflow-x: auto;">
                         <table id="employees-table" style="width: 100%; border-collapse: collapse;">
@@ -174,6 +180,10 @@
                             <button id="export-attendance" class="btn-primary">
                                 <i class="fa-solid fa-file-pdf"></i> Exportar PDF
                             </button>
+                            <button id="export-attendance-csv" class="btn-primary"
+                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                            </button>
                         </div>
                     </div>
                     <div class="table-container" style="overflow-x: auto;">
@@ -224,6 +234,10 @@
 
                             <button id="export-feedback" class="btn-primary">
                                 <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+                            </button>
+                            <button id="export-feedback-csv" class="btn-primary"
+                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <i class="fa-solid fa-file-csv"></i> Exportar CSV
                             </button>
                         </div>
                     </div>

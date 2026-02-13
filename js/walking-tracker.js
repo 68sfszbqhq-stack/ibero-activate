@@ -4,643 +4,320 @@
 // Basado en investigación científica:
 // - 7,000 pasos/día = reducción óptima de mortalidad
 // - 15+ minutos continuos = beneficio cardiovascular adicional
-// - Integración con Google Fit API (gratis)
-// - Entrada manual para usuarios iOS
+// - Integración con GPS Nativo Web para cálculo preciso
 
 const WALKING_GOALS = {
-    DAILY_STEPS: 7000,           // Meta óptima según evidencia
-    CONTINUOUS_MINUTES: 15,       // Mínimo para beneficio cardiovascular
-    WEEKLY_SESSIONS: 5            // Frecuencia recomendada
+    DAILY_STEPS: 7000,
+    CONTINUOUS_MINUTES: 15,
+    STRIDE_LENGTH_METERS: 0.74 // Promedio ajustable
 };
 
 // ========================================
-// GOOGLE FIT API CONFIGURATION
+// CLASE GPS TRACKER (Web Geolocation API)
 // ========================================
-const GOOGLE_FIT_CONFIG = {
-    clientId: '', // El usuario debe configurar esto en Google Cloud Console
-    scope: 'https://www.googleapis.com/auth/fitness.activity.read',
-    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/fitness/v1/rest']
-};
+class GPSTracker {
+    constructor() {
+        this.watchId = null;
+        this.isTracking = false;
+        this.startTime = null;
+        this.pathPoints = [];
 
-// ========================================
-// GUARDAR SESIÓN DE CAMINATA
-// ========================================
-async function saveWalkingSession(sessionData) {
-    try {
-        const user = auth.currentUser;
-        if (!user) {
-            throw new Error('Usuario no autenticado');
+        // Métricas en tiempo real
+        this.totalDistanceKm = 0;
+        this.totalSteps = 0;
+        this.currentCadence = 0; // Pasos por minuto
+        this.currentSpeedKmh = 0;
+
+        // Configuración
+        this.minAccuracyMeters = 50; // Ignorar puntos con mala precisión
+        this.minDisplacementMeters = 2; // Ignorar micromovimientos (ruido GPS)
+    }
+
+    start(onUpdateCallback) {
+        if (!navigator.geolocation) {
+            console.error("Geolocalización no soportada");
+            return false;
         }
 
-        // Obtener email del colaborador
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        // PRIORIDAD: Auth Email
-        const userEmail = user.email || userDoc.data()?.email;
+        this.isTracking = true;
+        this.startTime = Date.now();
+        this.pathPoints = [];
+        this.totalDistanceKm = 0;
+        this.totalSteps = 0;
+        this.currentCadence = 0;
 
-        // Validar datos mínimos
-        if (!sessionData.steps || sessionData.steps < 0) {
-            throw new Error('Número de pasos inválido');
-        }
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        };
 
-        const today = new Date().toISOString().split('T')[0];
-
-        // Calcular si cumple con el criterio de continuidad
-        const isContinuous = (sessionData.duration_mins || 0) >= WALKING_GOALS.CONTINUOUS_MINUTES;
-
-        // Calcular calorías estimadas (si no se proporcionan)
-        const calories = sessionData.calories || estimateCalories(
-            sessionData.steps,
-            sessionData.duration_mins || 0
+        this.watchId = navigator.geolocation.watchPosition(
+            (position) => this._handlePositionUpdate(position, onUpdateCallback),
+            (error) => this._handleError(error),
+            options
         );
 
-        const walkingData = {
-            collaboratorEmail: userEmail,
-            date: today,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            metrics: {
-                steps: parseInt(sessionData.steps),
-                distance_km: parseFloat(sessionData.distance_km || estimateDistance(sessionData.steps)),
-                calories: parseFloat(calories),
-                duration_mins: parseInt(sessionData.duration_mins || 0),
-                intensity: sessionData.intensity || 'moderate'
-            },
-            physiological: {
-                avg_heart_rate: sessionData.avg_heart_rate || null,
-                max_heart_rate: sessionData.max_heart_rate || null
-            },
-            source: sessionData.source || 'Manual',
-            is_continuous: isContinuous,
-            meets_goal: parseInt(sessionData.steps) >= WALKING_GOALS.DAILY_STEPS
-        };
-
-        // Guardar en Firestore
-        const docRef = await db.collection('walking_stats').add(walkingData);
-
-        console.log('✅ Sesión de caminata guardada:', docRef.id);
-
-        // Actualizar estadísticas del usuario
-        await updateUserWalkingStats(userEmail, walkingData);
-
-        return { success: true, id: docRef.id };
-    } catch (error) {
-        console.error('❌ Error al guardar sesión de caminata:', error);
-        return { success: false, error: error.message };
+        console.log("📡 GPS Traking Iniciado");
+        return true;
     }
-}
 
-// ========================================
-// ACTUALIZAR ESTADÍSTICAS DEL USUARIO
-// ========================================
-async function updateUserWalkingStats(email, sessionData) {
-    try {
-        const statsRef = db.collection('wellness_records').doc(email);
-        const statsDoc = await statsRef.get();
-
-        const today = sessionData.date;
-        const currentStats = statsDoc.exists ? statsDoc.data() : {};
-
-        // Inicializar estructura si no existe
-        if (!currentStats.daily_stats) {
-            currentStats.daily_stats = {};
+    stop() {
+        if (this.watchId !== null) {
+            navigator.geolocation.clearWatch(this.watchId);
+            this.watchId = null;
         }
+        this.isTracking = false;
+        const durationMin = (Date.now() - this.startTime) / 60000;
 
-        // Actualizar o crear entrada del día
-        currentStats.daily_stats[today] = {
-            steps: sessionData.metrics.steps,
-            continuous_walk_minutes: sessionData.metrics.duration_mins,
-            calories: sessionData.metrics.calories,
-            distance_km: sessionData.metrics.distance_km,
-            heart_rate_avg: sessionData.physiological.avg_heart_rate,
-            source: sessionData.source,
-            is_continuous: sessionData.is_continuous,
-            meets_goal: sessionData.meets_goal
-        };
-
-        // Actualizar badges si alcanza meta
-        if (!currentStats.badges) {
-            currentStats.badges = [];
-        }
-
-        if (sessionData.meets_goal && !currentStats.badges.includes('7k_club')) {
-            currentStats.badges.push('7k_club');
-        }
-
-        if (sessionData.is_continuous && !currentStats.badges.includes('continuous_walker')) {
-            currentStats.badges.push('continuous_walker');
-        }
-
-        // Guardar actualización
-        await statsRef.set({
-            ...currentStats,
-            last_sync: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-
-        console.log('✅ Estadísticas de usuario actualizadas');
-    } catch (error) {
-        console.error('❌ Error al actualizar estadísticas:', error);
-    }
-}
-
-// ========================================
-// OBTENER ESTADÍSTICAS DEL USUARIO
-// ========================================
-async function getUserWalkingStats(email, days = 30) {
-    try {
-        const statsDoc = await db.collection('wellness_records').doc(email).get();
-
-        if (!statsDoc.exists) {
-            return {
-                daily_stats: {},
-                badges: [],
-                summary: {
-                    total_steps: 0,
-                    avg_steps: 0,
-                    days_with_goal: 0,
-                    continuous_sessions: 0
-                }
-            };
-        }
-
-        const data = statsDoc.data();
-        const dailyStats = data.daily_stats || {};
-
-        // Calcular resumen
-        const summary = calculateWalkingSummary(dailyStats, days);
+        console.log(`🛑 GPS Detenido. Distancia: ${this.totalDistanceKm.toFixed(2)}km, Pasos: ${this.totalSteps}`);
 
         return {
-            daily_stats: dailyStats,
-            badges: data.badges || [],
-            summary: summary
+            distance_km: parseFloat(this.totalDistanceKm.toFixed(3)),
+            steps: this.totalSteps,
+            duration_minutes: Math.ceil(durationMin),
+            avg_cadence: durationMin > 0 ? Math.round(this.totalSteps / durationMin) : 0,
+            path: this.pathPoints // Para guardar ruta si se desea
         };
-    } catch (error) {
-        console.error('❌ Error al obtener estadísticas:', error);
-        return null;
+    }
+
+    _handlePositionUpdate(position, callback) {
+        const { latitude, longitude, accuracy, speed, heading } = position.coords;
+        const timestamp = position.timestamp;
+
+        // Filtrar lectura pobre
+        if (accuracy > this.minAccuracyMeters) return;
+
+        const newPoint = { lat: latitude, lng: longitude, time: timestamp };
+
+        if (this.pathPoints.length > 0) {
+            const lastPoint = this.pathPoints[this.pathPoints.length - 1];
+
+            // Distancia Haversine entre puntos
+            const distKm = this._calculateHaversine(
+                lastPoint.lat, lastPoint.lng,
+                latitude, longitude
+            );
+            const distMeters = distKm * 1000;
+
+            // Filtro de ruido: Mínimo desplazamiento y velocidad lógica (< 25km/h para caminar/correr)
+            const timeDiffSec = (timestamp - lastPoint.time) / 1000;
+            const speedKmh = (distKm / (timeDiffSec / 3600));
+
+            if (distMeters >= this.minDisplacementMeters && speedKmh < 25) {
+                this.totalDistanceKm += distKm;
+
+                // Estimación de Pasos
+                // Se asume zancada promedio. Se podría calibrar por usuario.
+                // Ajuste dinámico: menor zancada a menor velocidad? Por ahora constante.
+                const newSteps = Math.round(distMeters / WALKING_GOALS.STRIDE_LENGTH_METERS);
+                this.totalSteps += newSteps;
+
+                // Cálculo de Cadencia Instantánea (pasos/min)
+                if (timeDiffSec > 0) {
+                    this.currentCadence = Math.round((newSteps / timeDiffSec) * 60);
+                    this.currentSpeedKmh = speedKmh;
+                }
+
+                this.pathPoints.push(newPoint);
+
+                // Notificar a la UI
+                if (callback) {
+                    callback({
+                        distance: this.totalDistanceKm.toFixed(2),
+                        steps: this.totalSteps,
+                        cadence: this.currentCadence,
+                        speed: this.currentSpeedKmh.toFixed(1)
+                    });
+                }
+            }
+        } else {
+            // Primer punto
+            this.pathPoints.push(newPoint);
+        }
+    }
+
+    _handleError(error) {
+        console.warn(`GPS Error (${error.code}): ${error.message}`);
+    }
+
+    _calculateHaversine(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Radio Tierra km
+        const dLat = this._deg2rad(lat2 - lat1);
+        const dLon = this._deg2rad(lon2 - lon1);
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(this._deg2rad(lat1)) * Math.cos(this._deg2rad(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    _deg2rad(deg) {
+        return deg * (Math.PI / 180);
     }
 }
 
-// ========================================
-// CALCULAR RESUMEN DE CAMINATAS
-// ========================================
-function calculateWalkingSummary(dailyStats, days) {
-    const today = new Date();
-    const cutoffDate = new Date(today.getTime() - (days * 24 * 60 * 60 * 1000));
+// Instancia Global
+const gpsTracker = new GPSTracker();
 
-    let totalSteps = 0;
-    let daysWithGoal = 0;
-    let continuousSessions = 0;
-    let daysCount = 0;
-
-    Object.entries(dailyStats).forEach(([date, stats]) => {
-        const statDate = new Date(date);
-        if (statDate >= cutoffDate) {
-            totalSteps += stats.steps || 0;
-            daysCount++;
-
-            if (stats.meets_goal) daysWithGoal++;
-            if (stats.is_continuous) continuousSessions++;
-        }
-    });
-
-    return {
-        total_steps: totalSteps,
-        avg_steps: daysCount > 0 ? Math.round(totalSteps / daysCount) : 0,
-        days_with_goal: daysWithGoal,
-        continuous_sessions: continuousSessions,
-        days_tracked: daysCount
-    };
-}
 
 // ========================================
-// GOOGLE FIT INTEGRATION
+// VALIDACIÓN DE ACTIVACIÓN (Seguridad)
 // ========================================
-let googleFitAccessToken = null;
-
-// Inicializar Google API Client
-function initGoogleFitAPI() {
-    // Cargar la librería de Google API
-    gapi.load('client:auth2', () => {
-        gapi.client.init({
-            clientId: GOOGLE_FIT_CONFIG.clientId,
-            scope: GOOGLE_FIT_CONFIG.scope,
-            discoveryDocs: GOOGLE_FIT_CONFIG.discoveryDocs
-        }).then(() => {
-            console.log('✅ Google Fit API inicializada');
-        }).catch(error => {
-            console.error('❌ Error al inicializar Google Fit API:', error);
-        });
-    });
-}
-
-// Autenticar con Google Fit
-async function authenticateGoogleFit() {
+async function verifyEmployeeActivation(employeeId) {
+    if (!employeeId) return false;
     try {
-        const authInstance = gapi.auth2.getAuthInstance();
-        const user = await authInstance.signIn();
-        const authResponse = user.getAuthResponse();
+        const employeeDoc = await db.collection('employees').doc(employeeId).get();
+        if (!employeeDoc.exists) return false;
 
-        googleFitAccessToken = authResponse.access_token;
-
-        console.log('✅ Autenticado con Google Fit');
+        const data = employeeDoc.data();
+        if (data.status !== 'active') {
+            console.warn(`Empleado ${employeeId} inactivo.`);
+            return false;
+        }
         return true;
     } catch (error) {
-        console.error('❌ Error al autenticar con Google Fit:', error);
+        console.error("Error verificando activación:", error);
         return false;
     }
 }
 
-// Obtener pasos de Google Fit
-async function getStepsFromGoogleFit(date = null) {
-    try {
-        if (!googleFitAccessToken) {
-            throw new Error('No autenticado con Google Fit');
-        }
-
-        const targetDate = date ? new Date(date) : new Date();
-        const startTime = new Date(targetDate.setHours(0, 0, 0, 0)).getTime();
-        const endTime = new Date(targetDate.setHours(23, 59, 59, 999)).getTime();
-
-        const response = await gapi.client.fitness.users.dataset.aggregate({
-            userId: 'me',
-            requestBody: {
-                aggregateBy: [{
-                    dataTypeName: 'com.google.step_count.delta',
-                    dataSourceId: 'derived:com.google.step_count.delta:com.google.android.gms:estimated_steps'
-                }],
-                bucketByTime: { durationMillis: 86400000 }, // 1 día
-                startTimeMillis: startTime,
-                endTimeMillis: endTime
-            }
-        });
-
-        const data = response.result;
-        let totalSteps = 0;
-
-        if (data.bucket && data.bucket.length > 0) {
-            data.bucket.forEach(bucket => {
-                if (bucket.dataset && bucket.dataset[0] && bucket.dataset[0].point) {
-                    bucket.dataset[0].point.forEach(point => {
-                        if (point.value && point.value[0]) {
-                            totalSteps += point.value[0].intVal || 0;
-                        }
-                    });
-                }
-            });
-        }
-
-        return totalSteps;
-    } catch (error) {
-        console.error('❌ Error al obtener pasos de Google Fit:', error);
-        return 0;
-    }
-}
-
-// Sincronizar con Google Fit
-async function syncWithGoogleFit() {
-    try {
-        showLoading('Sincronizando...');
-
-        // 1. Intentar Sincronización Nativa (Capacitor)
-        if (window.NativeHealth && window.NativeHealth.isNative()) {
-            console.log('Detectado entorno nativo. Intentando HealthKit/Google Fit nativo...');
-            const hasPermission = await window.NativeHealth.requestPermissions();
-            if (hasPermission) {
-                const nativeSteps = await window.NativeHealth.getTodaySteps();
-                if (nativeSteps !== null && nativeSteps > 0) {
-                    const result = await saveWalkingSession({
-                        steps: nativeSteps,
-                        source: 'HealthKit/Native',
-                        duration_mins: 0
-                    });
-
-                    if (result.success) {
-                        showToast('✅ Sincronizado con Salud: ' + nativeSteps + ' pasos', 'success');
-                        await loadWalkingDashboard();
-                        hideLoading();
-                        return; // Terminar aquí si fue exitoso
-                    }
-                }
-            }
-        }
-
-        // 2. Fallback a Google Fit Web API
-        showLoading('Conectando a Google Fit Web...');
-
-        // Autenticar si no está autenticado
-        if (!googleFitAccessToken) {
-            const authenticated = await authenticateGoogleFit();
-            if (!authenticated) {
-                throw new Error('No se pudo autenticar con Google Fit');
-            }
-        }
-
-        // Obtener pasos del día
-        const steps = await getStepsFromGoogleFit();
-
-        if (steps > 0) {
-            // Guardar sesión
-            const result = await saveWalkingSession({
-                steps: steps,
-                source: 'GoogleFit',
-                duration_mins: 0 // Google Fit no proporciona duración continua
-            });
-
-            if (result.success) {
-                showToast('✅ Sincronizado: ' + steps + ' pasos', 'success');
-                // Recargar estadísticas
-                await loadWalkingDashboard();
-            } else {
-                throw new Error(result.error);
-            }
-        } else {
-            showToast('ℹ️ No se encontraron pasos para hoy', 'info');
-        }
-
-        hideLoading();
-    } catch (error) {
-        console.error('❌ Error al sincronizar con Google Fit:', error);
-        hideLoading();
-        showToast('❌ Error al sincronizar: ' + error.message, 'error');
-    }
-}
-
 // ========================================
-// ENTRADA MANUAL (iOS / Apple Health)
+// GUARDAR SESIÓN (CHI WALKING / TECH VALUES)
 // ========================================
-async function saveManualSteps() {
-    try {
-        const steps = parseInt(document.getElementById('manual-steps').value);
-        const duration = parseInt(document.getElementById('manual-duration').value) || 0;
-        const isContinuous = document.getElementById('continuous-walk').checked;
-
-        if (!steps || steps < 0) {
-            showToast('❌ Por favor ingresa un número válido de pasos', 'error');
-            return;
-        }
-
-        showLoading('Guardando...');
-
-        const result = await saveWalkingSession({
-            steps: steps,
-            duration_mins: isContinuous ? Math.max(duration, WALKING_GOALS.CONTINUOUS_MINUTES) : duration,
-            source: 'AppleHealth_Manual'
-        });
-
-        if (result.success) {
-            showToast('✅ Pasos guardados exitosamente', 'success');
-
-            // Limpiar formulario
-            document.getElementById('manual-steps').value = '';
-            document.getElementById('manual-duration').value = '';
-            document.getElementById('continuous-walk').checked = false;
-
-            // Recargar dashboard
-            await loadWalkingDashboard();
-        } else {
-            throw new Error(result.error);
-        }
-
-        hideLoading();
-    } catch (error) {
-        console.error('❌ Error al guardar pasos manuales:', error);
-        hideLoading();
-        showToast('❌ Error: ' + error.message, 'error');
-    }
-}
-
-// ========================================
-// UTILIDADES DE CÁLCULO
-// ========================================
-
-// Estimar distancia en km basado en pasos
-function estimateDistance(steps) {
-    // Promedio: 1 km ≈ 1,250 pasos
-    return (steps / 1250).toFixed(2);
-}
-
-// Estimar calorías quemadas
-function estimateCalories(steps, duration_mins) {
-    // Fórmula aproximada: 0.04 calorías por paso
-    // Ajustado por intensidad si hay duración
-    let calories = steps * 0.04;
-
-    if (duration_mins >= WALKING_GOALS.CONTINUOUS_MINUTES) {
-        // Bonus por caminata continua (mayor intensidad)
-        calories *= 1.2;
-    }
-
-    return Math.round(calories);
-}
-
-// Obtener mensaje motivacional basado en progreso
-function getHealthInsight(currentSteps, goalSteps = WALKING_GOALS.DAILY_STEPS) {
-    const percentage = (currentSteps / goalSteps) * 100;
-
-    if (percentage >= 100) {
-        return '🎉 ¡Meta alcanzada! Reducción óptima de mortalidad cardiovascular.';
-    } else if (percentage >= 75) {
-        return `💪 ¡Casi lo logras! Solo ${goalSteps - currentSteps} pasos más.`;
-    } else if (percentage >= 50) {
-        return `🚶 Vas por buen camino. ${goalSteps - currentSteps} pasos para tu meta.`;
-    } else if (percentage >= 25) {
-        return `⭐ Buen inicio. Cada paso cuenta para tu salud cardiovascular.`;
-    } else {
-        return `🌟 Comienza hoy. 7,000 pasos reducen tu mortalidad en un 50-70%.`;
-    }
-}
-
-// ========================================
-// CARGAR DASHBOARD DE CAMINATAS
-// ========================================
-async function loadWalkingDashboard() {
+async function saveChiWalkingSession(completeSessionData) {
     try {
         const user = auth.currentUser;
-        if (!user) return;
+        if (!user) throw new Error('Usuario no autenticado');
+
+        // --- VALIDACIÓN DE EMPLEADO ---
+        let currentEmployeeId = user.uid;
+        const storedEmployee = localStorage.getItem('currentEmployee');
+        if (storedEmployee) {
+            currentEmployeeId = JSON.parse(storedEmployee).id;
+        }
+
+        const isActive = await verifyEmployeeActivation(currentEmployeeId);
+        if (!isActive) {
+            throw new Error('ACCESO DENEGADO: Tu usuario no está activo.');
+        }
 
         const userDoc = await db.collection('users').doc(user.uid).get();
-        // PRIORIDAD: Auth Email
         const userEmail = user.email || userDoc.data()?.email;
+        const today = new Date().toISOString().split('T')[0];
 
-        console.log('🔍 Debug Auth:', user.email);
-        console.log('🔍 Debug Firestore:', userDoc.data()?.email);
+        // Calcular semana
+        const weekNum = getWeekNumber(new Date());
 
-        if (user.email && userDoc.data()?.email && user.email !== userDoc.data()?.email) {
-            console.warn('⚠️ ALERTA: El email de Autenticación no coincide con el de Firestore. Usando Auth:', user.email);
-        }
+        // Estructura Tech Values
+        const techValues = {
+            performance: {
+                steps: parseInt(completeSessionData.steps || 0),
+                distance_km: parseFloat(completeSessionData.distance || 0),
+                duration_total_min: parseInt(completeSessionData.duration || 0),
+                cadence_zpm: parseInt(completeSessionData.cadence || 0),
+                gps_tracked: true
+            },
+            perception: {
+                borg_scale: parseInt(completeSessionData.borgScale || 0),
+                mood_pre: completeSessionData.moodPre || 'neutral',
+                mood_post: completeSessionData.moodPost || 'neutral'
+            },
+            context: {
+                weather: completeSessionData.weather || 'unknown',
+                hydration: completeSessionData.hydration || 'unknown'
+            },
+            mindful: {
+                gratitude_log: completeSessionData.gratitudeText || ""
+            }
+        };
 
-        // Obtener estadísticas
-        const stats = await getUserWalkingStats(userEmail, 30);
-        globalStatsCache = stats; // Cachear para historial
+        const sessionRecord = {
+            collaboratorEmail: userEmail,
+            employeeId: currentEmployeeId,
+            date: today,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            session_id: `sem_${weekNum}_dia_${new Date().getDay()}`,
+            tech_values: techValues,
+            is_continuous: techValues.performance.duration_total_min >= WALKING_GOALS.CONTINUOUS_MINUTES,
+            meets_step_goal: techValues.performance.steps >= WALKING_GOALS.DAILY_STEPS,
+            type: 'CHI_WALKING_GPS'
+        };
 
-        if (!stats) {
-            console.error('No se pudieron cargar las estadísticas');
-            return;
-        }
+        // Guardar
+        const docRef = await db.collection('walking_stats').add(sessionRecord);
+        console.log('✅ Sesión GPS guardada:', docRef.id);
 
-        // Actualizar UI
-        updateWalkingDashboardUI(stats);
+        // Subcolección Historial
+        await db.collection('wellness_records')
+            .doc(userEmail)
+            .collection('chi_sessions')
+            .doc(docRef.id)
+            .set(sessionRecord);
+
+        // Actualizar Dashboard Stats (Acumulativo)
+        await updateUserWalkingStats(userEmail, sessionRecord);
+
+        return { success: true, id: docRef.id };
 
     } catch (error) {
-        console.error('❌ Error al cargar dashboard:', error);
+        console.error('❌ Error al guardar sesión:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// Actualizar Stats Diarios (Acumulativo)
+async function updateUserWalkingStats(email, sessionRecord) {
+    try {
+        const statsRef = db.collection('wellness_records').doc(email);
+        const statsDoc = await statsRef.get();
+        const today = sessionRecord.date;
+        const currentData = statsDoc.exists ? statsDoc.data() : { daily_stats: {} };
+
+        if (!currentData.daily_stats) currentData.daily_stats = {};
+
+        const existingDay = currentData.daily_stats[today] || { steps: 0, distance_km: 0, continuous_walk_minutes: 0 };
+
+        // Sumar valores del día
+        const newSteps = (existingDay.steps || 0) + sessionRecord.tech_values.performance.steps;
+        const newDist = (existingDay.distance_km || 0) + sessionRecord.tech_values.performance.distance_km;
+        const newDur = (existingDay.continuous_walk_minutes || 0) + sessionRecord.tech_values.performance.duration_total_min;
+
+        currentData.daily_stats[today] = {
+            steps: newSteps,
+            distance_km: parseFloat(newDist.toFixed(2)),
+            continuous_walk_minutes: newDur,
+            is_continuous: newDur >= 15 || existingDay.is_continuous,
+            meets_goal: newSteps >= 7000
+        };
+
+        await statsRef.set(currentData, { merge: true });
+    } catch (e) {
+        console.error("Error updating stats:", e);
+    }
+}
+
+function getWeekNumber(d) {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+// Cargar Dashboard (Stub para compatibilidad)
+async function loadWalkingDashboard() {
+    const user = auth.currentUser;
+    if (user && window.updateWalkingDashboardUI) {
+        const doc = await db.collection('wellness_records').doc(user.email).get();
+        if (doc.exists) window.updateWalkingDashboardUI(doc.data());
     }
 }
 
 // ========================================
-// ACTUALIZAR UI DEL DASHBOARD
+// EXPORTAR FUNCIONES
 // ========================================
-function updateWalkingDashboardUI(stats) {
-    // Pasos de hoy
-    const today = new Date().toISOString().split('T')[0];
-    const todayStats = stats.daily_stats[today] || { steps: 0 };
-
-    // Actualizar contador de pasos
-    const stepsElement = document.getElementById('current-steps');
-    if (stepsElement) {
-        stepsElement.textContent = todayStats.steps.toLocaleString();
-    }
-
-    // Actualizar progreso circular
-    const progressPercentage = (todayStats.steps / WALKING_GOALS.DAILY_STEPS) * 100;
-    const progressCircle = document.getElementById('steps-circle');
-    if (progressCircle) {
-        progressCircle.style.setProperty('--progress', `${Math.min(progressPercentage, 100)}% `);
-    }
-
-    // Actualizar mensaje motivacional
-    const healthTip = document.getElementById('health-tip');
-    if (healthTip) {
-        healthTip.textContent = getHealthInsight(todayStats.steps);
-    }
-
-    // Actualizar resumen semanal/mensual
-    updateSummaryStats(stats.summary);
-
-    // Actualizar badges
-    updateBadges(stats.badges);
-}
-
-// Actualizar estadísticas de resumen
-function updateSummaryStats(summary) {
-    const elements = {
-        'avg-steps': summary.avg_steps.toLocaleString(),
-        'days-with-goal': summary.days_with_goal,
-        'continuous-sessions': summary.continuous_sessions,
-        'total-steps': summary.total_steps.toLocaleString()
-    };
-
-    Object.entries(elements).forEach(([id, value]) => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.textContent = value;
-        }
-    });
-}
-
-// Actualizar badges
-function updateBadges(badges) {
-    const badgesContainer = document.getElementById('wellness-badges');
-    if (!badgesContainer) return;
-
-    const badgeDefinitions = {
-        '7k_club': {
-            icon: '🏆',
-            title: 'Club 7K',
-            description: 'Alcanzaste la meta óptima de 7,000 pasos'
-        },
-        'continuous_walker': {
-            icon: '⚡',
-            title: 'Caminante Continuo',
-            description: 'Caminaste 15+ minutos sin parar'
-        },
-        'pioneer': {
-            icon: '🌟',
-            title: 'Pionero',
-            description: 'Primero en usar el sistema de bienestar'
-        }
-    };
-
-    badgesContainer.innerHTML = badges.map(badgeId => {
-        const badge = badgeDefinitions[badgeId];
-        if (!badge) return '';
-
-        return `
-            < div class="badge-card" >
-                <div class="badge-icon">${badge.icon}</div>
-                <div class="badge-title">${badge.title}</div>
-                <div class="badge-description">${badge.description}</div>
-            </div >
-            `;
-    }).join('');
-}
-
-// ========================================
-// HELPERS UI
-// ========================================
-function showLoading(message = 'Cargando...') {
-    // Implementar según tu sistema de UI
-    console.log('Loading:', message);
-}
-
-function hideLoading() {
-    // Implementar según tu sistema de UI
-    console.log('Loading complete');
-}
-
-function showToast(message, type = 'info') {
-    // Implementar según tu sistema de UI
-    console.log(`Toast[${type}]: `, message);
-}
-
-// ========================================
-// HISTORIAL
-// ========================================
-let globalStatsCache = null;
-
-function showHistoryModal() {
-    const modal = document.getElementById('history-modal');
-    if (modal) {
-        modal.style.display = 'flex';
-        if (globalStatsCache) {
-            renderHistoryTable(globalStatsCache.daily_stats);
-        }
-    }
-}
-
-function renderHistoryTable(dailyStats) {
-    const tbody = document.getElementById('history-table-body');
-    if (!tbody) return;
-
-    tbody.innerHTML = '';
-
-    // Ordenar fechas descendente
-    const sortedDates = Object.keys(dailyStats).sort((a, b) => new Date(b) - new Date(a));
-
-    if (sortedDates.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center;">No hay registros aún</td></tr>';
-        return;
-    }
-
-    sortedDates.forEach(date => {
-        const entry = dailyStats[date];
-        const row = document.createElement('tr');
-        row.style.borderBottom = '1px solid #f0f0f0';
-
-        row.innerHTML = `
-            <td style="padding: 12px;">${new Date(date).toLocaleDateString()}</td>
-            <td style="padding: 12px; font-weight: bold;">${entry.steps.toLocaleString()}</td>
-            <td style="padding: 12px;">${entry.distance_km || '-'} km</td>
-            <td style="padding: 12px;">${entry.is_continuous ? '<span style="color:green">Sí</span>' : 'No'}</td>
-            <td style="padding: 12px; font-size: 0.85em; color: #888;">${entry.source || 'Manual'}</td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-// ========================================
-// INICIALIZACIÓN
-// ========================================
-document.addEventListener('DOMContentLoaded', () => {
-    // Verificar si estamos en la página de wellness
-    if (window.location.pathname.includes('wellness-walking')) {
-        loadWalkingDashboard();
-    }
-});
+// Se adjuntan al objeto window para acceso global si no es módulo
+window.gpsTracker = gpsTracker;
+window.saveChiWalkingSession = saveChiWalkingSession;
+window.loadWalkingDashboard = loadWalkingDashboard;

@@ -876,174 +876,219 @@ document.addEventListener('DOMContentLoaded', () => {
         btnGenerateReport.disabled = true;
 
         try {
-            // Filter only items that have evidence or at least passed
-            // For now, let's include all items that have evidence OR are completed
+            // Verificar que la librería docx esté cargada
+            if (typeof window.docx === 'undefined') {
+                throw new Error('La librería docx no está cargada. Por favor recarga la página.');
+            }
+
+            const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, Packer, ImageRun } = window.docx;
+
+            const weekTitle = document.getElementById('current-week-label').textContent;
             const itemsToReport = currentSchedule;
 
-            const printWindow = window.open('', '_blank');
-            const weekTitle = document.getElementById('current-week-label').textContent;
+            // Crear secciones del documento
+            const sections = [];
 
-            let htmlContent = `
-                <html>
-                <head>
-                    <title>Reporte de Evidencias - IBERO ACTÍVATE</title>
-                    <style>
-                        body { font-family: 'Segoe UI', sans-serif; padding: 40px; color: #333; }
-                        h1 { color: #4338ca; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px; }
-                        .header-info { margin-bottom: 30px; font-size: 1.1rem; color: #666; }
-                        .activity-item { 
-                            page-break-inside: avoid; 
-                            margin-bottom: 30px; 
-                            border: 1px solid #ddd; 
-                            padding: 20px; 
-                            border-radius: 12px;
-                            display: flex;
-                            gap: 20px;
-                            background: #f9fafb;
-                        }
-                        .activity-header {
-                            background: #f3f4f6;
-                            padding: 15px 20px;
-                            border-bottom: 1px solid #e5e7eb;
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                        }
-                        .activity-body {
-                            padding: 20px;
-                            display: grid;
-                            grid-template-columns: 1fr 300px;
-                            gap: 30px;
-                        }
-                        .activity-details { display: flex; flex-direction: column; gap: 15px; }
-                        .info-row { display: flex; align-items: baseline; gap: 10px; }
-                        .info-label { font-weight: 600; color: #4b5563; min-width: 120px; }
-                        .info-value { color: #111827; }
-                        .admin-comments-box {
-                            margin-top: 20px;
-                            background: #fffbeb;
-                            border: 1px solid #fcd34d;
-                            border-radius: 8px;
-                            padding: 15px;
-                        }
-                        .admin-comments-title { color: #92400e; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
-                        .admin-comments-text { color: #b45309; font-style: italic; line-height: 1.5; white-space: pre-line; }
-                        .activity-image-container {
-                            width: 300px;
-                            height: 220px;
-                            background: #f3f4f6;
-                            border-radius: 8px;
-                            overflow: hidden;
-                            border: 1px solid #e5e7eb;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                        }
-                        .activity-image { width: 100%; height: 100%; object-fit: cover; }
-                        .rating-badge {
-                            background: #fef3c7;
-                            color: #b45309;
-                            padding: 4px 10px;
-                            border-radius: 6px;
-                            font-weight: bold;
-                            display: inline-flex;
-                            align-items: center;
-                            gap: 5px;
-                        }
-                        .day-badge { 
-                            display: inline-block; 
-                            padding: 4px 12px; 
-                            background: #eef2ff; 
-                            color: #4338ca; 
-                            border-radius: 20px; 
-                            font-weight: bold; 
-                            font-size: 0.9rem;
-                            margin-bottom: 10px;
-                        }
-                        .footer { margin-top: 50px; text-align: center; font-size: 0.9rem; color: #999; border-top: 1px solid #eee; padding-top: 20px; }
-                        @media print {
-                            .no-print { display: none; }
-                            body { padding: 0; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <h1>Reporte Semanal de Actividades</h1>
-                    <div class="header-info">
-                        <strong>Periodo:</strong> ${weekTitle}<br>
-                        <strong>Generado el:</strong> ${new Date().toLocaleDateString()}<br>
-                        <strong>Responsable:</strong> ${auth.currentUser.email}
-                    </div>
-            `;
+            // Encabezado del documento
+            sections.push(
+                new Paragraph({
+                    text: "Reporte Semanal de Actividades",
+                    heading: HeadingLevel.HEADING_1,
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 400 }
+                }),
+                new Paragraph({
+                    children: [
+                        new TextRun({ text: "Periodo: ", bold: true }),
+                        new TextRun(weekTitle)
+                    ],
+                    spacing: { after: 200 }
+                }),
+                new Paragraph({
+                    children: [
+                        new TextRun({ text: "Generado el: ", bold: true }),
+                        new TextRun(new Date().toLocaleDateString('es-MX', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        }))
+                    ],
+                    spacing: { after: 200 }
+                }),
+                new Paragraph({
+                    children: [
+                        new TextRun({ text: "Responsable: ", bold: true }),
+                        new TextRun(auth.currentUser.email)
+                    ],
+                    spacing: { after: 600 }
+                })
+            );
 
-            // Process items one by one to fetch ratings
+            // Procesar cada actividad
             for (const item of itemsToReport) {
                 const activity = activitiesMap[item.activityId];
                 const name = activity ? activity.name : 'Actividad';
                 const day = translateDay(item.day);
 
-                // Fetch dynamic rating
+                // Obtener calificación
                 const ratingValue = await getActivityRating(item.activityId, item.day);
                 const ratingDisplay = ratingValue > 0 ? `${ratingValue} / 5.0` : 'Sin feedback';
-                const imageSrc = item.evidenceUrl || null;
                 const comments = item.adminComments || 'Sin observaciones.';
 
-                htmlContent += `
-                    <div class="activity-item">
-                        <div class="activity-header">
-                            <span class="day-badge">${day}</span>
-                            <div class="rating-badge">⭐ ${ratingDisplay}</div>
-                        </div>
-                        <div class="activity-body">
-                            <div class="activity-details">
-                                <h2 style="margin: 0 0 10px 0; color: #111827;">${name}</h2>
-                                <div class="info-row">
-                                    <span class="info-label">Ubicación:</span>
-                                    <span class="info-value">${item.location || 'No definida'}</span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">Estado:</span>
-                                    <span class="info-value">
-                                        ${item.evidenceUrl ? '<span style="color:green">✅ Evidencia adjunta</span>' : '<span style="color:orange">⚠️ Sin foto</span>'}
-                                    </span>
-                                </div>
+                // Encabezado de actividad
+                sections.push(
+                    new Paragraph({
+                        text: `${day} - ${name}`,
+                        heading: HeadingLevel.HEADING_2,
+                        spacing: { before: 400, after: 200 }
+                    })
+                );
 
-                                <div class="admin-comments-box">
-                                    <div class="admin-comments-title">OBSERVACIONES DEL RESPONSABLE:</div>
-                                    <div class="admin-comments-text">${comments}</div>
-                                </div>
-                            </div>
+                // Tabla con información de la actividad
+                const tableRows = [
+                    new TableRow({
+                        children: [
+                            new TableCell({
+                                children: [new Paragraph({ text: "Ubicación:", bold: true })],
+                                width: { size: 30, type: WidthType.PERCENTAGE }
+                            }),
+                            new TableCell({
+                                children: [new Paragraph(item.location || 'No definida')],
+                                width: { size: 70, type: WidthType.PERCENTAGE }
+                            })
+                        ]
+                    }),
+                    new TableRow({
+                        children: [
+                            new TableCell({
+                                children: [new Paragraph({ text: "Calificación:", bold: true })]
+                            }),
+                            new TableCell({
+                                children: [new Paragraph(`⭐ ${ratingDisplay}`)]
+                            })
+                        ]
+                    }),
+                    new TableRow({
+                        children: [
+                            new TableCell({
+                                children: [new Paragraph({ text: "Estado:", bold: true })]
+                            }),
+                            new TableCell({
+                                children: [new Paragraph(item.evidenceUrl ? '✅ Evidencia adjunta' : '⚠️ Sin foto')]
+                            })
+                        ]
+                    }),
+                    new TableRow({
+                        children: [
+                            new TableCell({
+                                children: [new Paragraph({ text: "Observaciones:", bold: true })],
+                                verticalAlign: "top"
+                            }),
+                            new TableCell({
+                                children: [new Paragraph(comments)],
+                                verticalAlign: "top"
+                            })
+                        ]
+                    })
+                ];
 
-                            <div class="activity-image-container">
-                                ${imageSrc ?
-                        `<img src="${imageSrc}" class="activity-image" alt="Evidencia">` :
-                        `<div style="color:#9ca3af; text-align:center;"><span style="display:block; font-size:2rem; margin-bottom:10px;">📷</span>Sin Foto</div>`
+                sections.push(
+                    new Table({
+                        rows: tableRows,
+                        width: { size: 100, type: WidthType.PERCENTAGE },
+                        margins: {
+                            top: 100,
+                            bottom: 100,
+                            left: 100,
+                            right: 100
+                        }
+                    })
+                );
+
+                // Agregar imagen de evidencia si existe
+                if (item.evidenceUrl) {
+                    try {
+                        // Convertir base64 a buffer para docx
+                        const base64Data = item.evidenceUrl.split(',')[1];
+                        const binaryString = atob(base64Data);
+                        const bytes = new Uint8Array(binaryString.length);
+                        for (let i = 0; i < binaryString.length; i++) {
+                            bytes[i] = binaryString.charCodeAt(i);
+                        }
+
+                        sections.push(
+                            new Paragraph({
+                                children: [
+                                    new TextRun({ text: "Evidencia fotográfica:", bold: true })
+                                ],
+                                spacing: { before: 200, after: 100 }
+                            }),
+                            new Paragraph({
+                                children: [
+                                    new ImageRun({
+                                        data: bytes,
+                                        transformation: {
+                                            width: 400,
+                                            height: 300
+                                        }
+                                    })
+                                ],
+                                spacing: { after: 200 }
+                            })
+                        );
+                    } catch (imageError) {
+                        console.error('Error procesando imagen:', imageError);
+                        // Si hay error con la imagen, solo agregar texto
+                        sections.push(
+                            new Paragraph({
+                                children: [
+                                    new TextRun({ text: "Evidencia fotográfica: Error al cargar imagen", italics: true })
+                                ],
+                                spacing: { before: 200, after: 200 }
+                            })
+                        );
                     }
-                            </div>
-                        </div>
-                    </div>
-                `;
+                }
+
+                // Espacio después de cada actividad
+                sections.push(
+                    new Paragraph({
+                        text: "",
+                        spacing: { after: 400 }
+                    })
+                );
             }
 
-            htmlContent += `
-                    <div class="footer">
-                        IBERO ACTÍVATE - Reporte Generado Automáticamente
-                    </div>
-                    <div class="no-print" style="position: fixed; top: 20px; right: 20px;">
-                        <button onclick="window.print()" style="padding: 10px 20px; background: #4338ca; color: white; border: none; border-radius: 6px; cursor: pointer;">Imprimir / Guardar PDF</button>
-                    </div>
-                </body>
-                </html>
-            `;
+            // Pie de página
+            sections.push(
+                new Paragraph({
+                    text: "IBERO ACTÍVATE - Reporte Generado Automáticamente",
+                    alignment: AlignmentType.CENTER,
+                    spacing: { before: 600 },
+                    italics: true
+                })
+            );
 
-            printWindow.document.write(htmlContent);
-            printWindow.document.close();
+            // Crear el documento
+            const doc = new Document({
+                sections: [{
+                    properties: {},
+                    children: sections
+                }]
+            });
+
+            // Generar y descargar el archivo
+            const blob = await Packer.toBlob(doc);
+            const fileName = `Reporte_Semanal_${weekTitle.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.docx`;
+            saveAs(blob, fileName);
+
+            alert('✅ Reporte DOCX generado exitosamente');
 
         } catch (e) {
             console.error(e);
-            alert("Error al generar el reporte");
+            alert("Error al generar el reporte: " + e.message);
         } finally {
-            btnGenerateReport.innerHTML = '<i class="fa-solid fa-file-contract"></i> Reporte Semanal';
+            btnGenerateReport.innerHTML = '<i class="fa-solid fa-file-word"></i> Reporte Semanal';
             btnGenerateReport.disabled = false;
         }
     }

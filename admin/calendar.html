@@ -21,6 +21,10 @@
     <script
         src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 
+    <!-- DOCX Generation Library -->
+    <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
     <style>
         /* Program Context Banner */
         .program-context-banner {
@@ -663,9 +667,9 @@
                     </p>
                 </div>
                 <div class="week-selector">
-                    <button id="btn-generate-report" class="btn-secondary" title="Generar Reporte Semanal"
+                    <button id="btn-generate-report" class="btn-secondary" title="Generar Reporte Semanal DOCX"
                         style="margin-right: 1rem; color: var(--primary); border-color: var(--primary);">
-                        <i class="fa-solid fa-file-contract"></i> Reporte Semanal
+                        <i class="fa-solid fa-file-word"></i> Reporte DOCX
                     </button>
                     <button id="prev-week" class="btn-secondary"><i class="fa-solid fa-chevron-left"></i></button>
                     <span id="current-week-label" style="margin: 0 1rem; font-weight: 600;">Semana Actual</span>
