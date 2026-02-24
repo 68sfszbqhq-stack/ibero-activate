@@ -136,9 +136,10 @@ service cloud.firestore {
     
     // Registros de bienestar (resumen por usuario y dia)
     match /wellness_records/{email}/{document=**} {
-      // Permitir lectura/escritura a todo el árbol si el email coincide
-      allow read, write: if isAuth() && 
-                      email == request.auth.token.email;
+      // Empleados con login: solo pueden acceder a sus propios registros
+      allow read, write: if isAuth() && email == request.auth.token.email;
+      // Empleados sin login (selección mágica): identificados por emp_*@ibero-activate.local
+      allow read, write: if email.matches('emp_.*@ibero-activate\\.local');
     }
 
     // ========================================

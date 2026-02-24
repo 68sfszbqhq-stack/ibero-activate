@@ -1591,10 +1591,19 @@
             let userEmail = null;
 
             if (storedUser) {
-                // Si hay selección, necesitamos el email de ese empleado
+                // Empleado por selección mágica (puede no tener login)
                 const employeeId = JSON.parse(storedUser).id;
-                const empDoc = await db.collection('employees').doc(employeeId).get();
-                if (empDoc.exists) userEmail = empDoc.data().email;
+                try {
+                    const empDoc = await db.collection('employees').doc(employeeId).get();
+                    if (empDoc.exists) {
+                        const empData = empDoc.data();
+                        // Usar email real si existe, si no usar identificador local
+                        userEmail = empData.email || `emp_${employeeId}@ibero-activate.local`;
+                    }
+                } catch (e) {
+                    // Sin permisos o error: no cargar historial silenciosamente
+                    return;
+                }
             } else {
                 const user = firebase.auth().currentUser;
                 if (!user) { setTimeout(loadMoodHistory, 2000); return; }
@@ -1603,10 +1612,15 @@
 
             if (!userEmail) return;
 
-            const snap = await db.collection('wellness_records').doc(userEmail).collection('chi_sessions').orderBy('timestamp', 'desc').limit(5).get();
-            const sessions = []; snap.forEach(doc => sessions.unshift(doc.data()));
-            renderMoodChart(sessions);
-            renderHistoryTable(sessions.slice().reverse());
+            try {
+                const snap = await db.collection('wellness_records').doc(userEmail).collection('chi_sessions').orderBy('timestamp', 'desc').limit(5).get();
+                const sessions = []; snap.forEach(doc => sessions.unshift(doc.data()));
+                renderMoodChart(sessions);
+                renderHistoryTable(sessions.slice().reverse());
+            } catch (e) {
+                // Si no tiene historial aún o no tiene permisos, no mostrar error
+                console.log('Historial no disponible aún para este empleado.');
+            }
         }
 
         function renderMoodChart(sessions) {

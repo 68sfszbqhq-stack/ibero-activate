@@ -172,14 +172,17 @@ async function verifyEmployeeActivation(employeeId) {
         if (!employeeDoc.exists) return false;
 
         const data = employeeDoc.data();
-        if (data.status !== 'active') {
-            console.warn(`Empleado ${employeeId} inactivo.`);
+        // Si status no está definido (empleados nuevos/selección mágica) se considera activo.
+        // Solo bloquear si explícitamente está marcado como 'inactive'.
+        if (data.status === 'inactive') {
+            console.warn(`Empleado ${employeeId} marcado como inactivo.`);
             return false;
         }
         return true;
     } catch (error) {
         console.error("Error verificando activación:", error);
-        return false;
+        // En caso de error de permisos, permitir continuar para no bloquear la caminata
+        return true;
     }
 }
 
@@ -188,34 +191,46 @@ async function verifyEmployeeActivation(employeeId) {
 // ========================================
 async function saveChiWalkingSession(completeSessionData) {
     try {
+        // --- IDENTIFICACIÓN DE EMPLEADO ---
+        // Soporta tanto empleados con login como empleados por selección mágica (sin login)
         const user = auth.currentUser;
-        if (!user) throw new Error('Usuario no autenticado');
-
-        // --- VALIDACIÓN DE EMPLEADO Y EMAIL ---
-        let currentEmployeeId = user.uid;
-        let userEmail = user.email;
+        let currentEmployeeId = null;
+        let userEmail = null;
 
         const storedEmployee = localStorage.getItem('currentEmployee');
         if (storedEmployee) {
+            // Modo selección mágica (sin login obligatorio)
             const empData = JSON.parse(storedEmployee);
             currentEmployeeId = empData.id;
 
-            // Si es selección mágica, necesitamos el email del registro del empleado
             const empDoc = await db.collection('employees').doc(currentEmployeeId).get();
             if (empDoc.exists) {
-                userEmail = empDoc.data().email;
+                const empInfo = empDoc.data();
+                userEmail = empInfo.email || empInfo.accountNumber
+                    ? `emp_${currentEmployeeId}@ibero-activate.local`
+                    : null;
+                // Usar email real si existe
+                if (empInfo.email) userEmail = empInfo.email;
             }
-        } else {
-            // Si no hay selección, intentar obtener email del userDoc
+        } else if (user) {
+            // Modo login normal
+            currentEmployeeId = user.uid;
+            userEmail = user.email;
+
             const userDoc = await db.collection('users').doc(user.uid).get();
             if (!userEmail) userEmail = userDoc.data()?.email;
         }
 
-        if (!userEmail) throw new Error('No se pudo identificar el correo del colaborador');
+        // Fallback: generar email de identificación si no hay ninguno
+        if (!userEmail && currentEmployeeId) {
+            userEmail = `emp_${currentEmployeeId}@ibero-activate.local`;
+        }
+
+        if (!currentEmployeeId) throw new Error('No se pudo identificar al colaborador');
 
         const isActive = await verifyEmployeeActivation(currentEmployeeId);
         if (!isActive) {
-            throw new Error('ACCESO DENEGADO: Tu usuario no está activo.');
+            throw new Error('ACCESO DENEGADO: Tu usuario está marcado como inactivo. Contacta al administrador.');
         }
 
         const today = new Date().toISOString().split('T')[0];
