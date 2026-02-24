@@ -10,29 +10,77 @@
     <link rel="stylesheet" href="../css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Firebase -->
+    <!-- Firebase SDKs (Compat) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
     <style>
         :root {
             --primary: #10b981;
+            --primary-dark: #059669;
         }
 
-        .sidebar-header {
-            background: linear-gradient(135deg, #10b981, #059669) !important;
-        }
-
-        .nav-link.active {
-            color: #10b981 !important;
-            border-left: 4px solid #10b981 !important;
+        .report-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
         }
 
         .report-section {
             background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            background: #f8fafc;
+            color: #64748b;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .export-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .export-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 1200px) {
+            .report-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -52,11 +100,6 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="walking-calendar.html" class="nav-link">
-                        <i class="fa-solid fa-calendar-days"></i> Calendario
-                    </a>
-                </li>
-                <li class="nav-item">
                     <a href="walking-attendance.html" class="nav-link">
                         <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
                     </a>
@@ -67,13 +110,14 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="walking-employees.html" class="nav-link ">
-                        <i class="fa-solid fa-users"></i> Empleados (Global)
+                    <a href="walking-employees.html" class="nav-link">
+                        <i class="fa-solid fa-users"></i> Empleados
                     </a>
+                </li>
                 <li class="nav-item"
                     style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
                     <a href="dashboard.html" class="nav-link">
-                        <i class="fa-solid fa-arrow-left"></i> Volver a Admin Central
+                        <i class="fa-solid fa-arrow-left"></i> Admin Central
                     </a>
                 </li>
             </ul>
@@ -84,32 +128,86 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <header class="page-header">
+            <header class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h1>Reportes de Caminata</h1>
-                    <p>Generación de reportes y estadísticas</p>
+                    <h1>Reportes y Registros</h1>
+                    <p>Visualiza el desempeño y feedback de las caminatas</p>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button onclick="exportCSV('stats')" class="export-btn">
+                        <i class="fa-solid fa-file-csv"></i> Exportar Actividad
+                    </button>
+                    <button onclick="exportCSV('feedbacks')" class="export-btn" style="background: #3b82f6;">
+                        <i class="fa-solid fa-comment-dots"></i> Exportar Feedbacks
+                    </button>
                 </div>
             </header>
 
-            <div class="report-section">
-                <h2><i class="fa-solid fa-file-excel" style="color:#10b981;"></i> Exportar Asistencias</h2>
-                <p>Descarga el historial completo de caminatas en formato Excel/CSV.</p>
-                <br>
-                <div style="display:flex; gap:1rem;">
-                    <button class="btn-primary" style="background:#10b981;"
-                        onclick="alert('Generando CSV...')">Descargar Mes Actual</button>
-                    <button class="btn-secondary">Descargar Histórico</button>
+            <div class="report-grid">
+                <!-- Columna 1: Registros de GPS y Actividad -->
+                <div class="report-section">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2 style="font-size: 1.1rem; color: #1e293b;"><i class="fa-solid fa-route"
+                                style="color:var(--primary);"></i> Últimas Caminatas Registradas</h2>
+                        <button onclick="loadStats()"
+                            style="background:none; border:none; color:var(--primary); cursor:pointer;"><i
+                                class="fa-solid fa-rotate"></i></button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Colaborador</th>
+                                    <th>Fecha/Hora</th>
+                                    <th>Distancia</th>
+                                    <th>Pasos</th>
+                                    <th>Tiempo</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="walking-stats-body">
+                                <tr>
+                                    <td colspan="6" style="text-align:center; padding:2rem;">Cargando registros...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
 
-            <div class="report-section">
-                <h2><i class="fa-solid fa-trophy" style="color:#f59e0b;"></i> Ganadores del Mes</h2>
-                <p>Listado de empleados con más kilómetros y pasos para premiación.</p>
-                <br>
-                <button class="btn-secondary">Ver Ranking Completo</button>
+                <!-- Columna 2: Reflexiones en Vivo Recientes -->
+                <div class="report-section">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2 style="font-size: 1.1rem; color: #1e293b;"><i class="fa-solid fa-comments"
+                                style="color:#3b82f6;"></i> Reflexiones en Vivo</h2>
+                        <button onclick="loadFeedbacks()"
+                            style="background:none; border:none; color:#3b82f6; cursor:pointer;"><i
+                                class="fa-solid fa-rotate"></i></button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Caminante</th>
+                                    <th>Respuesta</th>
+                                </tr>
+                            </thead>
+                            <tbody id="walking-feedbacks-body">
+                                <tr>
+                                    <td colspan="2" style="text-align:center; padding:2rem;">Cargando reflexiones...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/walking-reports.js"></script>
 </body>
 
 </html>
