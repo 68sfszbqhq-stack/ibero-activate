@@ -191,20 +191,33 @@ async function saveChiWalkingSession(completeSessionData) {
         const user = auth.currentUser;
         if (!user) throw new Error('Usuario no autenticado');
 
-        // --- VALIDACIÓN DE EMPLEADO ---
+        // --- VALIDACIÓN DE EMPLEADO Y EMAIL ---
         let currentEmployeeId = user.uid;
+        let userEmail = user.email;
+
         const storedEmployee = localStorage.getItem('currentEmployee');
         if (storedEmployee) {
-            currentEmployeeId = JSON.parse(storedEmployee).id;
+            const empData = JSON.parse(storedEmployee);
+            currentEmployeeId = empData.id;
+
+            // Si es selección mágica, necesitamos el email del registro del empleado
+            const empDoc = await db.collection('employees').doc(currentEmployeeId).get();
+            if (empDoc.exists) {
+                userEmail = empDoc.data().email;
+            }
+        } else {
+            // Si no hay selección, intentar obtener email del userDoc
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            if (!userEmail) userEmail = userDoc.data()?.email;
         }
+
+        if (!userEmail) throw new Error('No se pudo identificar el correo del colaborador');
 
         const isActive = await verifyEmployeeActivation(currentEmployeeId);
         if (!isActive) {
             throw new Error('ACCESO DENEGADO: Tu usuario no está activo.');
         }
 
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        const userEmail = user.email || userDoc.data()?.email;
         const today = new Date().toISOString().split('T')[0];
 
         // Calcular semana

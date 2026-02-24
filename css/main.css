@@ -200,6 +200,11 @@ body {
   border-color: transparent;
 }
 
+.admin-walking-card:hover {
+  border-color: #10b981 !important;
+  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.15);
+}
+
 .landing-footer {
   margin-top: 4rem;
   color: var(--color-text-light);

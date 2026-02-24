@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Content Security Policy para prevenir XSS -->
+    <meta http-equiv="Content-Security-Policy" content="
+            default-src 'self'; 
+            script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com; 
+            style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; 
+            font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; 
+            connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com; 
+            img-src 'self' data: https:;
+        ">
+
+    <title>Pase de Lista (Caminatas) - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase SDKs (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- PWA Setup -->
+    <link rel="manifest" href="../manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="../assets/icon-192.png">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('../sw.js')
+                    .then(reg => console.log('SW registrado ✨'))
+                    .catch(err => console.log('SW falló ❌', err));
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-person-walking"></i>
+                <h2>IBERO CAMINATAS</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="walking-dashboard.html" class="nav-link">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-calendar.html" class="nav-link">
+                        <i class="fa-solid fa-calendar-days"></i> Calendario
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-attendance.html" class="nav-link active">
+                        <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-reports.html" class="nav-link ">
+                        <i class="fa-solid fa-file-pdf"></i> Reportes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-employees.html" class="nav-link ">
+                        <i class="fa-solid fa-users"></i> Empleados (Global)
+                    </a>
+                <li class="nav-item"
+                    style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                    <a href="dashboard.html" class="nav-link">
+                        <i class="fa-solid fa-arrow-left"></i> Volver a Admin Central
+                    </a>
+                </li>
+            </ul>
+
+            <button onclick="logout()" class="nav-link logout-btn">
+                <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="page-header">
+                <div>
+                    <h1>Registro de Caminatas</h1>
+                    <p>Registra asistencia específica para sesiones de caminata</p>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <!-- QR Code Button -->
+                    <button id="qr-btn" onclick="showQRModal()"
+                        style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 12px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fa-solid fa-qrcode" style="font-size: 1.2rem;"></i>
+                        <span>QR Caminata</span>
+                    </button>
+
+                    <div class="session-info"
+                        style="background: white; padding: 0.5rem 1rem; border-radius: 8px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s;"
+                        onclick="document.getElementById('date-picker').showPicker()">
+                        <i class="fa-regular fa-calendar"></i>
+                        <span id="current-date" style="font-weight: 600;">Cargando fecha...</span>
+                        <input type="date" id="date-picker"
+                            style="position: absolute; opacity: 0; pointer-events: none;" max="">
+                    </div>
+                </div>
+            </header>
+
+            <!-- QR Modal -->
+            <div id="qr-modal"
+                style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center;">
+                <div
+                    style="background: white; padding: 3rem; border-radius: 20px; text-align: center; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                    <h2 style="margin-bottom: 1rem; color: #1f2937;">
+                        <i class="fa-solid fa-mobile-screen-button" style="color: #10b981;"></i>
+                        Escanea para Feedback de Caminata
+                    </h2>
+                    <p style="color: #6b7280; margin-bottom: 2rem;">
+                        Los empleados pueden escanear este QR especial para caminatas
+                    </p>
+                    <div id="qr-code"
+                        style="display: inline-block; padding: 1.5rem; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <!-- QR will be generated here -->
+                    </div>
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+                        <small style="color: #6b7280; font-family: monospace;">
+                            https://68sfszbqhq-stack.github.io/ibero-activate/employee/wellness-walking.html
+                        </small>
+                    </div>
+                    <button onclick="closeQRModal()"
+                        style="margin-top: 2rem; padding: 0.75rem 2rem; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+                        <i class="fa-solid fa-times"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+
+            <div class="filters-bar">
+                <div class="filter-group">
+                    <label for="area-dropdown">Seleccionar Área / Grupo</label>
+                    <div id="area-buttons-container" class="area-buttons-grid">
+                        <div style="text-align: center; color: #9ca3af; padding: 1rem;">Cargando áreas...</div>
+                    </div>
+                    <input type="hidden" id="area-dropdown" value="">
+                </div>
+
+                <div class="filter-group">
+                    <label for="session-type">Tipo de Caminata</label>
+                    <select id="session-type">
+                        <option value="caminata_matutina">Caminata Matutina</option>
+                        <option value="caminata_vespertina">Caminata Vespertina</option>
+                        <option value="caminata_especial">Evento Especial</option>
+                    </select>
+                </div>
+
+                <div class="filter-group" style="display: flex; flex-direction: column; justify-content: flex-end;">
+                    <div
+                        style="display: flex; align-items: center; gap: 0.5rem; background: #eff6ff; padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid #3b82f6; height: 42px;">
+                        <input type="checkbox" id="first-day-mode"
+                            style="width: 1.2rem; height: 1.2rem; cursor: pointer;">
+                        <label for="first-day-mode"
+                            style="margin: 0; cursor: pointer; font-size: 0.9rem; color: #1e40af; font-weight: 700;">
+                            ✨ MODO PRIMER DÍA
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-group" style="display: flex; flex-direction: column; justify-content: flex-end;">
+                    <div
+                        style="display: flex; align-items: center; gap: 0.5rem; background: white; padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid #e5e7eb; height: 42px;">
+                        <input type="checkbox" id="skip-feedback-toggle"
+                            style="width: 1.2rem; height: 1.2rem; cursor: pointer;">
+                        <label for="skip-feedback-toggle"
+                            style="margin: 0; cursor: pointer; font-size: 0.9rem; color: #374151; font-weight: 500;">
+                            Auto-Completar (+PTS)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-group" style="display: flex; flex-direction: column; justify-content: flex-end;">
+                    <button id="btn-no-attendance" onclick="markNoAttendance()"
+                        style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3); transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem; height: 42px; white-space: nowrap;">
+                        <i class="fa-solid fa-user-slash"></i>
+                        <span>Anular</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="empty-state"
+                style="text-align: center; padding: 4rem 2rem; background: white; border-radius: 16px; margin-bottom: 2rem;">
+                <i class="fa-solid fa-person-walking" style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
+                <h3 style="color: #4b5563;">Selecciona un grupo para registrar caminata</h3>
+                <p style="color: #9ca3af;">Los registros se guardan en el historial de caminatas.</p>
+            </div>
+
+            <div id="employee-list" class="employee-grid">
+                <!-- Tarjetas de empleados generadas dinámicamente -->
+            </div>
+
+            <!-- PANEL DE CONTROL MAESTRO (Live Session) -->
+            <div id="master-control-panel" class="wellness-card"
+                style="position: sticky; bottom: 20px; z-index: 1000; margin-top: 2rem; border: 2px solid #10b981; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden;">
+                <div
+                    style="background: #10b981; color: white; padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; font-size: 1rem; font-weight: 800;"><i
+                            class="fa-solid fa-tower-broadcast mr-2"></i> CONTROL MAESTRO: SESIÓN EN VIVO</h3>
+                    <div id="live-status-badge"
+                        style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.7rem;">
+                        INACTIVO</div>
+                </div>
+
+                <div
+                    style="padding: 1.5rem; display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 1.5rem; align-items: center;">
+                    <!-- Col 1: Estado -->
+                    <div style="text-align: center;">
+                        <button id="btn-toggle-live" onclick="toggleLiveSession()" class="btn-primary"
+                            style="background: #10b981; font-size: 0.9rem; width: 100%;">INICIAR SESIÓN</button>
+                    </div>
+
+                    <!-- Col 2: Control de Preguntas -->
+                    <div id="live-questions-control"
+                        style="opacity: 0.5; pointer-events: none; transition: all 0.3s; border: 1px solid #e5e7eb; padding: 1rem; border-radius: 12px; background: #f9fafb;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+                            <button onclick="changeLiveQuestion(-1)" class="btn-secondary"
+                                style="padding: 0.5rem 1rem;"><i class="fa-solid fa-chevron-left"></i></button>
+                            <span id="current-q-index" style="font-weight: 800; color: #10b981;">PREGUNTA 1/5</span>
+                            <button onclick="changeLiveQuestion(1)" class="btn-secondary"
+                                style="padding: 0.5rem 1rem;"><i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                        <p id="current-q-text"
+                            style="font-size: 0.9rem; color: #374151; font-weight: 700; margin: 0; text-align: center; height: 3rem; display: flex; align-items: center; justify-content: center;">
+                            Selecciona la reflexión para los caminantes</p>
+                    </div>
+
+                    <!-- Col 3: Modo de Respuesta -->
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <button onclick="setResponseMode('multiple')" class="btn-secondary"
+                            style="font-size: 0.8rem; padding: 0.4rem;"><i class="fa-solid fa-list-check mr-2"></i>
+                            Opción Múltiple</button>
+                        <button onclick="setResponseMode('text')" class="btn-secondary"
+                            style="font-size: 0.8rem; padding: 0.4rem;"><i class="fa-solid fa-keyboard mr-2"></i> Cuadro
+                            de Texto</button>
+                    </div>
+                </div>
+
+                <div id="live-responses-summary"
+                    style="padding: 0.5rem 1.5rem; background: #f0fdf4; border-top: 1px solid #dcfce7; font-size: 0.8rem; color: #065f46; display: flex; gap: 1rem; align-items: center;">
+                    <i class="fa-solid fa-chart-simple"></i>
+                    <span>Respuestas en vivo: <b id="live-response-count">0</b></span>
+                    <button onclick="generateLiveSessionSummary()" id="btn-show-summary"
+                        style="margin-left:auto; background: #10b981; color: white; border: none; padding: 4px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; display: none;">VER
+                        RESUMEN FINAL</button>
+                    <div id="live-users-active" style="display: flex; gap: -5px;">
+                        <!-- Avatares de usuarios respondiendo -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL DE RESUMEN FINAL -->
+            <div id="summary-modal"
+                style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10001; justify-content: center; align-items: center; padding: 1rem;">
+                <div
+                    style="background: white; width: 100%; max-width: 800px; height: 90vh; border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+                    <div
+                        style="background: #10b981; color: white; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 1.25rem;"><i class="fa-solid fa-file-waveform mr-2"></i>
+                            Resumen de Reflexiones en Vivo</h2>
+                        <button onclick="document.getElementById('summary-modal').style.display='none'"
+                            style="background:none; border:none; color:white; font-size: 1.5rem; cursor:pointer;"><i
+                                class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div id="summary-content" style="flex: 1; overflow-y: auto; padding: 2rem; background: #f9fafb;">
+                        <div style="text-align: center; padding: 3rem; color: #6b7280;">
+                            <i class="fa-solid fa-spinner fa-spin fa-3x mb-3"></i>
+                            <p>Procesando respuestas del grupo...</p>
+                        </div>
+                    </div>
+                    <div
+                        style="padding: 1rem 2rem; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 1rem; background: white;">
+                        <button onclick="window.print()" class="btn-secondary"
+                            style="border: 2px solid #e5e7eb; padding: 0.6rem 1.2rem; border-radius: 10px; font-weight: 700; cursor: pointer;"><i
+                                class="fa-solid fa-print mr-2"></i> Impresion / PDF</button>
+                        <button onclick="document.getElementById('summary-modal').style.display='none'"
+                            class="btn-primary"
+                            style="background: #10b981; border: none; color: white; padding: 0.6rem 1.5rem; border-radius: 10px; font-weight: 700; cursor: pointer;">Cerrar
+                            Resumen</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Security Utils -->
+    <script defer src="../js/security-utils.js"></script>
+
+    <script defer src="../js/firebase-config.js"></script>
+    <script src="../js/roles.js"></script>
+    <!-- USAMOS EL NUEVO SCRIPT DE CAMINATAS -->
+    <script defer src="../js/walking-attendance.js"></script>
+    <script src="../js/create-area-helper.js"></script>
+
+    <script>
+        // QR Code Script - Adjusted for Walking URL
+        function showQRModal() {
+            const modal = document.getElementById('qr-modal');
+            const qrContainer = document.getElementById('qr-code');
+
+            // Use static QR image or generate one? 
+            // For now, same placeholder idea but note the text logic in HTML above points to different URL
+            //Ideally, this should be a generated QR. Using the static asset for now as in original.
+            const qrImageUrl = '../assets/qr-walking.png'; // Assuming a walking specific QR or generic
+            // If asset doesn't exist, use generic
+            const fallbackUrl = '../assets/qr-feedback.png';
+
+            const qrSize = 300;
+            // Simple img tag
+            qrContainer.innerHTML = `<img src="${fallbackUrl}" alt="QR Code" style="display: block; width: ${qrSize}px; height: ${qrSize}px; border-radius: 8px;">`;
+
+            modal.style.display = 'flex';
+        }
+
+        function closeQRModal() {
+            document.getElementById('qr-modal').style.display = 'none';
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeQRModal();
+            }
+        });
+
+        document.getElementById('qr-modal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'qr-modal') {
+                closeQRModal();
+            }
+        });
+    </script>
+</body>
+
+</html>

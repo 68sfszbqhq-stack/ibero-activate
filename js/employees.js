@@ -96,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 areaId,
                 position: position || 'No especificado',
                 email: `${accountNumber}@iberopuebla.mx`, // Generado automáticamente
+                status: 'active', // Acceso habilitado por defecto para el Walking Tracker
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
 

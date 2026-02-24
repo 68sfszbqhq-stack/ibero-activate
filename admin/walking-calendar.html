@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario Caminatas - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* Green Theme */
+        :root {
+            --primary: #10b981;
+        }
+
+        .sidebar-header {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+        }
+
+        .nav-link.active {
+            color: #10b981 !important;
+            border-left: 4px solid #10b981 !important;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .day-column {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+        }
+
+        .day-header {
+            background: #10b981;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .day-body {
+            padding: 1rem;
+            min-height: 200px;
+        }
+
+        .event-card {
+            background: #ecfdf5;
+            border-left: 3px solid #10b981;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .event-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .add-event-btn {
+            width: 100%;
+            padding: 0.5rem;
+            border: 2px dashed #d1d5db;
+            background: none;
+            color: #6b7280;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .add-event-btn:hover {
+            border-color: #10b981;
+            color: #10b981;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-person-walking"></i>
+                <h2>IBERO CAMINATAS</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="walking-dashboard.html" class="nav-link">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-calendar.html" class="nav-link active">
+                        <i class="fa-solid fa-calendar-days"></i> Calendario
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-attendance.html" class="nav-link">
+                        <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-reports.html" class="nav-link ">
+                        <i class="fa-solid fa-file-pdf"></i> Reportes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-employees.html" class="nav-link ">
+                        <i class="fa-solid fa-users"></i> Empleados (Global)
+                    </a>
+                <li class="nav-item"
+                    style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                    <a href="dashboard.html" class="nav-link">
+                        <i class="fa-solid fa-arrow-left"></i> Volver a Admin Central
+                    </a>
+                </li>
+            </ul>
+            <button onclick="logout()" class="nav-link logout-btn">
+                <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="page-header">
+                <div>
+                    <h1>Calendario de Caminatas</h1>
+                    <p>Programación de rutas y horarios</p>
+                </div>
+                <div>
+                    <button class="btn-primary" style="background:#10b981;"
+                        onclick="alert('Funcionalidad de crear evento global próximamente')">
+                        <i class="fa-solid fa-plus"></i> Nuevo Evento
+                    </button>
+                </div>
+            </header>
+
+            <div class="calendar-grid">
+                <!-- Lunes -->
+                <div class="day-column">
+                    <div class="day-header">Lunes</div>
+                    <div class="day-body">
+                        <div class="event-card">
+                            <strong>10:00 AM - Ruta Verde</strong>
+                            <div style="font-size:0.8rem; color:#666;">Salida: Explanada A</div>
+                        </div>
+                        <button class="add-event-btn">+ Agregar</button>
+                    </div>
+                </div>
+                <!-- Martes -->
+                <div class="day-column">
+                    <div class="day-header">Martes</div>
+                    <div class="day-body">
+                        <button class="add-event-btn">+ Agregar</button>
+                    </div>
+                </div>
+                <!-- Miércoles -->
+                <div class="day-column">
+                    <div class="day-header">Miércoles</div>
+                    <div class="day-body">
+                        <div class="event-card">
+                            <strong>17:00 PM - Caminata Relax</strong>
+                            <div style="font-size:0.8rem; color:#666;">Salida: Biblioteca</div>
+                        </div>
+                        <button class="add-event-btn">+ Agregar</button>
+                    </div>
+                </div>
+                <!-- Jueves -->
+                <div class="day-column">
+                    <div class="day-header">Jueves</div>
+                    <div class="day-body">
+                        <button class="add-event-btn">+ Agregar</button>
+                    </div>
+                </div>
+                <!-- Viernes -->
+                <div class="day-column">
+                    <div class="day-header">Viernes</div>
+                    <div class="day-body">
+                        <div class="event-card">
+                            <strong>13:00 PM - Reto 3K</strong>
+                            <div style="font-size:0.8rem; color:#666;">Salida: Gym</div>
+                        </div>
+                        <button class="add-event-btn">+ Agregar</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/roles.js"></script>
+    <script>
+        // Inline simple script for now as placeholder
+        auth.onAuthStateChanged(user => {
+            if (!user) window.location.href = 'login.html';
+        });
+    </script>
+</body>
+
+</html>

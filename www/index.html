@@ -21,22 +21,56 @@
         </header>
 
         <main class="role-selection">
+            <!-- SECCIÓN ADMINISTRATIVA -->
+            <div
+                style="width: 100%; text-align: left; margin-bottom: 1rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem;">
+                <h3 style="color: #4b5563; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;"><i
+                        class="fa-solid fa-shield-halved mr-2"></i> Gestión y Control</h3>
+            </div>
+
             <a href="admin/login.html" class="role-card admin-card">
                 <div class="icon-wrapper">
                     <i class="fa-solid fa-user-tie"></i>
                 </div>
-                <h2>Administrador</h2>
-                <p>Pase de lista, gestión de áreas y reportes</p>
+                <h2>Administrador Central</h2>
+                <p>Pase de lista, gestión de áreas y reportes generales</p>
                 <span class="btn-text">Ingresar <i class="fa-solid fa-arrow-right"></i></span>
             </a>
+
+            <a href="admin/walking-attendance.html" class="role-card admin-walking-card"
+                style="border-top: 5px solid #10b981;">
+                <div class="icon-wrapper" style="background: #f0fdf4;">
+                    <i class="fa-solid fa-tower-broadcast" style="color: #10b981;"></i>
+                </div>
+                <h2 style="color: #065f46;">Admin Caminatas</h2>
+                <p>Control Maestro de Sesiones en Vivo y Pase de Lista Grupal</p>
+                <span class="btn-text" style="color: #10b981;">Gestionar Caminatas <i
+                        class="fa-solid fa-arrow-right"></i></span>
+            </a>
+
+            <!-- SECCIÓN COLABORADORES -->
+            <div
+                style="width: 100%; text-align: left; margin-top: 2rem; margin-bottom: 1rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem;">
+                <h3 style="color: #4b5563; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;"><i
+                        class="fa-solid fa-users mr-2"></i> Portal del Colaborador</h3>
+            </div>
 
             <a href="employee/feedback.html" class="role-card employee-card">
                 <div class="icon-wrapper">
                     <i class="fa-solid fa-users"></i>
                 </div>
-                <h2>Colaborador</h2>
-                <p>Califica tu pausa, ver puntos y ranking</p>
+                <h2>Mi Perfil</h2>
+                <p>Califica tu pausa, ver puntos y ranking personal</p>
                 <span class="btn-text">Ingresar <i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+
+            <a href="employee/wellness-walking.html" class="role-card walking-card">
+                <div class="icon-wrapper">
+                    <i class="fa-solid fa-person-walking"></i>
+                </div>
+                <h2>Mis Caminatas</h2>
+                <p>Inicia tu sesión individual o únete a la grupal</p>
+                <span class="btn-text">Iniciar Caminata <i class="fa-solid fa-arrow-right"></i></span>
             </a>
         </main>
 

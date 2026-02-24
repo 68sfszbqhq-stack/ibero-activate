@@ -126,7 +126,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const badges = calculateBadges(totalAttendances, totalFeedbacks, streak, calculatedPoints);
             renderBadges(badges);
 
-            // 6. Calendario Mensual
+            // 6. CONTROL DE TARJETA PRIMER DÍA (Caminatas)
+            const firstDayCard = document.getElementById('first-day-card');
+            if (firstDayCard && empData.walkingProfileActive) {
+                firstDayCard.style.display = 'none';
+            }
+
+            // 7. Calendario Mensual
             renderMonthlyCalendar(attendancesSnapshot, new Date());
 
         } catch (error) {

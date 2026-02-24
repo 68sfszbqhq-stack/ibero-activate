@@ -225,5 +225,22 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
+    // ========================================
+    // WALKING ATTENDANCE (NUEVO PANEL)
+    // ========================================
+
+    match /walking_attendances_log/{docId} {
+      allow read, write: if true;
+    }
+
+    match /employees/{employeeId}/walking_attendance/{docId} {
+      allow read, write: if true;
+    }
+
+    match /walking_sessions/{sessionId} {
+      allow read, write: if true;
+    }
+
   }
 }
