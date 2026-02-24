@@ -547,20 +547,29 @@ document.addEventListener('DOMContentLoaded', () => {
     db.collection('walking_live_responses').where('timestamp', '>', new Date(Date.now() - 3600000))
         .onSnapshot(snap => {
             const countElem = document.getElementById('live-response-count');
+            const summaryBtn = document.getElementById('btn-show-summary');
+
             if (countElem) countElem.textContent = snap.size;
+
+            // Si hay respuestas, mostrar el botón de resumen aunque no se haya iniciado sesión manual
+            if (snap.size > 0 && summaryBtn) {
+                summaryBtn.style.display = 'block';
+            }
         });
 
     window.generateLiveSessionSummary = async function () {
-        if (!sessionStartTime) return alert("No hay una sesión activa para resumir");
-
         const modal = document.getElementById('summary-modal');
         const content = document.getElementById('summary-content');
         modal.style.display = 'flex';
         content.innerHTML = '<div style="text-align:center; padding:3rem;"><i class="fa-solid fa-spinner fa-spin fa-3x"></i><p>Generando reporte...</p></div>';
 
+        // Si no hay hora de inicio (porque se refrescó la página o no se inició manualmente)
+        // usamos el inicio del día actual como filtro
+        const filterTime = sessionStartTime || new Date(new Date().setHours(0, 0, 0, 0));
+
         try {
             const snap = await db.collection('walking_live_responses')
-                .where('timestamp', '>=', sessionStartTime)
+                .where('timestamp', '>=', filterTime)
                 .orderBy('timestamp', 'asc')
                 .get();
 
