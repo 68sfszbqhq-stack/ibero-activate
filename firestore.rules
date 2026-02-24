@@ -117,29 +117,18 @@ service cloud.firestore {
     // ========================================
     
     // Estadísticas de caminatas
+    // Módulo de caminatas funciona sin login (selección mágica), por eso allow write: if true
     match /walking_stats/{statId} {
-      // Permitir lectura solo al dueño de los datos
-      allow read: if isAuth() && 
-                     resource.data.collaboratorEmail == request.auth.token.email;
-      
-      // Permitir escritura solo al dueño
-      allow create: if isAuth() && 
-                       request.resource.data.collaboratorEmail == request.auth.token.email;
-      
-      // Permitir actualización solo al dueño
-      allow update: if isAuth() && 
-                       resource.data.collaboratorEmail == request.auth.token.email;
-      
-      // No permitir eliminación (mantener historial)
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
       allow delete: if false;
     }
     
     // Registros de bienestar (resumen por usuario y dia)
+    // Permite acceso libre: soporta empleados con y sin login (selección mágica)
     match /wellness_records/{email}/{document=**} {
-      // Empleados con login: solo pueden acceder a sus propios registros
-      allow read, write: if isAuth() && email == request.auth.token.email;
-      // Empleados sin login (selección mágica): identificados por emp_*@ibero-activate.local
-      allow read, write: if email.matches('emp_.*@ibero-activate\\.local');
+      allow read, write: if true;
     }
 
     // ========================================
