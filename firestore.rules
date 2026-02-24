@@ -242,5 +242,16 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Respuestas en vivo durante caminatas (empleados sin login)
+    match /walking_live_responses/{docId} {
+      allow read, write: if true;
+    }
+
+    // Sesión en vivo del instructor
+    match /live_walking_sessions/{docId} {
+      allow read: if true;
+      allow write: if isAuth();
+    }
+
   }
 }

@@ -302,6 +302,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
 
     <!-- Google API Client (para Google Fit) -->
     <script src="https://apis.google.com/js/api.js"></script>
@@ -1518,13 +1519,22 @@
                     employeeId: user.id,
                     employeeName: user.name,
                     response: value,
-                    question: currentLiveQuestion ? currentLiveQuestion.question : "Reflexión libre",
-                    questionIndex: currentLiveQuestion ? currentLiveQuestion.currentQuestionIndex : -1,
+                    question: currentLiveQuestion ? (currentLiveQuestion.question || 'Reflexión libre') : 'Reflexión libre',
+                    questionIndex: lastQuestionIndex >= 0 ? lastQuestionIndex : -1,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                document.getElementById('live-interaction-overlay').remove();
-                alert("¡Gracias por tu respuesta! Sigue caminando.");
-            } catch (e) { console.error(e); }
+                // Cerrar cualquier overlay activo (instructor o guía local)
+                const liveOverlay = document.getElementById('live-interaction-overlay');
+                const guideOverlay = document.getElementById('session-guide-overlay');
+                if (liveOverlay) liveOverlay.remove();
+                if (guideOverlay) guideOverlay.remove();
+                // Toast discreto en lugar de alert para no interrumpir la caminata
+                const toast = document.createElement('div');
+                toast.textContent = '✅ ¡Respuesta enviada! Sigue caminando.';
+                toast.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:#10b981;color:white;padding:1rem 2rem;border-radius:50px;font-weight:700;z-index:99999;box-shadow:0 10px 25px rgba(16,185,129,0.4);animation:fadeIn 0.3s ease;';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            } catch (e) { console.error('Error guardando respuesta:', e); }
         }
 
         function showScientificBasis(e) {
