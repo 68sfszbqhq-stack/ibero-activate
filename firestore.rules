@@ -3,11 +3,30 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ========================================
-    // FUNCIÓN SIMPLE Y RÁPIDA
+    // FUNCIONES DE SEGURIDAD
     // ========================================
-    
+
+    // Usuario autenticado (cualquiera)
     function isAuth() {
       return request.auth != null;
+    }
+
+    // Empleado del programa V2 (tiene documento en walking_v2_users)
+    function isV2Employee() {
+      return isAuth() &&
+        exists(/databases/$(database)/documents/walking_v2_users/$(request.auth.uid));
+    }
+
+    // Admin del sistema: autenticado pero NO es empleado V2
+    // (los admins del sistema principal no están en walking_v2_users)
+    function isAdmin() {
+      return isAuth() &&
+        !exists(/databases/$(database)/documents/walking_v2_users/$(request.auth.uid));
+    }
+
+    // Solo puede leer/escribir sus propios datos
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
     }
 
     // ========================================
@@ -244,31 +263,42 @@ service cloud.firestore {
 
     // ========================================
     // WALKING V2 - SISTEMA DE CAMINATAS (FASE 2)
+    // Seguridad por roles: Admin escribe, Empleado solo lee
     // ========================================
 
-    // Perfiles de empleados en el programa V2
+    // Perfiles de empleados V2
     match /walking_v2_users/{userId} {
-      allow read: if isAuth();
-      allow create, update: if isAuth();
-      allow delete: if isAuth();
+      // Admin puede leer todos los perfiles
+      // Empleado solo puede leer su propio perfil
+      allow read: if isAdmin() || isOwner(userId);
+      // Solo el admin crea/actualiza/borra usuarios
+      // (registro desde el panel admin, no auto-registro)
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
-    // Sesiones de caminata V2 (creadas por admin)
+    // Sesiones de caminata V2
     match /walking_v2_sessions/{sessionId} {
+      // Todos los autenticados pueden leer sesiones (empleados ven sus stats)
       allow read: if isAuth();
-      allow write: if isAuth();
+      // Solo admin puede crear/modificar/borrar sesiones
+      allow write: if isAdmin();
     }
 
     // Sub-colección de asistencia por sesión
-    match /walking_v2_sessions/{sessionId}/attendance/{userId} {
-      allow read: if isAuth();
-      allow write: if isAuth();
+    match /walking_v2_sessions/{sessionId}/attendance/{attendeeId} {
+      // Empleado lee solo su propio registro; admin lee todo
+      allow read: if isAdmin() || isOwner(attendeeId);
+      // Solo admin escribe asistencia
+      allow write: if isAdmin();
     }
 
     // Sub-colección de fotos (Base64) por sesión
     match /walking_v2_sessions/{sessionId}/photos/{photoId} {
+      // Todos los autenticados pueden ver las fotos
       allow read: if isAuth();
-      allow write: if isAuth();
+      // Solo admin sube/borra fotos
+      allow write: if isAdmin();
     }
 
   }
