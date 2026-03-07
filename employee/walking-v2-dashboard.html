@@ -16,6 +16,21 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <style>
+        :root {
+            --red: #C41230;
+            --red-dark: #9B0E26;
+            --red-light: #E8394F;
+            --navy: #1B3060;
+            --navy-light: #2D4A8A;
+            --white: #FFFFFF;
+            --gray-50: #F7F8FA;
+            --gray-100: #EEF0F4;
+            --gray-200: #DDE1E9;
+            --gray-400: #9CA3AF;
+            --gray-600: #4B5563;
+            --gray-800: #1F2937;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -24,15 +39,15 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: #0f172a;
-            color: #e2e8f0;
+            background: var(--gray-50);
+            color: var(--gray-800);
             min-height: 100vh;
         }
 
         /* ── TOPBAR ── */
         .topbar {
-            background: #1e293b;
-            border-bottom: 1px solid #334155;
+            background: var(--navy);
+            border-bottom: 3px solid var(--red);
             padding: 0 1.5rem;
             height: 64px;
             display: flex;
@@ -41,6 +56,7 @@
             position: sticky;
             top: 0;
             z-index: 100;
+            box-shadow: 0 4px 16px rgba(27, 48, 96, 0.18);
         }
 
         .topbar-brand {
@@ -52,7 +68,7 @@
         .topbar-brand .logo {
             width: 36px;
             height: 36px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: var(--red);
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -63,7 +79,7 @@
         .topbar-brand h1 {
             font-size: 1rem;
             font-weight: 700;
-            color: #f8fafc;
+            color: #fff;
         }
 
         .topbar-user {
@@ -76,7 +92,7 @@
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: var(--red);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -93,18 +109,18 @@
         .user-name {
             font-size: 0.85rem;
             font-weight: 600;
-            color: #f1f5f9;
+            color: #fff;
         }
 
         .user-dept {
             font-size: 0.72rem;
-            color: #64748b;
+            color: rgba(255, 255, 255, 0.55);
         }
 
         .btn-logout {
             background: transparent;
-            border: 1px solid #334155;
-            color: #64748b;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: rgba(255, 255, 255, 0.7);
             padding: 0.4rem 0.75rem;
             border-radius: 6px;
             cursor: pointer;
@@ -113,8 +129,8 @@
         }
 
         .btn-logout:hover {
-            border-color: #ef4444;
-            color: #f87171;
+            border-color: var(--red-light);
+            color: var(--red-light);
         }
 
         /* ── CONTENT ── */
@@ -126,13 +142,13 @@
 
         /* ── HERO ── */
         .hero {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border: 1px solid #334155;
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
             border-radius: 20px;
             padding: 2rem;
             margin-bottom: 2rem;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 8px 32px rgba(27, 48, 96, 0.2);
         }
 
         .hero::before {
@@ -143,12 +159,12 @@
             width: 200px;
             height: 200px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(196, 18, 48, 0.25) 0%, transparent 70%);
         }
 
         .hero-greeting {
             font-size: 0.875rem;
-            color: #6366f1;
+            color: rgba(255, 255, 255, 0.7);
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
@@ -156,13 +172,13 @@
         .hero-name {
             font-size: 1.75rem;
             font-weight: 800;
-            color: #f8fafc;
+            color: #fff;
             margin-bottom: 0.25rem;
         }
 
         .hero-sub {
             font-size: 0.875rem;
-            color: #64748b;
+            color: rgba(255, 255, 255, 0.6);
         }
 
         .hero-steps {
@@ -171,35 +187,35 @@
 
         .hero-steps-label {
             font-size: 0.75rem;
-            color: #64748b;
+            color: rgba(255, 255, 255, 0.6);
             margin-bottom: 0.25rem;
         }
 
         .hero-steps-value {
             font-size: 3rem;
             font-weight: 800;
-            color: #818cf8;
+            color: #fff;
             line-height: 1;
         }
 
         .hero-steps-sub {
             font-size: 0.85rem;
-            color: #64748b;
+            color: rgba(255, 255, 255, 0.65);
             margin-top: 0.25rem;
         }
 
-        /* Streak badge */
         .streak-badge {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+            background: var(--red);
             color: white;
             padding: 0.5rem 1rem;
             border-radius: 20px;
             font-size: 0.85rem;
             font-weight: 700;
             margin-top: 1rem;
+            box-shadow: 0 4px 12px rgba(196, 18, 48, 0.4);
         }
 
         /* ── KPI CARDS ── */
@@ -211,16 +227,18 @@
         }
 
         .kpi-card {
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
             border-radius: 16px;
             padding: 1.25rem;
             transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         .kpi-card:hover {
             transform: translateY(-2px);
-            border-color: #6366f1;
+            border-color: var(--red);
+            box-shadow: 0 8px 24px rgba(196, 18, 48, 0.12);
         }
 
         .kpi-icon {
@@ -231,34 +249,21 @@
         .kpi-value {
             font-size: 1.6rem;
             font-weight: 800;
-            color: #f8fafc;
+            color: var(--red);
             line-height: 1;
         }
 
         .kpi-label {
             font-size: 0.75rem;
-            color: #64748b;
+            color: var(--gray-400);
             margin-top: 0.3rem;
-        }
-
-        .kpi-change {
-            font-size: 0.72rem;
-            margin-top: 0.4rem;
-        }
-
-        .kpi-up {
-            color: #34d399;
-        }
-
-        .kpi-down {
-            color: #f87171;
         }
 
         /* ── SECTION TITLES ── */
         .section-title {
             font-size: 1rem;
             font-weight: 700;
-            color: #f8fafc;
+            color: var(--navy);
             margin-bottom: 1rem;
             display: flex;
             align-items: center;
@@ -266,16 +271,17 @@
         }
 
         .section-title i {
-            color: #6366f1;
+            color: var(--red);
         }
 
         /* ── CARDS ── */
         .card {
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
             border-radius: 16px;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
         /* ── CHART ── */
@@ -292,8 +298,8 @@
         }
 
         .session-item {
-            background: #0f172a;
-            border: 1px solid #334155;
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
             border-radius: 12px;
             padding: 1rem;
             display: flex;
@@ -305,7 +311,7 @@
         .session-date {
             font-size: 0.85rem;
             font-weight: 600;
-            color: #f1f5f9;
+            color: var(--navy);
         }
 
         .session-meta {
@@ -321,12 +327,12 @@
         .session-stat .v {
             font-size: 1rem;
             font-weight: 700;
-            color: #818cf8;
+            color: var(--red);
         }
 
         .session-stat .l {
             font-size: 0.65rem;
-            color: #64748b;
+            color: var(--gray-400);
         }
 
         .attendance-dot {
@@ -337,11 +343,11 @@
         }
 
         .att-present {
-            background: #10b981;
+            background: #16a34a;
         }
 
         .att-absent {
-            background: #334155;
+            background: var(--gray-200);
         }
 
         /* ── PHOTO GALLERY ── */
@@ -357,6 +363,7 @@
             aspect-ratio: 1;
             position: relative;
             cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         .gallery-item img {
@@ -375,7 +382,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+            background: linear-gradient(transparent, rgba(27, 48, 96, 0.8));
             padding: 0.5rem;
             font-size: 0.65rem;
             color: white;
@@ -383,8 +390,8 @@
 
         /* ── MOTIVATIONAL ── */
         .motivational {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
-            border: 1px solid rgba(99, 102, 241, 0.3);
+            background: linear-gradient(135deg, rgba(196, 18, 48, 0.07), rgba(27, 48, 96, 0.07));
+            border: 1px solid rgba(196, 18, 48, 0.18);
             border-radius: 16px;
             padding: 1.5rem;
             text-align: center;
@@ -392,19 +399,19 @@
         }
 
         .motivational .quote {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 600;
-            color: #f8fafc;
+            color: var(--navy);
             font-style: italic;
         }
 
         .motivational .author {
             font-size: 0.8rem;
-            color: #64748b;
+            color: var(--gray-400);
             margin-top: 0.5rem;
         }
 
-        /* ── PROGRESS RING ── */
+        /* ── PROGRESS RINGS ── */
         .progress-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -419,11 +426,12 @@
         }
 
         .progress-card {
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
             border-radius: 16px;
             padding: 1.5rem;
             text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
         .ring-wrap {
@@ -435,23 +443,20 @@
         .ring-title {
             font-size: 0.875rem;
             font-weight: 700;
-            color: #f8fafc;
+            color: var(--navy);
             margin-bottom: 0.25rem;
         }
 
         .ring-sub {
             font-size: 0.75rem;
-            color: #64748b;
+            color: var(--gray-400);
         }
 
         /* ── LOADING ── */
         .loading-overlay-full {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #0f172a;
+            inset: 0;
+            background: var(--white);
             z-index: 9999;
             display: flex;
             flex-direction: column;
@@ -463,8 +468,8 @@
         .spinner {
             width: 40px;
             height: 40px;
-            border: 3px solid #334155;
-            border-top-color: #6366f1;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--red);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
@@ -476,18 +481,15 @@
         }
 
         .loading-text {
-            color: #64748b;
+            color: var(--gray-400);
             font-size: 0.875rem;
         }
 
         /* ── LIGHTBOX ── */
         .lightbox {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            inset: 0;
+            background: rgba(27, 48, 96, 0.9);
             z-index: 9000;
             display: none;
             align-items: center;
@@ -508,7 +510,7 @@
             position: absolute;
             top: 1.5rem;
             right: 1.5rem;
-            background: #334155;
+            background: var(--red);
             color: white;
             border: none;
             width: 40px;
@@ -521,7 +523,7 @@
             justify-content: center;
         }
 
-        /* ── BADGE CHIP ── */
+        /* ── BADGE ── */
         .badge {
             padding: 0.2rem 0.65rem;
             border-radius: 20px;
@@ -530,13 +532,31 @@
         }
 
         .badge-green {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
+            background: rgba(22, 163, 74, 0.1);
+            color: #16a34a;
         }
 
         .badge-purple {
-            background: rgba(99, 102, 241, 0.15);
-            color: #818cf8;
+            background: rgba(27, 48, 96, 0.1);
+            color: var(--navy);
+        }
+
+        @media (max-width: 640px) {
+            .hero-name {
+                font-size: 1.4rem;
+            }
+
+            .hero-steps-value {
+                font-size: 2.5rem;
+            }
+
+            .dashboard-content {
+                padding: 1rem;
+            }
+
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         @media print {

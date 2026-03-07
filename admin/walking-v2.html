@@ -19,6 +19,12 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
 
     <style>
+        :root {
+            --red: #C41230; --red-dark: #9B0E26; --red-light: #E8394F;
+            --navy: #1B3060; --navy-light: #2D4A8A;
+            --white: #FFFFFF; --gray-50: #F7F8FA; --gray-100: #EEF0F4;
+            --gray-200: #DDE1E9; --gray-400: #9CA3AF; --gray-600: #4B5563; --gray-800: #1F2937;
+        }
         * {
             box-sizing: border-box;
             margin: 0;
@@ -27,8 +33,8 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: #0f172a;
-            color: #e2e8f0;
+            background: #F7F8FA;
+            color: #1F2937;
             min-height: 100vh;
         }
 
@@ -40,8 +46,8 @@
         /* ── SIDEBAR ── */
         .v2-sidebar {
             width: 260px;
-            background: #1e293b;
-            border-right: 1px solid #334155;
+            background: #1B3060;
+            border-right: 1px solid #0D1F42;
             display: flex;
             flex-direction: column;
             position: fixed;
@@ -52,7 +58,7 @@
 
         .sidebar-brand {
             padding: 1.5rem;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid #DDE1E9;
             display: flex;
             align-items: center;
             gap: 0.75rem;
@@ -61,7 +67,7 @@
         .sidebar-brand .brand-icon {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: linear-gradient(135deg, #C41230, #1B3060);
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -72,13 +78,13 @@
         .sidebar-brand h2 {
             font-size: 0.9rem;
             font-weight: 700;
-            color: #f8fafc;
+            color: #111827;
             line-height: 1.2;
         }
 
         .sidebar-brand span {
             font-size: 0.7rem;
-            color: #94a3b8;
+            color: #6B7280;
         }
 
         .sidebar-nav {
@@ -91,7 +97,7 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            color: #64748b;
+            color: #9CA3AF;
             padding: 0.75rem 1.25rem 0.25rem;
         }
 
@@ -100,7 +106,7 @@
             align-items: center;
             gap: 0.75rem;
             padding: 0.65rem 1.25rem;
-            color: #94a3b8;
+            color: #6B7280;
             text-decoration: none;
             font-size: 0.875rem;
             font-weight: 500;
@@ -113,14 +119,14 @@
         }
 
         .nav-link:hover {
-            background: #334155;
-            color: #f1f5f9;
+            background: #DDE1E9;
+            color: #1F2937;
         }
 
         .nav-link.active {
             background: linear-gradient(90deg, rgba(99, 102, 241, 0.2), transparent);
-            color: #818cf8;
-            border-left: 3px solid #6366f1;
+            color: #E8394F;
+            border-left: 3px solid #C41230;
         }
 
         .nav-link i {
@@ -130,11 +136,11 @@
 
         .sidebar-footer {
             padding: 1rem 1.25rem;
-            border-top: 1px solid #334155;
+            border-top: 1px solid #DDE1E9;
         }
 
         .version-badge {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: linear-gradient(135deg, #C41230, #1B3060);
             color: white;
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
@@ -153,8 +159,8 @@
         }
 
         .v2-topbar {
-            background: #1e293b;
-            border-bottom: 1px solid #334155;
+            background: #FFFFFF;
+            border-bottom: 1px solid #DDE1E9;
             padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
@@ -167,12 +173,12 @@
         .v2-topbar h1 {
             font-size: 1.25rem;
             font-weight: 700;
-            color: #f8fafc;
+            color: #111827;
         }
 
         .v2-topbar p {
             font-size: 0.8rem;
-            color: #64748b;
+            color: #9CA3AF;
         }
 
         .topbar-actions {
@@ -195,7 +201,7 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            background: linear-gradient(135deg, #C41230, #9B0E26);
             color: white;
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
@@ -216,13 +222,13 @@
 
         .btn-outline {
             background: transparent;
-            color: #94a3b8;
-            border: 1px solid #334155;
+            color: #6B7280;
+            border: 1px solid #DDE1E9;
         }
 
         .btn-outline:hover {
-            background: #334155;
-            color: #f1f5f9;
+            background: #DDE1E9;
+            color: #1F2937;
         }
 
         .btn-danger {
@@ -243,8 +249,8 @@
 
         /* ── SESSION HEADER ── */
         .session-hero {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border: 1px solid #334155;
+            background: linear-gradient(135deg, #FFFFFF 0%, #F7F8FA 100%);
+            border: 1px solid #DDE1E9;
             border-radius: 16px;
             padding: 1.5rem 2rem;
             margin-bottom: 1.5rem;
@@ -269,15 +275,15 @@
 
         .date-input-group label {
             font-size: 0.75rem;
-            color: #64748b;
+            color: #9CA3AF;
             font-weight: 600;
             text-transform: uppercase;
         }
 
         .dark-input {
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #f1f5f9;
+            background: #F7F8FA;
+            border: 1px solid #DDE1E9;
+            color: #1F2937;
             padding: 0.6rem 0.9rem;
             border-radius: 8px;
             font-size: 0.875rem;
@@ -285,11 +291,11 @@
 
         .dark-input:focus {
             outline: none;
-            border-color: #6366f1;
+            border-color: #C41230;
         }
 
         select.dark-input option {
-            background: #1e293b;
+            background: #FFFFFF;
         }
 
         .session-stats-mini {
@@ -304,13 +310,13 @@
         .mini-stat .val {
             font-size: 1.75rem;
             font-weight: 800;
-            color: #818cf8;
+            color: #E8394F;
             line-height: 1;
         }
 
         .mini-stat .lbl {
             font-size: 0.7rem;
-            color: #64748b;
+            color: #9CA3AF;
             text-transform: uppercase;
         }
 
@@ -318,8 +324,8 @@
         .v2-tabs {
             display: flex;
             gap: 0;
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: #FFFFFF;
+            border: 1px solid #DDE1E9;
             border-radius: 12px;
             padding: 4px;
             margin-bottom: 1.5rem;
@@ -332,7 +338,7 @@
             font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
-            color: #64748b;
+            color: #9CA3AF;
             transition: all 0.2s;
             border: none;
             background: none;
@@ -340,14 +346,14 @@
         }
 
         .v2-tab.active {
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            background: linear-gradient(135deg, #C41230, #9B0E26);
             color: white;
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
 
         .v2-tab:hover:not(.active) {
-            color: #94a3b8;
-            background: #334155;
+            color: #6B7280;
+            background: #DDE1E9;
         }
 
         .tab-panel {
@@ -360,8 +366,8 @@
 
         /* ── CARDS ── */
         .card {
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: #FFFFFF;
+            border: 1px solid #DDE1E9;
             border-radius: 16px;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
@@ -370,7 +376,7 @@
         .card-title {
             font-size: 1rem;
             font-weight: 700;
-            color: #f8fafc;
+            color: #111827;
             margin-bottom: 1rem;
             display: flex;
             align-items: center;
@@ -378,7 +384,7 @@
         }
 
         .card-title i {
-            color: #6366f1;
+            color: #C41230;
         }
 
         /* ── EMPLOYEE LIST (Asistencia) ── */
@@ -389,8 +395,8 @@
         }
 
         .emp-card {
-            background: #0f172a;
-            border: 2px solid #334155;
+            background: #F7F8FA;
+            border: 2px solid #DDE1E9;
             border-radius: 12px;
             padding: 1rem;
             cursor: pointer;
@@ -400,7 +406,7 @@
         }
 
         .emp-card:hover {
-            border-color: #6366f1;
+            border-color: #C41230;
             transform: translateY(-2px);
         }
 
@@ -424,20 +430,20 @@
             justify-content: center;
             font-size: 1.2rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: linear-gradient(135deg, #C41230, #1B3060);
             color: white;
         }
 
         .emp-name {
             font-size: 0.8rem;
             font-weight: 600;
-            color: #f1f5f9;
+            color: #1F2937;
             margin-bottom: 0.25rem;
         }
 
         .emp-num {
             font-size: 0.7rem;
-            color: #64748b;
+            color: #9CA3AF;
         }
 
         .emp-status {
@@ -479,16 +485,16 @@
 
         .form-group label {
             font-size: 0.75rem;
-            color: #94a3b8;
+            color: #6B7280;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
 
         .stat-input {
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #f1f5f9;
+            background: #F7F8FA;
+            border: 1px solid #DDE1E9;
+            color: #1F2937;
             padding: 0.75rem 1rem;
             border-radius: 10px;
             font-size: 1rem;
@@ -498,50 +504,50 @@
 
         .stat-input:focus {
             outline: none;
-            border-color: #6366f1;
+            border-color: #C41230;
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
         }
 
         .stat-unit {
             font-size: 0.75rem;
-            color: #64748b;
+            color: #9CA3AF;
             margin-top: 0.2rem;
         }
 
         /* ── PHOTO UPLOAD ── */
         .photo-upload-zone {
-            border: 2px dashed #334155;
+            border: 2px dashed #DDE1E9;
             border-radius: 12px;
             padding: 2rem;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s;
-            background: #0f172a;
+            background: #F7F8FA;
         }
 
         .photo-upload-zone:hover {
-            border-color: #6366f1;
+            border-color: #C41230;
             background: rgba(99, 102, 241, 0.05);
         }
 
         .photo-upload-zone.drag-over {
-            border-color: #6366f1;
+            border-color: #C41230;
             background: rgba(99, 102, 241, 0.1);
         }
 
         .photo-upload-zone i {
             font-size: 2.5rem;
-            color: #334155;
+            color: #DDE1E9;
             margin-bottom: 0.75rem;
         }
 
         .photo-upload-zone p {
-            color: #64748b;
+            color: #9CA3AF;
             font-size: 0.875rem;
         }
 
         .photo-upload-zone span {
-            color: #6366f1;
+            color: #C41230;
             font-weight: 600;
         }
 
@@ -593,21 +599,21 @@
             text-align: left;
             font-size: 0.75rem;
             font-weight: 700;
-            color: #64748b;
+            color: #9CA3AF;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid #DDE1E9;
         }
 
         .data-table td {
             padding: 0.85rem 1rem;
             font-size: 0.875rem;
             color: #cbd5e1;
-            border-bottom: 1px solid #1e293b;
+            border-bottom: 1px solid #FFFFFF;
         }
 
         .data-table tr:hover td {
-            background: #0f172a;
+            background: #F7F8FA;
         }
 
         .badge {
@@ -630,7 +636,7 @@
 
         .badge-blue {
             background: rgba(99, 102, 241, 0.15);
-            color: #818cf8;
+            color: #E8394F;
         }
 
         /* ── QUICK STATS ── */
@@ -642,8 +648,8 @@
         }
 
         .stat-overview-card {
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: #FFFFFF;
+            border: 1px solid #DDE1E9;
             border-radius: 12px;
             padding: 1.25rem;
             text-align: center;
@@ -657,12 +663,12 @@
         .stat-overview-card .value {
             font-size: 1.5rem;
             font-weight: 800;
-            color: #f8fafc;
+            color: #111827;
         }
 
         .stat-overview-card .label {
             font-size: 0.75rem;
-            color: #64748b;
+            color: #9CA3AF;
             margin-top: 0.25rem;
         }
 
@@ -680,9 +686,9 @@
         }
 
         .reg-input {
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #f1f5f9;
+            background: #F7F8FA;
+            border: 1px solid #DDE1E9;
+            color: #1F2937;
             padding: 0.7rem 1rem;
             border-radius: 8px;
             font-size: 0.875rem;
@@ -690,7 +696,7 @@
 
         .reg-input:focus {
             outline: none;
-            border-color: #6366f1;
+            border-color: #C41230;
         }
 
         /* ── TOAST ── */
@@ -705,9 +711,9 @@
         }
 
         .toast {
-            background: #1e293b;
-            border: 1px solid #334155;
-            color: #f1f5f9;
+            background: #FFFFFF;
+            border: 1px solid #DDE1E9;
+            color: #1F2937;
             padding: 0.85rem 1.25rem;
             border-radius: 10px;
             font-size: 0.875rem;
@@ -759,8 +765,8 @@
         }
 
         .modal-box {
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: #FFFFFF;
+            border: 1px solid #DDE1E9;
             border-radius: 20px;
             padding: 2rem;
             max-width: 700px;
@@ -777,9 +783,9 @@
         }
 
         .modal-close {
-            background: #334155;
+            background: #DDE1E9;
             border: none;
-            color: #94a3b8;
+            color: #6B7280;
             width: 32px;
             height: 32px;
             border-radius: 50%;
@@ -792,7 +798,7 @@
 
         /* Progress bar */
         .upload-bar {
-            background: #0f172a;
+            background: #F7F8FA;
             border-radius: 99px;
             height: 6px;
             overflow: hidden;
@@ -802,7 +808,7 @@
 
         .upload-bar-fill {
             height: 100%;
-            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            background: linear-gradient(90deg, #C41230, #1B3060);
             border-radius: 99px;
             transition: width 0.3s;
         }
@@ -810,7 +816,7 @@
         .empty-state {
             text-align: center;
             padding: 3rem;
-            color: #64748b;
+            color: #9CA3AF;
         }
 
         .empty-state i {
@@ -819,9 +825,9 @@
         }
 
         .search-bar {
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #f1f5f9;
+            background: #F7F8FA;
+            border: 1px solid #DDE1E9;
+            color: #1F2937;
             padding: 0.6rem 1rem;
             border-radius: 8px;
             font-size: 0.875rem;
@@ -831,7 +837,7 @@
 
         .search-bar:focus {
             outline: none;
-            border-color: #6366f1;
+            border-color: #C41230;
         }
 
         @media (max-width: 768px) {
@@ -889,7 +895,7 @@
 
             <div class="sidebar-footer">
                 <div class="version-badge">V 2.0</div>
-                <div style="font-size:0.72rem; color:#475569; margin-top:0.25rem;">Caminatas IBERO Actívate</div>
+                <div style="font-size:0.72rem; color:#6B7280; margin-top:0.25rem;">Caminatas IBERO Actívate</div>
             </div>
         </aside>
 
@@ -901,7 +907,7 @@
                     <p id="tab-subtitle">Marca quién asistió a la caminata del día</p>
                 </div>
                 <div class="topbar-actions">
-                    <span id="topbar-date" style="color:#64748b; font-size:0.85rem;"></span>
+                    <span id="topbar-date" style="color:#9CA3AF; font-size:0.85rem;"></span>
                     <button class="btn btn-primary" id="btn-save-session" onclick="saveCurrentSession()">
                         <i class="fas fa-save"></i> Guardar Sesión
                     </button>
@@ -936,7 +942,7 @@
                             <div class="lbl">Presentes</div>
                         </div>
                         <div class="mini-stat">
-                            <div class="val" id="stat-total" style="color:#64748b;">0</div>
+                            <div class="val" id="stat-total" style="color:#9CA3AF;">0</div>
                             <div class="lbl">Total</div>
                         </div>
                         <div class="mini-stat">
@@ -987,7 +993,7 @@
                     <!-- ② ESTADÍSTICAS DE LA SESIÓN -->
                     <div class="card" style="margin-top:1.25rem;">
                         <div class="card-title"><i class="fas fa-chart-bar"></i> Estadísticas de la Sesión</div>
-                        <p style="color:#64748b; font-size:0.8rem; margin-bottom:1rem;">
+                        <p style="color:#9CA3AF; font-size:0.8rem; margin-bottom:1rem;">
                             Registra los datos de la caminata del día. Se distribuirán automáticamente a los empleados
                             presentes.
                         </p>
@@ -1049,7 +1055,7 @@
                     <!-- ③ FOTOS DEL DÍA -->
                     <div class="card" style="margin-top:1.25rem;">
                         <div class="card-title"><i class="fas fa-camera"></i> Fotos del Día</div>
-                        <p style="color:#64748b; font-size:0.8rem; margin-bottom:1rem;">
+                        <p style="color:#9CA3AF; font-size:0.8rem; margin-bottom:1rem;">
                             Las fotos serán visibles en el panel de los empleados.
                         </p>
                         <div class="photo-upload-zone" id="drop-zone-inline"
@@ -1067,7 +1073,7 @@
 
                         <!-- Fotos ya guardadas esta sesión -->
                         <div id="saved-photos-card" style="display:none; margin-top:1rem;">
-                            <div style="font-size:0.8rem; color:#64748b; margin-bottom:0.5rem;">
+                            <div style="font-size:0.8rem; color:#9CA3AF; margin-bottom:0.5rem;">
                                 <i class="fas fa-photo-film"></i> Fotos guardadas esta sesión:
                             </div>
                             <div id="saved-photos-grid" class="photo-preview-grid"></div>
@@ -1079,7 +1085,7 @@
                 <div id="panel-stats" class="tab-panel">
                     <div class="card">
                         <div class="card-title"><i class="fas fa-ruler"></i> Estadísticas de la Sesión</div>
-                        <p style="color:#64748b; font-size:0.85rem; margin-bottom:1rem;">Registra los datos de la
+                        <p style="color:#9CA3AF; font-size:0.85rem; margin-bottom:1rem;">Registra los datos de la
                             caminata del día para que los empleados puedan verlos en su panel.</p>
 
                         <div class="stats-form-grid">
@@ -1149,7 +1155,7 @@
                 <div id="panel-fotos" class="tab-panel">
                     <div class="card">
                         <div class="card-title"><i class="fas fa-images"></i> Fotos del Día</div>
-                        <p style="color:#64748b; font-size:0.85rem; margin-bottom:1rem;">Las fotos se guardarán
+                        <p style="color:#9CA3AF; font-size:0.85rem; margin-bottom:1rem;">Las fotos se guardarán
                             asociadas a la fecha seleccionada y serán visibles en el panel de los empleados.</p>
 
                         <div class="photo-upload-zone" id="drop-zone"
@@ -1187,10 +1193,10 @@
                 <div id="panel-usuarios" class="tab-panel">
                     <div class="card">
                         <div class="card-title"><i class="fas fa-user-plus"></i> Registrar Nuevo Usuario</div>
-                        <p style="color:#64748b; font-size:0.82rem; margin-bottom:1rem;">
-                            <i class="fas fa-circle-info" style="color:#818cf8;"></i>
+                        <p style="color:#9CA3AF; font-size:0.82rem; margin-bottom:1rem;">
+                            <i class="fas fa-circle-info" style="color:#E8394F;"></i>
                             La contraseña del empleado se genera automáticamente a partir de los <strong
-                                style="color:#818cf8;">números de su correo</strong>.
+                                style="color:#E8394F;">números de su correo</strong>.
                             Ej: <code style="color:#34d399;">715919</code>@iberopuebla.mx → contraseña: <code
                                 style="color:#34d399;">715919</code>
                         </p>
@@ -1233,7 +1239,7 @@
                                 </thead>
                                 <tbody id="users-tbody">
                                     <tr>
-                                        <td colspan="6" style="text-align:center; color:#64748b;">Cargando...</td>
+                                        <td colspan="6" style="text-align:center; color:#9CA3AF;">Cargando...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1276,38 +1282,38 @@
 
                     <!-- Banda 2: Acumulado colectivo (stats × asistentes) -->
                     <div
-                        style="margin: 0.3rem 0 1.25rem; padding: 0.3rem 0.75rem; font-size:0.72rem; color:#818cf8; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;">
+                        style="margin: 0.3rem 0 1.25rem; padding: 0.3rem 0.75rem; font-size:0.72rem; color:#E8394F; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;">
                         <i class="fas fa-users"></i> &nbsp;Impacto Colectivo Acumulado (pasos × asistentes por sesión)
                     </div>
                     <div class="stats-overview" id="history-overview-group" style="margin-bottom:1.5rem;">
                         <div class="stat-overview-card"
                             style="background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)); border-color: rgba(99,102,241,0.35);">
                             <div class="icon">👥</div>
-                            <div class="value" id="ov-group-attendees" style="color:#818cf8;">-</div>
+                            <div class="value" id="ov-group-attendees" style="color:#E8394F;">-</div>
                             <div class="label">Asistencias Totales</div>
                         </div>
                         <div class="stat-overview-card"
                             style="background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)); border-color: rgba(99,102,241,0.35);">
                             <div class="icon">👟</div>
-                            <div class="value" id="ov-group-steps" style="color:#818cf8;">-</div>
+                            <div class="value" id="ov-group-steps" style="color:#E8394F;">-</div>
                             <div class="label">Pasos Colectivos</div>
                         </div>
                         <div class="stat-overview-card"
                             style="background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)); border-color: rgba(99,102,241,0.35);">
                             <div class="icon">🛣️</div>
-                            <div class="value" id="ov-group-km" style="color:#818cf8;">-</div>
+                            <div class="value" id="ov-group-km" style="color:#E8394F;">-</div>
                             <div class="label">Km Colectivos</div>
                         </div>
                         <div class="stat-overview-card"
                             style="background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)); border-color: rgba(99,102,241,0.35);">
                             <div class="icon">🔥</div>
-                            <div class="value" id="ov-group-cal" style="color:#818cf8;">-</div>
+                            <div class="value" id="ov-group-cal" style="color:#E8394F;">-</div>
                             <div class="label">Calorías Colectivas</div>
                         </div>
                         <div class="stat-overview-card"
                             style="background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)); border-color: rgba(99,102,241,0.35);">
                             <div class="icon">⏱️</div>
-                            <div class="value" id="ov-group-mins" style="color:#818cf8;">-</div>
+                            <div class="value" id="ov-group-mins" style="color:#E8394F;">-</div>
                             <div class="label">Min. Colectivos</div>
                         </div>
                     </div>
@@ -1338,7 +1344,7 @@
                                 </thead>
                                 <tbody id="history-tbody">
                                     <tr>
-                                        <td colspan="9" style="text-align:center; color:#64748b;">Cargando historial...
+                                        <td colspan="9" style="text-align:center; color:#9CA3AF;">Cargando historial...
                                         </td>
                                     </tr>
                                 </tbody>
@@ -1360,11 +1366,11 @@
 
         <div id="session-report-content" style="
             max-width:860px; margin:0 auto;
-            background:#1e293b; border-radius:16px;
-            border:1px solid #334155; overflow:hidden;">
+            background:#FFFFFF; border-radius:16px;
+            border:1px solid #DDE1E9; overflow:hidden;">
 
             <!-- Header del modal -->
-            <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);
+            <div style="background:linear-gradient(135deg,#C41230,#1B3060);
                         padding:1.5rem 2rem; display:flex; justify-content:space-between; align-items:center;">
                 <div>
                     <div style="font-size:0.75rem;color:#c4b5fd;text-transform:uppercase;letter-spacing:.1em;">
@@ -1393,7 +1399,7 @@
             <div style="padding:1.75rem 2rem;">
 
                 <!-- ESTADÍSTICAS -->
-                <div style="font-size:.7rem;color:#818cf8;font-weight:700;text-transform:uppercase;
+                <div style="font-size:.7rem;color:#E8394F;font-weight:700;text-transform:uppercase;
                             letter-spacing:.08em;margin-bottom:.75rem;">
                     <i class="fas fa-chart-bar"></i> &nbsp;Estadísticas del Día
                 </div>
@@ -1402,17 +1408,17 @@
 
                 <!-- NOTAS -->
                 <div id="rpt-notes-block" style="display:none;
-                            background:#0f172a; border:1px solid #334155; border-radius:10px;
+                            background:#F7F8FA; border:1px solid #DDE1E9; border-radius:10px;
                             padding:1rem 1.25rem; margin-bottom:1.75rem;">
-                    <div style="font-size:.7rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;
+                    <div style="font-size:.7rem;color:#6B7280;text-transform:uppercase;letter-spacing:.06em;
                                 margin-bottom:.4rem;">
                         <i class="fas fa-sticky-note"></i> Notas del Entrenador
                     </div>
-                    <div id="rpt-notes" style="color:#e2e8f0;font-size:.9rem;line-height:1.6;"></div>
+                    <div id="rpt-notes" style="color:#1F2937;font-size:.9rem;line-height:1.6;"></div>
                 </div>
 
                 <!-- ASISTENCIA -->
-                <div style="font-size:.7rem;color:#818cf8;font-weight:700;text-transform:uppercase;
+                <div style="font-size:.7rem;color:#E8394F;font-weight:700;text-transform:uppercase;
                             letter-spacing:.08em;margin-bottom:.75rem;">
                     <i class="fas fa-clipboard-check"></i> &nbsp;Lista de Asistencia
                 </div>
@@ -1433,7 +1439,7 @@
 
                 <!-- FOTOS -->
                 <div id="rpt-photos-block" style="display:none;">
-                    <div style="font-size:.7rem;color:#818cf8;font-weight:700;text-transform:uppercase;
+                    <div style="font-size:.7rem;color:#E8394F;font-weight:700;text-transform:uppercase;
                                 letter-spacing:.08em;margin-bottom:.75rem;">
                         <i class="fas fa-camera"></i> &nbsp;Fotos del Día (<span id="rpt-photo-count">0</span>)
                     </div>
@@ -1442,7 +1448,7 @@
                 </div>
 
                 <!-- SPINNER DE CARGA -->
-                <div id="rpt-loading" style="text-align:center;padding:2rem;color:#64748b;">
+                <div id="rpt-loading" style="text-align:center;padding:2rem;color:#9CA3AF;">
                     <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;"></i>
                     <div style="margin-top:.75rem;font-size:.85rem;">Cargando reporte...</div>
                 </div>
@@ -1477,7 +1483,7 @@
             }
 
             #session-report-content [style*="background:linear-gradient"] {
-                background: #6366f1 !important;
+                background: #C41230 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
