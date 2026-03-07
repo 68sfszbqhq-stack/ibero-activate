@@ -268,34 +268,33 @@ service cloud.firestore {
 
     // Perfiles de empleados V2
     match /walking_v2_users/{userId} {
-      // Admin puede leer todos los perfiles
-      // Empleado solo puede leer su propio perfil
+      // Admin lee todos; empleado lee su propio perfil
       allow read: if isAdmin() || isOwner(userId);
-      // Solo el admin crea/actualiza/borra usuarios
-      // (registro desde el panel admin, no auto-registro)
+      // Búsqueda por email (para login del empleado)
+      // Solo admin crea/modifica/borra usuarios
       allow create, update: if isAdmin();
       allow delete: if isAdmin();
     }
 
     // Sesiones de caminata V2
     match /walking_v2_sessions/{sessionId} {
-      // Todos los autenticados pueden leer sesiones (empleados ven sus stats)
+      // Todos los autenticados leen sesiones (empleados necesitan ver su historial)
       allow read: if isAuth();
-      // Solo admin puede crear/modificar/borrar sesiones
+      // Solo admin crea/modifica/borra sesiones
       allow write: if isAdmin();
     }
 
     // Sub-colección de asistencia por sesión
     match /walking_v2_sessions/{sessionId}/attendance/{attendeeId} {
-      // Empleado lee solo su propio registro; admin lee todo
-      allow read: if isAdmin() || isOwner(attendeeId);
+      // Empleado puede leer toda la asistencia de la sesión (necesita buscar por nombre también)
+      allow read: if isAuth();
       // Solo admin escribe asistencia
       allow write: if isAdmin();
     }
 
     // Sub-colección de fotos (Base64) por sesión
     match /walking_v2_sessions/{sessionId}/photos/{photoId} {
-      // Todos los autenticados pueden ver las fotos
+      // Todos los autenticados ven las fotos
       allow read: if isAuth();
       // Solo admin sube/borra fotos
       allow write: if isAdmin();
