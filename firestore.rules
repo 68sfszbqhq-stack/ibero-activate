@@ -266,12 +266,14 @@ service cloud.firestore {
     // Seguridad por roles: Admin escribe, Empleado solo lee
     // ========================================
 
+
     // Perfiles de empleados V2
     match /walking_v2_users/{userId} {
-      // Admin lee todos; empleado lee su propio perfil
-      allow read: if isAdmin() || isOwner(userId);
-      // Búsqueda por email (para login del empleado)
-      // Solo admin crea/modifica/borra usuarios
+      // Lectura: cualquier usuario autenticado puede leer perfiles.
+      // Necesario porque el empleado hace una query por email (.where('email','==',x))
+      // y los documentos tienen ID auto-generado, no el uid del usuario.
+      // Escritura: solo el admin puede crear/modificar/borrar perfiles.
+      allow read: if isAuth();
       allow create, update: if isAdmin();
       allow delete: if isAdmin();
     }
