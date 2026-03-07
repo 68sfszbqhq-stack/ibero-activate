@@ -269,11 +269,11 @@ service cloud.firestore {
 
     // Perfiles de empleados V2
     match /walking_v2_users/{userId} {
-      // Lectura: cualquier usuario autenticado puede leer perfiles.
-      // Necesario porque el empleado hace una query por email (.where('email','==',x))
-      // y los documentos tienen ID auto-generado, no el uid del usuario.
+      // Lectura PÚBLICA: la página de login necesita mostrar la lista de
+      // empleados ANTES de que el usuario se autentique (flujo de selección
+      // de nombre). Los datos expuestos (nombre, dpto, email) no son sensibles.
       // Escritura: solo el admin puede crear/modificar/borrar perfiles.
-      allow read: if isAuth();
+      allow read: if true;
       allow create, update: if isAdmin();
       allow delete: if isAdmin();
     }
