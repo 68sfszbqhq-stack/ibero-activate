@@ -122,7 +122,7 @@ function renderSessionList() {
     if (!container) return;
 
     if (!allSessions.length) {
-        container.innerHTML = '<div style="text-align:center;color:#64748b;padding:2rem;">No hay sesiones registradas aún.</div>';
+        container.innerHTML = '<div style="text-align:center;color:#9CA3AF;padding:2rem;">No hay sesiones registradas aún.</div>';
         return;
     }
 
@@ -137,7 +137,7 @@ function renderSessionList() {
             ? '<span style="background:rgba(34,197,94,0.12);color:#34d399;padding:.2rem .6rem;border-radius:999px;font-size:.68rem;font-weight:600;">✅ Asististe</span>'
             : absent
                 ? '<span style="background:rgba(248,113,113,0.12);color:#f87171;padding:.2rem .6rem;border-radius:999px;font-size:.68rem;font-weight:600;">❌ Ausente</span>'
-                : '<span style="background:rgba(100,116,139,0.12);color:#64748b;padding:.2rem .6rem;border-radius:999px;font-size:.68rem;font-weight:600;">— Sin registro</span>';
+                : '<span style="background:rgba(100,116,139,0.12);color:#9CA3AF;padding:.2rem .6rem;border-radius:999px;font-size:.68rem;font-weight:600;">— Sin registro</span>';
 
         // Stats — solo mostrar si asistió y hay datos
         const showStats = attended && (st.steps || st.km || st.duration || st.calories);
@@ -151,7 +151,7 @@ function renderSessionList() {
             </div>` : '';
 
         // Borde de color según asistencia
-        const borderColor = attended ? '#22c55e' : absent ? '#ef4444' : '#334155';
+        const borderColor = attended ? '#22c55e' : absent ? '#ef4444' : '#DDE1E9';
 
         return `
         <div class="session-item" style="border-left:3px solid ${borderColor}; padding-left:.75rem;">
@@ -159,10 +159,10 @@ function renderSessionList() {
                 <div>
                     <div class="session-date">${formatDate(s.date)} · ${formatType(s.type)}</div>
                     <div style="margin-top:.3rem;">${badge}</div>
-                    ${s.week ? `<div style="font-size:.68rem;color:#64748b;margin-top:.2rem;">Semana ${s.week}</div>` : ''}
+                    ${s.week ? `<div style="font-size:.68rem;color:#9CA3AF;margin-top:.2rem;">Semana ${s.week}</div>` : ''}
                 </div>
                 <div class="attendance-dot ${attended ? 'att-present' : absent ? 'att-absent' : ''}"
-                     style="${pending ? 'background:#334155;' : ''}"
+                     style="${pending ? 'background:#DDE1E9;' : ''}"
                      title="${attended ? 'Presente' : absent ? 'Ausente' : 'Sin dato'}">
                 </div>
             </div>
@@ -207,12 +207,12 @@ function updateKPIs() {
     document.getElementById('streak-count').textContent = streak;
 
     // Rings
-    drawRing('attendance-ring', pct, '#6366f1', '#1e293b');
+    drawRing('attendance-ring', pct, '#C41230', '#1B3060');
     document.getElementById('attendance-ring-label').textContent = `${totalSessions} / ${allSessions.length} sesiones`;
 
     const stepsGoal = 10000;
     const stepsPct = Math.min(Math.round((avgSteps / stepsGoal) * 100), 100);
-    drawRing('steps-ring', stepsPct, '#10b981', '#1e293b');
+    drawRing('steps-ring', stepsPct, '#10b981', '#1B3060');
     document.getElementById('steps-ring-label').textContent = `${formatNum(avgSteps)} / ${formatNum(stepsGoal)} pasos`;
 }
 
@@ -252,7 +252,7 @@ function downloadEmployeeReport() {
         }
         const typeMap = { matutina: '🌅 Matutina', vespertina: '🌇 Vespertina', especial: '⭐ Especial' };
         const statusTxt = att ? '✅ Presente' : abs ? '❌ Ausente' : '— Sin registro';
-        const statusColor = att ? '#15803d' : abs ? '#b91c1c' : '#64748b';
+        const statusColor = att ? '#15803d' : abs ? '#b91c1c' : '#9CA3AF';
         const bg = i % 2 === 1 ? '#f8faff' : '#fff';
 
         rows += `<tr style="background:${bg};">
@@ -265,10 +265,10 @@ function downloadEmployeeReport() {
             <td>${att ? fmtKm(st.km || 0) + ' km' : '-'}</td>
             <td>${att ? (st.duration || 0) + ' min' : '-'}</td>
             <td>${att ? fmt(st.calories || 0) + ' kcal' : '-'}</td>
-            <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${att ? fmt(cumSteps) : '-'}</td>
-            <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${att ? fmtKm(cumKm) + ' km' : '-'}</td>
-            <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${att ? fmt(cumMins) + ' min' : '-'}</td>
-            <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${att ? fmt(cumCal) + ' kcal' : '-'}</td>
+            <td style="background:#FFF0F2; font-weight:700; color:#C41230;">${att ? fmt(cumSteps) : '-'}</td>
+            <td style="background:#FFF0F2; font-weight:700; color:#C41230;">${att ? fmtKm(cumKm) + ' km' : '-'}</td>
+            <td style="background:#FFF0F2; font-weight:700; color:#C41230;">${att ? fmt(cumMins) + ' min' : '-'}</td>
+            <td style="background:#FFF0F2; font-weight:700; color:#C41230;">${att ? fmt(cumCal) + ' kcal' : '-'}</td>
         </tr>`;
     });
 
@@ -277,22 +277,22 @@ function downloadEmployeeReport() {
 <title>Mi Reporte de Caminatas — ${name}</title>
 <style>
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:Arial,sans-serif; color:#1e293b; background:#fff; padding:2rem; }
-  .header { border-bottom:3px solid #6366f1; padding-bottom:1rem; margin-bottom:1.5rem;
+  body { font-family:Arial,sans-serif; color:#1B3060; background:#fff; padding:2rem; }
+  .header { border-bottom:3px solid #C41230; padding-bottom:1rem; margin-bottom:1.5rem;
             display:flex; justify-content:space-between; align-items:flex-start; }
-  .header h1 { font-size:1.3rem; color:#4338ca; font-weight:800; }
-  .header .meta { font-size:.8rem; color:#64748b; margin-top:.25rem; }
+  .header h1 { font-size:1.3rem; color:#C41230; font-weight:800; }
+  .header .meta { font-size:.8rem; color:#9CA3AF; margin-top:.25rem; }
   .kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:.65rem; margin-bottom:1.5rem; }
-  .kpi { background:#f0f4ff; border:1px solid #c7d2fe; border-radius:8px;
+  .kpi { background:#FFF5F6; border:1px solid #FBBEC9; border-radius:8px;
           padding:.65rem; text-align:center; }
-  .kpi .val { font-size:1.1rem; font-weight:800; color:#4338ca; }
-  .kpi .lbl { font-size:.6rem; color:#64748b; text-transform:uppercase; margin-top:.2rem; }
+  .kpi .val { font-size:1.1rem; font-weight:800; color:#C41230; }
+  .kpi .lbl { font-size:.6rem; color:#9CA3AF; text-transform:uppercase; margin-top:.2rem; }
   table { width:100%; border-collapse:collapse; font-size:.68rem; }
-  th { background:#4338ca; color:#fff; padding:.45rem .35rem; text-align:center;
+  th { background:#C41230; color:#fff; padding:.45rem .35rem; text-align:center;
        font-size:.6rem; text-transform:uppercase; letter-spacing:.04em; }
   td { padding:.4rem .35rem; text-align:center; border-bottom:1px solid #e2e8f0; }
-  .cum-th { background:#6366f1; }
-  tfoot td { background:#1e293b !important; color:#fff !important; font-weight:800; }
+  .cum-th { background:#C41230; }
+  tfoot td { background:#1B3060 !important; color:#fff !important; font-weight:800; }
   .footer-note { margin-top:1.25rem; font-size:.7rem; color:#94a3b8; text-align:center; }
   @media print { button { display:none; } body { padding:.5rem; }
     table { font-size:.6rem; } th { font-size:.55rem; } }
@@ -341,7 +341,7 @@ function downloadEmployeeReport() {
     IBERO Actívate · Programa de Caminatas · pausas-activas-ibero-2026
   </div>
   <div style="margin-top:1.25rem; text-align:center;">
-    <button onclick="window.print()" style="background:#4338ca;color:#fff;border:none;
+    <button onclick="window.print()" style="background:#C41230;color:#fff;border:none;
         padding:.6rem 1.5rem;border-radius:8px;cursor:pointer;font-size:.9rem;font-weight:700;">
       🖨️ Imprimir / Guardar PDF
     </button>
@@ -377,10 +377,10 @@ function renderStepsChart() {
                 label: 'Pasos',
                 data,
                 fill: true,
-                backgroundColor: 'rgba(99,102,241,0.1)',
-                borderColor: '#6366f1',
+                backgroundColor: 'rgba(196,18,48,0.08)',
+                borderColor: '#C41230',
                 borderWidth: 2.5,
-                pointBackgroundColor: '#818cf8',
+                pointBackgroundColor: '#E8394F',
                 pointRadius: 4,
                 tension: 0.4,
             }]
@@ -389,8 +389,8 @@ function renderStepsChart() {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' } },
-                y: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: '#334155' }, beginAtZero: true }
+                x: { ticks: { color: '#9CA3AF', font: { size: 10 } }, grid: { color: '#1B3060' } },
+                y: { ticks: { color: '#9CA3AF', font: { size: 11 } }, grid: { color: '#DDE1E9' }, beginAtZero: true }
             }
         }
     });
@@ -409,7 +409,7 @@ function drawRing(canvasId, pct, color, bg) {
     const cx = size / 2, cy = size / 2, r = 38, lw = 10;
     const angle = (pct / 100) * Math.PI * 2 - Math.PI / 2;
     ctx2.beginPath(); ctx2.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx2.strokeStyle = '#334155'; ctx2.lineWidth = lw; ctx2.lineCap = 'round'; ctx2.stroke();
+    ctx2.strokeStyle = '#DDE1E9'; ctx2.lineWidth = lw; ctx2.lineCap = 'round'; ctx2.stroke();
     if (pct > 0) {
         ctx2.beginPath(); ctx2.arc(cx, cy, r, -Math.PI / 2, angle);
         ctx2.strokeStyle = color; ctx2.lineWidth = lw; ctx2.lineCap = 'round'; ctx2.stroke();
@@ -443,7 +443,7 @@ async function loadPhotos() {
         }
 
         if (!allPhotos.length) {
-            galleryGrid.innerHTML = '<div style="color:#64748b;font-size:.85rem;padding:1rem;text-align:center;">No hay fotos registradas aún.</div>';
+            galleryGrid.innerHTML = '<div style="color:#9CA3AF;font-size:.85rem;padding:1rem;text-align:center;">No hay fotos registradas aún.</div>';
             return;
         }
 

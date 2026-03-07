@@ -104,7 +104,7 @@ function renderAttendanceGrid(employees) {
             <div class="emp-avatar">${initials}</div>
             <div class="emp-name">${emp.name}</div>
             <div class="emp-num">${emp.accountNumber || ''}</div>
-            <div style="margin-top:0.5rem;">${emp.department ? `<span style="font-size:0.65rem; color:#64748b;">${emp.department}</span>` : ''}</div>
+            <div style="margin-top:0.5rem;">${emp.department ? `<span style="font-size:0.65rem; color:#9CA3AF;">${emp.department}</span>` : ''}</div>
         `;
         grid.appendChild(card);
     });
@@ -504,7 +504,7 @@ async function loadUsers() {
     try {
         const snap = await db.collection('walking_v2_users').orderBy('name').get();
         const tbody = document.getElementById('users-tbody');
-        if (snap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b;">Sin usuarios registrados</td></tr>'; return; }
+        if (snap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9CA3AF;">Sin usuarios registrados</td></tr>'; return; }
         tbody.innerHTML = '';
         snap.forEach(doc => {
             const u = doc.data();
@@ -555,7 +555,7 @@ async function loadHistory() {
         let grpAttendees = 0, grpSteps = 0, grpKm = 0, grpCal = 0, grpMins = 0;
 
         if (snap.empty) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#64748b;">Sin sesiones registradas</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#9CA3AF;">Sin sesiones registradas</td></tr>';
             return;
         }
 
@@ -667,11 +667,11 @@ async function openSessionReport(sessionId) {
         const statsGrid = document.getElementById('rpt-stats');
         statsData.forEach(d => {
             const card = document.createElement('div');
-            card.style.cssText = 'background:#0f172a;border:1px solid #334155;border-radius:10px;padding:.85rem;text-align:center;';
+            card.style.cssText = 'background:#F7F8FA;border:1px solid #DDE1E9;border-radius:10px;padding:.85rem;text-align:center;';
             card.innerHTML = `
                 <div style="font-size:1.4rem;">${d.icon}</div>
                 <div style="font-size:1rem;font-weight:700;color:#f1f5f9;margin:.3rem 0;">${d.val}</div>
-                <div style="font-size:.65rem;color:#64748b;text-transform:uppercase;">${d.label}</div>
+                <div style="font-size:.65rem;color:#9CA3AF;text-transform:uppercase;">${d.label}</div>
             `;
             statsGrid.appendChild(card);
         });
@@ -712,7 +712,7 @@ async function openSessionReport(sessionId) {
         absent.forEach(n => absentEl.appendChild(mkItem(n, false)));
 
         if (!present.length && !absent.length) {
-            presentEl.innerHTML = '<div style="color:#64748b;font-size:.8rem;">Sin registros de asistencia</div>';
+            presentEl.innerHTML = '<div style="color:#9CA3AF;font-size:.8rem;">Sin registros de asistencia</div>';
         }
 
         // ④ Cargar fotos
@@ -726,7 +726,7 @@ async function openSessionReport(sessionId) {
             photoSnap.forEach(doc => {
                 const p = doc.data();
                 const wrap = document.createElement('div');
-                wrap.style.cssText = 'border-radius:10px;overflow:hidden;aspect-ratio:4/3;cursor:pointer;border:1px solid #334155;';
+                wrap.style.cssText = 'border-radius:10px;overflow:hidden;aspect-ratio:4/3;cursor:pointer;border:1px solid #DDE1E9;';
                 wrap.innerHTML = `<img src="${p.base64}" alt="foto"
                     style="width:100%;height:100%;object-fit:cover;"
                     onclick="this.parentElement.requestFullscreen?.()">`;
@@ -802,7 +802,7 @@ async function downloadFullReport() {
             const isEven = i % 2 === 1;
             rows += `
               <tr style="background:${isEven ? '#f8faff' : '#fff'};">
-                <td style="font-weight:600; color:#1e293b;">${i + 1}</td>
+                <td style="font-weight:600; color:#1B3060;">${i + 1}</td>
                 <td>${formatDate(s.date)}</td>
                 <td>${typeLabel[s.type] || s.type || '-'}</td>
                 <td>${s.week ? 'Sem. ' + s.week : '-'}</td>
@@ -811,12 +811,12 @@ async function downloadFullReport() {
                 <td>${fmtKm(km)} km</td>
                 <td>${min} min</td>
                 <td>${fmt(cal)} kcal</td>
-                <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${fmt(cumSteps)}</td>
-                <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${fmtKm(cumKm)} km</td>
-                <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${fmt(cumMins)} min</td>
-                <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${fmt(cumCal)} kcal</td>
-                <td style="background:#fdf4ff; font-weight:700; color:#7e22ce;">${fmt(grpSteps)}</td>
-                <td style="background:#fdf4ff; font-weight:700; color:#7e22ce;">${fmtKm(grpKm)} km</td>
+                <td style="background:#FFF0F2; font-weight:700; color:#C41230;">${fmt(cumSteps)}</td>
+                <td style="background:#FFF0F2; font-weight:700; color:#C41230;">${fmtKm(cumKm)} km</td>
+                <td style="background:#FFF0F2; font-weight:700; color:#C41230;">${fmt(cumMins)} min</td>
+                <td style="background:#FFF0F2; font-weight:700; color:#C41230;">${fmt(cumCal)} kcal</td>
+                <td style="background:#EEF2FF; font-weight:700; color:#1B3060;">${fmt(grpSteps)}</td>
+                <td style="background:#EEF2FF; font-weight:700; color:#1B3060;">${fmtKm(grpKm)} km</td>
               </tr>`;
         });
 
@@ -829,25 +829,25 @@ async function downloadFullReport() {
   <title>Reporte Acumulativo — Caminatas IBERO Actívate</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Arial', sans-serif; color: #1e293b; background: #fff; padding: 2rem; }
+    body { font-family: 'Arial', sans-serif; color: #1B3060; background: #fff; padding: 2rem; }
     .header { display: flex; justify-content: space-between; align-items: flex-start;
-              border-bottom: 3px solid #6366f1; padding-bottom: 1rem; margin-bottom: 1.5rem; }
-    .header h1 { font-size: 1.4rem; color: #4338ca; font-weight: 800; }
-    .header .sub { font-size: .8rem; color: #64748b; margin-top: .25rem; }
+              border-bottom: 3px solid #C41230; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+    .header h1 { font-size: 1.4rem; color: #C41230; font-weight: 800; }
+    .header .sub { font-size: .8rem; color: #9CA3AF; margin-top: .25rem; }
     .header .logo { font-size: 2rem; }
     .totals { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; margin-bottom: 1.5rem; }
-    .total-card { background: #f0f4ff; border: 1px solid #c7d2fe; border-radius: 8px;
+    .total-card { background: #FFF5F6; border: 1px solid #FBBEC9; border-radius: 8px;
                   padding: .75rem; text-align: center; }
-    .total-card .val { font-size: 1.25rem; font-weight: 800; color: #4338ca; }
-    .total-card .lbl { font-size: .65rem; color: #64748b; text-transform: uppercase; margin-top: .2rem; }
+    .total-card .val { font-size: 1.25rem; font-weight: 800; color: #C41230; }
+    .total-card .lbl { font-size: .65rem; color: #9CA3AF; text-transform: uppercase; margin-top: .2rem; }
     table { width: 100%; border-collapse: collapse; font-size: .72rem; }
-    th { background: #4338ca; color: #fff; padding: .5rem .4rem; text-align: center;
+    th { background: #C41230; color: #fff; padding: .5rem .4rem; text-align: center;
          font-size: .65rem; text-transform: uppercase; letter-spacing: .04em; }
     td { padding: .45rem .4rem; text-align: center; border-bottom: 1px solid #e2e8f0; }
-    .group-header { background: #818cf8; }
-    .cum-header { background: #6366f1; }
+    .group-header { background: #E8394F; }
+    .cum-header { background: #C41230; }
     .session-num { width: 32px; }
-    tfoot td { background: #1e293b !important; color: #fff !important;
+    tfoot td { background: #1B3060 !important; color: #fff !important;
                font-weight: 800; font-size: .75rem; }
     @media print {
       body { padding: .5rem; }
@@ -887,20 +887,20 @@ async function downloadFullReport() {
     </div>
   </div>
   <div class="totals" style="margin-bottom:1.5rem;">
-    <div class="total-card" style="background:#fdf4ff; border-color:#d8b4fe;">
-      <div class="val" style="color:#7e22ce;">${fmt(grpSteps)}</div>
+    <div class="total-card" style="background:#EEF2FF; border-color:#BFCDF8;">
+      <div class="val" style="color:#1B3060;">${fmt(grpSteps)}</div>
       <div class="lbl">👥 Pasos Colectivos (×asist.)</div>
     </div>
-    <div class="total-card" style="background:#fdf4ff; border-color:#d8b4fe;">
-      <div class="val" style="color:#7e22ce;">${fmtKm(grpKm)} km</div>
+    <div class="total-card" style="background:#EEF2FF; border-color:#BFCDF8;">
+      <div class="val" style="color:#1B3060;">${fmtKm(grpKm)} km</div>
       <div class="lbl">👥 Km Colectivos</div>
     </div>
-    <div class="total-card" style="background:#fdf4ff; border-color:#d8b4fe;">
-      <div class="val" style="color:#7e22ce;">${fmt(grpCal)} kcal</div>
+    <div class="total-card" style="background:#EEF2FF; border-color:#BFCDF8;">
+      <div class="val" style="color:#1B3060;">${fmt(grpCal)} kcal</div>
       <div class="lbl">👥 Calorías Colectivas</div>
     </div>
-    <div class="total-card" style="background:#fdf4ff; border-color:#d8b4fe;">
-      <div class="val" style="color:#7e22ce;">${fmt(grpMins)} min</div>
+    <div class="total-card" style="background:#EEF2FF; border-color:#BFCDF8;">
+      <div class="val" style="color:#1B3060;">${fmt(grpMins)} min</div>
       <div class="lbl">👥 Minutos Colectivos</div>
     </div>
   </div>
@@ -946,7 +946,7 @@ async function downloadFullReport() {
   </table>
 
   <div style="margin-top:1.5rem; text-align:center;">
-    <button onclick="window.print()" style="background:#4338ca;color:#fff;border:none;
+    <button onclick="window.print()" style="background:#C41230;color:#fff;border:none;
         padding:.6rem 1.5rem;border-radius:8px;cursor:pointer;font-size:.9rem;font-weight:700;">
       🖨️ Imprimir / Guardar PDF
     </button>
