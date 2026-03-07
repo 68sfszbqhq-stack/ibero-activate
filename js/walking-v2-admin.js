@@ -621,21 +621,140 @@ async function loadHistory() {
     }
 }
 
+// ──── OPEN SESSION REPORT MODAL ────
 async function loadSessionDetails(sessionId) {
-    showToast('Cargando sesión: ' + sessionId);
-    const date = sessionId.split('_')[0];
-    const type = sessionId.split('_').slice(1).join('_');
-    document.getElementById('session-date').value = date;
-    document.getElementById('session-type').value = type;
-    generateSessionId();
+    openSessionReport(sessionId);
+}
+
+async function openSessionReport(sessionId) {
+    const modal = document.getElementById('session-report-modal');
+    const loading = document.getElementById('rpt-loading');
+    modal.style.display = 'block';
+    loading.style.display = 'block';
+
+    // Reset sections
+    document.getElementById('rpt-stats').innerHTML = '';
+    document.getElementById('rpt-present-list').innerHTML = '';
+    document.getElementById('rpt-absent-list').innerHTML = '';
+    document.getElementById('rpt-photos-grid').innerHTML = '';
+    document.getElementById('rpt-notes-block').style.display = 'none';
+    document.getElementById('rpt-photos-block').style.display = 'none';
 
     try {
-        const attSnap = await db.collection('walking_v2_sessions').doc(sessionId).collection('attendance').get();
-        attendanceMap = {};
-        attSnap.forEach(doc => { attendanceMap[doc.id] = doc.data().present; });
-        switchTab('asistencia');
-    } catch (e) { console.error(e); }
+        // ① Cargar datos de la sesión
+        const sessionSnap = await db.collection('walking_v2_sessions').doc(sessionId).get();
+        if (!sessionSnap.exists) { showToast('Sesión no encontrada', 'error'); closeSessionReport(); return; }
+        const s = sessionSnap.data();
+        const st = s.stats || {};
+
+        // Header
+        const typeLabel = { matutina: '🌅 Matutina 8AM', vespertina: '🌇 Vespertina 5PM', especial: '⭐ Especial' };
+        document.getElementById('rpt-title').textContent =
+            `${formatDate(s.date)} — ${typeLabel[s.type] || s.type || ''}`;
+        document.getElementById('rpt-subtitle').textContent =
+            `${s.week ? 'Semana ' + s.week + ' · ' : ''}${s.totalAttendees || 0} presentes de ${s.totalUsers || 0} participantes`;
+
+        // ② Estadísticas cards
+        const statsData = [
+            { icon: '🛣️', val: (st.km || 0) + ' km', label: 'Kilómetros' },
+            { icon: '👟', val: (st.steps || 0).toLocaleString(), label: 'Pasos Prom.' },
+            { icon: '⏱️', val: (st.duration || 0) + ' min', label: 'Duración' },
+            { icon: '🔥', val: (st.calories || 0).toLocaleString() + ' kcal', label: 'Calorías' },
+            { icon: '❤️', val: st.hr ? st.hr + ' lpm' : '—', label: 'FC Prom.' },
+            { icon: '🏃', val: st.cadence ? st.cadence + ' p/m' : '—', label: 'Cadencia' },
+            { icon: '🌤️', val: st.weather || '—', label: 'Clima' },
+        ];
+        const statsGrid = document.getElementById('rpt-stats');
+        statsData.forEach(d => {
+            const card = document.createElement('div');
+            card.style.cssText = 'background:#0f172a;border:1px solid #334155;border-radius:10px;padding:.85rem;text-align:center;';
+            card.innerHTML = `
+                <div style="font-size:1.4rem;">${d.icon}</div>
+                <div style="font-size:1rem;font-weight:700;color:#f1f5f9;margin:.3rem 0;">${d.val}</div>
+                <div style="font-size:.65rem;color:#64748b;text-transform:uppercase;">${d.label}</div>
+            `;
+            statsGrid.appendChild(card);
+        });
+
+        // Notas
+        if (st.notes) {
+            document.getElementById('rpt-notes').textContent = st.notes;
+            document.getElementById('rpt-notes-block').style.display = 'block';
+        }
+
+        // ③ Cargar asistencia
+        const attSnap = await db.collection('walking_v2_sessions').doc(sessionId)
+            .collection('attendance').get();
+
+        const present = [], absent = [];
+        attSnap.forEach(doc => {
+            const a = doc.data();
+            if (a.present) present.push(a.name || doc.id);
+            else absent.push(a.name || doc.id);
+        });
+
+        document.getElementById('rpt-present-count').textContent = present.length;
+        document.getElementById('rpt-absent-count').textContent = absent.length;
+
+        const mkItem = (name, isPresent) => {
+            const el = document.createElement('div');
+            el.style.cssText = `background:${isPresent ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)'};
+                border:1px solid ${isPresent ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.2)'};
+                border-radius:7px; padding:.4rem .75rem; font-size:.82rem; color:#e2e8f0;
+                display:flex; align-items:center; gap:.5rem;`;
+            el.innerHTML = `<span style="color:${isPresent ? '#22c55e' : '#ef4444'}">${isPresent ? '✓' : '✗'}</span> ${name}`;
+            return el;
+        };
+
+        const presentEl = document.getElementById('rpt-present-list');
+        const absentEl = document.getElementById('rpt-absent-list');
+        present.forEach(n => presentEl.appendChild(mkItem(n, true)));
+        absent.forEach(n => absentEl.appendChild(mkItem(n, false)));
+
+        if (!present.length && !absent.length) {
+            presentEl.innerHTML = '<div style="color:#64748b;font-size:.8rem;">Sin registros de asistencia</div>';
+        }
+
+        // ④ Cargar fotos
+        const photoSnap = await db.collection('walking_v2_sessions').doc(sessionId)
+            .collection('photos').orderBy('uploadedAt').get();
+
+        if (!photoSnap.empty) {
+            document.getElementById('rpt-photo-count').textContent = photoSnap.size;
+            document.getElementById('rpt-photos-block').style.display = 'block';
+            const grid = document.getElementById('rpt-photos-grid');
+            photoSnap.forEach(doc => {
+                const p = doc.data();
+                const wrap = document.createElement('div');
+                wrap.style.cssText = 'border-radius:10px;overflow:hidden;aspect-ratio:4/3;cursor:pointer;border:1px solid #334155;';
+                wrap.innerHTML = `<img src="${p.base64}" alt="foto"
+                    style="width:100%;height:100%;object-fit:cover;"
+                    onclick="this.parentElement.requestFullscreen?.()">`;
+                grid.appendChild(wrap);
+            });
+        }
+
+    } catch (e) {
+        console.error(e);
+        showToast('Error al cargar reporte: ' + e.message, 'error');
+    } finally {
+        loading.style.display = 'none';
+    }
 }
+
+function closeSessionReport() {
+    document.getElementById('session-report-modal').style.display = 'none';
+}
+
+function printSessionReport() {
+    window.print();
+}
+
+// Cerrar modal al hacer clic en el fondo
+document.getElementById('session-report-modal').addEventListener('click', function (e) {
+    if (e.target === this) closeSessionReport();
+});
+
 
 // ──── DELETE SESSION ────
 async function deleteSession(sessionId) {

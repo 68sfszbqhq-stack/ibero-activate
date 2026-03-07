@@ -1,12 +1,33 @@
-// ========================================
-// FIREBASE CONFIGURATION (Compat Mode)
-// ========================================
+// ============================================================
+// FIREBASE CONFIGURATION
+// ============================================================
+//
+// ℹ️  SOBRE LA API KEY EN CÓDIGO PÚBLICO:
+//
+//    Para apps web de Firebase, la apiKey es un IDENTIFICADOR
+//    PÚBLICO que NO es un secreto. Firebase lo diseñó así.
+//    Ver: https://firebase.google.com/docs/projects/api-keys
+//
+// 🔒  CAPAS DE SEGURIDAD IMPLEMENTADAS:
+//
+//    1. HTTP Referrer Restrictions (Google Cloud Console)
+//       → La key solo funciona desde dominios autorizados
+//       → Configuradas en: console.cloud.google.com/apis/credentials
+//
+//    2. Firestore Security Rules (firestore.rules)
+//       → Roles: isAdmin() / isV2Employee() / isOwner()
+//       → Empleados V2 solo leen sus propios datos
+//       → Solo admins escriben sesiones, fotos y asistencia
+//
+//    3. Firebase Authentication
+//       → Toda operación requiere usuario autenticado
+//       → Login admin: email/pass del proyecto Pausas Activas
+//       → Login empleado V2: nombre + número del correo
+//
+// ============================================================
 
-// Firebase Configuration
-// TEMPORAL: API Key original (ya tiene APIs habilitadas)
-// Mientras configuramos la nueva key con las APIs necesarias
 const firebaseConfig = {
-    apiKey: "AIzaSyCqQq-bXpNRwVDTlVjj27JWHEenmEUZUp4", // Original - funciona
+    apiKey: "AIzaSyCqQq-bXpNRwVDTlVjj27JWHEenmEUZUp4",
     authDomain: "pausas-activas-ibero-2026.firebaseapp.com",
     projectId: "pausas-activas-ibero-2026",
     storageBucket: "pausas-activas-ibero-2026.firebasestorage.app",
@@ -15,35 +36,9 @@ const firebaseConfig = {
     measurementId: "G-G8G45P6SSH"
 };
 
-// ========================================
-// INITIALIZE FIREBASE (Compat)
-// ========================================
+// ── Inicialización ──────────────────────────────────────────
 firebase.initializeApp(firebaseConfig);
 
-// Firestore
 const db = firebase.firestore();
-
-// Authentication
 const auth = firebase.auth();
-
-// Storage (disponible si se activa Firebase Storage)
 const storage = typeof firebase.storage === 'function' ? firebase.storage() : null;
-
-// ========================================
-// SEGURIDAD: RESTRICCIONES RECOMENDADAS
-// ========================================
-// 1. Esta key NO tiene restricciones (para que funcione YA)
-// 2. Después puedes agregar restricciones en Google Cloud Console
-// 3. Firestore Rules protegen la base de datos
-// 4. Firebase Auth protege la autenticación
-
-// ========================================
-// NOTAS ADICIONALES
-// ========================================
-// ⚠️  La API key de Firebase para apps web NO es secreta
-//     (Es normal que esté en el código del cliente)
-// 
-// 🔒  La VERDADERA seguridad viene de:
-//     - Firestore Security Rules (ya implementadas)
-//     - Firebase Authentication
-//     - API restrictions (opcional, pueden agregarse después)

@@ -1343,6 +1343,145 @@
         </main>
     </div>
 
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- MODAL: REPORTE COMPLETO DE SESIÓN                 -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="session-report-modal" style="
+        display:none; position:fixed; inset:0; z-index:9000;
+        background:rgba(0,0,0,0.75); backdrop-filter:blur(4px);
+        overflow-y:auto; padding:1.5rem;">
+
+        <div id="session-report-content" style="
+            max-width:860px; margin:0 auto;
+            background:#1e293b; border-radius:16px;
+            border:1px solid #334155; overflow:hidden;">
+
+            <!-- Header del modal -->
+            <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);
+                        padding:1.5rem 2rem; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="font-size:0.75rem;color:#c4b5fd;text-transform:uppercase;letter-spacing:.1em;">
+                        Reporte de Sesión
+                    </div>
+                    <div id="rpt-title" style="font-size:1.4rem;font-weight:800;color:#fff;margin-top:.2rem;">—</div>
+                    <div id="rpt-subtitle" style="font-size:0.85rem;color:#c4b5fd;margin-top:.15rem;">—</div>
+                </div>
+                <div style="display:flex;gap:.75rem;align-items:center;">
+                    <button onclick="printSessionReport()" style="
+                        background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3);
+                        color:#fff; padding:.55rem 1.1rem; border-radius:8px; cursor:pointer;
+                        font-size:.85rem; font-weight:600; display:flex; align-items:center; gap:.5rem;">
+                        <i class="fas fa-file-pdf"></i> Descargar PDF
+                    </button>
+                    <button onclick="closeSessionReport()" style="
+                        background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);
+                        color:#fff; width:36px; height:36px; border-radius:50%; cursor:pointer;
+                        font-size:1rem; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cuerpo del reporte -->
+            <div style="padding:1.75rem 2rem;">
+
+                <!-- ESTADÍSTICAS -->
+                <div style="font-size:.7rem;color:#818cf8;font-weight:700;text-transform:uppercase;
+                            letter-spacing:.08em;margin-bottom:.75rem;">
+                    <i class="fas fa-chart-bar"></i> &nbsp;Estadísticas del Día
+                </div>
+                <div id="rpt-stats" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+                            gap:.75rem;margin-bottom:1.75rem;"></div>
+
+                <!-- NOTAS -->
+                <div id="rpt-notes-block" style="display:none;
+                            background:#0f172a; border:1px solid #334155; border-radius:10px;
+                            padding:1rem 1.25rem; margin-bottom:1.75rem;">
+                    <div style="font-size:.7rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;
+                                margin-bottom:.4rem;">
+                        <i class="fas fa-sticky-note"></i> Notas del Entrenador
+                    </div>
+                    <div id="rpt-notes" style="color:#e2e8f0;font-size:.9rem;line-height:1.6;"></div>
+                </div>
+
+                <!-- ASISTENCIA -->
+                <div style="font-size:.7rem;color:#818cf8;font-weight:700;text-transform:uppercase;
+                            letter-spacing:.08em;margin-bottom:.75rem;">
+                    <i class="fas fa-clipboard-check"></i> &nbsp;Lista de Asistencia
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.75rem;">
+                    <div>
+                        <div style="font-size:.72rem;color:#22c55e;font-weight:600;margin-bottom:.5rem;">
+                            ✅ PRESENTES (<span id="rpt-present-count">0</span>)
+                        </div>
+                        <div id="rpt-present-list" style="display:flex;flex-direction:column;gap:.35rem;"></div>
+                    </div>
+                    <div>
+                        <div style="font-size:.72rem;color:#ef4444;font-weight:600;margin-bottom:.5rem;">
+                            ❌ AUSENTES (<span id="rpt-absent-count">0</span>)
+                        </div>
+                        <div id="rpt-absent-list" style="display:flex;flex-direction:column;gap:.35rem;"></div>
+                    </div>
+                </div>
+
+                <!-- FOTOS -->
+                <div id="rpt-photos-block" style="display:none;">
+                    <div style="font-size:.7rem;color:#818cf8;font-weight:700;text-transform:uppercase;
+                                letter-spacing:.08em;margin-bottom:.75rem;">
+                        <i class="fas fa-camera"></i> &nbsp;Fotos del Día (<span id="rpt-photo-count">0</span>)
+                    </div>
+                    <div id="rpt-photos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+                                gap:.75rem;"></div>
+                </div>
+
+                <!-- SPINNER DE CARGA -->
+                <div id="rpt-loading" style="text-align:center;padding:2rem;color:#64748b;">
+                    <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;"></i>
+                    <div style="margin-top:.75rem;font-size:.85rem;">Cargando reporte...</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Print styles para el PDF -->
+    <style>
+        @media print {
+            body>*:not(#session-report-modal) {
+                display: none !important;
+            }
+
+            #session-report-modal {
+                display: block !important;
+                position: static !important;
+                background: white !important;
+                padding: 0 !important;
+            }
+
+            #session-report-content {
+                background: white !important;
+                border: none !important;
+                max-width: 100% !important;
+                color: #000 !important;
+            }
+
+            #session-report-content button {
+                display: none !important;
+            }
+
+            #session-report-content [style*="background:linear-gradient"] {
+                background: #6366f1 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            #rpt-photos-grid img {
+                max-height: 200px;
+                object-fit: cover;
+            }
+        }
+    </style>
+
     <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toast-container"></div>
 
