@@ -215,9 +215,8 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-
     // ========================================
-    // WALKING ATTENDANCE (NUEVO PANEL)
+    // WALKING ATTENDANCE (PANEL V1)
     // ========================================
 
     match /walking_attendances_log/{docId} {
@@ -240,6 +239,35 @@ service cloud.firestore {
     // Sesión en vivo del instructor
     match /live_walking_sessions/{docId} {
       allow read: if true;
+      allow write: if isAuth();
+    }
+
+    // ========================================
+    // WALKING V2 - SISTEMA DE CAMINATAS (FASE 2)
+    // ========================================
+
+    // Perfiles de empleados en el programa V2
+    match /walking_v2_users/{userId} {
+      allow read: if isAuth();
+      allow create, update: if isAuth();
+      allow delete: if isAuth();
+    }
+
+    // Sesiones de caminata V2 (creadas por admin)
+    match /walking_v2_sessions/{sessionId} {
+      allow read: if isAuth();
+      allow write: if isAuth();
+    }
+
+    // Sub-colección de asistencia por sesión
+    match /walking_v2_sessions/{sessionId}/attendance/{userId} {
+      allow read: if isAuth();
+      allow write: if isAuth();
+    }
+
+    // Sub-colección de fotos (Base64) por sesión
+    match /walking_v2_sessions/{sessionId}/photos/{photoId} {
+      allow read: if isAuth();
       allow write: if isAuth();
     }
 

@@ -4,7 +4,8 @@
 
     // Configuración de usuarios con roles
     const USER_ROLES = {
-        '716276@iberopuebla.mx': 'admin',  // Tu usuario - admin completo
+        '716276@iberopuebla.mx': 'admin',  // Admin principal
+        '715919@iberopuebla.mx': 'admin',  // Admin Caminatas V2
         '710029@iberopuebla.mx': 'viewer'  // Jefe - solo lectura
         // Agrega más usuarios aquí según sea necesario
     };

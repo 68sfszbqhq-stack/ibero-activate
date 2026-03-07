@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Caminatas | IBERO ACTÍVATE</title>
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background: #0f172a;
+            color: #e2e8f0;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ── BG ── */
+        .bg-orbs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.12;
+            animation: float 8s infinite ease-in-out;
+        }
+
+        .orb-1 {
+            width: 500px;
+            height: 500px;
+            background: #6366f1;
+            top: -150px;
+            left: -100px;
+        }
+
+        .orb-2 {
+            width: 350px;
+            height: 350px;
+            background: #8b5cf6;
+            bottom: -80px;
+            right: -80px;
+            animation-delay: 3s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-25px);
+            }
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle, #334155 1px, transparent 1px);
+            background-size: 30px 30px;
+            opacity: 0.25;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ── LAYOUT ── */
+        .page-wrap {
+            position: relative;
+            z-index: 10;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1rem 4rem;
+            min-height: 100vh;
+        }
+
+        /* ── HEADER ── */
+        .page-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .logo-wrap {
+            width: 80px;
+            height: 80px;
+            border-radius: 22px;
+            margin: 0 auto 1rem;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 60%, #06b6d4 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            box-shadow: 0 20px 50px rgba(99, 102, 241, 0.4);
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 20px 50px rgba(99, 102, 241, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 20px 60px rgba(99, 102, 241, 0.65);
+            }
+        }
+
+        .page-header h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #f8fafc;
+        }
+
+        .page-header p {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-top: 0.35rem;
+        }
+
+        .v2-pill {
+            display: inline-block;
+            margin-top: 0.6rem;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 0.25rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        /* ── INSTRUCTION CARD ── */
+        .instruction {
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            padding: 0.9rem 1.25rem;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 1.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .instruction i {
+            color: #818cf8;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        /* ── SEARCH ── */
+        .search-wrap {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #475569;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.85rem 1rem 0.85rem 2.75rem;
+            background: #1e293b;
+            border: 1.5px solid #334155;
+            border-radius: 12px;
+            color: #f1f5f9;
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+        }
+
+        .search-input::placeholder {
+            color: #475569;
+        }
+
+        /* ── USER GRID ── */
+        .users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1rem;
+        }
+
+        .user-card {
+            background: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 16px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .user-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), transparent);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .user-card:hover {
+            border-color: #6366f1;
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(99, 102, 241, 0.2);
+        }
+
+        .user-card:hover::before {
+            opacity: 1;
+        }
+
+        .user-card:active {
+            transform: translateY(-1px);
+        }
+
+        .avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            margin: 0 auto 0.85rem;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: white;
+        }
+
+        .user-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            line-height: 1.3;
+        }
+
+        .user-dept {
+            font-size: 0.7rem;
+            color: #475569;
+            margin-top: 0.3rem;
+        }
+
+        /* ── LOADING SKELETON ── */
+        .skeleton {
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 16px;
+            height: 140px;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        /* ── EMPTY STATE ── */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+            grid-column: 1 / -1;
+        }
+
+        .empty-state i {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        /* ── PASSWORD MODAL ── */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(6px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .modal-backdrop.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-box {
+            background: #1e293b;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 24px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 380px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+            transform: scale(0.95);
+            transition: transform 0.2s;
+        }
+
+        .modal-backdrop.open .modal-box {
+            transform: scale(1);
+        }
+
+        .modal-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: white;
+        }
+
+        .modal-name {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #f8fafc;
+            margin-bottom: 0.2rem;
+        }
+
+        .modal-dept {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-bottom: 1.5rem;
+        }
+
+        .pw-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .pw-hint {
+            font-size: 0.72rem;
+            color: #475569;
+            margin-top: 0.3rem;
+        }
+
+        .pw-input-wrap {
+            position: relative;
+        }
+
+        .pw-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #475569;
+        }
+
+        .pw-toggle {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #475569;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .pw-input {
+            width: 100%;
+            padding: 0.875rem 2.75rem;
+            background: #0f172a;
+            border: 1.5px solid #334155;
+            border-radius: 12px;
+            color: #f1f5f9;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.15em;
+            transition: border-color 0.2s;
+        }
+
+        .pw-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+        }
+
+        .btn-enter {
+            width: 100%;
+            margin-top: 1.25rem;
+            padding: 0.875rem;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-enter:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 28px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-enter:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-cancel {
+            width: 100%;
+            margin-top: 0.6rem;
+            padding: 0.7rem;
+            background: transparent;
+            color: #64748b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-cancel:hover {
+            background: #334155;
+            color: #94a3b8;
+        }
+
+        .error-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 8px;
+            padding: 0.65rem 0.9rem;
+            margin-top: 0.75rem;
+            font-size: 0.78rem;
+            color: #f87171;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .error-box.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ── FOOTER ── */
+        .page-footer {
+            text-align: center;
+            margin-top: 2.5rem;
+        }
+
+        .page-footer a {
+            color: #475569;
+            font-size: 0.8rem;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .page-footer a:hover {
+            color: #818cf8;
+        }
+
+        @media (max-width: 480px) {
+            .users-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- BG -->
+    <div class="bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+
+    <div class="page-wrap">
+        <!-- Header -->
+        <div class="page-header">
+            <div class="logo-wrap">🚶</div>
+            <h1>IBERO Actívate</h1>
+            <p>Programa de Caminatas Saludables</p>
+            <span class="v2-pill">Versión 2.0</span>
+        </div>
+
+        <!-- Instrucción -->
+        <div class="instruction">
+            <i class="fas fa-hand-pointer"></i>
+            <span>Busca tu nombre en la lista y haz clic para acceder a tu panel de caminatas.</span>
+        </div>
+
+        <!-- Buscador -->
+        <div class="search-wrap">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="search-input" class="search-input" placeholder="Buscar tu nombre..."
+                oninput="filterUsers()">
+        </div>
+
+        <!-- Grid de usuarios -->
+        <div class="users-grid" id="users-grid">
+            <!-- Skeletons mientras carga -->
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+        </div>
+
+        <div class="page-footer">
+            <a href="../index.html"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONTRASEÑA -->
+    <div class="modal-backdrop" id="pw-modal">
+        <div class="modal-box">
+            <div class="modal-avatar" id="modal-avatar">?</div>
+            <div class="modal-name" id="modal-name">Nombre</div>
+            <div class="modal-dept" id="modal-dept">Área</div>
+
+            <label class="pw-label"><i class="fas fa-lock"></i> &nbsp;Tu contraseña</label>
+            <div class="pw-input-wrap">
+                <i class="fas fa-hashtag pw-icon"></i>
+                <input type="password" id="pw-input" class="pw-input" placeholder="••••••••"
+                    onkeypress="if(event.key==='Enter') doLogin()">
+                <button class="pw-toggle" onclick="togglePw()" id="pw-toggle-btn">
+                    <i class="fas fa-eye" id="pw-toggle-icon"></i>
+                </button>
+            </div>
+            <div class="pw-hint">
+                <i class="fas fa-circle-info" style="color:#6366f1;"></i>
+                Tu contraseña son los <strong>números de tu correo institucional</strong>
+            </div>
+
+            <div class="error-box" id="error-box">
+                <i class="fas fa-circle-exclamation"></i>
+                <span id="error-text">Contraseña incorrecta. Intenta de nuevo.</span>
+            </div>
+
+            <button class="btn-enter" id="btn-enter" onclick="doLogin()">
+                <i class="fas fa-person-walking"></i> Entrar a mis Caminatas
+            </button>
+            <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script>
+        let allUsers = [];
+        let selectedUser = null;
+
+        // ── Si ya está logueado y es empleado V2, redirigir ──
+        firebase.auth().onAuthStateChanged(async user => {
+            if (user) {
+                try {
+                    const snap = await db.collection('walking_v2_users')
+                        .where('email', '==', user.email).limit(1).get();
+                    if (!snap.empty) {
+                        window.location.href = 'walking-v2-dashboard.html';
+                    }
+                } catch (e) { /* no redirigir si hay error */ }
+            }
+        });
+
+        // ── CARGAR USUARIOS ──
+        async function loadUsers() {
+            try {
+                const snap = await db.collection('walking_v2_users').orderBy('name').get();
+                allUsers = [];
+                snap.forEach(doc => allUsers.push({ id: doc.id, ...doc.data() }));
+                renderGrid(allUsers);
+            } catch (e) {
+                console.error('Error cargando usuarios:', e);
+                document.getElementById('users-grid').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-triangle-exclamation" style="color:#f87171;"></i>
+                        <p>Error al cargar la lista. Verifica tu conexión.</p>
+                    </div>`;
+            }
+        }
+
+        // ── RENDER GRID ──
+        function renderGrid(users) {
+            const grid = document.getElementById('users-grid');
+            if (!users.length) {
+                grid.innerHTML = `<div class="empty-state">
+                    <i class="fas fa-users-slash"></i>
+                    <p>No se encontraron participantes.</p>
+                </div>`;
+                return;
+            }
+            grid.innerHTML = users.map(u => {
+                const initials = u.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+                return `
+                <div class="user-card" onclick="selectUser('${u.id}')">
+                    <div class="avatar">${initials}</div>
+                    <div class="user-name">${u.name}</div>
+                    <div class="user-dept">${u.department || 'Participante'}</div>
+                </div>`;
+            }).join('');
+        }
+
+        // ── FILTRAR ──
+        function filterUsers() {
+            const q = document.getElementById('search-input').value.toLowerCase();
+            const filtered = allUsers.filter(u =>
+                u.name.toLowerCase().includes(q) ||
+                (u.department || '').toLowerCase().includes(q)
+            );
+            renderGrid(filtered);
+        }
+
+        // ── SELECCIONAR USUARIO → ABRIR MODAL ──
+        function selectUser(userId) {
+            selectedUser = allUsers.find(u => u.id === userId);
+            if (!selectedUser) return;
+
+            const initials = selectedUser.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+            document.getElementById('modal-avatar').textContent = initials;
+            document.getElementById('modal-name').textContent = selectedUser.name;
+            document.getElementById('modal-dept').textContent = selectedUser.department || 'Participante';
+            document.getElementById('pw-input').value = '';
+            document.getElementById('error-box').classList.remove('show');
+
+            document.getElementById('pw-modal').classList.add('open');
+            setTimeout(() => document.getElementById('pw-input').focus(), 300);
+        }
+
+        // ── CERRAR MODAL ──
+        function closeModal() {
+            document.getElementById('pw-modal').classList.remove('open');
+            selectedUser = null;
+        }
+
+        // Cerrar al hacer clic en backdrop
+        document.getElementById('pw-modal').addEventListener('click', e => {
+            if (e.target === document.getElementById('pw-modal')) closeModal();
+        });
+
+        // ── TOGGLE CONTRASEÑA ──
+        function togglePw() {
+            const input = document.getElementById('pw-input');
+            const icon = document.getElementById('pw-toggle-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        // ── LOGIN ──
+        async function doLogin() {
+            if (!selectedUser) return;
+
+            const password = document.getElementById('pw-input').value.trim();
+            const btn = document.getElementById('btn-enter');
+            const errorBox = document.getElementById('error-box');
+            errorBox.classList.remove('show');
+
+            if (!password) {
+                showError('Ingresa tu contraseña (números de tu correo).');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Verificando...';
+
+            try {
+                await firebase.auth().signInWithEmailAndPassword(selectedUser.email, password);
+                // Login exitoso → redirigir al dashboard del empleado
+                window.location.href = 'walking-v2-dashboard.html';
+            } catch (e) {
+                console.error(e);
+                if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+                    showError('Contraseña incorrecta. Usa los números de tu correo institucional.');
+                } else if (e.code === 'auth/too-many-requests') {
+                    showError('Demasiados intentos. Espera unos minutos e intenta de nuevo.');
+                } else {
+                    showError('Error al iniciar sesión: ' + e.message);
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-person-walking"></i> Entrar a mis Caminatas';
+            }
+        }
+
+        function showError(msg) {
+            document.getElementById('error-text').textContent = msg;
+            document.getElementById('error-box').classList.add('show');
+        }
+
+        // Cerrar con ESC
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        loadUsers();
+    </script>
+</body>
+
+</html>
