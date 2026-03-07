@@ -216,6 +216,144 @@ function updateKPIs() {
     document.getElementById('steps-ring-label').textContent = `${formatNum(avgSteps)} / ${formatNum(stepsGoal)} pasos`;
 }
 
+// ──── DOWNLOAD EMPLOYEE PERSONAL REPORT ────
+function downloadEmployeeReport() {
+    const attended = allSessions.filter(s => s.userAttended === true);
+    if (!attended.length) { alert('No tienes sesiones asistidas registradas aún.'); return; }
+
+    const name = userProfile?.name || 'Empleado';
+    const dept = userProfile?.department || '';
+    const now = new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const fmt = n => Math.round(n || 0).toLocaleString('es-MX');
+    const fmtKm = n => Number(n || 0).toFixed(2);
+
+    // Acumulados
+    const totalSteps = attended.reduce((a, s) => a + (s.stats?.steps || 0), 0);
+    const totalKm = attended.reduce((a, s) => a + (s.stats?.km || 0), 0);
+    const totalMins = attended.reduce((a, s) => a + (s.stats?.duration || 0), 0);
+    const totalCal = attended.reduce((a, s) => a + (s.stats?.calories || 0), 0);
+    const totalSess = allSessions.filter(s => s.userAttended !== null).length;
+    const pct = totalSess > 0 ? Math.round((attended.length / totalSess) * 100) : 0;
+
+    // Tabla con todos las sesiones (presente y ausente) en orden cronológico
+    const sorted = [...allSessions].reverse(); // más antigua primero
+    let cumSteps = 0, cumKm = 0, cumMins = 0, cumCal = 0;
+    let rows = '';
+
+    sorted.forEach((s, i) => {
+        const st = s.stats || {};
+        const att = s.userAttended === true;
+        const abs = s.userAttended === false;
+        if (att) {
+            cumSteps += st.steps || 0;
+            cumKm += st.km || 0;
+            cumMins += st.duration || 0;
+            cumCal += st.calories || 0;
+        }
+        const typeMap = { matutina: '🌅 Matutina', vespertina: '🌇 Vespertina', especial: '⭐ Especial' };
+        const statusTxt = att ? '✅ Presente' : abs ? '❌ Ausente' : '— Sin registro';
+        const statusColor = att ? '#15803d' : abs ? '#b91c1c' : '#64748b';
+        const bg = i % 2 === 1 ? '#f8faff' : '#fff';
+
+        rows += `<tr style="background:${bg};">
+            <td style="font-weight:600;">${i + 1}</td>
+            <td>${formatDate(s.date)}</td>
+            <td>${typeMap[s.type] || s.type || '-'}</td>
+            <td>${s.week ? 'Sem. ' + s.week : '-'}</td>
+            <td style="color:${statusColor}; font-weight:600;">${statusTxt}</td>
+            <td>${att ? fmt(st.steps || 0) : '-'}</td>
+            <td>${att ? fmtKm(st.km || 0) + ' km' : '-'}</td>
+            <td>${att ? (st.duration || 0) + ' min' : '-'}</td>
+            <td>${att ? fmt(st.calories || 0) + ' kcal' : '-'}</td>
+            <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${att ? fmt(cumSteps) : '-'}</td>
+            <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${att ? fmtKm(cumKm) + ' km' : '-'}</td>
+            <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${att ? fmt(cumMins) + ' min' : '-'}</td>
+            <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${att ? fmt(cumCal) + ' kcal' : '-'}</td>
+        </tr>`;
+    });
+
+    const html = `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8">
+<title>Mi Reporte de Caminatas — ${name}</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:Arial,sans-serif; color:#1e293b; background:#fff; padding:2rem; }
+  .header { border-bottom:3px solid #6366f1; padding-bottom:1rem; margin-bottom:1.5rem;
+            display:flex; justify-content:space-between; align-items:flex-start; }
+  .header h1 { font-size:1.3rem; color:#4338ca; font-weight:800; }
+  .header .meta { font-size:.8rem; color:#64748b; margin-top:.25rem; }
+  .kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:.65rem; margin-bottom:1.5rem; }
+  .kpi { background:#f0f4ff; border:1px solid #c7d2fe; border-radius:8px;
+          padding:.65rem; text-align:center; }
+  .kpi .val { font-size:1.1rem; font-weight:800; color:#4338ca; }
+  .kpi .lbl { font-size:.6rem; color:#64748b; text-transform:uppercase; margin-top:.2rem; }
+  table { width:100%; border-collapse:collapse; font-size:.68rem; }
+  th { background:#4338ca; color:#fff; padding:.45rem .35rem; text-align:center;
+       font-size:.6rem; text-transform:uppercase; letter-spacing:.04em; }
+  td { padding:.4rem .35rem; text-align:center; border-bottom:1px solid #e2e8f0; }
+  .cum-th { background:#6366f1; }
+  tfoot td { background:#1e293b !important; color:#fff !important; font-weight:800; }
+  .footer-note { margin-top:1.25rem; font-size:.7rem; color:#94a3b8; text-align:center; }
+  @media print { button { display:none; } body { padding:.5rem; }
+    table { font-size:.6rem; } th { font-size:.55rem; } }
+</style></head><body>
+  <div class="header">
+    <div>
+      <h1>🏃 Mi Reporte Personal de Caminatas</h1>
+      <div class="meta"><b>${name}</b>${dept ? ' · ' + dept : ''}</div>
+      <div class="meta">Generado: ${now} · Asistencia: <b>${attended.length}/${totalSess} sesiones (${pct}%)</b></div>
+    </div>
+    <div style="font-size:2rem;">🎓</div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="val">${attended.length}</div><div class="lbl">📅 Sesiones</div></div>
+    <div class="kpi"><div class="val">${fmtKm(totalKm)}</div><div class="lbl">🛣️ Km Totales</div></div>
+    <div class="kpi"><div class="val">${fmt(totalSteps)}</div><div class="lbl">👟 Pasos Acum.</div></div>
+    <div class="kpi"><div class="val">${fmt(totalMins)}</div><div class="lbl">⏱️ Minutos</div></div>
+    <div class="kpi"><div class="val">${fmt(totalCal)}</div><div class="lbl">🔥 Calorías</div></div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th rowspan="2">#</th><th rowspan="2">Fecha</th><th rowspan="2">Tipo</th>
+        <th rowspan="2">Sem.</th><th rowspan="2">Asistencia</th>
+        <th colspan="4">Estadísticas de la Sesión</th>
+        <th colspan="4" class="cum-th">▶ Acumulado Progresivo</th>
+      </tr>
+      <tr>
+        <th>Pasos</th><th>Km</th><th>Durac.</th><th>Calorías</th>
+        <th class="cum-th">Pasos Acum.</th><th class="cum-th">Km Acum.</th>
+        <th class="cum-th">Min Acum.</th><th class="cum-th">Cal Acum.</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+    <tfoot>
+      <tr>
+        <td colspan="5">TOTALES FINALES</td>
+        <td>${fmt(totalSteps)}</td><td>${fmtKm(totalKm)} km</td>
+        <td>${fmt(totalMins)} min</td><td>${fmt(totalCal)} kcal</td>
+        <td>${fmt(totalSteps)}</td><td>${fmtKm(totalKm)} km</td>
+        <td>${fmt(totalMins)} min</td><td>${fmt(totalCal)} kcal</td>
+      </tr>
+    </tfoot>
+  </table>
+  <div class="footer-note">
+    IBERO Actívate · Programa de Caminatas · pausas-activas-ibero-2026
+  </div>
+  <div style="margin-top:1.25rem; text-align:center;">
+    <button onclick="window.print()" style="background:#4338ca;color:#fff;border:none;
+        padding:.6rem 1.5rem;border-radius:8px;cursor:pointer;font-size:.9rem;font-weight:700;">
+      🖨️ Imprimir / Guardar PDF
+    </button>
+  </div>
+</body></html>`;
+
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+}
+
 // ──── STEPS CHART ────
 function renderStepsChart() {
     const ctx = document.getElementById('steps-chart');

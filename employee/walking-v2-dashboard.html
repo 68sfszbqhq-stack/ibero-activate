@@ -539,24 +539,17 @@
             color: #818cf8;
         }
 
-        @media (max-width: 640px) {
-            .hero-name {
-                font-size: 1.4rem;
+        @media print {
+            body>*:not(#employee-report-print) {
+                display: none !important;
             }
 
-            .hero-steps-value {
-                font-size: 2.5rem;
-            }
-
-            .dashboard-content {
-                padding: 1rem;
-            }
-
-            .kpi-grid {
-                grid-template-columns: repeat(2, 1fr);
+            #employee-report-print {
+                display: block !important;
             }
         }
     </style>
+
 </head>
 
 <body>
@@ -679,7 +672,15 @@
 
         <!-- SESSION HISTORY -->
         <div class="card">
-            <div class="section-title"><i class="fas fa-history"></i> Mis Sesiones</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <div class="section-title" style="margin-bottom:0;"><i class="fas fa-history"></i> Mis Sesiones</div>
+                <button onclick="downloadEmployeeReport()" style="
+                    background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; border:none;
+                    padding:.5rem 1rem; border-radius:8px; cursor:pointer; font-size:.8rem;
+                    font-weight:600; display:flex; align-items:center; gap:.45rem;">
+                    <i class="fas fa-file-pdf"></i> Mi Reporte PDF
+                </button>
+            </div>
             <div class="session-list" id="session-list">
                 <div style="text-align:center; color:#64748b; padding:2rem;">Cargando sesiones...</div>
             </div>
