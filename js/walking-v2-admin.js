@@ -756,6 +756,215 @@ document.getElementById('session-report-modal').addEventListener('click', functi
 });
 
 
+// ──── DESCARGAR REPORTE ACUMULATIVO COMPLETO ────
+async function downloadFullReport() {
+    showToast('Generando reporte...');
+    try {
+        // Cargar todas las sesiones en orden cronológico (más antigua primero)
+        const snap = await db.collection('walking_v2_sessions')
+            .orderBy('date', 'asc').get();
+
+        if (snap.empty) { showToast('No hay sesiones registradas', 'error'); return; }
+
+        const sessions = [];
+        snap.forEach(doc => sessions.push({ id: doc.id, ...doc.data() }));
+
+        // Acumulativos progresivos
+        let cumKm = 0, cumSteps = 0, cumCal = 0, cumMins = 0;
+        // Colectivo (×asistentes)
+        let grpKm = 0, grpSteps = 0, grpCal = 0, grpMins = 0;
+
+        const typeLabel = { matutina: '🌅 Matutina', vespertina: '🌇 Vespertina', especial: '⭐ Especial' };
+        const fmt = n => Number(n).toLocaleString('es-MX');
+        const fmtKm = n => Number(n).toFixed(2);
+
+        let rows = '';
+        sessions.forEach((s, i) => {
+            const st = s.stats || {};
+            const km = st.km || 0;
+            const stp = st.steps || 0;
+            const cal = st.calories || 0;
+            const min = st.duration || 0;
+            const att = s.totalAttendees || 0;
+
+            // Acumular progresivo (stats de la sesión)
+            cumKm += km;
+            cumSteps += stp;
+            cumCal += cal;
+            cumMins += min;
+
+            // Acumular colectivo (stats × asistentes)
+            grpKm += km * att;
+            grpSteps += stp * att;
+            grpCal += cal * att;
+            grpMins += min * att;
+
+            const isEven = i % 2 === 1;
+            rows += `
+              <tr style="background:${isEven ? '#f8faff' : '#fff'};">
+                <td style="font-weight:600; color:#1e293b;">${i + 1}</td>
+                <td>${formatDate(s.date)}</td>
+                <td>${typeLabel[s.type] || s.type || '-'}</td>
+                <td>${s.week ? 'Sem. ' + s.week : '-'}</td>
+                <td><b>${att}</b> / ${s.totalUsers || 0}</td>
+                <td>${fmt(stp)}</td>
+                <td>${fmtKm(km)} km</td>
+                <td>${min} min</td>
+                <td>${fmt(cal)} kcal</td>
+                <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${fmt(cumSteps)}</td>
+                <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${fmtKm(cumKm)} km</td>
+                <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${fmt(cumMins)} min</td>
+                <td style="background:#eef2ff; font-weight:700; color:#4338ca;">${fmt(cumCal)} kcal</td>
+                <td style="background:#fdf4ff; font-weight:700; color:#7e22ce;">${fmt(grpSteps)}</td>
+                <td style="background:#fdf4ff; font-weight:700; color:#7e22ce;">${fmtKm(grpKm)} km</td>
+              </tr>`;
+        });
+
+        const now = new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+        const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte Acumulativo — Caminatas IBERO Actívate</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Arial', sans-serif; color: #1e293b; background: #fff; padding: 2rem; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start;
+              border-bottom: 3px solid #6366f1; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+    .header h1 { font-size: 1.4rem; color: #4338ca; font-weight: 800; }
+    .header .sub { font-size: .8rem; color: #64748b; margin-top: .25rem; }
+    .header .logo { font-size: 2rem; }
+    .totals { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; margin-bottom: 1.5rem; }
+    .total-card { background: #f0f4ff; border: 1px solid #c7d2fe; border-radius: 8px;
+                  padding: .75rem; text-align: center; }
+    .total-card .val { font-size: 1.25rem; font-weight: 800; color: #4338ca; }
+    .total-card .lbl { font-size: .65rem; color: #64748b; text-transform: uppercase; margin-top: .2rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .72rem; }
+    th { background: #4338ca; color: #fff; padding: .5rem .4rem; text-align: center;
+         font-size: .65rem; text-transform: uppercase; letter-spacing: .04em; }
+    td { padding: .45rem .4rem; text-align: center; border-bottom: 1px solid #e2e8f0; }
+    .group-header { background: #818cf8; }
+    .cum-header { background: #6366f1; }
+    .session-num { width: 32px; }
+    tfoot td { background: #1e293b !important; color: #fff !important;
+               font-weight: 800; font-size: .75rem; }
+    @media print {
+      body { padding: .5rem; }
+      button { display: none; }
+      table { font-size: .63rem; }
+      th { font-size: .58rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>🏃 Reporte Acumulativo de Caminatas</h1>
+      <div class="sub">IBERO Actívate — Generado: ${now}</div>
+      <div class="sub" style="margin-top:.3rem;">Total de sesiones: <b>${sessions.length}</b></div>
+    </div>
+    <div class="logo">🎓</div>
+  </div>
+
+  <!-- Totales finales -->
+  <div class="totals">
+    <div class="total-card">
+      <div class="val">${fmtKm(cumKm)} km</div>
+      <div class="lbl">🛣️ Km Totales (ruta)</div>
+    </div>
+    <div class="total-card">
+      <div class="val">${fmt(cumSteps)}</div>
+      <div class="lbl">👟 Pasos Prom. Acum.</div>
+    </div>
+    <div class="total-card">
+      <div class="val">${fmt(cumCal)} kcal</div>
+      <div class="lbl">🔥 Calorías Acum.</div>
+    </div>
+    <div class="total-card">
+      <div class="val">${fmt(cumMins)} min</div>
+      <div class="lbl">⏱️ Minutos Activos</div>
+    </div>
+  </div>
+  <div class="totals" style="margin-bottom:1.5rem;">
+    <div class="total-card" style="background:#fdf4ff; border-color:#d8b4fe;">
+      <div class="val" style="color:#7e22ce;">${fmt(grpSteps)}</div>
+      <div class="lbl">👥 Pasos Colectivos (×asist.)</div>
+    </div>
+    <div class="total-card" style="background:#fdf4ff; border-color:#d8b4fe;">
+      <div class="val" style="color:#7e22ce;">${fmtKm(grpKm)} km</div>
+      <div class="lbl">👥 Km Colectivos</div>
+    </div>
+    <div class="total-card" style="background:#fdf4ff; border-color:#d8b4fe;">
+      <div class="val" style="color:#7e22ce;">${fmt(grpCal)} kcal</div>
+      <div class="lbl">👥 Calorías Colectivas</div>
+    </div>
+    <div class="total-card" style="background:#fdf4ff; border-color:#d8b4fe;">
+      <div class="val" style="color:#7e22ce;">${fmt(grpMins)} min</div>
+      <div class="lbl">👥 Minutos Colectivos</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th rowspan="2" class="session-num">#</th>
+        <th rowspan="2">Fecha</th>
+        <th rowspan="2">Tipo</th>
+        <th rowspan="2">Sem.</th>
+        <th rowspan="2">Asistentes</th>
+        <th colspan="4">Estadísticas de la Sesión</th>
+        <th colspan="4" class="cum-header">▶ Acumulado Progresivo</th>
+        <th colspan="2" class="group-header">▶ Colectivo Acum.</th>
+      </tr>
+      <tr>
+        <th>Pasos Prom.</th><th>Km</th><th>Durac.</th><th>Calorías</th>
+        <th class="cum-header">Pasos Acum.</th>
+        <th class="cum-header">Km Acum.</th>
+        <th class="cum-header">Min Acum.</th>
+        <th class="cum-header">Cal Acum.</th>
+        <th class="group-header">Pasos ×Asist.</th>
+        <th class="group-header">Km ×Asist.</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+    <tfoot>
+      <tr>
+        <td colspan="5">TOTALES FINALES</td>
+        <td>—</td>
+        <td>${fmtKm(cumKm)} km</td>
+        <td>${fmt(cumMins)} min</td>
+        <td>${fmt(cumCal)} kcal</td>
+        <td>${fmt(cumSteps)}</td>
+        <td>${fmtKm(cumKm)} km</td>
+        <td>${fmt(cumMins)} min</td>
+        <td>${fmt(cumCal)} kcal</td>
+        <td>${fmt(grpSteps)}</td>
+        <td>${fmtKm(grpKm)} km</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div style="margin-top:1.5rem; text-align:center;">
+    <button onclick="window.print()" style="background:#4338ca;color:#fff;border:none;
+        padding:.6rem 1.5rem;border-radius:8px;cursor:pointer;font-size:.9rem;font-weight:700;">
+      🖨️ Imprimir / Guardar PDF
+    </button>
+  </div>
+</body>
+</html>`;
+
+        const win = window.open('', '_blank');
+        win.document.write(html);
+        win.document.close();
+        win.focus();
+
+    } catch (e) {
+        console.error(e);
+        showToast('Error al generar reporte: ' + e.message, 'error');
+    }
+}
+
 // ──── DELETE SESSION ────
 async function deleteSession(sessionId) {
     const confirmed = confirm(

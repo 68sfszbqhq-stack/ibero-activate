@@ -1313,7 +1313,14 @@
                     </div>
 
                     <div class="card">
-                        <div class="card-title"><i class="fas fa-table"></i> Historial de Sesiones</div>
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                            <div class="card-title" style="margin-bottom:0;"><i class="fas fa-table"></i> Historial de
+                                Sesiones</div>
+                            <button onclick="downloadFullReport()" class="btn btn-primary btn-sm">
+                                <i class="fas fa-file-pdf"></i> Reporte Acumulativo
+                            </button>
+                        </div>
                         <div style="overflow-x:auto;">
                             <table class="data-table">
                                 <thead>
