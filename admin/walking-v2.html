@@ -20,11 +20,20 @@
 
     <style>
         :root {
-            --red: #C41230; --red-dark: #9B0E26; --red-light: #E8394F;
-            --navy: #1B3060; --navy-light: #2D4A8A;
-            --white: #FFFFFF; --gray-50: #F7F8FA; --gray-100: #EEF0F4;
-            --gray-200: #DDE1E9; --gray-400: #9CA3AF; --gray-600: #4B5563; --gray-800: #1F2937;
+            --red: #C41230;
+            --red-dark: #9B0E26;
+            --red-light: #E8394F;
+            --navy: #1B3060;
+            --navy-light: #2D4A8A;
+            --white: #FFFFFF;
+            --gray-50: #F7F8FA;
+            --gray-100: #EEF0F4;
+            --gray-200: #DDE1E9;
+            --gray-400: #9CA3AF;
+            --gray-600: #4B5563;
+            --gray-800: #1F2937;
         }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -1437,6 +1446,20 @@
                     </div>
                 </div>
 
+                <!-- BTN: GUARDAR CAMBIOS DE ASISTENCIA -->
+                <div style="margin-bottom:1.75rem; display:flex; justify-content:flex-end;">
+                    <button id="rpt-save-attendance-btn" onclick="saveAttendanceEdits()" style="
+                            display:none; align-items:center; gap:.5rem;
+                            background:linear-gradient(135deg,#1B3060,#C41230);
+                            color:#fff; border:none; border-radius:9px;
+                            padding:.6rem 1.3rem; font-size:.85rem; font-weight:700;
+                            cursor:pointer; box-shadow:0 2px 10px rgba(196,18,48,.25);
+                            transition: all .2s;
+                        ">
+                        <i class="fas fa-save"></i> Guardar cambios de asistencia
+                    </button>
+                </div>
+
                 <!-- FOTOS -->
                 <div id="rpt-photos-block" style="display:none;">
                     <div style="font-size:.7rem;color:#E8394F;font-weight:700;text-transform:uppercase;
@@ -1491,6 +1514,22 @@
             #rpt-photos-grid img {
                 max-height: 200px;
                 object-fit: cover;
+            }
+        }
+    </style>
+
+    <style>
+        @keyframes pulse-save {
+            0% {
+                box-shadow: 0 0 0 0 rgba(196, 18, 48, .7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(196, 18, 48, .0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(196, 18, 48, .0);
             }
         }
     </style>

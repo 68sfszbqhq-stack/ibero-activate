@@ -9,6 +9,10 @@ let attendanceMap = {}; // { userId: true/false }
 let pendingPhotos = []; // Files to upload
 let currentSessionId = null;
 
+// ──── ESTADO DEL MODAL DE REPORTE (edición de asistencia) ────
+let reportSessionId = null;      // ID de la sesión abierta en el modal
+let reportAttendance = {};       // { docId: { name, present } }  — estado editable
+
 // ──── INIT ────
 firebase.auth().onAuthStateChanged(async (user) => {
     if (!user) {
@@ -465,21 +469,37 @@ async function registerUser() {
         showToast('El correo debe comenzar con al menos 4 dígitos (ej: 715919@iberopuebla.mx)', 'error'); return;
     }
 
-    try {
-        // Crear cuenta Firebase Auth con correo y contraseña numérica
-        const cred = await firebase.auth().createUserWithEmailAndPassword(email, password);
+    // Guardar referencia del admin actual ANTES de crear el usuario nuevo
+    const adminUser = firebase.auth().currentUser;
 
-        // Guardar perfil en Firestore
-        await db.collection('walking_v2_users').doc(cred.user.uid).set({
-            uid: cred.user.uid,
+    try {
+        // Crear cuenta en una app SECUNDARIA para no afectar la sesión del admin
+        let secondaryApp;
+        try {
+            secondaryApp = firebase.app('secondary');
+        } catch (e) {
+            // La app secundaria no existe todavía, crearla
+            secondaryApp = firebase.initializeApp(firebase.app().options, 'secondary');
+        }
+
+        const secondaryAuth = secondaryApp.auth();
+        const cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+        const newUid = cred.user.uid;
+
+        // Cerrar sesión en la app secundaria (no afecta al admin)
+        await secondaryAuth.signOut();
+
+        // Guardar perfil en Firestore (usando la sesión admin principal)
+        await db.collection('walking_v2_users').doc(newUid).set({
+            uid: newUid,
             name, email, department: dept,
-            accountNumber: password, // guardamos para referencia
+            accountNumber: password,
             totalSessions: 0, cumulativeKm: 0, cumulativeSteps: 0,
             cumulativeMinutes: 0, cumulativeCalories: 0,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        showToast(`✅ ${name} registrado. Contraseña de acceso: ${password}`);
+        showToast(`✅ ${name} registrado. Contraseña: ${password}`);
 
         // Limpiar form
         document.getElementById('reg-name').value = '';
@@ -682,38 +702,22 @@ async function openSessionReport(sessionId) {
             document.getElementById('rpt-notes-block').style.display = 'block';
         }
 
-        // ③ Cargar asistencia
+        // ③ Cargar asistencia (modo editable)
+        reportSessionId = sessionId;
+        reportAttendance = {};
+
         const attSnap = await db.collection('walking_v2_sessions').doc(sessionId)
             .collection('attendance').get();
 
-        const present = [], absent = [];
         attSnap.forEach(doc => {
             const a = doc.data();
-            if (a.present) present.push(a.name || doc.id);
-            else absent.push(a.name || doc.id);
+            reportAttendance[doc.id] = { name: a.name || doc.id, present: !!a.present };
         });
 
-        document.getElementById('rpt-present-count').textContent = present.length;
-        document.getElementById('rpt-absent-count').textContent = absent.length;
+        renderAttendanceLists();
 
-        const mkItem = (name, isPresent) => {
-            const el = document.createElement('div');
-            el.style.cssText = `background:${isPresent ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)'};
-                border:1px solid ${isPresent ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.2)'};
-                border-radius:7px; padding:.4rem .75rem; font-size:.82rem; color:#e2e8f0;
-                display:flex; align-items:center; gap:.5rem;`;
-            el.innerHTML = `<span style="color:${isPresent ? '#22c55e' : '#ef4444'}">${isPresent ? '✓' : '✗'}</span> ${name}`;
-            return el;
-        };
-
-        const presentEl = document.getElementById('rpt-present-list');
-        const absentEl = document.getElementById('rpt-absent-list');
-        present.forEach(n => presentEl.appendChild(mkItem(n, true)));
-        absent.forEach(n => absentEl.appendChild(mkItem(n, false)));
-
-        if (!present.length && !absent.length) {
-            presentEl.innerHTML = '<div style="color:#9CA3AF;font-size:.8rem;">Sin registros de asistencia</div>';
-        }
+        // Mostrar botón de guardar cambios
+        document.getElementById('rpt-save-attendance-btn').style.display = 'inline-flex';
 
         // ④ Cargar fotos
         const photoSnap = await db.collection('walking_v2_sessions').doc(sessionId)
@@ -742,8 +746,128 @@ async function openSessionReport(sessionId) {
     }
 }
 
+// ──── RENDER ASISTENCIA EDITABLE ────
+function renderAttendanceLists() {
+    const presentEl = document.getElementById('rpt-present-list');
+    const absentEl = document.getElementById('rpt-absent-list');
+    presentEl.innerHTML = '';
+    absentEl.innerHTML = '';
+
+    const presentPeople = Object.entries(reportAttendance).filter(([, v]) => v.present);
+    const absentPeople = Object.entries(reportAttendance).filter(([, v]) => !v.present);
+
+    document.getElementById('rpt-present-count').textContent = presentPeople.length;
+    document.getElementById('rpt-absent-count').textContent = absentPeople.length;
+
+    if (!presentPeople.length && !absentPeople.length) {
+        presentEl.innerHTML = '<div style="color:#9CA3AF;font-size:.8rem;">Sin registros de asistencia</div>';
+        return;
+    }
+
+    const mkItem = (docId, name, isPresent) => {
+        const el = document.createElement('div');
+        el.style.cssText = `
+            background:${isPresent ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)'};
+            border:1px solid ${isPresent ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.25)'};
+            border-radius:8px; padding:.45rem .75rem; font-size:.82rem; color:#1F2937;
+            display:flex; align-items:center; justify-content:space-between; gap:.5rem;
+            transition: all .2s;
+        `;
+        el.innerHTML = `
+            <span style="display:flex;align-items:center;gap:.45rem;">
+                <span style="color:${isPresent ? '#22c55e' : '#ef4444'};font-size:1rem;">${isPresent ? '✓' : '✗'}</span>
+                <span style="font-weight:500;">${name}</span>
+            </span>
+            <button
+                onclick="toggleReportAttendance('${docId}')"
+                title="${isPresent ? 'Marcar como ausente' : 'Marcar como presente'}"
+                style="
+                    background:${isPresent ? 'rgba(239,68,68,0.15)' : 'rgba(34,197,94,0.15)'};
+                    border:1px solid ${isPresent ? 'rgba(239,68,68,0.4)' : 'rgba(34,197,94,0.4)'};
+                    color:${isPresent ? '#ef4444' : '#22c55e'};
+                    border-radius:6px; padding:.25rem .6rem; cursor:pointer;
+                    font-size:.72rem; font-weight:600; white-space:nowrap;
+                    display:flex; align-items:center; gap:.3rem;
+                ">
+                ${isPresent
+                ? '<i class="fas fa-user-times"></i> Marcar falta'
+                : '<i class="fas fa-user-check"></i> Marcar presente'}
+            </button>
+        `;
+        return el;
+    };
+
+    presentPeople.forEach(([id, v]) => presentEl.appendChild(mkItem(id, v.name, true)));
+    absentPeople.forEach(([id, v]) => absentEl.appendChild(mkItem(id, v.name, false)));
+}
+
+// ──── TOGGLE ASISTENCIA EN MODAL DE REPORTE (en memoria) ────
+function toggleReportAttendance(docId) {
+    if (!reportAttendance[docId]) return;
+    reportAttendance[docId].present = !reportAttendance[docId].present;
+    renderAttendanceLists();
+    // Resaltar botón de guardar
+    const btn = document.getElementById('rpt-save-attendance-btn');
+    btn.style.animation = 'none';
+    btn.offsetHeight; // reflow
+    btn.style.animation = 'pulse-save .4s ease';
+}
+
+// ──── GUARDAR CAMBIOS DE ASISTENCIA EN FIRESTORE ────
+async function saveAttendanceEdits() {
+    if (!reportSessionId) return;
+    const btn = document.getElementById('rpt-save-attendance-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+    try {
+        const batch = db.batch();
+        const sessionRef = db.collection('walking_v2_sessions').doc(reportSessionId);
+
+        Object.entries(reportAttendance).forEach(([docId, v]) => {
+            const ref = sessionRef.collection('attendance').doc(docId);
+            batch.update(ref, { present: v.present });
+        });
+
+        // Actualizar contador de asistentes en el doc de la sesión
+        const presentCount = Object.values(reportAttendance).filter(v => v.present).length;
+        batch.update(sessionRef, { totalAttendees: presentCount });
+
+        await batch.commit();
+
+        // Actualizar subtítulo del modal
+        const totalUsers = Object.keys(reportAttendance).length;
+        const subtitle = document.getElementById('rpt-subtitle');
+        if (subtitle) {
+            subtitle.textContent = subtitle.textContent.replace(
+                /\d+ presentes de \d+/,
+                `${presentCount} presentes de ${totalUsers}`
+            );
+        }
+
+        showToast(`✅ Asistencia actualizada — ${presentCount} presentes`);
+        btn.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
+        btn.style.background = 'rgba(34,197,94,0.25)';
+        btn.style.borderColor = 'rgba(34,197,94,0.5)';
+        setTimeout(() => {
+            btn.innerHTML = '<i class="fas fa-save"></i> Guardar cambios de asistencia';
+            btn.style.background = '';
+            btn.style.borderColor = '';
+            btn.disabled = false;
+        }, 2000);
+    } catch (e) {
+        console.error(e);
+        showToast('Error al guardar: ' + e.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Guardar cambios de asistencia';
+    }
+}
+
 function closeSessionReport() {
     document.getElementById('session-report-modal').style.display = 'none';
+    reportSessionId = null;
+    reportAttendance = {};
+    document.getElementById('rpt-save-attendance-btn').style.display = 'none';
 }
 
 function printSessionReport() {

@@ -7,12 +7,16 @@ document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => {
         const currentPath = window.location.pathname;
 
+        // Considerar ambas variantes: login.html y /login (sin extensión)
+        const isLoginPage = currentPath.includes('login.html') ||
+            currentPath.endsWith('/login');
+
         if (user) {
             // Usuario logueado
             console.log('Usuario autenticado:', user.email);
 
             // Si estamos en login, redirigir al dashboard
-            if (currentPath.includes('login.html')) {
+            if (isLoginPage) {
                 window.location.href = 'dashboard.html';
             }
         } else {
@@ -20,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Usuario no autenticado');
 
             // Si estamos en una página protegida (no login), redirigir a login
-            if (currentPath.includes('admin/') && !currentPath.includes('login.html')) {
+            if (currentPath.includes('admin/') && !isLoginPage) {
                 window.location.href = 'login.html';
             }
         }
