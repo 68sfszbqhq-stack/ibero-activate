@@ -158,97 +158,117 @@
 
                 <!-- Total Asistencias Card -->
                 <div class="stat-card card">
-                    <h3 style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Total Asistencias</h3>
-                    <div class="stat-main">
-                        <p class="stat-number" id="total-attendances"
-                            style="font-size: 2rem; font-weight: 700; color: var(--primary);">0</p>
-                        <canvas id="attendances-sparkline" class="mini-chart"></canvas>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <h3 style="color: #6b7280; font-size: 0.9rem; margin: 0; text-transform: uppercase;">Asistencias</h3>
+                        <div style="background: rgba(102, 126, 234, 0.1); color: var(--primary); width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
                     </div>
-                    <div class="stat-change" id="attendances-change"></div>
+                    <div class="stat-main" style="margin-bottom: 0.5rem;">
+                        <p class="stat-number" id="total-attendances" style="font-size: 2.5rem; font-weight: 700; color: var(--text-main); line-height: 1;">0</p>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <div class="stat-change" id="attendances-change" style="display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;"></div>
+                    </div>
                     <div class="progress-wrapper">
-                        <div class="progress-label">Meta mensual: <span id="attendances-goal-text">400</span></div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="attendances-progress" style="width: 0%"></div>
+                        <div class="progress-label" style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+                            <span id="attendances-goal-info">0 / 400 meta</span>
+                            <span id="attendances-status-chip" style="font-weight: 600;"></span>
                         </div>
-                        <div class="progress-info">
-                            <span class="progress-text" id="attendances-progress-text">0%</span>
-                            <span class="progress-status" id="attendances-status"></span>
+                        <div class="progress-bar" style="height: 6px; background: #e5e7eb; border-radius: 4px; overflow: hidden; position: relative;">
+                            <div class="progress-fill" id="attendances-progress" style="height: 100%; width: 0%; background: var(--primary); transition: width 0.5s;"></div>
                         </div>
+                        <div id="attendances-overage" style="font-size: 0.75rem; color: #10b981; margin-top: 4px; font-weight: 600; display: none;"></div>
                     </div>
-                    <button class="btn-detail" data-metric="attendances">
-                        Ver análisis detallado <i class="fa-solid fa-chart-line"></i>
+                    <button class="btn-detail" data-metric="attendances" style="width: 100%; margin-top: 1rem; background: transparent; border: 1px solid #e5e7eb; color: #6b7280; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s;">
+                        Análisis detallado <i class="fa-solid fa-arrow-right" style="margin-left: 5px;"></i>
                     </button>
                 </div>
 
                 <!-- Calificación Promedio Card -->
                 <div class="stat-card card">
-                    <h3 style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Calificación Promedio</h3>
-                    <div class="stat-main">
-                        <p class="stat-number" id="avg-rating"
-                            style="font-size: 2rem; font-weight: 700; color: var(--warning);">0.0 ⭐</p>
-                        <canvas id="rating-sparkline" class="mini-chart"></canvas>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <h3 style="color: #6b7280; font-size: 0.9rem; margin: 0; text-transform: uppercase;">Satisfacción</h3>
+                        <div style="background: rgba(245, 158, 11, 0.1); color: var(--warning); width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fa-solid fa-star"></i>
+                        </div>
                     </div>
-                    <div class="stat-change" id="rating-change"></div>
+                    <div class="stat-main" style="margin-bottom: 0.5rem;">
+                        <p class="stat-number" id="avg-rating" style="font-size: 2.5rem; font-weight: 700; color: var(--text-main); line-height: 1;">0.0</p>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <div class="stat-change" id="rating-change" style="display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;"></div>
+                    </div>
                     <div class="progress-wrapper">
-                        <div class="progress-label">Meta: 4.0+ ⭐</div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="rating-progress" style="width: 0%"></div>
+                        <div class="progress-label" style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+                            <span id="rating-goal-info">0.0 / 4.0 meta</span>
+                            <span id="rating-status-chip" style="font-weight: 600;"></span>
                         </div>
-                        <div class="progress-info">
-                            <span class="progress-text" id="rating-progress-text">0%</span>
-                            <span class="progress-status" id="rating-status"></span>
+                        <div class="progress-bar" style="height: 6px; background: #e5e7eb; border-radius: 4px; overflow: hidden; position: relative;">
+                            <div class="progress-fill" id="rating-progress" style="height: 100%; width: 0%; background: var(--warning); transition: width 0.5s;"></div>
                         </div>
+                        <div id="rating-overage" style="font-size: 0.75rem; color: #10b981; margin-top: 4px; font-weight: 600; display: none;"></div>
                     </div>
-                    <button class="btn-detail" data-metric="rating">
-                        Ver análisis detallado <i class="fa-solid fa-star"></i>
+                    <button class="btn-detail" data-metric="rating" style="width: 100%; margin-top: 1rem; background: transparent; border: 1px solid #e5e7eb; color: #6b7280; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s;">
+                        Análisis detallado <i class="fa-solid fa-arrow-right" style="margin-left: 5px;"></i>
                     </button>
                 </div>
 
                 <!-- Áreas Activas Card -->
                 <div class="stat-card card">
-                    <h3 style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Áreas Activas</h3>
-                    <div class="stat-main">
-                        <p class="stat-number" id="active-areas"
-                            style="font-size: 2rem; font-weight: 700; color: var(--accent);">0</p>
-                        <canvas id="areas-sparkline" class="mini-chart"></canvas>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <h3 style="color: #6b7280; font-size: 0.9rem; margin: 0; text-transform: uppercase;">Áreas Activas</h3>
+                        <div style="background: rgba(139, 92, 246, 0.1); color: var(--accent); width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fa-solid fa-building"></i>
+                        </div>
                     </div>
-                    <div class="stat-change" id="areas-change"></div>
+                    <div class="stat-main" style="margin-bottom: 0.5rem;">
+                        <p class="stat-number" id="active-areas" style="font-size: 2.5rem; font-weight: 700; color: var(--text-main); line-height: 1;">0</p>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <div class="stat-change" id="areas-change" style="display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;"></div>
+                    </div>
                     <div class="progress-wrapper">
-                        <div class="progress-label">Meta: 10/10 áreas</div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="areas-progress" style="width: 0%"></div>
+                        <div class="progress-label" style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+                            <span id="areas-goal-info">0 / 10 áreas</span>
+                            <span id="areas-status-chip" style="font-weight: 600;"></span>
                         </div>
-                        <div class="progress-info">
-                            <span class="progress-text" id="areas-progress-text">0%</span>
-                            <span class="progress-status" id="areas-status"></span>
+                        <div class="progress-bar" style="height: 6px; background: #e5e7eb; border-radius: 4px; overflow: hidden; position: relative;">
+                            <div class="progress-fill" id="areas-progress" style="height: 100%; width: 0%; background: var(--accent); transition: width 0.5s;"></div>
                         </div>
+                        <div id="areas-overage" style="font-size: 0.75rem; color: #10b981; margin-top: 4px; font-weight: 600; display: none;"></div>
                     </div>
-                    <button class="btn-detail" data-metric="areas">
-                        Ver análisis detallado <i class="fa-solid fa-building"></i>
+                    <button class="btn-detail" data-metric="areas" style="width: 100%; margin-top: 1rem; background: transparent; border: 1px solid #e5e7eb; color: #6b7280; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s;">
+                        Análisis detallado <i class="fa-solid fa-arrow-right" style="margin-left: 5px;"></i>
                     </button>
                 </div>
 
                 <!-- Tasa de Feedback Card -->
                 <div class="stat-card card">
-                    <h3 style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Tasa de Feedback</h3>
-                    <div class="stat-main">
-                        <p class="stat-number" id="feedback-rate"
-                            style="font-size: 2rem; font-weight: 700; color: var(--secondary);">0%</p>
-                        <canvas id="feedback-sparkline" class="mini-chart"></canvas>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <h3 style="color: #6b7280; font-size: 0.9rem; margin: 0; text-transform: uppercase;">Feedback</h3>
+                        <div style="background: rgba(16, 185, 129, 0.1); color: var(--secondary); width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fa-solid fa-comments"></i>
+                        </div>
                     </div>
-                    <div class="stat-change" id="feedback-change"></div>
+                    <div class="stat-main" style="margin-bottom: 0.5rem;">
+                        <p class="stat-number" id="feedback-rate" style="font-size: 2.5rem; font-weight: 700; color: var(--text-main); line-height: 1;">0%</p>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <div class="stat-change" id="feedback-change" style="display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;"></div>
+                    </div>
                     <div class="progress-wrapper">
-                        <div class="progress-label">Meta: 90%</div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="feedback-progress" style="width: 0%"></div>
+                        <div class="progress-label" style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+                            <span id="feedback-goal-info">0% / 90% meta</span>
+                            <span id="feedback-status-chip" style="font-weight: 600;"></span>
                         </div>
-                        <div class="progress-info">
-                            <span class="progress-text" id="feedback-progress-text">0%</span>
-                            <span class="progress-status" id="feedback-status"></span>
+                        <div class="progress-bar" style="height: 6px; background: #e5e7eb; border-radius: 4px; overflow: hidden; position: relative;">
+                            <div class="progress-fill" id="feedback-progress" style="height: 100%; width: 0%; background: var(--secondary); transition: width 0.5s;"></div>
                         </div>
+                        <div id="feedback-overage" style="font-size: 0.75rem; color: #10b981; margin-top: 4px; font-weight: 600; display: none;"></div>
                     </div>
-                    <button class="btn-detail" data-metric="feedback">
-                        Ver análisis detallado <i class="fa-solid fa-comments"></i>
+                    <button class="btn-detail" data-metric="feedback" style="width: 100%; margin-top: 1rem; background: transparent; border: 1px solid #e5e7eb; color: #6b7280; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s;">
+                        Análisis detallado <i class="fa-solid fa-arrow-right" style="margin-left: 5px;"></i>
                     </button>
                 </div>
             </div>

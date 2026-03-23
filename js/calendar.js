@@ -655,6 +655,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileNameDisplay = document.getElementById('file-name-display');
     const ratingDisplayEl = document.getElementById('current-activity-rating-display');
     const btnGenerateReport = document.getElementById('btn-generate-report');
+    const btnGenerateUnifiedReport = document.getElementById('btn-generate-unified-report');
 
     // Event Listeners
     if (btnSelectEvidence && fileInput) {
@@ -672,6 +673,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnGenerateReport) {
         btnGenerateReport.addEventListener('click', generateWeeklyReport);
+    }
+
+    if (btnGenerateUnifiedReport) {
+        btnGenerateUnifiedReport.addEventListener('click', generateUnifiedReport);
     }
 
     async function saveEvidence() {
@@ -1090,6 +1095,233 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             btnGenerateReport.innerHTML = '<i class="fa-solid fa-file-word"></i> Reporte Semanal';
             btnGenerateReport.disabled = false;
+        }
+    }
+
+    async function generateUnifiedReport() {
+        if (!currentSchedule || currentSchedule.length === 0) {
+            alert("No hay actividades en esta semana para generar reporte unificado.");
+            return;
+        }
+
+        const btnGenerateUnifiedReport = document.getElementById('btn-generate-unified-report');
+        btnGenerateUnifiedReport.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
+        btnGenerateUnifiedReport.disabled = true;
+
+        try {
+            if (typeof window.docx === 'undefined') {
+                throw new Error('La librería docx no está cargada. Por favor recarga la página.');
+            }
+
+            const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, Packer, ImageRun } = window.docx;
+
+            const weekTitle = document.getElementById('current-week-label').textContent;
+            const itemsToReport = currentSchedule;
+            const sections = [];
+
+            // Encabezado
+            sections.push(
+                new Paragraph({
+                    text: "Reporte Unificado de Asistencias y Actividades",
+                    heading: HeadingLevel.HEADING_1,
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 400 }
+                }),
+                new Paragraph({
+                    children: [
+                        new TextRun({ text: "Periodo: ", bold: true }),
+                        new TextRun(weekTitle)
+                    ],
+                    spacing: { after: 200 }
+                }),
+                new Paragraph({
+                    children: [
+                        new TextRun({ text: "Generado el: ", bold: true }),
+                        new TextRun(new Date().toLocaleDateString('es-MX', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        }))
+                    ],
+                    spacing: { after: 200 }
+                }),
+                new Paragraph({
+                    children: [
+                        new TextRun({ text: "Responsable: ", bold: true }),
+                        new TextRun(auth.currentUser.email)
+                    ],
+                    spacing: { after: 600 }
+                })
+            );
+
+            // Obtener Diccionario de Áreas para imprimir los nombres
+            let areasMap = {};
+            try {
+                const distAreasSnapshot = await db.collection('areas').get();
+                distAreasSnapshot.forEach(doc => {
+                    areasMap[doc.id] = doc.data().name;
+                });
+            } catch (e) {
+                console.warn("⚠️ No se pudieron cargar las áreas", e);
+            }
+
+            for (const item of itemsToReport) {
+                const activity = activitiesMap[item.activityId];
+                const name = activity ? activity.name : 'Actividad';
+                const day = translateDay(item.day);
+
+                // Calcular la fecha local en formato YYYY-MM-DD
+                const dayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].indexOf(item.day);
+                const activityDate = new Date(currentWeekStart);
+                activityDate.setDate(activityDate.getDate() + dayIndex);
+                const dateString = activityDate.toISOString().split('T')[0];
+
+                const ratingValue = await getActivityRating(item.activityId, item.day);
+                const ratingDisplay = ratingValue > 0 ? `${ratingValue} / 5.0` : 'Sin feedback';
+                const comments = item.adminComments || 'Sin observaciones.';
+
+                // Título de la actividad + Fecha
+                sections.push(
+                    new Paragraph({
+                        text: `${day} - ${name} (${dateString})`,
+                        heading: HeadingLevel.HEADING_2,
+                        spacing: { before: 400, after: 200 }
+                    })
+                );
+
+                // Tabla de contexto (Location, Status, etc)
+                const tableRows = [
+                    new TableRow({
+                        children: [
+                            new TableCell({ children: [new Paragraph({ text: "Ubicación:", bold: true })], width: { size: 30, type: WidthType.PERCENTAGE } }),
+                            new TableCell({ children: [new Paragraph(item.location || 'No definida')], width: { size: 70, type: WidthType.PERCENTAGE } })
+                        ]
+                    }),
+                    new TableRow({
+                        children: [
+                            new TableCell({ children: [new Paragraph({ text: "Calificación:", bold: true })] }),
+                            new TableCell({ children: [new Paragraph(`⭐ ${ratingDisplay}`)] })
+                        ]
+                    }),
+                    new TableRow({
+                        children: [
+                            new TableCell({ children: [new Paragraph({ text: "Estado:", bold: true })] }),
+                            new TableCell({ children: [new Paragraph(item.evidenceUrl ? '✅ Evidencia adjunta' : '⚠️ Sin foto')] })
+                        ]
+                    }),
+                    new TableRow({
+                        children: [
+                            new TableCell({ children: [new Paragraph({ text: "Observaciones:", bold: true })], verticalAlign: "top" }),
+                            new TableCell({ children: [new Paragraph(comments)], verticalAlign: "top" })
+                        ]
+                    })
+                ];
+
+                sections.push(new Table({
+                    rows: tableRows,
+                    width: { size: 100, type: WidthType.PERCENTAGE },
+                    margins: { top: 100, bottom: 100, left: 100, right: 100 }
+                }));
+
+                // ==============================
+                // AQUI AGREGAMOS LA ASISTENCIA
+                // ==============================
+                try {
+                    const participantsSnap = await db.collection('attendances').where('date', '==', dateString).get();
+                    let participants = [];
+                    participantsSnap.forEach(d => {
+                        const data = d.data();
+                        if (data.employeeName) {
+                            participants.push({
+                                name: data.employeeName,
+                                areaName: areasMap[data.areaId] || 'Área Desconocida'
+                            });
+                        }
+                    });
+
+                    if (participants.length > 0) {
+                        sections.push(
+                            new Paragraph({
+                                children: [new TextRun({ text: `Total de participantes: ${participants.length}`, bold: true })],
+                                spacing: { before: 200, after: 100 }
+                            })
+                        );
+
+                        // Agrupar participantes por ruta o alfabético (alfabético por área luego nombre)
+                        participants.sort((a, b) => a.areaName.localeCompare(b.areaName) || a.name.localeCompare(b.name));
+
+                        for (const p of participants) {
+                            sections.push(
+                                new Paragraph({
+                                    text: `${p.name} - ${p.areaName}`,
+                                    bullet: { level: 0 }
+                                })
+                            );
+                        }
+                    } else {
+                        sections.push(
+                            new Paragraph({
+                                children: [new TextRun({ text: "No hay asistencias registradas para esta fecha.", italics: true })],
+                                spacing: { before: 200, after: 100 }
+                            })
+                        );
+                    }
+                } catch (err) {
+                    console.error("Error al obtener asistencias:", err);
+                    sections.push(new Paragraph({ text: "Error obteniendo lista de participantes.", italics: true }));
+                }
+
+
+                // Evidencia (Imagen)
+                if (item.evidenceUrl) {
+                    try {
+                        const base64Data = item.evidenceUrl.split(',')[1];
+                        const binaryString = atob(base64Data);
+                        const bytes = new Uint8Array(binaryString.length);
+                        for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
+                        sections.push(
+                            new Paragraph({
+                                children: [new TextRun({ text: "Evidencia fotográfica:", bold: true })],
+                                spacing: { before: 200, after: 100 }
+                            }),
+                            new Paragraph({
+                                children: [new ImageRun({ data: bytes, transformation: { width: 400, height: 300 } })],
+                                spacing: { after: 200 }
+                            })
+                        );
+                    } catch (imageError) {
+                        sections.push(new Paragraph({
+                            children: [new TextRun({ text: "Evidencia fotográfica: Error al cargar imagen", italics: true })],
+                            spacing: { before: 200, after: 200 }
+                        }));
+                    }
+                }
+
+                // Espacio después de la sesión
+                sections.push(new Paragraph({ text: "", spacing: { after: 400 } }));
+            }
+
+            // Pie
+            sections.push(new Paragraph({
+                text: "IBERO ACTÍVATE - Reporte Generado Automáticamente",
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 600 },
+                italics: true
+            }));
+
+            const doc = new Document({ sections: [{ properties: {}, children: sections }] });
+            const blob = await Packer.toBlob(doc);
+            const fileName = `Reporte_Unificado_${weekTitle.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.docx`;
+            saveAs(blob, fileName);
+
+            alert('✅ Reporte Unificado generado exitosamente');
+
+        } catch (e) {
+            console.error(e);
+            alert("Error al generar el reporte: " + e.message);
+        } finally {
+            btnGenerateUnifiedReport.innerHTML = '<i class="fa-solid fa-users-viewfinder"></i> Reporte Unificado';
+            btnGenerateUnifiedReport.disabled = false;
         }
     }
 

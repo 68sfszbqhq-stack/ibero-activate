@@ -266,17 +266,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!element) return;
 
         if (change === null || previousValue === 0) {
-            element.innerHTML = `<span class="neutral">📊 Últimos 7 días: datos insuficientes</span>`;
-            element.className = 'stat-change neutral';
+            element.innerHTML = `<i class="fa-solid fa-chart-line"></i> Últimos 7 días: datos insuficientes`;
+            element.style.background = '#f3f4f6';
+            element.style.color = '#6b7280';
             return;
         }
 
         const arrow = change >= 0 ? '↑' : '↓';
-        const className = change >= 0 ? 'positive' : 'negative';
+        const isGood = change >= 0; 
+        const bgColor = isGood ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+        const textColor = isGood ? '#10b981' : '#ef4444';
         const absChange = Math.abs(change).toFixed(1);
 
-        element.innerHTML = `<span><strong>${arrow} ${absChange}%</strong> vs 7 días previos</span>`;
-        element.className = `stat-change ${className}`;
+        element.innerHTML = `${arrow} ${absChange}% vs 7 d. previos`;
+        element.style.background = bgColor;
+        element.style.color = textColor;
+        element.style.border = 'none';
+        element.style.display = 'inline-block';
+        element.style.padding = '4px 8px';
+        element.style.borderRadius = '6px';
+        element.style.fontSize = '0.8rem';
+        element.style.fontWeight = '600';
     }
 
     function createSparklines(attendances, feedbacks) {
@@ -377,58 +387,87 @@ document.addEventListener('DOMContentLoaded', () => {
         const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         const currentDay = now.getDate();
 
+        const expectedMonthProgress = (currentDay / daysInMonth) * 100;
+
         // Asistencias
-        const attProgress = Math.min((totalAtt / GOALS.attendances) * 100, 100);
-        const attExpected = (currentDay / daysInMonth) * 100;
-        updateProgressBar('attendances', attProgress, attExpected);
+        updateProgressBar('attendances', totalAtt, GOALS.attendances, expectedMonthProgress, 'asist.', false);
 
         // Rating
-        const ratingProgress = Math.min((parseFloat(avgRating) / GOALS.rating) * 100, 100);
-        updateProgressBar('rating', ratingProgress, 100); // No tiene progreso esperado
+        updateProgressBar('rating', parseFloat(avgRating), GOALS.rating, 100, '⭐', true);
 
         // Áreas
-        const areasProgress = (activeAreas / GOALS.areas) * 100;
-        updateProgressBar('areas', areasProgress, 100);
+        updateProgressBar('areas', activeAreas, GOALS.areas, 100, 'áreas', true);
 
         // Feedback Rate
-        const feedbackProgress = Math.min((feedbackRate / GOALS.feedbackRate) * 100, 100);
-        updateProgressBar('feedback', feedbackProgress, 100);
+        updateProgressBar('feedback', feedbackRate, GOALS.feedbackRate, 100, '%', true);
     }
 
-    function updateProgressBar(metric, progress, expectedProgress = null) {
+    function updateProgressBar(metric, currentValue, goalValue, expectedProgress, unitFormat, isStatic) {
         const progressFill = document.getElementById(`${metric}-progress`);
-        const progressText = document.getElementById(`${metric}-progress-text`);
-        const statusEl = document.getElementById(`${metric}-status`);
+        const goalInfo = document.getElementById(`${metric}-goal-info`);
+        const statusChip = document.getElementById(`${metric}-status-chip`);
+        const overageEl = document.getElementById(`${metric}-overage`);
 
-        if (!progressFill || !progressText) return;
+        if (!progressFill || !goalInfo || !statusChip) return;
 
-        progressFill.style.width = `${progress.toFixed(0)}%`;
-        progressText.textContent = `${progress.toFixed(0)}%`;
+        let percentage = (currentValue / goalValue) * 100;
+        let overagePercentage = 0;
 
-        if (expectedProgress !== null && expectedProgress !== 100) {
-            // Solo para métricas con progreso temporal (como asistencias)
-            if (progress >= expectedProgress) {
-                progressFill.classList.add('on-track');
-                progressFill.classList.remove('behind');
-                if (statusEl) statusEl.textContent = '✓ En meta';
+        if (percentage > 100) {
+            overagePercentage = percentage - 100;
+            percentage = 100;
+        }
+
+        progressFill.style.width = `${percentage}%`;
+
+        let displayCurrent = currentValue;
+        if (unitFormat === '⭐') displayCurrent = displayCurrent.toFixed(1);
+        else if (unitFormat === '%') displayCurrent = Math.round(displayCurrent);
+
+        let displayGoal = (unitFormat === '⭐') ? goalValue.toFixed(1) : goalValue;
+
+        goalInfo.textContent = `${displayCurrent} / ${displayGoal} ${unitFormat}`;
+
+        if (overageEl) {
+            if (overagePercentage > 0) {
+                overageEl.innerHTML = `+${Math.round(overagePercentage)}% sobre meta`;
+                overageEl.style.display = 'block';
             } else {
-                progressFill.classList.add('behind');
-                progressFill.classList.remove('on-track');
-                if (statusEl) statusEl.textContent = '⚠️ Debajo de meta';
-            }
-        } else {
-            // Para otras métricas
-            if (progress >= 90) {
-                progressFill.classList.add('on-track');
-                progressFill.classList.remove('behind');
-                if (statusEl) statusEl.textContent = '✓ Excelente';
-            } else if (progress >= 70) {
-                if (statusEl) statusEl.textContent = '👍 Bien';
-            } else {
-                progressFill.classList.add('behind');
-                if (statusEl) statusEl.textContent = '📈 Por mejorar';
+                overageEl.style.display = 'none';
             }
         }
+
+        let statusText = '';
+        let statusColor = '';
+        const actualPercentForStatus = (currentValue / goalValue) * 100;
+
+        if (!isStatic) {
+            if (actualPercentForStatus >= expectedProgress) {
+                statusText = 'En meta';
+                statusColor = '#10b981';
+            } else if (actualPercentForStatus >= expectedProgress * 0.7) {
+                statusText = 'Atención';
+                statusColor = '#f59e0b';
+            } else {
+                statusText = 'Crítico';
+                statusColor = '#ef4444';
+            }
+        } else {
+            if (actualPercentForStatus >= 100) {
+                statusText = 'En meta';
+                statusColor = '#10b981';
+            } else if (actualPercentForStatus >= 70) {
+                statusText = 'Atención';
+                statusColor = '#f59e0b';
+            } else {
+                statusText = 'Crítico';
+                statusColor = '#ef4444';
+            }
+        }
+
+        statusChip.textContent = statusText;
+        statusChip.style.color = statusColor;
+        progressFill.style.background = statusColor;
     }
 
     // Setup detail buttons
@@ -904,6 +943,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Renderizar tabla
         leaderboardTable.innerHTML = '';
 
+        // Obtener máximo de puntos para barras relativas
+        const maxPoints = sortedEmployees.length > 0 ? sortedEmployees[0].points : 100;
+
         for (const [index, stat] of sortedEmployees.entries()) {
             try {
                 const empDoc = await db.collection('employees').doc(stat.id).get();
@@ -911,11 +953,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Resolver nombre del área
                 const areaName = areasMap[empData.areaId] || 'Área Desconocida';
+                
+                // Color para Top 3
+                const rankColor = index === 0 ? '#fbbf24' : (index === 1 ? '#94a3b8' : (index === 2 ? '#b45309' : '#10b981'));
+                const barWidth = Math.max((stat.points / maxPoints) * 100, 5);
 
                 const row = document.createElement('tr');
                 row.style.borderBottom = '1px solid #f3f4f6';
                 row.innerHTML = `
-                    <td style="padding: 1rem;">${index + 1}</td>
+                    <td style="padding: 1rem; font-weight: bold; color: ${rankColor};">#${index + 1}</td>
                     <td style="padding: 1rem; font-weight: 500;">
                         <a href="employee-detail.html?id=${stat.id}" style="color: var(--primary); text-decoration: none; font-weight: bold;">
                             ${empData.fullName} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.8rem;"></i>
@@ -924,7 +970,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td style="padding: 1rem; color: #666;">${areaName}</td>
                     <td style="padding: 1rem;">${stat.attendances}</td>
                     <td style="padding: 1rem;">-</td>
-                    <td style="padding: 1rem; font-weight: 700; color: var(--primary);">${stat.points} pts</td>
+                    <td style="padding: 1rem; font-weight: 700; width: 140px;">
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <span style="color: var(--primary); font-size: 0.9rem;">${stat.points} pts</span>
+                            <div style="height: 6px; background: #e5e7eb; border-radius: 3px; width: 100%; overflow: hidden;">
+                                <div style="height: 100%; width: ${barWidth}%; background: ${rankColor};"></div>
+                            </div>
+                        </div>
+                    </td>
                 `;
                 leaderboardTable.appendChild(row);
             } catch (e) {
