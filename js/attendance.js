@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateDateDisplay() {
         dateDisplay.textContent = currentDate.toLocaleDateString('es-ES', options);
-        datePicker.value = currentDate.toISOString().split('T')[0];
+        datePicker.value = currentDate.toLocaleDateString('en-CA');
     }
 
     async function loadAreas() {
@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // 2. ACTIVAR LISTENER DE ASISTENCIAS (Real-time)
-            const selectedDate = currentDate.toISOString().split('T')[0];
+            const selectedDate = currentDate.toLocaleDateString('en-CA');
 
             // Escuchar cambios en la collección TOP-LEVEL 'attendances' para esta fecha
             // Esto detectará instantáneamente cuando se crea una asistencia O cuando cambia a 'completed'
@@ -373,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const confirmDelete = confirm('⚠️ ¿Estás seguro de ELIMINAR la asistencia y feedback de hoy para este empleado?');
         if (!confirmDelete) return;
 
-        const selectedDate = currentDate.toISOString().split('T')[0] || new Date().toLocaleDateString('en-CA'); // Fallback YYYY-MM-DD
+        const selectedDate = currentDate.toLocaleDateString('en-CA') || new Date().toLocaleDateString('en-CA'); // Fallback YYYY-MM-DD
 
         try {
             const batch = db.batch();
@@ -415,7 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
         card.classList.add('processing');
 
         const currentStatus = card.dataset.status || 'absent';
-        const selectedDate = currentDate.toISOString().split('T')[0];
+        const selectedDate = currentDate.toLocaleDateString('en-CA');
 
         // Obtener ID del área de forma segura (re-query por si acaso)
         const hiddenInput = document.getElementById('area-dropdown');
@@ -1061,7 +1061,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        const selectedDate = currentDate.toISOString().split('T')[0];
+        const selectedDate = currentDate.toLocaleDateString('en-CA');
 
         const confirmMsg = `¿Confirmar que pasaste al área "${areaName}" pero no hubo asistencia?\n\n` +
             `Fecha: ${currentDate.toLocaleDateString('es-ES')}\n` +

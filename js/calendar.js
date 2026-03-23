@@ -287,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const dayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].indexOf(item.day);
             const activityDate = new Date(currentWeekStart);
             activityDate.setDate(activityDate.getDate() + dayIndex);
-            const dateStr = activityDate.toISOString().split('T')[0];
+            const dateStr = activityDate.toLocaleDateString('en-CA');
 
             // Buscar en la collection principal de attendances
             const snapshot = await db.collection('attendances')
@@ -840,7 +840,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const activityDate = new Date(currentWeekStart);
         activityDate.setDate(activityDate.getDate() + dayIndex);
-        const dateString = activityDate.toISOString().split('T')[0];
+        const dateString = activityDate.toLocaleDateString('en-CA');
 
         try {
             // Note: 'feedback' is a subcollection in employees/{id}/feedback
@@ -1084,7 +1084,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Generar y descargar el archivo
             const blob = await Packer.toBlob(doc);
-            const fileName = `Reporte_Semanal_${weekTitle.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.docx`;
+            const fileName = `Reporte_Semanal_${weekTitle.replace(/\s+/g, '_')}_${new Date().toLocaleDateString('en-CA')}.docx`;
             saveAs(blob, fileName);
 
             alert('✅ Reporte DOCX generado exitosamente');
@@ -1174,7 +1174,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].indexOf(item.day);
                 const activityDate = new Date(currentWeekStart);
                 activityDate.setDate(activityDate.getDate() + dayIndex);
-                const dateString = activityDate.toISOString().split('T')[0];
+                const dateString = activityDate.toLocaleDateString('en-CA');
 
                 const ratingValue = await getActivityRating(item.activityId, item.day);
                 const ratingDisplay = ratingValue > 0 ? `${ratingValue} / 5.0` : 'Sin feedback';
@@ -1311,7 +1311,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const doc = new Document({ sections: [{ properties: {}, children: sections }] });
             const blob = await Packer.toBlob(doc);
-            const fileName = `Reporte_Unificado_${weekTitle.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.docx`;
+            const fileName = `Reporte_Unificado_${weekTitle.replace(/\s+/g, '_')}_${new Date().toLocaleDateString('en-CA')}.docx`;
             saveAs(blob, fileName);
 
             alert('✅ Reporte Unificado generado exitosamente');
