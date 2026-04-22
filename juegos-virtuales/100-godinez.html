@@ -78,9 +78,11 @@
         .slot-hidden { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; font-size: 2.5rem; background: #0b264e; color: #1e5ba9; }
         .slot-revealed { display: flex; width: 100%; height: 100%; align-items: center; text-shadow: 2px 2px 0px #000; animation: flipIn 0.5s ease-out; }
         .slot-text { padding: 0 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; text-align: left; border-right: 3px solid #1e5ba9;}
-        .slot-points { width: 80px; text-align: center; background: rgba(0,0,0,0.2); height: 100%; display: flex; align-items: center; justify-content: center; }
-        
-        .round-pot { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); background: var(--board-text); color: black; font-weight: 900; font-size: 2rem; padding: 0.2rem 1.5rem; border-radius: 20px; border: 4px solid var(--board-bg); }
+        .slot-points { width: 80px; text-align: center; background: rgba(0,0,0,0.2); height: 100%; display: flex; align-items: center; justify-content: center; border-right: 3px solid #1e5ba9;}
+        .mini-btn { padding: 5px 10px; font-size: 1rem; font-weight: 800; border: none; border-radius: 5px; cursor: pointer; color: white; margin-left: 5px; transition: transform 0.2s;}
+        .mini-btn:hover { transform: scale(1.1); }
+        .mini-btn-1 { background: var(--primary); }
+        .mini-btn-2 { background: var(--accent); }
 
         /* STRIKES & CONTROLS */
         .controls-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; background: #f1f5f9; padding: 1rem; border-radius: 15px; }
@@ -204,7 +206,6 @@
                     </select>
 
                     <div class="board-container">
-                        <div class="round-pot">BOTÍN: <span id="roundPotDisplay">0</span></div>
                         <div class="board-title" id="boardQuestion">Selecciona una pregunta...</div>
                         <div class="board-grid" id="boardGrid">
                             <!-- Slots se inyectan -->
@@ -217,10 +218,6 @@
                             <button class="btn-strike" id="strike-2" onclick="showStrike(2)">X</button>
                             <button class="btn-strike" id="strike-3" onclick="showStrike(3)">X</button>
                             <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.5rem; margin-left:10px;" onclick="resetStrikes()"><i class="fa-solid fa-rotate-left"></i></button>
-                        </div>
-                        <div class="bank-controls">
-                            <button class="btn-bank" style="background: var(--primary);" onclick="bankPoints(1)"><i class="fa-solid fa-sack-dollar"></i> Dar al Eq. 1</button>
-                            <button class="btn-bank" style="background: var(--accent);" onclick="bankPoints(2)"><i class="fa-solid fa-sack-dollar"></i> Dar al Eq. 2</button>
                         </div>
                     </div>
 
@@ -262,7 +259,6 @@
         // Variables de Juego Host
         let scoreEq1 = 0;
         let scoreEq2 = 0;
-        let roundPot = 0;
         let currentStrikes = 0;
         let isLocked = false;
 
@@ -441,9 +437,6 @@
             const p = dbPreguntas[val];
             document.getElementById('boardQuestion').innerText = p.q;
             
-            // Reset Round Pot
-            roundPot = 0; 
-            document.getElementById('roundPotDisplay').innerText = roundPot;
             resetStrikes();
             
             board.innerHTML = "";
@@ -454,28 +447,39 @@
                 
                 // Content pre-built
                 slot.innerHTML = `
-                    <div class="slot-hidden" id="hidden-${i}" onclick="revealAnswer(${i}, ${ans.p})">
+                    <div class="slot-hidden" id="hidden-${i}" onclick="revealAnswer(${i})">
                         ${i+1}
                     </div>
                     <div class="slot-revealed" id="revealed-${i}" style="display:none;">
                         <div class="slot-text">${ans.t}</div>
                         <div class="slot-points">${ans.p}</div>
+                        <div style="display:flex; align-items:center; padding: 0 10px;">
+                            <button class="mini-btn mini-btn-1" onclick="awardDirectPoints(1, ${ans.p}, this)">+ Eq 1</button>
+                            <button class="mini-btn mini-btn-2" onclick="awardDirectPoints(2, ${ans.p}, this)">+ Eq 2</button>
+                        </div>
                     </div>
                 `;
                 board.appendChild(slot);
             });
         }
 
-        function revealAnswer(idx, points) {
+        function revealAnswer(idx) {
             document.getElementById(`hidden-${idx}`).style.display = 'none';
             document.getElementById(`revealed-${idx}`).style.display = 'flex';
             
-            // Sum to botin
-            roundPot += points;
-            document.getElementById('roundPotDisplay').innerText = roundPot;
-            
             const audio = new Audio('https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg'); // Not real ding but works
             audio.play().catch(e => {}); // Silent catch if audio policies prevent
+        }
+
+        function awardDirectPoints(teamIndex, points, btnElement) {
+            if(teamIndex === 1) {
+                scoreEq1 += points; document.getElementById('pts1').innerText = scoreEq1;
+            } else {
+                scoreEq2 += points; document.getElementById('pts2').innerText = scoreEq2;
+            }
+            
+            // Ocultar botones para no dar puntos dos veces por lo mismo
+            btnElement.parentElement.innerHTML = '<i class="fa-solid fa-check" style="color:var(--success); font-size:1.5rem;"></i>';
         }
 
         function showStrike(num) {
@@ -504,17 +508,7 @@
             document.getElementById('strike-3').classList.remove('active');
         }
 
-        function bankPoints(teamIndex) {
-            if(roundPot === 0) return;
-            
-            if(teamIndex === 1) {
-                scoreEq1 += roundPot; document.getElementById('pts1').innerText = scoreEq1;
-            } else {
-                scoreEq2 += roundPot; document.getElementById('pts2').innerText = scoreEq2;
-            }
-            roundPot = 0; document.getElementById('roundPotDisplay').innerText = "0";
-            alert("¡Puntos transferidos al equipo " + teamIndex + "!");
-        }
+
 
         async function toggleLock() {
             isLocked = !isLocked;
