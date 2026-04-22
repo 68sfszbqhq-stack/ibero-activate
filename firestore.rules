@@ -302,5 +302,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ========================================
+    // JUEGOS VIRTUALES (100 GODÍNEZ)
+    // ========================================
+    match /100_godinez_respuestas/{docId} {
+      allow read, write: if true;
+    }
+
+
   }
 }

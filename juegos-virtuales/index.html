@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juegos Virtuales - Adivina la Palabra IBERO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #E3000F;
+            --primary-dark: #B3000C;
+            --success: #10b981;
+            --success-dark: #059669;
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --accent: #3b82f6;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 20px;
+        }
+        .header {
+            margin-bottom: 2rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+        .header h1 {
+            font-size: 4.5rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            margin-bottom: 0.5rem;
+        }
+        .header p {
+            color: var(--text-muted);
+            font-size: 1.8rem;
+        }
+        
+        /* Screens */
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 1000px;
+            animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .screen.active {
+            display: block;
+        }
+        
+        .container-box {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            padding: 4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Category Selection */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .cat-btn {
+            background: #f1f5f9;
+            color: var(--text-main);
+            border: 2px solid transparent;
+            padding: 1.8rem 1rem;
+            font-size: 1.6rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .cat-btn:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }
+        .cat-btn.all-cat {
+            background: rgba(227, 0, 15, 0.1);
+            color: var(--primary);
+            grid-column: 1 / -1;
+        }
+        .cat-btn.all-cat:hover {
+            background: rgba(227, 0, 15, 0.2);
+        }
+
+        /* Game Board */
+        .timer-display {
+            font-size: 8rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 1.5rem;
+            font-variant-numeric: tabular-nums;
+            transition: color 0.3s ease;
+        }
+        .timer-warning {
+            color: var(--primary);
+            animation: pulse 1s infinite alternate;
+        }
+        .word-display-container {
+            min-height: 380px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 3rem;
+            margin-bottom: 2rem;
+            border: 2px dashed #cbd5e1;
+        }
+        .category {
+            font-size: 2rem;
+            color: var(--accent);
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            letter-spacing: 2px;
+        }
+        .word {
+            font-size: 7rem;
+            font-weight: 800;
+            line-height: 1.1;
+            word-break: break-word;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.3s ease;
+        }
+        .word.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        .btn-game {
+            flex: 1;
+            padding: 2rem;
+            font-size: 2rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+        .btn-correct {
+            background: var(--success);
+            box-shadow: 0 4px 0 var(--success-dark);
+        }
+        .btn-correct:hover {
+            background: #0ea5e9; /* Light blue on hover for feedback */
+            background: var(--success-dark);
+        }
+        .btn-correct:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 transparent;
+        }
+        
+        .btn-incorrect {
+            background: var(--danger);
+            box-shadow: 0 4px 0 var(--danger-dark);
+        }
+        .btn-incorrect:hover {
+            background: var(--danger-dark);
+        }
+        .btn-incorrect:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 transparent;
+        }
+        .btn-game i {
+            font-size: 3rem;
+        }
+
+        /* Results Screen */
+        .results-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .result-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 12px;
+            width: 100%;
+            border: 1px solid #e2e8f0;
+        }
+        .result-number {
+            font-size: 6rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .result-correct .result-number { color: var(--success); }
+        .result-incorrect .result-number { color: var(--danger); }
+        .result-label {
+            font-size: 1.8rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1.5rem 2rem;
+            font-size: 1.8rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(227, 0, 15, 0.2);
+            width: 100%;
+            margin-top: 1rem;
+        }
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .back-link {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: color 0.3s;
+            margin-top: 2rem;
+            font-size: 1.5rem;
+        }
+        .back-link:hover {
+            color: var(--primary);
+        }
+
+        .words-history {
+            width: 100%;
+            margin-top: 1rem;
+            text-align: left;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            border: 1px solid #e2e8f0;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 1.6rem;
+            font-weight: 600;
+        }
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        .history-item.correct {
+            color: var(--success);
+        }
+        .history-item.incorrect {
+            color: var(--danger);
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes pulse {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        @media (max-width: 600px) {
+            .word { font-size: 2.5rem; }
+            .timer-display { font-size: 3.5rem; }
+            .container-box { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Adivina la Palabra IBERO</h1>
+        <p>Adivina la palabra antes de que termine el tiempo</p>
+    </div>
+
+    <!-- Screen 1: Category Selection -->
+    <div id="screen-category" class="screen active">
+        <div class="container-box">
+            <h2 style="color: var(--text-main); margin-bottom: 0.5rem;">Elige una Categoría</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">O juega con todas revueltas.</p>
+            
+            <div class="category-grid" id="category-grid">
+                <!-- Buttons injected by JS -->
+            </div>
+        </div>
+        <div class="container-box" style="margin-top: 1.5rem; padding: 2rem; background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(16,185,129,0.1)); border: 2px dashed var(--accent);">
+            <h3 style="color: var(--text-main); margin-bottom: 0.5rem;"><i class="fa-solid fa-people-group" style="color: var(--accent);"></i> Modo Multijugador</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">Juega "100 Godínez Dijeron" usando los celulares como control.</p>
+            <a href="100-godinez.html" style="display: inline-block; background: var(--accent); color: white; padding: 1rem 2rem; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 1.2rem; transition: transform 0.2s;"><i class="fa-solid fa-play"></i> Jugar 100 Godínez Dijeron</a>
+        </div>
+
+        <a href="../index.html" class="back-link">
+            <i class="fa-solid fa-arrow-left"></i> Volver al Inicio
+        </a>
+    </div>
+
+    <!-- Screen 2: Game Board -->
+    <div id="screen-game" class="screen">
+        <div class="container-box">
+            <div class="timer-display" id="timer">02:00</div>
+            
+            <div class="word-display-container" id="word-container">
+                <div class="category" id="category-display">Categoría</div>
+                <div class="word" id="word-display">¿Listos?</div>
+            </div>
+
+            <div class="controls">
+                <button class="btn-game btn-incorrect" onclick="markWord(false)">
+                    <i class="fa-solid fa-xmark"></i>
+                    <span>Pasar</span>
+                </button>
+                <button class="btn-game btn-correct" onclick="markWord(true)">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Correcto</span>
+                </button>
+            </div>
+        </div>
+        <a href="#" class="back-link" onclick="showScreen('category')">
+            <i class="fa-solid fa-arrow-left"></i> Cambiar Categoría
+        </a>
+    </div>
+
+    <!-- Screen 3: Results -->
+    <div id="screen-results" class="screen">
+        <div class="container-box results-box">
+            <h2 style="font-size: 2rem; color: var(--text-main);">¡Tiempo Terminado!</h2>
+            
+            <div class="result-item result-correct">
+                <div class="result-number" id="result-correct">0</div>
+                <div class="result-label">Adivinadas</div>
+            </div>
+            
+            <div class="result-item result-incorrect">
+                <div class="result-number" id="result-incorrect">0</div>
+                <div class="result-label">No adivinadas</div>
+            </div>
+
+            <div style="width: 100%; margin-top: 1rem; padding: 1.5rem; background: #f1f5f9; border-radius: 12px;">
+                <p style="font-size: 2rem; color: var(--text-main); font-weight: 800;">Total Palabras Jugadas: <span id="result-total-count" style="color: var(--primary);">0</span></p>
+            </div>
+
+            <div class="words-history" id="words-history-list">
+                <!-- Injected via JS -->
+            </div>
+
+            <button class="btn-primary" onclick="showScreen('category')">
+                <i class="fa-solid fa-rotate-right"></i> Jugar de Nuevo
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const wordsData = [
+    { category: "Animales", word: "Perro" },
+    { category: "Animales", word: "Gato" },
+    { category: "Animales", word: "Vaca" },
+    { category: "Animales", word: "Caballo" },
+    { category: "Animales", word: "León" },
+    { category: "Animales", word: "Elefante" },
+    { category: "Animales", word: "Mono" },
+    { category: "Animales", word: "Conejo" },
+    { category: "Animales", word: "Jirafa" },
+    { category: "Animales", word: "Tortuga" },
+    { category: "Animales", word: "Delfín" },
+    { category: "Animales", word: "Tiburón" },
+    { category: "Animales", word: "Ratón" },
+    { category: "Animales", word: "Loro" },
+    { category: "Animales", word: "Pingüino" },
+    { category: "Animales", word: "Oso" },
+    { category: "Animales", word: "Lobo" },
+    { category: "Animales", word: "Zorro" },
+    { category: "Animales", word: "Ciervo" },
+    { category: "Animales", word: "Águila" },
+    { category: "Animales", word: "Búho" },
+    { category: "Animales", word: "Cuervo" },
+    { category: "Animales", word: "Cisne" },
+    { category: "Animales", word: "Pato" },
+    { category: "Animales", word: "Rana" },
+    { category: "Animales", word: "Sapo" },
+    { category: "Animales", word: "Serpiente" },
+    { category: "Animales", word: "Lagartija" },
+    { category: "Animales", word: "Cocodrilo" },
+    { category: "Animales", word: "Hormiga" },
+    { category: "Animales", word: "Abeja" },
+    { category: "Animales", word: "Mariposa" },
+    { category: "Animales", word: "Araña" },
+    { category: "Animales", word: "Caracol" },
+    { category: "Animales", word: "Ballena" },
+    { category: "Animales", word: "Pulpo" },
+    { category: "Animales", word: "Calamar" },
+    { category: "Animales", word: "Cangrejo" },
+    { category: "Animales", word: "Estrella de mar" },
+
+    { category: "Trabajos", word: "Maestro" },
+    { category: "Trabajos", word: "Secretaria" },
+    { category: "Trabajos", word: "Contador" },
+    { category: "Trabajos", word: "Abogado" },
+    { category: "Trabajos", word: "Doctor" },
+    { category: "Trabajos", word: "Enfermera" },
+    { category: "Trabajos", word: "Ingeniero" },
+    { category: "Trabajos", word: "Arquitecto" },
+    { category: "Trabajos", word: "Cocinero" },
+    { category: "Trabajos", word: "Mesero" },
+    { category: "Trabajos", word: "Policía" },
+    { category: "Trabajos", word: "Bombero" },
+    { category: "Trabajos", word: "Recepcionista" },
+    { category: "Trabajos", word: "Psicólogo" },
+    { category: "Trabajos", word: "Chofer de Uber" },
+    { category: "Trabajos", word: "Pintor" },
+    { category: "Trabajos", word: "Músico" },
+    { category: "Trabajos", word: "Actor" },
+    { category: "Trabajos", word: "Cantante" },
+    { category: "Trabajos", word: "Bailarín" },
+    { category: "Trabajos", word: "Escritor" },
+    { category: "Trabajos", word: "Periodista" },
+    { category: "Trabajos", word: "Locutor" },
+    { category: "Trabajos", word: "Fotógrafo" },
+    { category: "Trabajos", word: "Programador" },
+    { category: "Trabajos", word: "Vendedor" },
+    { category: "Trabajos", word: "Cajero" },
+    { category: "Trabajos", word: "Repartidor" },
+    { category: "Trabajos", word: "Carnicero" },
+    { category: "Trabajos", word: "Panadero" },
+    { category: "Trabajos", word: "Mecánico" },
+    { category: "Trabajos", word: "Electricista" },
+    { category: "Trabajos", word: "Plomero" },
+    { category: "Trabajos", word: "Carpintero" },
+    { category: "Trabajos", word: "Albañil" },
+    { category: "Trabajos", word: "Peluquero" },
+    { category: "Trabajos", word: "Jardinero" },
+
+    { category: "Alimentos", word: "Tacos" },
+    { category: "Alimentos", word: "Tortas" },
+    { category: "Alimentos", word: "Tamales" },
+    { category: "Alimentos", word: "Pozole" },
+    { category: "Alimentos", word: "Chilaquiles" },
+    { category: "Alimentos", word: "Enchiladas" },
+    { category: "Alimentos", word: "Tlayudas" },
+    { category: "Alimentos", word: "Mole poblano" },
+    { category: "Alimentos", word: "Pizza" },
+    { category: "Alimentos", word: "Hamburguesa" },
+    { category: "Alimentos", word: "Hot dog" },
+    { category: "Alimentos", word: "Sushi" },
+    { category: "Alimentos", word: "Ensalada" },
+    { category: "Alimentos", word: "Pastel de chocolate" },
+    { category: "Alimentos", word: "Gelatina de mosaico" },
+    { category: "Alimentos", word: "Ceviche" },
+    { category: "Alimentos", word: "Panucho" },
+    { category: "Alimentos", word: "Salbute" },
+    { category: "Alimentos", word: "Empanada" },
+    { category: "Alimentos", word: "Arepa" },
+    { category: "Alimentos", word: "Tequeño" },
+    { category: "Alimentos", word: "Burrito" },
+    { category: "Alimentos", word: "Quesadilla" },
+    { category: "Alimentos", word: "Guacamole" },
+    { category: "Alimentos", word: "Salsa verde" },
+    { category: "Alimentos", word: "Frijoles refritos" },
+    { category: "Alimentos", word: "Arroz rojo" },
+    { category: "Alimentos", word: "Sopa de fideo" },
+    { category: "Alimentos", word: "Milanesa de res" },
+    { category: "Alimentos", word: "Helado" },
+    { category: "Alimentos", word: "Churros" },
+    { category: "Alimentos", word: "Flan" },
+    { category: "Alimentos", word: "Arroz con leche" },
+    { category: "Alimentos", word: "Buñuelos" },
+    { category: "Alimentos", word: "Pan de muerto" },
+    { category: "Alimentos", word: "Rosca de reyes" },
+    { category: "Alimentos", word: "Esquites" },
+    { category: "Alimentos", word: "Elote preparado" },
+
+    { category: "Personajes", word: "El Chavo del 8" },
+    { category: "Personajes", word: "Chapulín Colorado" },
+    { category: "Personajes", word: "Chespirito" },
+    { category: "Personajes", word: "Cantinflas" },
+    { category: "Personajes", word: "María Félix" },
+    { category: "Personajes", word: "El Santo" },
+    { category: "Personajes", word: "Goku" },
+    { category: "Personajes", word: "Pikachu" },
+    { category: "Personajes", word: "Batman" },
+    { category: "Personajes", word: "Spiderman" },
+    { category: "Personajes", word: "Harry Potter" },
+    { category: "Personajes", word: "Darth Vader" },
+    { category: "Personajes", word: "Shrek" },
+    { category: "Personajes", word: "Buzz Lightyear" },
+    { category: "Personajes", word: "La Chilindrina" },
+    { category: "Personajes", word: "Don Ramón" },
+    { category: "Personajes", word: "Profesor Jirafales" },
+    { category: "Personajes", word: "Señor Barriga" },
+    { category: "Personajes", word: "Doña Florinda" },
+    { category: "Personajes", word: "Quico" },
+    { category: "Personajes", word: "Ñoño" },
+    { category: "Personajes", word: "Jaimito el Cartero" },
+    { category: "Personajes", word: "Godínez" },
+    { category: "Personajes", word: "Paty" },
+    { category: "Personajes", word: "Gloria" },
+    { category: "Personajes", word: "Vicente Fernández" },
+    { category: "Personajes", word: "Juan Gabriel" },
+    { category: "Personajes", word: "Luis Miguel" },
+    { category: "Personajes", word: "Pedro Infante" },
+    { category: "Personajes", word: "Jorge Negrete" },
+    { category: "Personajes", word: "Diego Rivera" },
+    { category: "Personajes", word: "Frida Kahlo" },
+    { category: "Personajes", word: "Benito Juárez" },
+    { category: "Personajes", word: "Pancho Villa" },
+    { category: "Personajes", word: "Emiliano Zapata" },
+
+    { category: "Cosas de los 90", word: "Walkman" },
+    { category: "Cosas de los 90", word: "Discman" },
+    { category: "Cosas de los 90", word: "Game Boy" },
+    { category: "Cosas de los 90", word: "Tamagotchi" },
+    { category: "Cosas de los 90", word: "Casete" },
+    { category: "Cosas de los 90", word: "VHS" },
+    { category: "Cosas de los 90", word: "Blockbuster" },
+    { category: "Cosas de los 90", word: "Cabina telefónica" },
+    { category: "Cosas de los 90", word: "Pager / beeper" },
+    { category: "Cosas de los 90", word: "Tazos" },
+    { category: "Cosas de los 90", word: "Yoyo" },
+    { category: "Cosas de los 90", word: "Encarta" },
+    { category: "Cosas de los 90", word: "Radio de pilas" },
+    { category: "Cosas de los 90", word: "Láser pointer rojo" },
+    { category: "Cosas de los 90", word: "Fanny pack / cangurera" },
+    { category: "Cosas de los 90", word: "Furby" },
+    { category: "Cosas de los 90", word: "Polly Pocket" },
+    { category: "Cosas de los 90", word: "Trolls" },
+    { category: "Cosas de los 90", word: "Pepsilindros" },
+    { category: "Cosas de los 90", word: "Hielocos" },
+    { category: "Cosas de los 90", word: "MTV" },
+    { category: "Cosas de los 90", word: "Animaniacs" },
+    { category: "Cosas de los 90", word: "Rugrats" },
+    { category: "Cosas de los 90", word: "Oye Arnold" },
+    { category: "Cosas de los 90", word: "Laboratorio de Dexter" },
+    { category: "Cosas de los 90", word: "Johnny Bravo" },
+    { category: "Cosas de los 90", word: "Chicas Superpoderosas" },
+    { category: "Cosas de los 90", word: "Coraje el perro cobarde" },
+    { category: "Cosas de los 90", word: "Dragon Ball Z" },
+    { category: "Cosas de los 90", word: "Sailor Moon" },
+    { category: "Cosas de los 90", word: "Pokemon" },
+    { category: "Cosas de los 90", word: "Digimon" },
+    { category: "Cosas de los 90", word: "MSN Messenger" },
+    { category: "Cosas de los 90", word: "Windows 95" },
+    { category: "Cosas de los 90", word: "Ares" },
+    { category: "Cosas de los 90", word: "Limewire" },
+    { category: "Cosas de los 90", word: "Winamp" },
+
+    { category: "IBERO / vida godín jesuita", word: "Cafetería" },
+    { category: "IBERO / vida godín jesuita", word: "Comedor" },
+    { category: "IBERO / vida godín jesuita", word: "Tupper" },
+    { category: "IBERO / vida godín jesuita", word: "Microondas" },
+    { category: "IBERO / vida godín jesuita", word: "Café" },
+    { category: "IBERO / vida godín jesuita", word: "Oficina" },
+    { category: "IBERO / vida godín jesuita", word: "Escritorio" },
+    { category: "IBERO / vida godín jesuita", word: "Jefe" },
+    { category: "IBERO / vida godín jesuita", word: "Juntas" },
+    { category: "IBERO / vida godín jesuita", word: "Horario" },
+    { category: "IBERO / vida godín jesuita", word: "Lista" },
+    { category: "IBERO / vida godín jesuita", word: "Pase" },
+    { category: "IBERO / vida godín jesuita", word: "Asistencia" },
+    { category: "IBERO / vida godín jesuita", word: "Aula" },
+    { category: "IBERO / vida godín jesuita", word: "Campus" },
+    { category: "IBERO / vida godín jesuita", word: "Biblioteca" },
+    { category: "IBERO / vida godín jesuita", word: "Laboratorio" },
+    { category: "IBERO / vida godín jesuita", word: "Copias" },
+    { category: "IBERO / vida godín jesuita", word: "Impresora" },
+    { category: "IBERO / vida godín jesuita", word: "San Ignacio de Loyola" },
+    { category: "IBERO / vida godín jesuita", word: "Jesuitas" },
+    { category: "IBERO / vida godín jesuita", word: "MAGIS" },
+    { category: "IBERO / vida godín jesuita", word: "Discernimiento" },
+    { category: "IBERO / vida godín jesuita", word: "Ejercicios Espirituales" },
+    { category: "IBERO / vida godín jesuita", word: "Rector" },
+    { category: "IBERO / vida godín jesuita", word: "Vicerrector" },
+    { category: "IBERO / vida godín jesuita", word: "Coordinador" },
+    { category: "IBERO / vida godín jesuita", word: "Decano" },
+    { category: "IBERO / vida godín jesuita", word: "Servicio Social" },
+    { category: "IBERO / vida godín jesuita", word: "Beca" },
+    { category: "IBERO / vida godín jesuita", word: "Credencial" },
+    { category: "IBERO / vida godín jesuita", word: "Estacionamiento" },
+    { category: "IBERO / vida godín jesuita", word: "Pluma" },
+    { category: "IBERO / vida godín jesuita", word: "Gafete" },
+    { category: "IBERO / vida godín jesuita", word: "Checador" },
+    { category: "IBERO / vida godín jesuita", word: "Recursos Humanos" },
+    { category: "IBERO / vida godín jesuita", word: "Nómina" },
+    { category: "IBERO / vida godín jesuita", word: "Vacaciones" },
+    { category: "IBERO / vida godín jesuita", word: "Día festivo" },
+    { category: "IBERO / vida godín jesuita", word: "Posada" },
+    { category: "IBERO / vida godín jesuita", word: "Intercambio navideño" },
+
+    { category: "Películas de los 90", word: "Titanic" },
+    { category: "Películas de los 90", word: "Matrix" },
+    { category: "Películas de los 90", word: "Jurassic Park" },
+    { category: "Películas de los 90", word: "El Rey León" },
+    { category: "Películas de los 90", word: "Toy Story" },
+    { category: "Películas de los 90", word: "Liberen a Willy" },
+    { category: "Películas de los 90", word: "Forrest Gump" },
+    { category: "Películas de los 90", word: "Terminator 2" },
+    { category: "Películas de los 90", word: "Hombres de Negro" },
+    { category: "Películas de los 90", word: "Mi Pobre Angelito" },
+    { category: "Películas de los 90", word: "Space Jam" },
+    { category: "Películas de los 90", word: "Matilda" },
+    { category: "Películas de los 90", word: "Juego de Gemelas" },
+    { category: "Películas de los 90", word: "El Sexto Sentido" },
+    { category: "Películas de los 90", word: "Corazón Valiente" },
+    { category: "Películas de los 90", word: "Rescatando al Soldado Ryan" },
+    { category: "Películas de los 90", word: "Babe el puerquito valiente" },
+    { category: "Películas de los 90", word: "La Máscara" },
+    { category: "Películas de los 90", word: "Mentiroso Mentiroso" },
+    { category: "Películas de los 90", word: "Jumanji" },
+    { category: "Películas de los 90", word: "Casper" },
+    { category: "Películas de los 90", word: "Clueless" },
+    { category: "Películas de los 90", word: "Día de la Independencia" },
+    { category: "Películas de los 90", word: "Mulan" },
+    { category: "Películas de los 90", word: "Aladdin" },
+    { category: "Películas de los 90", word: "Tarzán" },
+    { category: "Películas de los 90", word: "Hércules" },
+    { category: "Películas de los 90", word: "Bichos" },
+    { category: "Películas de los 90", word: "El Quinto Elemento" },
+
+    { category: "Cantantes de los 90", word: "Britney Spears" },
+    { category: "Cantantes de los 90", word: "Backstreet Boys" },
+    { category: "Cantantes de los 90", word: "NSYNC" },
+    { category: "Cantantes de los 90", word: "Spice Girls" },
+    { category: "Cantantes de los 90", word: "Christina Aguilera" },
+    { category: "Cantantes de los 90", word: "Ricky Martin" },
+    { category: "Cantantes de los 90", word: "Shakira" },
+    { category: "Cantantes de los 90", word: "Alejandro Sanz" },
+    { category: "Cantantes de los 90", word: "Fey" },
+    { category: "Cantantes de los 90", word: "Thalía" },
+    { category: "Cantantes de los 90", word: "Magneto" },
+    { category: "Cantantes de los 90", word: "Mercurio" },
+    { category: "Cantantes de los 90", word: "Kabah" },
+    { category: "Cantantes de los 90", word: "Onda Vaselina (OV7)" },
+    { category: "Cantantes de los 90", word: "Luis Miguel" },
+    { category: "Cantantes de los 90", word: "Selena Quintanilla" },
+    { category: "Cantantes de los 90", word: "Mariah Carey" },
+    { category: "Cantantes de los 90", word: "Celine Dion" },
+    { category: "Cantantes de los 90", word: "Nirvana" },
+    { category: "Cantantes de los 90", word: "Pearl Jam" },
+    { category: "Cantantes de los 90", word: "Oasis" },
+    { category: "Cantantes de los 90", word: "No Doubt" },
+    { category: "Cantantes de los 90", word: "Gwen Stefani" },
+    { category: "Cantantes de los 90", word: "Madonna" },
+    { category: "Cantantes de los 90", word: "Michael Jackson" },
+    { category: "Cantantes de los 90", word: "TLC" },
+    { category: "Cantantes de los 90", word: "Destiny's Child" },
+    { category: "Cantantes de los 90", word: "Chayanne" },
+    { category: "Cantantes de los 90", word: "Enrique Iglesias" },
+    { category: "Cantantes de los 90", word: "Eros Ramazzotti" },
+
+    { category: "Cosas de los 2000", word: "iPod" },
+    { category: "Cosas de los 2000", word: "Messenger (MSN)" },
+    { category: "Cosas de los 2000", word: "Metroflog" },
+    { category: "Cosas de los 2000", word: "Hi5" },
+    { category: "Cosas de los 2000", word: "MySpace" },
+    { category: "Cosas de los 2000", word: "Blackberry" },
+    { category: "Cosas de los 2000", word: "Ringtones polifónicos" },
+    { category: "Cosas de los 2000", word: "Quemar CDs" },
+    { category: "Cosas de los 2000", word: "Fotolog" },
+    { category: "Cosas de los 2000", word: "Habbo Hotel" },
+    { category: "Cosas de los 2000", word: "Pantalones a la cadera" },
+    { category: "Cosas de los 2000", word: "Emos" },
+    { category: "Cosas de los 2000", word: "RBD / Rebelde" },
+    { category: "Cosas de los 2000", word: "Harry Potter" },
+    { category: "Cosas de los 2000", word: "El Señor de los Anillos" },
+    { category: "Cosas de los 2000", word: "Crepúsculo" },
+    { category: "Cosas de los 2000", word: "Shrek" },
+    { category: "Cosas de los 2000", word: "Bob Esponja" },
+    { category: "Cosas de los 2000", word: "Malcolm el de en medio" },
+    { category: "Cosas de los 2000", word: "The O.C." },
+    { category: "Cosas de los 2000", word: "Bluetooth" },
+    { category: "Cosas de los 2000", word: "Cámara digital" },
+    { category: "Cosas de los 2000", word: "USB (Memoria flash)" },
+    { category: "Cosas de los 2000", word: "Películas en DVD" },
+    { category: "Cosas de los 2000", word: "GameCube" },
+    { category: "Cosas de los 2000", word: "PlayStation 2" },
+    { category: "Cosas de los 2000", word: "Xbox original" },
+    { category: "Cosas de los 2000", word: "Nintendo Wii" },
+    { category: "Cosas de los 2000", word: "Nintendo DS" },
+    { category: "Cosas de los 2000", word: "Avril Lavigne" },
+    { category: "Cosas de los 2000", word: "Blink-182" },
+    { category: "Cosas de los 2000", word: "Linkin Park" },
+    { category: "Cosas de los 2000", word: "Gorillaz" },
+
+    { category: "Cosas de la casa", word: "Vaso" },
+    { category: "Cosas de la casa", word: "Cuchara" },
+    { category: "Cosas de la casa", word: "Tenedor" },
+    { category: "Cosas de la casa", word: "Cuchillo" },
+    { category: "Cosas de la casa", word: "Plato" },
+    { category: "Cosas de la casa", word: "Taza" },
+    { category: "Cosas de la casa", word: "Olla" },
+    { category: "Cosas de la casa", word: "Sartén" },
+    { category: "Cosas de la casa", word: "Licuadora" },
+    { category: "Cosas de la casa", word: "Escoba" },
+    { category: "Cosas de la casa", word: "Trapeador" },
+    { category: "Cosas de la casa", word: "Plancha" },
+    { category: "Cosas de la casa", word: "Televisión" },
+    { category: "Cosas de la casa", word: "Control remoto" },
+    { category: "Cosas de la casa", word: "Sofá" },
+    { category: "Cosas de la casa", word: "Cama" },
+    { category: "Cosas de la casa", word: "Almohada" },
+    { category: "Cosas de la casa", word: "Sábana" },
+    { category: "Cosas de la casa", word: "Toalla" },
+    { category: "Cosas de la casa", word: "Cepillo de dientes" },
+    { category: "Cosas de la casa", word: "Pasta dental" },
+    { category: "Cosas de la casa", word: "Shampoo" },
+    { category: "Cosas de la casa", word: "Jabón" },
+    { category: "Cosas de la casa", word: "Espejo" },
+    { category: "Cosas de la casa", word: "Peine" },
+    { category: "Cosas de la casa", word: "Reloj de pared" },
+    { category: "Cosas de la casa", word: "Lámpara" },
+    { category: "Cosas de la casa", word: "Foco" },
+    { category: "Cosas de la casa", word: "Silla" },
+    { category: "Cosas de la casa", word: "Mesa" },
+    { category: "Cosas de la casa", word: "Refrigerador" },
+    { category: "Cosas de la casa", word: "Estufa" },
+    { category: "Cosas de la casa", word: "Microondas" },
+    { category: "Cosas de la casa", word: "Tostador" },
+    { category: "Cosas de la casa", word: "Bote de basura" },
+    { category: "Cosas de la casa", word: "Cuadro" },
+    { category: "Cosas de la casa", word: "Maceta" },
+    { category: "Cosas de la casa", word: "Regadera" },
+    { category: "Cosas de la casa", word: "Cortina" },
+    { category: "Cosas de la casa", word: "Alfombra" },
+
+    { category: "Apps Populares", word: "WhatsApp" },
+    { category: "Apps Populares", word: "Facebook" },
+    { category: "Apps Populares", word: "Twitter (X)" },
+    { category: "Apps Populares", word: "Instagram" },
+    { category: "Apps Populares", word: "TikTok" },
+    { category: "Apps Populares", word: "Snapchat" },
+    { category: "Apps Populares", word: "YouTube" },
+    { category: "Apps Populares", word: "Netflix" },
+    { category: "Apps Populares", word: "Spotify" },
+    { category: "Apps Populares", word: "Uber" },
+    { category: "Apps Populares", word: "DiDi" },
+    { category: "Apps Populares", word: "Rappi" },
+    { category: "Apps Populares", word: "Waze" },
+    { category: "Apps Populares", word: "Google Maps" },
+    { category: "Apps Populares", word: "Gmail" },
+    { category: "Apps Populares", word: "Zoom" },
+    { category: "Apps Populares", word: "Microsoft Teams" },
+    { category: "Apps Populares", word: "Twitch" },
+    { category: "Apps Populares", word: "Discord" },
+    { category: "Apps Populares", word: "Duolingo" },
+    { category: "Apps Populares", word: "Candy Crush" },
+    { category: "Apps Populares", word: "Roblox" },
+    { category: "Apps Populares", word: "Minecraft" },
+    { category: "Apps Populares", word: "Pinterest" },
+    { category: "Apps Populares", word: "LinkedIn" },
+    { category: "Apps Populares", word: "Telegram" },
+    { category: "Apps Populares", word: "Mercado Libre" },
+    { category: "Apps Populares", word: "Amazon" },
+    { category: "Apps Populares", word: "AliExpress" },
+    { category: "Apps Populares", word: "Shein" },
+    { category: "Apps Populares", word: "Temu" },
+    { category: "Apps Populares", word: "Canva" },
+    { category: "Apps Populares", word: "Shazam" },
+    { category: "Apps Populares", word: "Uber Eats" },
+    { category: "Apps Populares", word: "Pokémon Go" },
+    { category: "Apps Populares", word: "ChatGPT" },
+    { category: "Apps Populares", word: "Airbnb" },
+
+    // ═══════════════════════════════════════════
+    // NUEVAS CATEGORÍAS - IBERO ACTIVATE 2026
+    // ═══════════════════════════════════════════
+
+    // ── Frases del trabajo ──
+    { category: "Frases del trabajo", word: "Ya saliendo" },
+    { category: "Frases del trabajo", word: "¿Quién trae cambio?" },
+    { category: "Frases del trabajo", word: "Me lo mandas por correo" },
+    { category: "Frases del trabajo", word: "Lo vemos en la junta" },
+    { category: "Frases del trabajo", word: "¿Ya checaste?" },
+    { category: "Frases del trabajo", word: "Ahorita lo hago" },
+    { category: "Frases del trabajo", word: "Está en mi escritorio" },
+    { category: "Frases del trabajo", word: "¿De quién es este tupper?" },
+    { category: "Frases del trabajo", word: "Ya me voy, es viernes" },
+    { category: "Frases del trabajo", word: "¿Ya es hora de comer?" },
+    { category: "Frases del trabajo", word: "Se fue el internet" },
+    { category: "Frases del trabajo", word: "No jala la impresora" },
+    { category: "Frases del trabajo", word: "¿Quién pidió Uber Eats?" },
+    { category: "Frases del trabajo", word: "Mándame un Teams" },
+    { category: "Frases del trabajo", word: "Ponlo en copia" },
+    { category: "Frases del trabajo", word: "¿Ya firmaste la lista?" },
+    { category: "Frases del trabajo", word: "¿A qué hora es la junta?" },
+    { category: "Frases del trabajo", word: "Ese no es mi departamento" },
+    { category: "Frases del trabajo", word: "¿Hay café todavía?" },
+    { category: "Frases del trabajo", word: "Feliz viernes" },
+    { category: "Frases del trabajo", word: "¿Cuándo pagan?" },
+    { category: "Frases del trabajo", word: "Luego te lo paso" },
+    { category: "Frases del trabajo", word: "Con copia para todos" },
+    { category: "Frases del trabajo", word: "¿Quién apagó el aire?" },
+    { category: "Frases del trabajo", word: "Otra vez junta" },
+    { category: "Frases del trabajo", word: "Me quedé sin tinta" },
+    { category: "Frases del trabajo", word: "¿Ya marcaste tu entrada?" },
+    { category: "Frases del trabajo", word: "Lo necesito para ayer" },
+    { category: "Frases del trabajo", word: "¿Quién tiene la llave?" },
+    { category: "Frases del trabajo", word: "Está en proceso" },
+
+    // ── Cosas de la oficina ──
+    { category: "Cosas de la oficina", word: "Engrapadora" },
+    { category: "Cosas de la oficina", word: "Post-it" },
+    { category: "Cosas de la oficina", word: "Carpeta" },
+    { category: "Cosas de la oficina", word: "Sello" },
+    { category: "Cosas de la oficina", word: "Marcador" },
+    { category: "Cosas de la oficina", word: "Pizarrón" },
+    { category: "Cosas de la oficina", word: "Clip" },
+    { category: "Cosas de la oficina", word: "Perforadora" },
+    { category: "Cosas de la oficina", word: "Tijeras" },
+    { category: "Cosas de la oficina", word: "Cinta adhesiva" },
+    { category: "Cosas de la oficina", word: "Folder" },
+    { category: "Cosas de la oficina", word: "Archivero" },
+    { category: "Cosas de la oficina", word: "Sacapuntas" },
+    { category: "Cosas de la oficina", word: "Goma de borrar" },
+    { category: "Cosas de la oficina", word: "Corrector líquido" },
+    { category: "Cosas de la oficina", word: "Calculadora" },
+    { category: "Cosas de la oficina", word: "Libreta" },
+    { category: "Cosas de la oficina", word: "Agenda" },
+    { category: "Cosas de la oficina", word: "Tóner" },
+    { category: "Cosas de la oficina", word: "Scanner" },
+    { category: "Cosas de la oficina", word: "Proyector" },
+    { category: "Cosas de la oficina", word: "Extensión eléctrica" },
+    { category: "Cosas de la oficina", word: "Mouse" },
+    { category: "Cosas de la oficina", word: "Teclado" },
+    { category: "Cosas de la oficina", word: "Monitor" },
+    { category: "Cosas de la oficina", word: "Papelera" },
+    { category: "Cosas de la oficina", word: "Garrafón de agua" },
+    { category: "Cosas de la oficina", word: "Cafetera" },
+    { category: "Cosas de la oficina", word: "Pintarrón" },
+    { category: "Cosas de la oficina", word: "Plumón" },
+
+    // ── Emociones y bienestar ──
+    { category: "Emociones y bienestar", word: "Estrés" },
+    { category: "Emociones y bienestar", word: "Felicidad" },
+    { category: "Emociones y bienestar", word: "Motivación" },
+    { category: "Emociones y bienestar", word: "Paciencia" },
+    { category: "Emociones y bienestar", word: "Gratitud" },
+    { category: "Emociones y bienestar", word: "Ansiedad" },
+    { category: "Emociones y bienestar", word: "Tranquilidad" },
+    { category: "Emociones y bienestar", word: "Alegría" },
+    { category: "Emociones y bienestar", word: "Tristeza" },
+    { category: "Emociones y bienestar", word: "Enojo" },
+    { category: "Emociones y bienestar", word: "Sorpresa" },
+    { category: "Emociones y bienestar", word: "Confianza" },
+    { category: "Emociones y bienestar", word: "Empatía" },
+    { category: "Emociones y bienestar", word: "Resiliencia" },
+    { category: "Emociones y bienestar", word: "Autoestima" },
+    { category: "Emociones y bienestar", word: "Relajación" },
+    { category: "Emociones y bienestar", word: "Mindfulness" },
+    { category: "Emociones y bienestar", word: "Optimismo" },
+    { category: "Emociones y bienestar", word: "Creatividad" },
+    { category: "Emociones y bienestar", word: "Inspiración" },
+    { category: "Emociones y bienestar", word: "Calma" },
+    { category: "Emociones y bienestar", word: "Orgullo" },
+    { category: "Emociones y bienestar", word: "Nostalgia" },
+    { category: "Emociones y bienestar", word: "Vergüenza" },
+    { category: "Emociones y bienestar", word: "Compasión" },
+    { category: "Emociones y bienestar", word: "Valentía" },
+    { category: "Emociones y bienestar", word: "Serenidad" },
+    { category: "Emociones y bienestar", word: "Frustración" },
+    { category: "Emociones y bienestar", word: "Esperanza" },
+    { category: "Emociones y bienestar", word: "Equilibrio emocional" },
+
+    // ── Ejercicio y activación ──
+    { category: "Ejercicio y activación", word: "Yoga" },
+    { category: "Ejercicio y activación", word: "Zumba" },
+    { category: "Ejercicio y activación", word: "Estiramiento" },
+    { category: "Ejercicio y activación", word: "Caminata" },
+    { category: "Ejercicio y activación", word: "Hidratación" },
+    { category: "Ejercicio y activación", word: "Respiración" },
+    { category: "Ejercicio y activación", word: "Meditación" },
+    { category: "Ejercicio y activación", word: "Postura" },
+    { category: "Ejercicio y activación", word: "Sentadillas" },
+    { category: "Ejercicio y activación", word: "Lagartijas" },
+    { category: "Ejercicio y activación", word: "Abdominales" },
+    { category: "Ejercicio y activación", word: "Burpees" },
+    { category: "Ejercicio y activación", word: "Plancha" },
+    { category: "Ejercicio y activación", word: "Saltar la cuerda" },
+    { category: "Ejercicio y activación", word: "Trote" },
+    { category: "Ejercicio y activación", word: "Bicicleta" },
+    { category: "Ejercicio y activación", word: "Pilates" },
+    { category: "Ejercicio y activación", word: "Descanso activo" },
+    { category: "Ejercicio y activación", word: "Calentamiento" },
+    { category: "Ejercicio y activación", word: "Enfriamiento" },
+    { category: "Ejercicio y activación", word: "Banda elástica" },
+    { category: "Ejercicio y activación", word: "Mancuerna" },
+    { category: "Ejercicio y activación", word: "Pelota de ejercicio" },
+    { category: "Ejercicio y activación", word: "Tapete de yoga" },
+    { category: "Ejercicio y activación", word: "Baile fitness" },
+    { category: "Ejercicio y activación", word: "Pausa activa" },
+    { category: "Ejercicio y activación", word: "Flexibilidad" },
+    { category: "Ejercicio y activación", word: "Resistencia" },
+    { category: "Ejercicio y activación", word: "Cardio" },
+    { category: "Ejercicio y activación", word: "Crossfit" },
+
+    // ── Cosas de Puebla ──
+    { category: "Cosas de Puebla", word: "Chiles en nogada" },
+    { category: "Cosas de Puebla", word: "Catedral de Puebla" },
+    { category: "Cosas de Puebla", word: "Estrella de Puebla" },
+    { category: "Cosas de Puebla", word: "Talavera" },
+    { category: "Cosas de Puebla", word: "Cholula" },
+    { category: "Cosas de Puebla", word: "Africam Safari" },
+    { category: "Cosas de Puebla", word: "Angelópolis" },
+    { category: "Cosas de Puebla", word: "Zócalo de Puebla" },
+    { category: "Cosas de Puebla", word: "Mole poblano" },
+    { category: "Cosas de Puebla", word: "Cemitas" },
+    { category: "Cosas de Puebla", word: "Camotes de Santa Clara" },
+    { category: "Cosas de Puebla", word: "Calle de los Dulces" },
+    { category: "Cosas de Puebla", word: "Fuerte de Loreto" },
+    { category: "Cosas de Puebla", word: "5 de Mayo" },
+    { category: "Cosas de Puebla", word: "La Franja" },
+    { category: "Cosas de Puebla", word: "Popocatépetl" },
+    { category: "Cosas de Puebla", word: "Iztaccíhuatl" },
+    { category: "Cosas de Puebla", word: "Barrio del Artista" },
+    { category: "Cosas de Puebla", word: "Los Fuertes" },
+    { category: "Cosas de Puebla", word: "Chalupas" },
+    { category: "Cosas de Puebla", word: "Molotes" },
+    { category: "Cosas de Puebla", word: "Pipián" },
+    { category: "Cosas de Puebla", word: "Torta de Tamal" },
+    { category: "Cosas de Puebla", word: "Peluche del Popoca" },
+    { category: "Cosas de Puebla", word: "Cuexcomate" },
+    { category: "Cosas de Puebla", word: "Atlixco" },
+    { category: "Cosas de Puebla", word: "Zacatlán" },
+    { category: "Cosas de Puebla", word: "Chignahuapan" },
+    { category: "Cosas de Puebla", word: "Cantona" },
+    { category: "Cosas de Puebla", word: "Biblioteca Palafoxiana" },
+
+    // ── Marcas mexicanas ──
+    { category: "Marcas mexicanas", word: "Bimbo" },
+    { category: "Marcas mexicanas", word: "Sabritas" },
+    { category: "Marcas mexicanas", word: "Jumex" },
+    { category: "Marcas mexicanas", word: "Gansito" },
+    { category: "Marcas mexicanas", word: "Carlos V" },
+    { category: "Marcas mexicanas", word: "Peñafiel" },
+    { category: "Marcas mexicanas", word: "Barcel" },
+    { category: "Marcas mexicanas", word: "Gamesa" },
+    { category: "Marcas mexicanas", word: "Jarritos" },
+    { category: "Marcas mexicanas", word: "Sidral Mundet" },
+    { category: "Marcas mexicanas", word: "Mazapán de la Rosa" },
+    { category: "Marcas mexicanas", word: "Pulparindo" },
+    { category: "Marcas mexicanas", word: "Lucas" },
+    { category: "Marcas mexicanas", word: "Pelón Pelo Rico" },
+    { category: "Marcas mexicanas", word: "Bubulubu" },
+    { category: "Marcas mexicanas", word: "Duvalín" },
+    { category: "Marcas mexicanas", word: "Kranky" },
+    { category: "Marcas mexicanas", word: "Maruchan" },
+    { category: "Marcas mexicanas", word: "Chokis" },
+    { category: "Marcas mexicanas", word: "Emperador" },
+    { category: "Marcas mexicanas", word: "Mamut" },
+    { category: "Marcas mexicanas", word: "Tía Rosa" },
+    { category: "Marcas mexicanas", word: "La Costeña" },
+    { category: "Marcas mexicanas", word: "Herdez" },
+    { category: "Marcas mexicanas", word: "Maseca" },
+    { category: "Marcas mexicanas", word: "Lala" },
+    { category: "Marcas mexicanas", word: "Alpura" },
+    { category: "Marcas mexicanas", word: "Del Valle" },
+    { category: "Marcas mexicanas", word: "Takis" },
+    { category: "Marcas mexicanas", word: "Totis" },
+
+    // ── Dichos y refranes ──
+    { category: "Dichos y refranes", word: "El que madruga Dios le ayuda" },
+    { category: "Dichos y refranes", word: "Camarón que se duerme se lo lleva la corriente" },
+    { category: "Dichos y refranes", word: "No hay mal que por bien no venga" },
+    { category: "Dichos y refranes", word: "A darle que es mole de olla" },
+    { category: "Dichos y refranes", word: "El que nace pa' tamal del cielo le caen las hojas" },
+    { category: "Dichos y refranes", word: "Más vale tarde que nunca" },
+    { category: "Dichos y refranes", word: "Dime con quién andas y te diré quién eres" },
+    { category: "Dichos y refranes", word: "A caballo dado no se le ve colmillo" },
+    { category: "Dichos y refranes", word: "Crea fama y échate a dormir" },
+    { category: "Dichos y refranes", word: "El que mucho abarca poco aprieta" },
+    { category: "Dichos y refranes", word: "Más sabe el diablo por viejo que por diablo" },
+    { category: "Dichos y refranes", word: "No por mucho madrugar amanece más temprano" },
+    { category: "Dichos y refranes", word: "Al mal tiempo buena cara" },
+    { category: "Dichos y refranes", word: "En boca cerrada no entran moscas" },
+    { category: "Dichos y refranes", word: "Barriga llena corazón contento" },
+    { category: "Dichos y refranes", word: "Agua que no has de beber déjala correr" },
+    { category: "Dichos y refranes", word: "Al que buen árbol se arrima buena sombra le cobija" },
+    { category: "Dichos y refranes", word: "Ojos que no ven corazón que no siente" },
+    { category: "Dichos y refranes", word: "Perro que ladra no muerde" },
+    { category: "Dichos y refranes", word: "A palabras necias oídos sordos" },
+    { category: "Dichos y refranes", word: "El flojo trabaja doble" },
+    { category: "Dichos y refranes", word: "El que con lobos anda a aullar se enseña" },
+    { category: "Dichos y refranes", word: "Más vale pájaro en mano que cien volando" },
+    { category: "Dichos y refranes", word: "En casa del herrero azadón de palo" },
+    { category: "Dichos y refranes", word: "El que no tranza no avanza" },
+    { category: "Dichos y refranes", word: "Cuando el río suena es porque agua lleva" },
+    { category: "Dichos y refranes", word: "No hay quinto malo" },
+    { category: "Dichos y refranes", word: "El que ríe al último ríe mejor" },
+    { category: "Dichos y refranes", word: "Cada quien su cada cual" },
+    { category: "Dichos y refranes", word: "Ya ni la burra de Balaam" },
+
+    // ── Deportes y actividades ──
+    { category: "Deportes y actividades", word: "Fútbol" },
+    { category: "Deportes y actividades", word: "Básquetbol" },
+    { category: "Deportes y actividades", word: "Voleibol" },
+    { category: "Deportes y actividades", word: "Natación" },
+    { category: "Deportes y actividades", word: "Box" },
+    { category: "Deportes y actividades", word: "Tiro con arco" },
+    { category: "Deportes y actividades", word: "Atletismo" },
+    { category: "Deportes y actividades", word: "Ciclismo" },
+    { category: "Deportes y actividades", word: "Tenis" },
+    { category: "Deportes y actividades", word: "Ping pong" },
+    { category: "Deportes y actividades", word: "Béisbol" },
+    { category: "Deportes y actividades", word: "Lucha libre" },
+    { category: "Deportes y actividades", word: "Karate" },
+    { category: "Deportes y actividades", word: "Taekwondo" },
+    { category: "Deportes y actividades", word: "Skateboarding" },
+    { category: "Deportes y actividades", word: "Escalada" },
+    { category: "Deportes y actividades", word: "Senderismo" },
+    { category: "Deportes y actividades", word: "Surf" },
+    { category: "Deportes y actividades", word: "Patinaje" },
+    { category: "Deportes y actividades", word: "Golf" },
+    { category: "Deportes y actividades", word: "Rugby" },
+    { category: "Deportes y actividades", word: "Handball" },
+    { category: "Deportes y actividades", word: "Frontón" },
+    { category: "Deportes y actividades", word: "Gimnasia" },
+    { category: "Deportes y actividades", word: "Halterofilia" },
+    { category: "Deportes y actividades", word: "Esgrima" },
+    { category: "Deportes y actividades", word: "Dominó" },
+    { category: "Deportes y actividades", word: "Ajedrez" },
+    { category: "Deportes y actividades", word: "Lotería" },
+    { category: "Deportes y actividades", word: "Futbolito de mesa" },
+
+    // ── Fiestas y tradiciones ──
+    { category: "Fiestas y tradiciones", word: "Día de Muertos" },
+    { category: "Fiestas y tradiciones", word: "Posada" },
+    { category: "Fiestas y tradiciones", word: "Rosca de Reyes" },
+    { category: "Fiestas y tradiciones", word: "Grito de Independencia" },
+    { category: "Fiestas y tradiciones", word: "Quinceañera" },
+    { category: "Fiestas y tradiciones", word: "Piñata" },
+    { category: "Fiestas y tradiciones", word: "Pastorela" },
+    { category: "Fiestas y tradiciones", word: "Altar de muertos" },
+    { category: "Fiestas y tradiciones", word: "Cempasúchil" },
+    { category: "Fiestas y tradiciones", word: "Calavera literaria" },
+    { category: "Fiestas y tradiciones", word: "Misa de gallo" },
+    { category: "Fiestas y tradiciones", word: "Nochebuena" },
+    { category: "Fiestas y tradiciones", word: "Año Nuevo" },
+    { category: "Fiestas y tradiciones", word: "Día de la Candelaria" },
+    { category: "Fiestas y tradiciones", word: "Tamales del 2 de febrero" },
+    { category: "Fiestas y tradiciones", word: "Semana Santa" },
+    { category: "Fiestas y tradiciones", word: "Día de las Madres" },
+    { category: "Fiestas y tradiciones", word: "Día del Maestro" },
+    { category: "Fiestas y tradiciones", word: "San Valentín" },
+    { category: "Fiestas y tradiciones", word: "Halloween mexicano" },
+    { category: "Fiestas y tradiciones", word: "Verbena" },
+    { category: "Fiestas y tradiciones", word: "Feria" },
+    { category: "Fiestas y tradiciones", word: "Desfile" },
+    { category: "Fiestas y tradiciones", word: "Ofrenda" },
+    { category: "Fiestas y tradiciones", word: "Villancicos" },
+    { category: "Fiestas y tradiciones", word: "Las Mañanitas" },
+    { category: "Fiestas y tradiciones", word: "Serenata" },
+    { category: "Fiestas y tradiciones", word: "Mariachi" },
+    { category: "Fiestas y tradiciones", word: "Banda" },
+    { category: "Fiestas y tradiciones", word: "Kermes" },
+
+    // ── Memes y tendencias ──
+    { category: "Memes y tendencias", word: "Ya perdí" },
+    { category: "Memes y tendencias", word: "Ni modo" },
+    { category: "Memes y tendencias", word: "Sale y vale" },
+    { category: "Memes y tendencias", word: "Eso Tilín" },
+    { category: "Memes y tendencias", word: "La Cotorrisa" },
+    { category: "Memes y tendencias", word: "Godínez" },
+    { category: "Memes y tendencias", word: "AMLO" },
+    { category: "Memes y tendencias", word: "Ya chole" },
+    { category: "Memes y tendencias", word: "No se podía saber" },
+    { category: "Memes y tendencias", word: "Es neta" },
+    { category: "Memes y tendencias", word: "We" },
+    { category: "Memes y tendencias", word: "Naco pero chingón" },
+    { category: "Memes y tendencias", word: "Me canso ganso" },
+    { category: "Memes y tendencias", word: "¿Y la chamba?" },
+    { category: "Memes y tendencias", word: "Está cañón" },
+    { category: "Memes y tendencias", word: "No manches" },
+    { category: "Memes y tendencias", word: "Chale" },
+    { category: "Memes y tendencias", word: "Aguas" },
+    { category: "Memes y tendencias", word: "¿Qué onda?" },
+    { category: "Memes y tendencias", word: "Neta que sí" },
+    { category: "Memes y tendencias", word: "Fierro pariente" },
+    { category: "Memes y tendencias", word: "Simón" },
+    { category: "Memes y tendencias", word: "Nel pastel" },
+    { category: "Memes y tendencias", word: "La neta" },
+    { category: "Memes y tendencias", word: "A huevo" },
+    { category: "Memes y tendencias", word: "Qué pedo" },
+    { category: "Memes y tendencias", word: "Va que va" },
+    { category: "Memes y tendencias", word: "Se armó" },
+    { category: "Memes y tendencias", word: "Bien o qué" },
+    { category: "Memes y tendencias", word: "Ya wey" }
+];
+
+        let availableWords = [];
+        let currentCategory = null;
+        let timeRemaining = 120;
+        let timerInterval = null;
+        let isPlaying = false;
+        let currentWordObj = null;
+        let playedHistory = [];
+        
+        let scoreCorrect = 0;
+        let scoreIncorrect = 0;
+
+        const screens = {
+            category: document.getElementById('screen-category'),
+            game: document.getElementById('screen-game'),
+            results: document.getElementById('screen-results')
+        };
+
+        const timerEl = document.getElementById('timer');
+        const categoryEl = document.getElementById('category-display');
+        const wordEl = document.getElementById('word-display');
+        const resultCorrectEl = document.getElementById('result-correct');
+        const resultIncorrectEl = document.getElementById('result-incorrect');
+
+        // Initialize Categories
+        function initCategories() {
+            const grid = document.getElementById('category-grid');
+            // Get unique categories
+            const categories = [...new Set(wordsData.map(w => w.category))];
+            
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'cat-btn';
+                btn.textContent = cat;
+                btn.onclick = () => startGame(cat);
+                grid.appendChild(btn);
+            });
+
+            const allBtn = document.createElement('button');
+            allBtn.className = 'cat-btn all-cat';
+            allBtn.innerHTML = '<i class="fa-solid fa-shuffle"></i> Todas las Categorías';
+            allBtn.onclick = () => startGame('all');
+            grid.appendChild(allBtn);
+        }
+
+        function showScreen(screenName) {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens[screenName].classList.add('active');
+            
+            if (screenName === 'category') {
+                if (timerInterval) clearInterval(timerInterval);
+                isPlaying = false;
+            }
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function updateTimerDisplay() {
+            timerEl.textContent = formatTime(timeRemaining);
+            if (timeRemaining <= 10 && timeRemaining > 0) {
+                timerEl.classList.add('timer-warning');
+            } else {
+                timerEl.classList.remove('timer-warning');
+            }
+        }
+
+        function startGame(category) {
+            currentCategory = category;
+            
+            // Filter words based on category
+            if (category === 'all') {
+                availableWords = [...wordsData];
+            } else {
+                availableWords = wordsData.filter(w => w.category === category);
+            }
+            
+            shuffleArray(availableWords);
+            
+            // Reset state
+            scoreCorrect = 0;
+            scoreIncorrect = 0;
+            playedHistory = [];
+            currentWordObj = null;
+            timeRemaining = 120;
+            isPlaying = true;
+            
+            showScreen('game');
+            updateTimerDisplay();
+            
+            // Start timer
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateTimerDisplay();
+                
+                if (timeRemaining <= 0) {
+                    endGame();
+                }
+            }, 1000);
+
+            showNextWord();
+        }
+
+        function showNextWord() {
+            if (!isPlaying) return;
+            
+            if (availableWords.length === 0) {
+                // If we run out of words for the selected category, reshuffle and start over
+                if (currentCategory === 'all') {
+                    availableWords = [...wordsData];
+                } else {
+                    availableWords = wordsData.filter(w => w.category === currentCategory);
+                }
+                shuffleArray(availableWords);
+            }
+            
+            const selected = availableWords.pop();
+            currentWordObj = selected;
+            
+            // Animate word change
+            wordEl.classList.remove('visible');
+            
+            setTimeout(() => {
+                categoryEl.textContent = selected.category;
+                wordEl.textContent = selected.word;
+                wordEl.classList.add('visible');
+            }, 150);
+        }
+
+        function markWord(isCorrect) {
+            if (!isPlaying || !currentWordObj) return;
+            
+            playedHistory.push({ word: currentWordObj.word, isCorrect: isCorrect });
+            
+            if (isCorrect) {
+                scoreCorrect++;
+            } else {
+                scoreIncorrect++;
+            }
+            
+            showNextWord();
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            
+            resultCorrectEl.textContent = scoreCorrect;
+            resultIncorrectEl.textContent = scoreIncorrect;
+            document.getElementById('result-total-count').textContent = scoreCorrect + scoreIncorrect;
+
+            const historyList = document.getElementById('words-history-list');
+            historyList.innerHTML = '';
+            
+            if (playedHistory.length === 0) {
+                historyList.innerHTML = '<p style="text-align:center; color: var(--text-muted);">No se jugó ninguna palabra.</p>';
+            } else {
+                playedHistory.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = `history-item ${item.isCorrect ? 'correct' : 'incorrect'}`;
+                    div.innerHTML = `
+                        <span>${item.word}</span>
+                        <i class="fa-solid ${item.isCorrect ? 'fa-check' : 'fa-xmark'}"></i>
+                    `;
+                    historyList.appendChild(div);
+                });
+            }
+            
+            showScreen('results');
+        }
+
+        // Add keyboard support (right arrow / space = correct, left arrow = incorrect)
+        document.addEventListener('keydown', (e) => {
+            if (!isPlaying) return;
+            
+            if (e.code === 'ArrowRight' || e.code === 'Space') {
+                e.preventDefault();
+                markWord(true); // Correct
+            } else if (e.code === 'ArrowLeft') {
+                e.preventDefault();
+                markWord(false); // Incorrect
+            }
+        });
+
+        // Initialize on load
+        initCategories();
+    </script>
+</body>
+</html>
