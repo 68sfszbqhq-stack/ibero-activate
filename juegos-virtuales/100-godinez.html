@@ -414,8 +414,7 @@
             
             const qrContainer = document.getElementById('qrcode');
             if (!qrCodeObj && qrContainer) {
-                // Determine absolute URL and add parameter dynamico
-                const playerUrl = window.location.origin + window.location.pathname + "?role=player";
+                const playerUrl = "https://pausas-activas-ibero-2026.web.app/juegos-virtuales/100-godinez.html?role=player";
                 qrCodeObj = new QRCode(qrContainer, { text: playerUrl, width: 150, height: 150, colorDark : "#1e293b", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
             }
             
