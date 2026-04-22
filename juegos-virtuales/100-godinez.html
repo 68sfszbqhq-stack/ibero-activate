@@ -443,7 +443,8 @@
             document.getElementById('boardQuestion').innerText = p.q;
             
             // Reset Round Pot
-            roundPot = 0; updatePots();
+            roundPot = 0; 
+            document.getElementById('roundPotDisplay').innerText = roundPot;
             resetStrikes();
             
             board.innerHTML = "";
