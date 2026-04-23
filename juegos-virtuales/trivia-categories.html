@@ -143,8 +143,9 @@
                         <div class="points" id="score-2">0</div>
                     </div>
                 </div>
-                <div style="text-align: center; margin-top: 1rem;">
-                    <button class="btn" style="background: #666; color: white;" onclick="resetGame()">REINICIAR TODO EL TABLERO</button>
+                <div style="text-align: center; margin-top: 1rem; display: flex; gap: 10px; justify-content: center;">
+                    <button class="btn" style="background: var(--accent); color: var(--text-dark);" onclick="openRemoteQR()"><i class="fa-solid fa-mobile-screen"></i> VER RESPUESTAS EN MI CELULAR</button>
+                    <button class="btn" style="background: #666; color: white;" onclick="resetGame()">REINICIAR TABLERO</button>
                 </div>
             </div>
         </div>
@@ -154,7 +155,7 @@
         </div>
     </div>
 
-    <!-- MODAL DE PREGUNTA -->
+    <!-- MODAL DE PREGUNTA (PARA LA PANTALLA GRANDE) -->
     <div class="modal" id="question-modal">
         <div class="modal-content">
             <div id="modal-category" style="color: var(--accent); font-weight: 800; font-size: 1.5rem; margin-bottom: 1rem;">CATEGORÍA</div>
@@ -171,6 +172,26 @@
                 </div>
                 <button class="btn btn-close" onclick="closeQuestion()">CERRAR / VOLVER AL TABLERO</button>
             </div>
+        </div>
+    </div>
+
+    <!-- PANTALLA PANEL REMOTO (PARA EL CELULAR DEL LOCUTOR) -->
+    <div id="screen-host-remote" class="screen">
+        <div class="container-box" style="margin: 0 auto; background: var(--primary); border-color: var(--accent);">
+            <h2 style="color: var(--accent); margin-bottom: 1rem;">PANEL DE RESPUESTAS</h2>
+            <div id="remote-content">
+                <p style="color: rgba(255,255,255,0.6);">Esperando a que abras una pregunta en el tablero...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL QR PANEL REMOTO -->
+    <div class="modal" id="modal-qr-remote">
+        <div class="container-box" style="background: white; color: var(--text-dark);">
+            <h2 style="margin-bottom: 1rem;">Panel de Respuestas (Celular)</h2>
+            <p style="margin-bottom: 1.5rem;">Escanea esto con tu celular personal para ver las respuestas en vivo.</p>
+            <div id="qrcode-remote" style="display: flex; justify-content: center; margin-bottom: 1.5rem;"></div>
+            <button class="btn btn-close" onclick="document.getElementById('modal-qr-remote').classList.remove('active')">CERRAR</button>
         </div>
     </div>
 
@@ -240,6 +261,7 @@
             const role = params.get('role');
             if (role === 'host') initHost();
             else if (role === 'player') initPlayer();
+            else if (role === 'host-remote') initHostRemote();
         };
 
         function initHost() {
@@ -247,12 +269,20 @@
             generateBoard();
             startHostSync();
             
-            // QR Code
+            // QR Code Jugadores
             const qrContainer = document.getElementById('qrcode');
             if (!qrCodeObj && qrContainer) {
                 const playerUrl = window.location.origin + window.location.pathname + "?role=player";
                 qrCodeObj = new QRCode(qrContainer, { text: playerUrl, width: 150, height: 150 });
             }
+        }
+
+        function openRemoteQR() {
+            document.getElementById('modal-qr-remote').classList.add('active');
+            const qrRemote = document.getElementById('qrcode-remote');
+            qrRemote.innerHTML = "";
+            const remoteUrl = window.location.origin + window.location.pathname + "?role=host-remote";
+            new QRCode(qrRemote, { text: remoteUrl, width: 250, height: 250 });
         }
 
         function initPlayer() {
@@ -311,6 +341,28 @@
             });
         }
 
+        // --- LÓGICA HOST REMOTE (CELULAR DEL LOCUTOR) ---
+        function initHostRemote() {
+            showScreen('host-remote');
+            db.collection(COLLECTION_NAME).doc('game_state').onSnapshot(doc => {
+                const data = doc.data() || {};
+                const container = document.getElementById('remote-content');
+                
+                if (data.currentQuestion && !data.locked) {
+                    container.innerHTML = `
+                        <div style="font-weight: 800; color: var(--accent); font-size: 1.2rem; margin-bottom: 10px;">${data.currentQuestion.cat} (${data.currentQuestion.v} pts)</div>
+                        <div style="font-size: 1.8rem; margin-bottom: 20px; line-height: 1.2;">${data.currentQuestion.q}</div>
+                        <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px; border: 2px solid var(--accent);">
+                            <div style="font-weight: 800; margin-bottom: 5px;">RESPUESTA CORRECTA:</div>
+                            <div style="font-size: 1.5rem; font-weight: 800;">${data.currentQuestion.a}</div>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = '<p style="color: rgba(255,255,255,0.6); font-size: 1.2rem;">Esperando a que abras una pregunta en el tablero...</p>';
+                }
+            });
+        }
+
         // --- LÓGICA LOCUTOR ---
         function generateBoard() {
             const board = document.getElementById('trivia-board');
@@ -343,9 +395,10 @@
             if (card.classList.contains('spent')) return;
 
             const q = TRIVIA_DATA[catIdx].questions[qIdx];
-            currentQuestion = { ...q, id: `q-${catIdx}-${qIdx}` };
+            const category = TRIVIA_DATA[catIdx].category;
+            currentQuestion = { ...q, id: `q-${catIdx}-${qIdx}`, category: category };
             
-            document.getElementById('modal-category').innerText = TRIVIA_DATA[catIdx].category;
+            document.getElementById('modal-category').innerText = category;
             document.getElementById('modal-q-text').innerText = q.q;
             document.getElementById('modal-a-text').innerText = "Respuesta: " + q.a;
             document.getElementById('modal-a-text').style.display = 'none';
@@ -353,7 +406,11 @@
             
             // Limpiar buzzers previos y abrir
             await clearBuzzers();
-            await db.collection(COLLECTION_NAME).doc('game_state').set({ locked: false, spent: firebase.firestore.FieldValue.arrayUnion(currentQuestion.id) }, { merge: true });
+            await db.collection(COLLECTION_NAME).doc('game_state').set({ 
+                locked: false, 
+                currentQuestion: { q: q.q, a: q.a, cat: category, v: q.v },
+                spent: firebase.firestore.FieldValue.arrayUnion(currentQuestion.id) 
+            }, { merge: true });
         }
 
         async function closeQuestion() {
