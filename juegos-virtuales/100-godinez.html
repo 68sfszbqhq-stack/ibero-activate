@@ -93,15 +93,19 @@
         .bank-controls { display: flex; gap: 0.5rem;}
         .btn-bank { padding: 0.8rem 1.2rem; font-size: 1.1rem; font-weight: 800; border: none; border-radius: 10px; cursor: pointer; color: white;}
 
-        /* INCOMING ANSWERS */
-        .answers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.8rem; margin-top: 1rem; max-height: 250px; overflow-y: auto;}
-        .answer-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem; display: flex; flex-direction: column; animation: fadeInDown 0.3s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .answer-card.eq1 { border-left: 5px solid var(--primary); }
-        .answer-card.eq2 { border-left: 5px solid var(--accent); }
-        .answer-info h4 { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; }
-        .answer-info p { font-size: 1.2rem; font-weight: 800; color: var(--text-main); line-height: 1.2;}
-        .btn-delete-ans { align-self: flex-end; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 5px; margin-top: -10px; }
-        .btn-delete-ans:hover { color: var(--danger); }
+        /* BUZZER */
+        .buzzer-btn { width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #22c55e, #15803d); border: 10px solid #14532d; color: white; font-size: 2rem; font-weight: 900; cursor: pointer; box-shadow: 0 10px 30px rgba(34,197,94,0.5), 0 4px 0 #14532d; transition: all 0.1s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; letter-spacing: 1px; user-select: none; }
+        .buzzer-btn:active, .buzzer-btn.pressed { transform: scale(0.93) translateY(4px); box-shadow: 0 4px 10px rgba(34,197,94,0.3), 0 1px 0 #14532d; }
+        .buzzer-btn.pressed { background: radial-gradient(circle at 40% 35%, #86efac, #22c55e); }
+        .buzzer-btn:disabled { background: radial-gradient(circle at 40% 35%, #94a3b8, #64748b); border-color: #475569; box-shadow: none; cursor: not-allowed; }
+        .buzzer-wait { text-align: center; color: var(--text-muted); font-size: 1.1rem; margin-top: 1rem; }
+
+        /* BUZZER PANEL LOCUTOR */
+        .buzzer-queue { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
+        .buzzer-item { padding: 0.8rem 1.2rem; border-radius: 10px; font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; gap: 0.8rem; animation: fadeInDown 0.3s; }
+        .buzzer-item.eq1 { background: #fff0f0; border-left: 5px solid var(--primary); color: var(--primary); }
+        .buzzer-item.eq2 { background: #f0f4ff; border-left: 5px solid var(--accent); color: var(--accent); }
+        .buzzer-rank { font-size: 1.5rem; }
 
         .lock-container { background: #fee2e2; border: 2px dashed #f87171; padding: 1rem; border-radius: 10px; text-align: center; color: #b91c1c; font-weight: bold; margin-top: 1rem; cursor: pointer;}
         .blocked-overlay { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index: 10; flex-direction: column; align-items: center; justify-content: center;}
@@ -141,37 +145,38 @@
 
     <!-- Screen 2: Jugador -->
     <div id="screen-player" class="screen">
-        <div class="container-box" style="position: relative;">
-            
+        <div class="container-box" style="position: relative; text-align: center;">
+
             <div id="lockOverlay" class="blocked-overlay">
                 <i class="fa-solid fa-lock" style="font-size: 4rem; color: var(--danger); margin-bottom: 1rem;"></i>
-                <h2 style="color: var(--danger); text-align: center;">Respuestas Bloqueadas</h2>
-                <p style="text-align: center; color: var(--text-muted);">El locutor ha cerrado esta ronda.</p>
+                <h2 style="color: var(--danger);">¡Buzzer cerrado!</h2>
+                <p style="color: var(--text-muted);">El locutor reiniciará la ronda.</p>
             </div>
 
-            <div class="form-group">
-                <label>Paso 1: ¿A qué equipo perteneces?</label>
+            <!-- Paso 1: Equipo -->
+            <div class="form-group" id="setupPanel">
+                <label>¿A qué equipo perteneces?</label>
                 <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
-                    <button id="btn-team-1" class="team-btn" onclick="selectTeam(1)" style="color:var(--primary);">⭕️ Equipo 1</button>
+                    <button id="btn-team-1" class="team-btn" onclick="selectTeam(1)" style="color:var(--primary);">⭕ Equipo 1</button>
                     <button id="btn-team-2" class="team-btn" onclick="selectTeam(2)" style="color:var(--accent);">❌ Equipo 2</button>
                 </div>
+                <div class="form-group" style="margin-top:1rem; text-align:left;">
+                    <label for="playerName">Tu Nombre</label>
+                    <input type="text" id="playerName" class="form-input" placeholder="Ej. Juan Pérez" maxlength="30">
+                </div>
+                <button class="btn-primary" style="background:#1e293b;" onclick="confirmarJugador()">
+                    <i class="fa-solid fa-check"></i> Listo, ir al Buzzer
+                </button>
             </div>
-            <div class="form-group">
-                <label for="playerName">Paso 2: Tu Nombre</label>
-                <input type="text" id="playerName" class="form-input" placeholder="Ej. Juan Pérez" maxlength="30">
-            </div>
-            <div class="form-group">
-                <label for="playerAnswer">Paso 3: Tu Respuesta Rápida</label>
-                <input type="text" id="playerAnswer" class="form-input" placeholder="Escribe aquí..." maxlength="100">
-            </div>
-            
-            <button id="sendBtn" class="btn-primary" onclick="enviarRespuesta()">
-                <i class="fa-solid fa-paper-plane"></i> Enviar a Pantalla
-            </button>
-            
-            <div id="sentMessage" style="display:none; text-align:center; color:var(--success); font-weight:600; font-size:1.4rem; margin-top:1.5rem; animation: zoomIn 0.3s;">
-                <i class="fa-regular fa-circle-check" style="font-size: 3rem; display:block; margin-bottom:0.5rem;"></i>
-                Enviada al Locutor
+
+            <!-- Paso 2: Buzzer -->
+            <div id="buzzerPanel" style="display:none; flex-direction:column; align-items:center; gap:1.5rem; padding: 1rem 0;">
+                <p id="playerLabel" style="font-size:1.3rem; font-weight:800; color:var(--text-muted);">Equipo ?</p>
+                <button class="buzzer-btn" id="buzzerBtn" onclick="presionarBuzzer()">
+                    <i class="fa-solid fa-bell" style="font-size:3rem;"></i>
+                    ¡BUZZER!
+                </button>
+                <p class="buzzer-wait" id="buzzerStatus">Espera la señal del locutor...</p>
             </div>
         </div>
     </div>
@@ -222,19 +227,20 @@
                     </div>
 
                     <div class="lock-container" id="lockBtn" onclick="toggleLock()">
-                        <i class="fa-solid fa-lock-open"></i> Respuestas Abiertas (Click para Bloquear celulares)
+                        <i class="fa-solid fa-bell"></i> Buzzer ABIERTO (Click para cerrar buzzer)
                     </div>
                 </div>
                 
-                <!-- RESPUESTAS RECIBIDAS -->
+                <!-- PANEL BUZZER -->
                 <div class="container-box">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <h3 style="color: var(--text-main);">Respuestas del Público en Vivo:</h3>
-                        <button style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold;" onclick="clearPizzara()"><i class="fa-solid fa-trash"></i> Limpiar</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                        <h3 style="color: var(--text-main);"><i class="fa-solid fa-bell"></i> Cola de Buzzer:</h3>
+                        <button style="background:var(--primary); border:none; color:white; padding:0.5rem 1rem; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="resetBuzzers()">
+                            <i class="fa-solid fa-rotate"></i> Reiniciar Buzzer
+                        </button>
                     </div>
-                    
-                    <div id="answersList" class="answers-grid">
-                        <p style="color:var(--text-muted);">Esperando respuestas...</p>
+                    <div id="buzzerQueue" class="buzzer-queue">
+                        <p style="color:var(--text-muted); font-size:0.95rem;">Nadie ha presionado aún...</p>
                     </div>
                 </div>
             </div>
@@ -345,59 +351,60 @@
 
         // --- LÓGICA JUGADOR ---
         function showPlayerScreen() {
-            document.getElementById('subtitle').innerText = "Rápido y creativo";
+            document.getElementById('subtitle').innerText = "¡Presiona el buzzer primero!";
             showScreen('player');
             
             if(localStorage.getItem('godin_player_name')) {
                 document.getElementById('playerName').value = localStorage.getItem('godin_player_name');
             }
             
-            // Listen for Global Lock status
+            // Escuchar estado del buzzer (bloqueado/abierto)
             unsubscribeLock = db.collection(COLLECTION_NAME).doc('GLOBAL_STATE').onSnapshot(doc => {
                 if(doc.exists && doc.data().isLocked) {
                     document.getElementById('lockOverlay').style.display = 'flex';
+                    const bb = document.getElementById('buzzerBtn');
+                    if(bb) bb.disabled = true;
                 } else {
                     document.getElementById('lockOverlay').style.display = 'none';
+                    const bb = document.getElementById('buzzerBtn');
+                    if(bb) { bb.disabled = false; bb.classList.remove('pressed'); }
+                    document.getElementById('buzzerStatus').innerText = 'Espera la señal del locutor...';
                 }
             });
         }
 
-        async function enviarRespuesta() {
+        function confirmarJugador() {
             const name = document.getElementById('playerName').value.trim();
-            const answer = document.getElementById('playerAnswer').value.trim();
-            
-            if(!name || !answer) {
-                alert("Completa tu nombre y respuesta.");
-                return;
-            }
-            
+            if(!name) { alert('Escribe tu nombre.'); return; }
             localStorage.setItem('godin_player_name', name);
-            const btn = document.getElementById('sendBtn');
-            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            
+            const label = document.getElementById('playerLabel');
+            label.innerText = (selectedTeam === 1 ? '⭕ Equipo 1' : '❌ Equipo 2') + ' — ' + name;
+            label.style.color = selectedTeam === 1 ? 'var(--primary)' : 'var(--accent)';
+            
+            document.getElementById('setupPanel').style.display = 'none';
+            document.getElementById('buzzerPanel').style.display = 'flex';
+        }
 
+        async function presionarBuzzer() {
+            const btn = document.getElementById('buzzerBtn');
+            const name = localStorage.getItem('godin_player_name') || 'Jugador';
+            btn.disabled = true;
+            btn.classList.add('pressed');
+            document.getElementById('buzzerStatus').innerText = '¡Presionaste primero! Espera al locutor...';
+            
             try {
                 const ts = new Date().getTime();
-                await db.collection(COLLECTION_NAME).doc(DOC_PREFIX + ts).set({
-                    type: "godin_answer",
+                await db.collection(COLLECTION_NAME).doc('buzzer_' + ts).set({
+                    type: 'godin_buzzer',
                     name: name,
                     team: selectedTeam,
-                    answer: answer,
                     timestamp: ts
                 });
-                
-                btn.style.display = 'none';
-                document.getElementById('sentMessage').style.display = 'block';
-                
-                setTimeout(() => {
-                    document.getElementById('playerAnswer').value = "";
-                    btn.style.display = 'block';
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar de Nuevo';
-                    document.getElementById('sentMessage').style.display = 'none';
-                }, 2000);
             } catch(e) {
-                alert("Error de red.");
+                document.getElementById('buzzerStatus').innerText = 'Error de red, intenta de nuevo.';
                 btn.disabled = false;
+                btn.classList.remove('pressed');
             }
         }
 
@@ -527,46 +534,40 @@
             await db.collection(COLLECTION_NAME).doc('GLOBAL_STATE').set({isLocked: isLocked});
         }
 
-        // Leer respuestas en vivo (sin orderBy para evitar firebase index composite requierement)
+        // Escuchar buzzers en vivo
         function startListener() {
-            const list = document.getElementById('answersList');
-            unsubscribe = db.collection(COLLECTION_NAME).where("type", "==", "godin_answer").onSnapshot(snap => {
-                if(snap.empty) { list.innerHTML = '<p style="color:var(--text-muted);">Sin respuestas.</p>'; return;}
+            const queue = document.getElementById('buzzerQueue');
+            unsubscribe = db.collection(COLLECTION_NAME).where('type', '==', 'godin_buzzer').onSnapshot(snap => {
+                if(snap.empty) { queue.innerHTML = '<p style="color:var(--text-muted); font-size:0.95rem;">Nadie ha presionado aún...</p>'; return; }
                 
-                list.innerHTML = '';
+                queue.innerHTML = '';
                 const arr = [];
                 snap.forEach(d => arr.push({id: d.id, ...d.data()}));
-                arr.sort((a,b) => b.timestamp - a.timestamp); // Sort JS local mode
+                arr.sort((a,b) => a.timestamp - b.timestamp);
                 
-                arr.slice(0, 30).forEach(ans => {
-                    const classes = ans.team === 1 ? 'eq1' : 'eq2';
-                    const num = ans.team === 1 ? '<span style="color:var(--primary)">(Eq. 1)</span>' : '<span style="color:var(--accent)">(Eq. 2)</span>';
-                    
-                    list.innerHTML += `
-                        <div class="answer-card ${classes}">
-                            <button class="btn-delete-ans" onclick="deleteTargetAns('${ans.id}')"><i class="fa-solid fa-xmark"></i></button>
-                            <div class="answer-info">
-                                <h4>${num} ${escapeHTML(ans.name)}:</h4>
-                                <p>${escapeHTML(ans.answer)}</p>
-                            </div>
-                        </div>
-                    `;
+                const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣'];
+                arr.slice(0, 8).forEach((b, i) => {
+                    const cls = b.team === 1 ? 'eq1' : 'eq2';
+                    const teamLabel = b.team === 1 ? '⭕ Equipo 1' : '❌ Equipo 2';
+                    queue.innerHTML += `<div class="buzzer-item ${cls}"><span class="buzzer-rank">${medals[i] || (i+1)}</span> <strong>${escapeHTML(b.name)}</strong> &mdash; ${teamLabel}</div>`;
                 });
             });
         }
 
-        async function deleteTargetAns(id) {
-            try { await db.collection(COLLECTION_NAME).doc(id).delete(); } catch(e){}
-        }
-
-        async function clearPizzara() {
-            if(!confirm("¿Borrar respuestas del público?")) return;
+        async function resetBuzzers() {
             try {
-                const snap = await db.collection(COLLECTION_NAME).where("type", "==", "godin_answer").get();
+                const snap = await db.collection(COLLECTION_NAME).where('type', '==', 'godin_buzzer').get();
                 const batch = db.batch();
                 snap.forEach(d => batch.delete(d.ref));
                 await batch.commit();
-            }catch(e){}
+                // Desbloquear buzzer en celulares
+                await db.collection(COLLECTION_NAME).doc('GLOBAL_STATE').set({isLocked: false});
+                isLocked = false;
+                const btn = document.getElementById('lockBtn');
+                btn.style.background = '';
+                btn.style.color = '';
+                btn.innerHTML = '<i class="fa-solid fa-bell"></i> Buzzer ABIERTO (Click para cerrar buzzer)';
+            } catch(e) { console.error(e); }
         }
 
         function escapeHTML(str) { return str.replace(/[&<>'"]/g, t => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[t])); }
