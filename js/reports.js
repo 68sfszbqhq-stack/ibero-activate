@@ -543,6 +543,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 rank++;
             });
 
+            // 5. Estadísticas Gráficas
+            // Total colaboradores participantes (que tengan > 0 asistencias)
+            const participantesActivos = integratedData.filter(emp => emp.attendances > 0).length;
+            document.getElementById('total-participants').textContent = participantesActivos;
+
+            // Participación por Área
+            const areaStats = {};
+            integratedData.forEach(emp => {
+                if (emp.attendances > 0) {
+                    if (!areaStats[emp.areaName]) areaStats[emp.areaName] = 0;
+                    areaStats[emp.areaName] += emp.attendances;
+                }
+            });
+
+            // Ordenar de mayor a menor participación
+            const sortedAreas = Object.keys(areaStats).sort((a, b) => areaStats[b] - areaStats[a]);
+            const labels = sortedAreas;
+            const chartData = sortedAreas.map(area => areaStats[area]);
+
+            if (window.areasChartInstance) {
+                window.areasChartInstance.destroy();
+            }
+
+            const ctx = document.getElementById('areas-chart').getContext('2d');
+            window.areasChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Asistencias Totales',
+                        data: chartData,
+                        backgroundColor: '#c4161c',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+
         } catch (e) {
             console.error('Error loading integrated report:', e);
             integratedTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: red; padding: 2rem;">Error al cargar: ${e.message}</td></tr>`;

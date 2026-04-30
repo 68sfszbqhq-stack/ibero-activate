@@ -18,6 +18,9 @@
     <!-- PDF Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -307,6 +310,25 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Estadísticas Section -->
+                    <div class="stats-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 2rem;">
+                        <!-- Total Participants -->
+                        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, var(--primary) 0%, #991b1b 100%); color: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                            <i class="fa-solid fa-users" style="font-size: 3.5rem; margin-bottom: 1rem;"></i>
+                            <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem; color: #fecaca; font-weight: 500;">Total de Colaboradores Participantes</h3>
+                            <p id="total-participants" style="font-size: 4rem; font-weight: 800; margin: 0; line-height: 1;">0</p>
+                        </div>
+                        
+                        <!-- Chart -->
+                        <div style="padding: 1.5rem; background: white; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                            <h3 style="margin-bottom: 1rem; color: #374151; text-align: center;">Asistencias Totales por Área</h3>
+                            <div style="position: relative; height: 250px; width: 100%;">
+                                <canvas id="areas-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
