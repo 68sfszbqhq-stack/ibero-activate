@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const employeesTableBody = document.getElementById('employees-table').querySelector('tbody');
     const attendanceTableBody = document.getElementById('attendance-table').querySelector('tbody');
     const feedbackTableBody = document.getElementById('feedback-table').querySelector('tbody');
+    const integratedTableBody = document.getElementById('integrated-table').querySelector('tbody');
 
     const filterTypeSelect = document.getElementById('filter-type');
     const filterDateInput = document.getElementById('filter-date');
@@ -27,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Estado local
     let employeesData = [];
+    let integratedData = [];
     let areasMap = {};
 
     // Inicializar
@@ -48,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         loadAttendance();
         loadFeedbacks();
+        loadIntegratedReport();
     });
 
     // --- Lógica de UI Filtros ---
@@ -476,6 +479,117 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Reporte Integrado (Ene-Abr) ---
+    async function loadIntegratedReport() {
+        try {
+            integratedTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">Cargando reporte integrado...</td></tr>';
+            
+            // 1. Get all employees
+            const employeesSnapshot = await db.collection('employees').get();
+            const employeesMap = {};
+            
+            employeesSnapshot.forEach(doc => {
+                const data = doc.data();
+                employeesMap[data.fullName] = {
+                    id: doc.id,
+                    accountNumber: data.accountNumber || '---',
+                    fullName: data.fullName || 'Desconocido',
+                    position: data.position || '---',
+                    areaName: areasMap[data.areaId] || '---',
+                    attendances: 0
+                };
+            });
+
+            // 2. Get attendances between 2026-01-01 and 2026-04-30
+            const startDate = '2026-01-01';
+            const endDate = '2026-04-30';
+            
+            const attendanceSnapshot = await db.collection('attendances')
+                .where('date', '>=', startDate)
+                .where('date', '<=', endDate)
+                .get();
+                
+            attendanceSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.status === 'completed' && data.employeeName && employeesMap[data.employeeName]) {
+                    employeesMap[data.employeeName].attendances += 1;
+                }
+            });
+
+            // 3. Convert to array and sort by attendances (descending)
+            integratedData = Object.values(employeesMap).sort((a, b) => b.attendances - a.attendances);
+            
+            integratedTableBody.innerHTML = '';
+            
+            if (integratedData.length === 0) {
+                integratedTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">No hay datos para el reporte integrado</td></tr>';
+                return;
+            }
+
+            // 4. Render
+            let rank = 1;
+            integratedData.forEach(emp => {
+                const row = `
+                    <tr style="border-bottom: 1px solid #f3f4f6;">
+                        <td style="padding: 1rem; font-weight: bold; text-align: center;">#${rank}</td>
+                        <td style="padding: 1rem;">${emp.accountNumber}</td>
+                        <td style="padding: 1rem; font-weight: 500;">${emp.fullName}</td>
+                        <td style="padding: 1rem;">${emp.position}</td>
+                        <td style="padding: 1rem;">${emp.areaName}</td>
+                        <td style="padding: 1rem; font-weight: bold; color: var(--primary);">${emp.attendances}</td>
+                    </tr>
+                `;
+                integratedTableBody.innerHTML += row;
+                rank++;
+            });
+
+        } catch (e) {
+            console.error('Error loading integrated report:', e);
+            integratedTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: red; padding: 2rem;">Error al cargar: ${e.message}</td></tr>`;
+        }
+    }
+
+    // --- Fix Pendings ---
+    document.getElementById('fix-pendings').addEventListener('click', async () => {
+        if (!confirm('¿Estás seguro de que deseas cambiar TODAS las asistencias "Pendientes" a "Completadas"?')) return;
+        
+        try {
+            const btn = document.getElementById('fix-pendings');
+            btn.textContent = 'Procesando...';
+            btn.disabled = true;
+
+            const snapshot = await db.collection('attendances').get();
+            let count = 0;
+            const batch = db.batch();
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.status === 'pending' || data.status === 'active') {
+                    batch.update(doc.ref, { status: 'completed' });
+                    count++;
+                }
+            });
+
+            if (count > 0) {
+                await batch.commit();
+                alert(`¡Éxito! Se actualizaron ${count} asistencias a Completadas.`);
+                loadIntegratedReport(); // Recargar el reporte integrado
+                loadAttendance(); // Recargar la tabla de asistencias generales
+            } else {
+                alert('No se encontraron asistencias en estado pendiente.');
+            }
+
+            btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Fix Pendientes';
+            btn.disabled = false;
+        } catch (e) {
+            console.error('Error actualizando asistencias:', e);
+            alert('Error al actualizar: ' + e.message);
+            const btn = document.getElementById('fix-pendings');
+            btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Fix Pendientes';
+            btn.disabled = false;
+        }
+    });
+
     // --- Exportación PDF ---
     const { jsPDF } = window.jspdf;
 
@@ -565,6 +679,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         doc.save('feedback_ibero.pdf');
+    });
+
+    document.getElementById('export-integrated').addEventListener('click', () => {
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFontSize(18);
+        doc.setTextColor(196, 22, 28); // IBERO Red
+        doc.text('Reporte Integrado (Enero - 30 de Abril) - IBERO ACTÍVATE', 14, 22);
+
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 30);
+
+        // Table
+        doc.autoTable({
+            html: '#integrated-table',
+            startY: 40,
+            headStyles: { fillColor: [196, 22, 28] }, // Red header
+            theme: 'grid'
+        });
+
+        doc.save('reporte_integrado_ene_abr.pdf');
     });
 
     // --- Exportación CSV ---
@@ -827,6 +964,29 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error exporting feedback:', e);
             alert('Error al exportar feedback: ' + e.message);
         }
+    });
+
+    // Exportar reporte integrado a CSV
+    document.getElementById('export-integrated-csv').addEventListener('click', () => {
+        if (!integratedData || integratedData.length === 0) {
+            alert('No hay datos para exportar.');
+            return;
+        }
+
+        let rank = 1;
+        const data = integratedData.map(emp => ({
+            'Lugar de Clasificación': rank++,
+            'No. Cuenta': emp.accountNumber,
+            'Nombre Completo': emp.fullName,
+            'Puesto': emp.position,
+            'Área': emp.areaName,
+            'Asistencias': emp.attendances
+        }));
+
+        const headers = ['Lugar de Clasificación', 'No. Cuenta', 'Nombre Completo', 'Puesto', 'Área', 'Asistencias'];
+        const csv = arrayToCSV(data, headers);
+        
+        downloadCSV(csv, `reporte_integrado_ene_abr.csv`);
     });
 
 });

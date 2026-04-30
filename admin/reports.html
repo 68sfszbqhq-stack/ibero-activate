@@ -112,6 +112,10 @@
                     style="padding: 1rem; border: none; background: none; font-weight: 500; color: #666; cursor: pointer;">
                     <i class="fa-solid fa-comments"></i> Feedback
                 </button>
+                <button class="tab-btn" data-target="integrated-tab"
+                    style="padding: 1rem; border: none; background: none; font-weight: 500; color: #666; cursor: pointer;">
+                    <i class="fa-solid fa-chart-pie"></i> Exportación Unificada
+                </button>
             </div>
 
             <!-- Employees Tab -->
@@ -257,6 +261,48 @@
                                 <!-- JS Load -->
                                 <tr>
                                     <td colspan="6" style="text-align: center; padding: 2rem;">Cargando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integrated Report Tab -->
+            <div id="integrated-tab" class="tab-content hidden">
+                <div class="card">
+                    <div class="card-header"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2>Exportación Unificada (Enero - 30 de Abril 2026)</h2>
+                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                            <button id="fix-pendings" class="btn-primary" style="background: #eab308;">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Fix Pendientes
+                            </button>
+                            <button id="export-integrated" class="btn-primary">
+                                <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+                            </button>
+                            <button id="export-integrated-csv" class="btn-primary"
+                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-container" style="overflow-x: auto;">
+                        <table id="integrated-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f9fafb; text-align: left;">
+                                    <th style="padding: 1rem;">Lugar de Clasificación</th>
+                                    <th style="padding: 1rem;">No. Cuenta</th>
+                                    <th style="padding: 1rem;">Nombre Completo</th>
+                                    <th style="padding: 1rem;">Puesto</th>
+                                    <th style="padding: 1rem;">Área</th>
+                                    <th style="padding: 1rem;">Asistencias</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JS Load -->
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 2rem;">Cargando reporte integrado...</td>
                                 </tr>
                             </tbody>
                         </table>
