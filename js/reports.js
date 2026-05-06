@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
             integratedTableBody.innerHTML = '';
             
             if (integratedData.length === 0) {
-                integratedTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">No hay datos para el reporte integrado</td></tr>';
+                integratedTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem;">No hay datos para el reporte integrado</td></tr>';
                 return;
             }
 
@@ -537,6 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td style="padding: 1rem;">${emp.position}</td>
                         <td style="padding: 1rem;">${emp.areaName}</td>
                         <td style="padding: 1rem; font-weight: bold; color: var(--primary);">${emp.attendances}</td>
+                        <td style="padding: 1rem;">PRIMAVERA 2026</td>
                     </tr>
                 `;
                 integratedTableBody.innerHTML += row;
@@ -1030,10 +1031,11 @@ document.addEventListener('DOMContentLoaded', () => {
             'Nombre Completo': emp.fullName,
             'Puesto': emp.position,
             'Área': emp.areaName,
-            'Asistencias': emp.attendances
+            'Asistencias': emp.attendances,
+            'Periodo': 'PRIMAVERA 2026'
         }));
 
-        const headers = ['Lugar de Clasificación', 'No. Cuenta', 'Nombre Completo', 'Puesto', 'Área', 'Asistencias'];
+        const headers = ['Lugar de Clasificación', 'No. Cuenta', 'Nombre Completo', 'Puesto', 'Área', 'Asistencias', 'Periodo'];
         const csv = arrayToCSV(data, headers);
         
         downloadCSV(csv, `reporte_integrado_ene_abr.csv`);
