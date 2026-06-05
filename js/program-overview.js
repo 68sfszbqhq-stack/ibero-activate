@@ -155,24 +155,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Datos de Verano 2026
             const verano2026Macrocycle = {
-                programName: "IBERO ACTÍVATE - Macrociclo de Bienestar Verano 2026",
+                programName: "IBERO ACTÍVATE - Movimiento y Control Postural (Verano 2026)",
                 totalWeeks: 6,
                 startDate: "2026-06-01",
                 phases: [
                     {
                         phaseId: 1,
-                        name: "Adaptación Anatómica",
-                        nomenclatura: "Mesociclo de Adaptación Física y Social",
+                        name: "Consciencia Corporal y Liberación Miofascial",
+                        nomenclatura: "Mesociclo de Adaptación Física y Control Postural",
                         weekRange: [1, 2],
-                        objetivoDominante: "Cardiovascular-Social",
-                        intensidad: "Baja",
+                        objetivoDominante: "Movilidad-Liberación",
+                        intensidad: "Baja-Mod",
                         colorTheme: "#10b981",
                         icon: "fa-heart-pulse",
-                        justificacionCientifica: "Fase de Adaptación Anatómica de 2 semanas enfocada en la preparación muscular y la hidratación. Las caminatas suaves permiten restablecer la rutina sin estrés para el sistema músculo-esquelético, mientras que la hidratación adecuada incrementa los niveles de energía y previene la fatiga física y mental en temporada de calor.",
+                        justificacionCientifica: "La preparación muscular inicial mediante masajes miofasciales con pelotas de tenis y la descompresión espinal con yoga en silla sientan las bases de flexibilidad y alivio de tensión acumulada por sedentarismo en zonas clave (cuello, espalda, glúteos y muslos), facilitando la corrección postural.",
                         objetivosFase: [
-                            "Preparar el sistema cardiovascular y locomotor para el esfuerzo progresivo.",
-                            "Establecer la rutina de hidratación sistemática (mínimo 8 vasos de agua al día).",
-                            "Conectar socioemocionalmente con los compañeros al inicio del periodo."
+                            "Liberar contracturas musculares en cuello, trapecio, espalda baja, glúteos y muslos.",
+                            "Flexibilizar la columna y descomprimir vértebras en silla de trabajo.",
+                            "Desarrollar la propiocepción y la alineación postural básica ergonómica."
                         ],
                         metricsTarget: {
                             intensidadFC: "50-60% FCmáx",
@@ -181,24 +181,24 @@ document.addEventListener('DOMContentLoaded', () => {
                             participacionObjetivo: "30-50%"
                         },
                         actividadesRecomendadas: [
-                            "Caminatas de Integración",
-                            "Pausas de Hidratación"
+                            "Calentamiento de movilidad articular",
+                            "Masaje miofascial localizado con pelotas de tenis"
                         ]
                     },
                     {
                         phaseId: 2,
-                        name: "Base de Resistencia",
-                        nomenclatura: "Mesociclo de Desarrollo Cardiovascular",
+                        name: "Estabilización, Coordinación y Flexibilidad Asistida",
+                        nomenclatura: "Mesociclo de Coordinación Postural y Trabajo en Parejas",
                         weekRange: [3, 4],
-                        objetivoDominante: "Físico-Coordinativo",
+                        objetivoDominante: "Coordinación-Flexibilidad",
                         intensidad: "Moderada",
                         colorTheme: "#3b82f6",
-                        icon: "fa-running",
-                        justificacionCientifica: "Fase de Base de Resistencia de 2 semanas enfocada en caminatas continuas de más de 15 minutos. Caminar a un ritmo continuo y moderado estimula el volumen sistólico del corazón, mejora la oxigenación y ayuda a consolidar el hábito de pausas activas físicas.",
+                        icon: "fa-person-running",
+                        justificacionCientifica: "El trabajo de coordinación con pelotas de playa ligeras estimula la postura dinámica y el control óculo-manual. Los estiramientos asistidos en parejas sobre tapetes incrementan la flexibilidad de manera segura mediante la facilitación neuromuscular, promoviendo el compañerismo.",
                         objetivosFase: [
-                            "Desarrollar la capacidad aeróbica general.",
-                            "Implementar al menos una caminata continua diaria de más de 15 minutos.",
-                            "Alternar dinámicas lúdicas y caminatas al aire libre."
+                            "Mejorar el control postural en movimiento y la coordinación dinámica.",
+                            "Realizar estiramientos profundos de la cadena posterior con el apoyo de un compañero.",
+                            "Fomentar la confianza, comunicación y cohesión entre colaboradores en tapetes."
                         ],
                         metricsTarget: {
                             intensidadFC: "60-70% FCmáx",
@@ -207,24 +207,24 @@ document.addEventListener('DOMContentLoaded', () => {
                             participacionObjetivo: "50-60%"
                         },
                         actividadesRecomendadas: [
-                            "Caminatas de Resistencia Aeróbica",
-                            "Juegos de Coordinación al Aire Libre"
+                            "Coordinación activa con pelotas de playa",
+                            "Estiramientos asistidos en parejas sobre tapetes"
                         ]
                     },
                     {
                         phaseId: 3,
-                        name: "Consolidación",
-                        nomenclatura: "Mesociclo de Consolidación y Hábitos Saludables",
+                        name: "Gamificación, Integración y Cierre Postural",
+                        nomenclatura: "Mesociclo de Consolidación y Movimiento Divertido",
                         weekRange: [5, 6],
-                        objetivoDominante: "Físico-Social",
+                        objetivoDominante: "Gamificación-Consolidación",
                         intensidad: "Moderada-Alta",
                         colorTheme: "#8b5cf6",
                         icon: "fa-trophy",
-                        justificacionCientifica: "Fase de Consolidación hacia la meta final del club: caminar de manera sostenida para lograr 7,000 pasos de meta diaria promedio. El entrenamiento físico acumulado durante las semanas anteriores se consolida aquí y sienta las bases para la autonomía del bienestar.",
+                        justificacionCientifica: "El uso de juegos interactivos (Nintendo Switch) promueve una activación cardiovascular lúdica de alto gasto y diversión grupal. El rally de cierre de la semana 6 consolida e integra todos los hábitos posturales en desafíos por equipos aplicables al día a día ergonómico.",
                         objetivosFase: [
-                            "Consolidar el hábito diario de pasos apuntando al club de los 7K.",
-                            "Fomentar la autogestión de pausas saludables por departamento.",
-                            "Cierre del periodo con evaluación post-programa."
+                            "Activar el ritmo cardiovascular mediante dinámicas de baile y reflejos corporales interactivos.",
+                            "Integrar la técnica de estiramiento y control postural en un rally por estaciones de juego.",
+                            "Cerrar el macrociclo evaluando la mejora percibida en el bienestar corporal de la oficina."
                         ],
                         metricsTarget: {
                             intensidadFC: "65-75% FCmáx",
@@ -233,42 +233,42 @@ document.addEventListener('DOMContentLoaded', () => {
                             participacionObjetivo: "60-70%"
                         },
                         actividadesRecomendadas: [
-                            "Retos de Pasos 7K Club",
-                            "Caminatas de Cierre y Celebración"
+                            "Videojuegos activos Just Dance / Everybody 1-2-Switch",
+                            "Rally de control postural por equipos"
                         ]
                     }
                 ],
                 weeklySchedule: [
-                    { week: 1, phase: 1, activity: "Caminata de Bienvenida e Hidratación", objetivo: "Adaptación Cardiovascular", intensidad: "Baja" },
-                    { week: 2, phase: 1, activity: "Dinámicas de Integración y Agua", objetivo: "Adaptación Cardiovascular", intensidad: "Baja-Mod" },
-                    { week: 3, phase: 2, activity: "Caminata de 15 Minutos Continuos", objetivo: "Base de Resistencia", intensidad: "Moderada" },
-                    { week: 4, phase: 2, activity: "Mini Deportes de Raqueta / Voleibol", objetivo: "Coordinación y Aeróbico", intensidad: "Moderada" },
-                    { week: 5, phase: 3, activity: "Reto de Pasos hacia los 7K", objetivo: "Intensidad y Consolidación", intensidad: "Moderada-Alta" },
-                    { week: 6, phase: 3, activity: "Cierre, Gratitud y Celebración", objetivo: "Cierre y Autonomía", intensidad: "Baja-Moderada" }
+                    { week: 1, phase: 1, activity: "Movilidad Articular y Masajes con Pelotas de Tenis", objetivo: "Calentamiento articular y liberación miofascial localizada (cuello, trapecio, espalda baja, glúteo medio, cuádriceps y femoral).", intensidad: "Baja" },
+                    { week: 2, phase: 1, activity: "Yoga en Silla y Estiramientos Profundos", objetivo: "Descompresión espinal, flexibilización de columna y apertura de cadera adaptado a la oficina.", intensidad: "Baja-Mod" },
+                    { week: 3, phase: 2, activity: "Coordinación Activa con Pelotas de Playa", objetivo: "Dinámicas lúdicas de pases individuales y grupales para equilibrio dinámico y postura.", intensidad: "Moderada" },
+                    { week: 4, phase: 2, activity: "Estiramientos en Parejas sobre Tapetes", objetivo: "Flexibilidad asistida profunda y fortalecimiento de relaciones de confianza.", intensidad: "Baja-Mod" },
+                    { week: 5, phase: 3, activity: "Gamificación y Baile con Nintendo Switch", objetivo: "Activación cardiovascular lúdica y reflejos con Just Dance / Everybody 1-2-Switch.", intensidad: "Moderada-Alta" },
+                    { week: 6, phase: 3, activity: "Rally de Control Postural y Cierre", objetivo: "Rally de estaciones integrando pases con pelotas, equilibrio y posturas por equipos.", intensidad: "Mod-Baja" }
                 ],
                 principiosCientificos: [
                     {
-                        nombre: "Variación Estratégica",
-                        descripcion: "Alternancia entre actividades físicas, cognitivas y sociales cada 1-2 semanas, adaptando la carga al periodo vacacional."
+                        nombre: "Liberación Miofascial",
+                        descripcion: "Uso de pelotas de tenis para relajar la fascia, liberar contracturas y mejorar el flujo sanguíneo muscular local."
                     },
                     {
-                        nombre: "Sobrecarga Progresiva",
-                        descripcion: "Incremento de complejidad cognitiva e intensidad física de manera gradual a lo largo de las 6 semanas de Verano."
+                        nombre: "Flexibilidad Asistida",
+                        descripcion: "Estiramientos profundos asistidos en parejas y yoga en silla para mejorar el rango de movimiento articular en columna y caderas."
                     },
                     {
-                        nombre: "Especificidad de Hábitos",
-                        descripcion: "Focalización en hidratación al inicio (verano/calor) y culminación en la meta óptima de 7,000 pasos al día."
+                        nombre: "Gamificación y Movimiento",
+                        descripcion: "Integración de consolas de movimiento (Nintendo Switch) y pases con pelotas ligeras para activar el corazón con diversión grupal."
                     }
                 ],
                 sistemaEvaluacion: {
                     cuantitativas: [
-                        "Asistencia: Registro diario de participación en caminatas",
-                        "Satisfacción: Encuesta digital semanal",
-                        "Registro de Pasos: Metas del club 7K en walking_stats"
+                        "Asistencia: Registro diario de participación en caminatas y dinámicas",
+                        "Satisfacción: Encuesta digital de bienestar semanal",
+                        "Registro de Pasos: Métricas dinámicas en walking_stats"
                     ],
                     cualitativas: [
-                        "Comentarios semanales: Feedback de hidratación y energía",
-                        "Evaluación de hábitos: Registro voluntario de autocuidado"
+                        "Feedback de dolor: Reportes de reducción de molestia en cuello y espalda baja",
+                        "Participación en dinámicas: Registro de integración grupal en la Switch y en parejas"
                     ]
                 }
             };
