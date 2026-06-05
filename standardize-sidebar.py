@@ -24,7 +24,7 @@ STANDARD_SIDEBAR = '''        <!-- Sidebar -->
                 </li>
                 <li class="nav-item">
                     <a href="program-overview.html" class="nav-link {CLASS_PROGRAM}">
-                        <i class="fa-solid fa-calendar-star"></i> Programa 19 Semanas
+                        <i class="fa-solid fa-calendar-star"></i> Programación por Periodo
                     </a>
                 </li>
                 <li class="nav-item">
@@ -146,8 +146,8 @@ def replace_sidebar(html_file):
 def main():
     print("🔧 Estandarizando sidebar en TODOS los archivos admin HTML...\n")
     
-    # Buscar todos los HTML en admin
-    html_files = glob.glob('admin/*.html')
+    # Buscar todos los HTML en admin y www/admin
+    html_files = glob.glob('admin/*.html') + glob.glob('www/admin/*.html')
     
     updated = 0
     skipped = 0
@@ -161,16 +161,16 @@ def main():
             continue
         
         if replace_sidebar(html_file):
-            print(f"  ✅ {filename} - Sidebar actualizado")
+            print(f"  ✅ {html_file} - Sidebar actualizado")
             updated += 1
         else:
-            print(f"  ⏭️  {filename} - Sin cambios")
+            print(f"  ⏭️  {html_file} - Sin cambios")
     
     print(f"\n✅ Proceso completado!")
     print(f"📊 Archivos actualizados: {updated}")
     print(f"📊 Archivos omitidos: {skipped}")
     print(f"\n💡 Los backups fueron guardados con extensión .sidebar_backup")
-    print(f"💡 Elimina los backups con: find admin -name '*.sidebar_backup' -delete")
+    print(f"💡 Elimina los backups con: find admin www/admin -name '*.sidebar_backup' -delete")
 
 if __name__ == '__main__':
     main()
