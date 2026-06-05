@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión de Caminata | IBERO ACTÍVATE</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../css/design-system.css">
+
+    <!-- Estilos específicos para el nuevo wizard -->
+    <style>
+        .page-header {
+            background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url('../assets/health-header.png');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            padding: 3rem 1rem;
+            border-radius: 0 0 2rem 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            background: #e5e7eb;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .step-dot.active {
+            background: var(--primary-color, #4f46e5);
+            transform: scale(1.2);
+        }
+
+        .wizard-step {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .wizard-step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .mood-selector,
+        .weather-selector {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .selection-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 80px;
+        }
+
+        .selection-btn i {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: #6b7280;
+        }
+
+        .selection-btn.selected {
+            border-color: var(--primary-color, #4f46e5);
+            background: #eff6ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .selection-btn.selected i {
+            color: var(--primary-color, #4f46e5);
+        }
+
+        .borg-scale-container {
+            display: grid;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .borg-item {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .borg-item:hover {
+            background: #f3f4f6;
+        }
+
+        .borg-item.selected {
+            background: #e0e7ff;
+            border: 1px solid #4f46e5;
+        }
+
+        .borg-value {
+            font-weight: bold;
+            width: 30px;
+            text-align: center;
+            margin-right: 1rem;
+            color: #4f46e5;
+        }
+
+        .timer-display {
+            font-size: 4rem;
+            font-weight: 700;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            color: #1f2937;
+            margin: 2rem 0;
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 20px rgba(79, 70, 229, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+            }
+        }
+
+        /* Utility classes for layout */
+        .wellness-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color, #4f46e5);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+        }
+
+        .btn-secondary {
+            background-color: white;
+            color: #374151;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Magic Selection Styles */
+        .pulse-ring {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 4px solid #10b981;
+            animation: pulse-ring 2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.8);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+
+            70% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 20px rgba(16, 185, 129, 0);
+            }
+
+            100% {
+                transform: scale(0.8);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .magic-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2);
+            border-color: #059669 !important;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 640px) {
+            .page-header {
+                padding: 2.5rem 1rem !important;
+            }
+
+            .text-2xl {
+                font-size: 1.4rem !important;
+            }
+
+            .selection-btn {
+                width: 75px !important;
+                padding: 0.8rem !important;
+            }
+
+            .selection-btn i {
+                font-size: 1.5rem !important;
+            }
+
+            .selection-btn span {
+                font-size: 0.75rem !important;
+            }
+
+            .wellness-card {
+                padding: 1.25rem !important;
+                border-radius: 1.25rem !important;
+            }
+
+            #live-interaction-overlay .wellness-card {
+                padding: 2rem 1rem !important;
+                margin: 10px;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Firebase (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+
+    <!-- Google API Client (para Google Fit) -->
+    <script src="https://apis.google.com/js/api.js"></script>
+</head>
+
+<body>
+    <!-- Sidebar de Navegación -->
+    <div id="sidebar-container"></div>
+
+    <!-- Contenido Principal -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="page-header">
+            <div class="header-content">
+                <i class="fas fa-hiking fa-3x mb-3"></i>
+                <h1>Sesión de Caminata</h1>
+                <p class="subtitle">Conecta cuerpo y mente a cada paso</p>
+            </div>
+            <div style="margin-top: 1rem;">
+                <button class="btn-secondary" style="width: auto; padding: 0.5rem 1rem;"
+                    onclick="document.getElementById('history-modal').style.display='flex'">
+                    <i class="fas fa-history"></i> Ver Historial
+                </button>
+            </div>
+        </header>
+
+        <!-- WIZARD CONTAINER -->
+        <!-- PANTALLA DE SELECCIÓN DE PERFIL (MAGIA EN VIVO) -->
+        <div id="selection-screen" class="max-w-3xl mx-auto px-4 fade-in"
+            style="max-width: 800px; margin: 0 auto; display: none;">
+            <div class="wellness-card text-center"
+                style="padding: 3rem 1.5rem; border: 2px solid #10b981; background: rgba(16, 185, 129, 0.02);">
+                <div class="pulse-ring" style="margin: 0 auto 1.5rem; border-color: #10b981;"></div>
+                <h2 style="font-size: 1.8rem; margin-bottom: 0.5rem; color: #1f2937; font-weight: 800;">¡Bienvenido a la
+                    Caminata!</h2>
+                <p style="color: #6b7280; margin-bottom: 2rem;">
+                    Tu nombre aparecerá aquí mágicamente cuando el instructor inicie sesión ✨
+                </p>
+
+                <div id="walking-live-list" class="live-list-container"
+                    style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; max-height: 300px; overflow-y: auto;">
+                    <!-- Botones mágicos aparecerán aquí -->
+                </div>
+
+                <div id="walking-waiting-message" class="waiting-state"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1rem; color: #9ca3af;">
+                    <p style="color: #9ca3af; font-size: 0.95rem; font-style: italic;">Esperando a que el instructor
+                        pase lista...</p>
+                </div>
+
+                <!-- Búsqueda Manual -->
+                <div style="margin-top: 2rem; border-top: 1px solid #f3f4f6; padding-top: 1.5rem;">
+                    <div style="display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;">
+                        <button id="manual-walking-toggle" class="btn-text-small"
+                            style="color: #9ca3af; font-size: 0.85rem; text-decoration: none; background: none; border: none; cursor: pointer;">
+                            ¿Ya estás en la lista? Búscate 🔍
+                        </button>
+                        <button id="first-day-reg-toggle" class="btn-text-small"
+                            style="color: #10b981; font-size: 0.85rem; font-weight: 700; text-decoration: none; background: none; border: none; cursor: pointer;">
+                            🚀 ¿Es tu primer día? Regístrate aquí
+                        </button>
+                    </div>
+
+                    <!-- Formulario Búsqueda -->
+                    <div id="manual-walking-search" class="hidden"
+                        style="margin-top: 1.5rem; text-align: left; animation: fadeIn 0.3s ease;">
+                        <label
+                            style="display: block; font-size: 0.8rem; font-weight: 700; color: #374151; margin-bottom: 0.5rem;">ENCUÉNTRAME
+                            POR NOMBRE O CUENTA:</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="text" id="manual-walking-input" placeholder="Ej: Juan Pérez o 12345"
+                                class="form-control" style="margin-top:0;">
+                            <button id="manual-walking-btn" class="btn-primary"
+                                style="width: auto; padding: 0 1.5rem;">Buscar</button>
+                        </div>
+                        <div id="manual-walking-results" class="live-list-container"
+                            style="margin-top: 1rem; max-height: 200px; overflow-y: auto;"></div>
+                    </div>
+
+                    <!-- Formulario Registro Primer Día -->
+                    <div id="first-day-reg-container" class="hidden"
+                        style="margin-top: 1.5rem; text-align: left; background: #f0fdf4; padding: 1.5rem; border-radius: 16px; border: 1px dashed #10b981; animation: fadeIn 0.3s ease;">
+                        <h3 style="color: #065f46; font-size: 1rem; margin-bottom: 1.25rem; font-weight: 800;">📝 Nuevo
+                            Registro de Caminante</h3>
+
+                        <div class="form-group mb-3" style="margin-bottom: 1rem;">
+                            <label style="font-size: 0.75rem; color: #065f46;">NOMBRE COMPLETO</label>
+                            <input type="text" id="reg-new-name" class="form-control" placeholder="Nombre y Apellidos"
+                                style="background: white;">
+                        </div>
+
+                        <div class="grid"
+                            style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                            <div class="form-group">
+                                <label style="font-size: 0.75rem; color: #065f46;">DEPARTAMENTO</label>
+                                <input type="text" id="reg-new-dept" class="form-control" placeholder="Ej: Ventas"
+                                    style="background: white;">
+                            </div>
+                            <div class="form-group">
+                                <label style="font-size: 0.75rem; color: #065f46;">PUESTO</label>
+                                <input type="text" id="reg-new-job" class="form-control" placeholder="Ej: Gerente"
+                                    style="background: white;">
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-4" style="margin-bottom: 1.5rem;">
+                            <label style="font-size: 0.75rem; color: #065f46;">NÚMERO DE CUENTA / NÓMINA</label>
+                            <input type="text" id="reg-new-account" class="form-control" placeholder="ID de Empleado"
+                                style="background: white;">
+                        </div>
+
+                        <button id="reg-new-submit-btn" class="btn-primary"
+                            style="background: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">
+                            Crear Perfil e Iniciar Caminata <i class="fa-solid fa-person-running ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WIZARD CONTAINER -->
+        <div id="wizard-container" class="max-w-3xl mx-auto px-4"
+            style="max-width: 800px; margin: 0 auto; display: none;">
+
+            <div id="user-context-banner"
+                style="background: white; padding: 1rem; border-radius: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="avatar-tiny" id="user-context-avatar"
+                        style="width: 35px; height: 35px; background: #10b981; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem;">
+                        --</div>
+                    <div>
+                        <p id="user-context-name" style="font-weight: 700; font-size: 0.9rem; margin: 0;">Cargando...
+                        </p>
+                        <p style="font-size: 0.75rem; color: #10b981; margin: 0; font-weight: 700;">
+                            <i class="fa-solid fa-graduation-cap"></i> <a href="#" onclick="showScientificBasis(event)"
+                                style="color: inherit; text-decoration: underline;">Base Científica</a>
+                        </p>
+                    </div>
+                </div>
+                <button onclick="changeUserSelection()"
+                    style="background:none; border:none; color:#ef4444; font-size: 0.8rem; font-weight: 700; cursor:pointer;">
+                    <i class="fa-solid fa-right-from-bracket"></i> Cambiar
+                </button>
+            </div>
+
+            <!-- MODAL BASE CIENTÍFICA -->
+            <div id="scientific-basis-modal"
+                style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10001; justify-content: center; align-items: center; padding: 1rem;">
+                <div
+                    style="background: white; width: 100%; max-width: 600px; max-height: 85vh; border-radius: 25px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+                    <div style="background: #10b981; color: white; padding: 1.5rem; text-align: center;">
+                        <h2 style="margin: 0; font-size: 1.2rem; font-weight: 800;">Sustento Académico</h2>
+                        <p style="margin: 5px 0 0; font-size: 0.8rem; opacity: 0.9;">Protocolo Rader & Plante (2018)</p>
+                    </div>
+                    <div
+                        style="flex: 1; overflow-y: auto; padding: 1.5rem; line-height: 1.6; color: #374151; font-size: 0.9rem;">
+                        <p style="font-weight: 700; color: #10b981; margin-bottom: 1rem;">¿Por qué 25 minutos de
+                            caminata reflexiva?</p>
+                        <p>Nuestra metodología está fundamentada en el estudio <i>"Potential Benefits of the Jesuit
+                                Examen for Psychological Health and Well-being"</i> (Santa Clara University). Esta
+                            investigación propone la secularización del Examen Ignaciano para su aplicación en entornos
+                            laborales modernos.</p>
+
+                        <div
+                            style="background: #f0fdf4; padding: 1rem; border-radius: 15px; margin: 1rem 0; border-left: 5px solid #10b981;">
+                            <p style="margin: 0; font-weight: 800; font-size: 0.85rem; color: #065f46;">PUNTOS CLAVE DEL
+                                ESTUDIO:</p>
+                            <ul style="margin: 0.5rem 0 0 1.2rem; padding: 0;">
+                                <li><b>Innovación Empírica:</b> Primera validación del Examen en contextos de salud
+                                    ocupacional.</li>
+                                <li><b>Inclusividad Secular:</b> Sustitución de terminología religiosa por conceptos
+                                    universales como "amor" y "propósito".</li>
+                                <li><b>Salud Laboral:</b> Impacto directo en la reducción del estrés y aumento de la
+                                    satisfacción vital.</li>
+                                <li><b>Micro-vintervención:</b> Eficacia comprobada en sesiones breves diarias (10-15
+                                    min) adaptadas a 25 min en nuestra app.</li>
+                            </ul>
+                        </div>
+
+                        <p>El artículo sostiene que esta práctica contribuye a la **atención plena**, la **re-evaluación
+                            cognitiva** y el **cultivo de la gratitud**, integrándose con prácticas modernas como el
+                            Mindfulness y la Psicología Positiva.</p>
+                        <p style="font-size: 0.75rem; color: #6b7280; font-style: italic;">Referencia: Rader, C., &
+                            Plante, T. G. (2018). Potential Benefits of the Jesuit Examen for Psychological Health and
+                            Well-being: A Pilot Study. Scholar Commons, SCU.</p>
+                    </div>
+                    <div style="padding: 1rem; border-top: 1px solid #e5e7eb; text-align: center;">
+                        <button onclick="document.getElementById('scientific-basis-modal').style.display='none'"
+                            class="btn-primary" style="background: #10b981; width: 100%;">Entendido</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step-dot active" id="dot-1"></div>
+                <div class="step-dot" id="dot-2"></div>
+                <div class="step-dot" id="dot-3"></div>
+            </div>
+
+            <!-- STEP 1: PREPARACIÓN -->
+            <section id="step-1" class="wizard-step active wellness-card">
+                <div class="card-header text-center block mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">1. Preparación</h2>
+                    <p class="text-gray-500">Antes de empezar, conecta con tu entorno.</p>
+                </div>
+
+                <!-- Clima -->
+                <div class="form-group mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">¿Cómo está el clima?</label>
+                    <div class="weather-selector" id="weather-selector">
+                        <div class="selection-btn" onclick="selectOption('weather', 'sunny', this)">
+                            <i class="fas fa-sun text-yellow-500"></i>
+                            <span>Soleado</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('weather', 'cloudy', this)">
+                            <i class="fas fa-cloud text-gray-400"></i>
+                            <span>Nublado</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('weather', 'rain', this)">
+                            <i class="fas fa-cloud-rain text-blue-400"></i>
+                            <span>Lluvia</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('weather', 'cold', this)">
+                            <i class="fas fa-snowflake text-cyan-300"></i>
+                            <span>Frío</span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="input_weather">
+                </div>
+
+                <!-- Emoción Inicial -->
+                <div class="form-group mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">¿Cómo te sientes ahora?</label>
+                    <div class="mood-selector" id="mood-pre-selector">
+                        <div class="selection-btn" onclick="selectOption('mood_pre', 'stressed', this)">
+                            <i class="fas fa-tired text-red-400"></i>
+                            <span>Estresado</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('mood_pre', 'tired', this)">
+                            <i class="fas fa-battery-quarter text-orange-400"></i>
+                            <span>Cansado</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('mood_pre', 'neutral', this)">
+                            <i class="fas fa-meh text-gray-400"></i>
+                            <span>Neutral</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('mood_pre', 'good', this)">
+                            <i class="fas fa-smile text-green-500"></i>
+                            <span>Bien</span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="input_mood_pre">
+                </div>
+
+                <!-- Hidratación -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Hidratación Previa</label>
+                    <div class="flex gap-4" style="display: flex; gap: 1rem;">
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 flex-1"
+                            style="flex: 1; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem;">
+                            <input type="radio" name="hydration" value="low" class="mr-2">
+                            <span>Poca (Sed)</span>
+                        </label>
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 flex-1"
+                            style="flex: 1; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem;">
+                            <input type="radio" name="hydration" value="optimal" class="mr-2" checked>
+                            <span>Óptima</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mt-8" style="margin-top: 2rem;">
+                    <button class="btn-primary" onclick="nextStep(2)">
+                        Continuar a Actividad <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- STEP 2: ACTIVIDAD -->
+            <section id="step-2" class="wizard-step wellness-card text-center">
+                <div class="card-header block mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">2. Tu Caminata</h2>
+                    <p class="text-gray-500">Registra tu actividad (Manual o Cronómetro)</p>
+                </div>
+                <!-- SELECCIÓN DE MODO -->
+                <div id="mode-selector-container"
+                    style="margin-bottom: 2rem; display: flex; flex-direction: column; gap: 1rem;">
+                    <p
+                        style="font-size: 0.9rem; font-weight: 700; color: #374151; text-align: center; margin-bottom: 0.5rem;">
+                        ELIGE TU MODO DE ACTIVIDAD:</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <button onclick="setupSpecialSession(true, this)" id="btn-mode-guided" class="selection-btn"
+                            style="width: 100%; border: 2px solid #e5e7eb; display:flex; flex-direction:column; padding: 1rem; border-radius:1rem; align-items:center; cursor:pointer;">
+                            <i class="fa-solid fa-headphones-simple"
+                                style="color: #6b7280; font-size: 1.5rem; margin-bottom:0.5rem;"></i>
+                            <span style="font-weight: 800; color: #4b5563; font-size: 0.85rem;">Sesión Guiada<br>(25
+                                min)</span>
+                        </button>
+                        <button onclick="setupSpecialSession(false, this)" id="btn-mode-free"
+                            class="selection-btn selected"
+                            style="width: 100%; border: 2px solid #10b981; background: #f0fdf4; display:flex; flex-direction:column; padding: 1rem; border-radius:1rem; align-items:center; cursor:pointer;">
+                            <i class="fa-solid fa-person-running"
+                                style="color: #10b981; font-size: 1.5rem; margin-bottom:0.5rem;"></i>
+                            <span style="font-weight: 800; color: #065f46; font-size: 0.85rem;">Caminata<br>Libre</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Timer Section -->
+                <div id="timer-section" class="py-8" style="padding: 2rem 0;">
+                    <div class="timer-display" id="timer-display">00:00:00</div>
+
+                    <button id="btn-timer-toggle"
+                        class="btn-primary rounded-full w-20 h-20 flex items-center justify-center mx-auto text-2xl shadow-lg transition-transform hover:scale-110"
+                        style="width: 80px; height: 80px; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center;"
+                        onclick="toggleTimer()">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <p class="text-sm text-gray-400 mt-4" id="timer-status">Presiona para iniciar</p>
+                </div>
+
+                <!-- Manual Entry Data Form -->
+                <div id="activity-data-form" class="text-left mt-6 pt-6 border-t border-gray-100"
+                    style="text-align: left; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #f3f4f6;">
+                    <div class="form-group mb-4" style="margin-bottom: 1rem;">
+                        <label style="font-weight: 600;">Pasos Totales</label>
+                        <input type="number" id="input_steps" class="form-control text-lg" placeholder="Ej: 3500">
+                        <small class="text-gray-400">Consultar podómetro o app Salud</small>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4"
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label>Distancia (km)</label>
+                            <input type="number" id="input_distance" class="form-control" step="0.01"
+                                placeholder="Ej: 2.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Cadencia (opcional)</label>
+                            <input type="number" id="input_cadence" class="form-control" placeholder="ZPM">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex gap-4" style="margin-top: 2rem; display: flex; gap: 1rem;">
+                    <button class="btn-secondary flex-1" onclick="prevStep(1)">Atrás</button>
+                    <button class="btn-primary flex-1" onclick="validateStep2()">
+                        Terminar y Reflexionar <i class="fas fa-check ml-2"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- STEP 3: REFLEXIÓN -->
+            <section id="step-3" class="wizard-step wellness-card">
+                <div class="card-header text-center block mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">3. Reflexión Post-Caminata</h2>
+                    <p class="text-gray-500">Lo que no se mide, no se mejora. ¿Cómo te sentiste?</p>
+                </div>
+
+                <!-- Escala de Borg -->
+                <div class="form-group mb-6">
+                    <label class="block font-bold mb-2">Esfuerzo Percibido (Escala de Borg)</label>
+                    <p class="text-sm text-gray-500 mb-3">Del 0 (Nada) al 10 (Extremo)</p>
+                    <div class="borg-scale-container" id="borg-selector">
+                        <div class="borg-item" onclick="selectBorg(3, this)"><span class="borg-value">3</span> Leve
+                            (Puedo cantar)</div>
+                        <div class="borg-item" onclick="selectBorg(5, this)"><span class="borg-value">5</span> Moderado
+                            (Puedo hablar)</div>
+                        <div class="borg-item" onclick="selectBorg(7, this)"><span class="borg-value">7</span> Vigoroso
+                            (Me falta aire)</div>
+                        <div class="borg-item" onclick="selectBorg(9, this)"><span class="borg-value">9</span> Muy Duro
+                            (No puedo hablar)</div>
+                    </div>
+                    <input type="hidden" id="input_borg">
+                </div>
+
+                <!-- Emoción Final -->
+                <div class="form-group mb-6">
+                    <label class="block font-bold mb-2">¿Cómo te sientes AHORA?</label>
+                    <div class="mood-selector" id="mood-post-selector">
+                        <div class="selection-btn" onclick="selectOption('mood_post', 'relaxed', this)">
+                            <i class="fas fa-spa text-purple-400"></i>
+                            <span>Relajado</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('mood_post', 'energized', this)">
+                            <i class="fas fa-bolt text-yellow-500"></i>
+                            <span>Energizado</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('mood_post', 'happy', this)">
+                            <i class="fas fa-smile-beam text-green-500"></i>
+                            <span>Feliz</span>
+                        </div>
+                        <div class="selection-btn" onclick="selectOption('mood_post', 'tired', this)">
+                            <i class="fas fa-bed text-gray-400"></i>
+                            <span>Igual</span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="input_mood_post">
+                </div>
+
+                <!-- Diario de Gratitud -->
+                <div class="form-group mb-6">
+                    <label class="block font-bold mb-2"><i class="fas fa-pen-fancy mr-2"></i>Diario de Gratitud</label>
+                    <textarea id="input_gratitude" class="form-control" rows="3"
+                        placeholder="Escribe un pensamiento, algo que viste o algo por lo que estás agradecido..."></textarea>
+                </div>
+
+                <div class="mt-8 flex gap-4" style="margin-top: 2rem; display: flex; gap: 1rem;">
+                    <button class="btn-secondary flex-1" onclick="prevStep(2)">Atrás</button>
+                    <button class="btn-primary flex-1" onclick="submitSession()">
+                        Guardar Sesión <i class="fas fa-save ml-2"></i>
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- NUEVO: Gráfico de Impacto Emocional -->
+        <div class="wellness-card mb-6" id="mood-impact-section" style="display:none;">
+            <div class="card-header mb-4">
+                <h3 class="font-bold text-gray-800"><i class="fas fa-heart-pulse text-pink-500 mr-2"></i>Tu Impacto
+                    Emocional</h3>
+                <p class="text-sm text-gray-500">Cómo te sientes ANTES vs DESPUÉS de caminar</p>
+            </div>
+            <div class="mood-chart-container"
+                style="display: flex; align-items: flex-end; justify-content: space-around; height: 150px; padding-top: 20px;">
+                <!-- Barras se generarán por JS -->
+                <p class="text-center text-gray-400 w-full">Registra más sesiones para ver tu evolución emocional.
+                </p>
+            </div>
+        </div>
+
+        <div id="wellness-badges" class="badges-container mt-6">
+            <!-- Badges render here -->
+        </div>
+        </div>
+
+    </main>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 100; flex-direction: column; align-items: center; justify-content: center;">
+        <div class="spinner"
+            style="border: 4px solid #f3f3f3; border-top: 4px solid #4f46e5; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;">
+        </div>
+        <p id="loading-message" style="margin-top: 1rem; color: #4b5563;">Guardando tu esfuerzo...</p>
+    </div>
+
+    <style>
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .mood-bar-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .mood-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            height: 100px;
+        }
+
+        .bar {
+            width: 20px;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.5s ease;
+            position: relative;
+        }
+
+        .bar-pre {
+            background-color: #e5e7eb;
+        }
+
+        .bar-post {
+            background-color: #ec4899;
+        }
+
+        .mood-date {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+    </style>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="loading-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 50; align-items: flex-start; padding-top: 50px; justify-content: center;">
+        <div class="wellness-card"
+            style="width: 90%; max-width: 800px; max-height: 85vh; overflow-y: auto; background: white; margin-top: 0;">
+            <div class="card-header"
+                style="position: sticky; top: 0; background: white; z-index: 10; padding-bottom: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 1.25rem; font-weight: bold;">Historial de Sesiones</h3>
+                <button class="btn-close" onclick="document.getElementById('history-modal').style.display='none'"
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer; color: #6b7280;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="history-content" style="margin-top: 20px;">
+                <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #eee; color: #6b7280; font-size: 0.875rem;">
+                            <th style="padding: 10px;">Fecha</th>
+                            <th style="padding: 10px;">Actividad</th>
+                            <th style="padding: 10px;">Esfuerzo</th>
+                            <th style="padding: 10px;">Ánimo Final</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/walking-tracker.js"></script>
+
+    <script>
+        const tracker = window.gpsTracker;
+        let timerInterval;
+        let seconds = 0;
+        let isRunning = false;
+        let isSpecialSession = false;
+
+        const INTERVAL_QUESTIONS = [
+            {
+                time: 1500, // Al inicio
+                title: "1. Llegar a la caminata",
+                message: "Empieza a caminar a tu ritmo. Nota cómo está tu cuerpo y tu mente. No hay prisa, no hay pendientes aquí.",
+                question: "¿Cómo llegas hoy a esta caminata? Elige una palabra que describa tu día.",
+                options: ["Feliz", "Estresado", "Cansado", "Neutral"],
+                responseMode: "multiple",
+                note: "Comparte tu palabra con tu compañero/a mientras caminan."
+            },
+            {
+                time: 1200, // 5 min
+                title: "2. Mirar el día con honestidad",
+                message: "Piensa en algún momento de hoy que fue difícil o pesado: trabajo, familia, tráfico… Solo obsérvalo, sin juicio.",
+                question: "¿Qué momento de hoy se te hizo más pesado y qué sentiste en ese momento?",
+                responseMode: "text",
+                note: "Si quieres, cuéntale a tu compañero el momento sin detalles íntimos; solo cómo te hizo sentir."
+            },
+            {
+                time: 900, // 10 min
+                title: "3. Reconocer lo que sí salió bien",
+                message: "Ahora recuerda algo de hoy que haya salido bien o que te hizo bien, aunque sea pequeño: una conversación, un café tranquilo, un correo resuelto.",
+                question: "¿Qué cosa pequeña salió bien hoy y qué emoción te genera recordarla mientras caminas?",
+                options: ["Una plática", "Un logro", "Un café", "Un respiro"],
+                responseMode: "multiple",
+                note: "Compartan esas pequeñas cosas. A veces lo bueno pasa desapercibido."
+            },
+            {
+                time: 600, // 15 min
+                title: "4. Dar gracias por lo vivido",
+                message: "La gratitud ayuda a equilibrar el estrés del día a día. Mientras caminas, piensa en dos cosas por las que hoy te sientas agradecido/a.",
+                question: "¿Por qué dos cosas de tu día de hoy te sientes agradecido/a en este momento?",
+                responseMode: "text",
+                note: "Pueden ser cosas muy simples: alguien que te escuchó, un estudiante, un compañero, el simple hecho de poder caminar ahora."
+            },
+            {
+                time: 300, // 20 min
+                title: "5. Elegir un pequeño paso para mañana",
+                message: "El Examen ignaciano propone terminar mirando al futuro: un paso pequeño y realista para vivir mejor mañana.",
+                question: "¿Qué acción pequeña quieres intentar mañana para cuidar mejor de ti o de alguien más?",
+                options: ["Más calma", "Mejor organización", "Escuchar más", "Descansar"],
+                responseMode: "multiple",
+                note: "Ej: 'Respirar 5 min antes de clase', 'Escuchar con calma', 'Organizar mejor mi día'."
+            }
+        ];
+
+        const CLOSURE_MESSAGE = {
+            time: 90, // Últimos 90 segundos
+            title: "🙏 Cierre de Sesión",
+            message: "Detente un momento. Respira profundo tres veces. Nota cómo llegaste y cómo te vas ahora.",
+            question: "Gracias por regalarte estos 25 minutos y por caminar con el grupo.",
+            responseMode: "none",
+            note: "Nota cómo la calma vuelve a tu cuerpo."
+        };
+        let lastQuestionIndex = -1;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initWalkingLiveSelection();
+            if (window.loadWalkingDashboard) window.loadWalkingDashboard();
+            loadMoodHistory();
+            monitorActiveSession();
+            showStep(1);
+        });
+
+        function initWalkingLiveSelection() {
+            const selectionScreen = document.getElementById('selection-screen');
+            const wizardContainer = document.getElementById('wizard-container');
+            const liveList = document.getElementById('walking-live-list');
+            const waitingMessage = document.getElementById('walking-waiting-message');
+
+            const storedUser = localStorage.getItem('currentEmployee');
+            if (storedUser) {
+                const user = JSON.parse(storedUser);
+                selectionScreen.style.display = 'none';
+                wizardContainer.style.display = 'block';
+                document.getElementById('user-context-name').textContent = user.name;
+                const initials = user.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+                document.getElementById('user-context-avatar').textContent = initials;
+
+                // VERIFICAR BIENVENIDA DÍA 1
+                if (localStorage.getItem('firstDayWelcome')) {
+                    showFirstDayWelcome(user.name);
+                    localStorage.removeItem('firstDayWelcome');
+                }
+                return;
+            }
+
+            function showFirstDayWelcome(name) {
+                const welcomeOverlay = document.createElement('div');
+                welcomeOverlay.id = 'first-day-welcome-overlay';
+                welcomeOverlay.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: linear-gradient(135deg, rgba(16, 185, 129, 0.98), rgba(59, 130, 246, 0.98));
+                    z-index: 5000; display: flex; align-items: center; justify-content: center;
+                    padding: 2rem; animation: fadeIn 0.6s ease;
+                `;
+
+                welcomeOverlay.innerHTML = `
+                    <div class="wellness-card text-center fade-in" style="max-width: 450px; padding: 3rem 2rem; border-radius: 30px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+                        <div style="width: 100px; height: 100px; background: #f0fdf4; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
+                            <i class="fa-solid fa-medal fa-4x" style="color: #10b981;"></i>
+                        </div>
+                        <h1 style="color: #1f2937; font-size: 2.2rem; font-weight: 900; margin-bottom: 0.5rem;">¡BIENVENIDO!</h1>
+                        <p style="font-size: 1.3rem; color: #10b981; font-weight: 700; margin-bottom: 1.5rem;">${name.toUpperCase()}</p>
+                        
+                        <div style="background: #eff6ff; padding: 1.5rem; border-radius: 20px; margin-bottom: 2rem; border: 1px solid #dbeafe;">
+                            <p style="color: #1e40af; font-weight: 800; font-size: 1.1rem; margin-bottom: 0.5rem;">📍 ACTIVIDAD DÍA 1</p>
+                            <p style="color: #60a5fa; font-size: 0.95rem; line-height: 1.5;">
+                                Has activado correctamente tu perfil de caminante. Tu primera sesión será guiada y durará 25 minutos.
+                            </p>
+                        </div>
+
+                        <button onclick="document.getElementById('first-day-welcome-overlay').remove()" class="btn-primary" style="background: #10b981; padding: 1.25rem; font-size: 1.2rem; font-weight: 800; border-radius: 18px; box-shadow: 0 10px 15px -3px rgba(16,185,129,0.3);">
+                            VER MI PERFIL Y COMENZAR
+                        </button>
+                        
+                        <p style="margin-top: 1.5rem; color: #9ca3af; font-size: 0.8rem;">
+                            Tu instructor te indicará cuando iniciar el cronómetro.
+                        </p>
+                    </div>
+                `;
+                document.body.appendChild(welcomeOverlay);
+            }
+
+            selectionScreen.style.display = 'block';
+            wizardContainer.style.display = 'none';
+
+            // Listener en tiempo real para caminatas activas hoy
+            const today = new Date().toISOString().split('T')[0];
+            db.collection('attendances')
+                .where('date', '==', today)
+                .where('status', '==', 'active')
+                .onSnapshot(snap => {
+                    liveList.innerHTML = '';
+                    // Filtrar solo las de categoría walking si están presentes, o todas si no hay categoría
+                    const walkingAttendances = snap.docs.filter(doc => !doc.data().category || doc.data().category === 'walking_session');
+
+                    if (walkingAttendances.length === 0) {
+                        waitingMessage.style.display = 'flex';
+                        return;
+                    }
+                    waitingMessage.style.display = 'none';
+                    walkingAttendances.forEach(doc => {
+                        const data = doc.data();
+                        const btn = document.createElement('button');
+                        btn.className = 'magic-btn fade-in';
+                        btn.style.cssText = "display: flex; align-items: center; gap: 1rem; background: white; border: 2px solid #10b981; padding: 1rem; border-radius: 12px; cursor: pointer; width: 100%; text-align: left; margin-bottom: 0.8rem; transition: all 0.2s; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1);";
+
+                        const initials = data.employeeName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+                        btn.innerHTML = `
+                            <div style="width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);">${initials}</div>
+                            <span style="flex: 1; font-weight: 700; font-size: 1.1rem; color: #1f2937;">Soy ${data.employeeName}</span>
+                            <div style="background: #f0fdf4; padding: 0.5rem; border-radius: 50%; color: #10b981;"><i class="fa-solid fa-chevron-right"></i></div>
+                        `;
+                        btn.onclick = () => {
+                            localStorage.setItem('currentEmployee', JSON.stringify({
+                                id: data.employeeId,
+                                name: data.employeeName
+                            }));
+                            location.reload();
+                        };
+                        liveList.appendChild(btn);
+                    });
+                });
+
+            // Búsqueda Manual
+            const manualToggle = document.getElementById('manual-walking-toggle');
+            const manualSearch = document.getElementById('manual-walking-search');
+            const manualBtn = document.getElementById('manual-walking-btn');
+            const manualInput = document.getElementById('manual-walking-input');
+            const manualResults = document.getElementById('manual-walking-results');
+
+            // NUEVO: Registro Primer Día
+            const regToggle = document.getElementById('first-day-reg-toggle');
+            const regContainer = document.getElementById('first-day-reg-container');
+            const regSubmitBtn = document.getElementById('reg-new-submit-btn');
+
+            if (manualToggle) {
+                manualToggle.onclick = () => {
+                    manualSearch.classList.toggle('hidden');
+                    if (regContainer) regContainer.classList.add('hidden');
+                };
+            }
+
+            if (regToggle) {
+                regToggle.onclick = () => {
+                    regContainer.classList.toggle('hidden');
+                    manualSearch.classList.add('hidden');
+                };
+            }
+
+            if (regSubmitBtn) {
+                regSubmitBtn.onclick = async () => {
+                    const name = document.getElementById('reg-new-name').value.trim();
+                    const dept = document.getElementById('reg-new-dept').value.trim();
+                    const job = document.getElementById('reg-new-job').value.trim();
+                    const account = document.getElementById('reg-new-account').value.trim();
+
+                    if (!name || !account) return alert("Por favor completa Nombre y Número de Cuenta.");
+
+                    regSubmitBtn.disabled = true;
+                    regSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registrando...';
+
+                    try {
+                        // 1. Verificar si ya existe
+                        const checkSnap = await db.collection('employees').where('accountNumber', '==', account).get();
+                        let employeeId;
+                        let finalName = name;
+
+                        if (!checkSnap.empty) {
+                            const existing = checkSnap.docs[0];
+                            employeeId = existing.id;
+                            finalName = existing.data().fullName || existing.data().name;
+                        } else {
+                            // 2. Crear nuevo empleado
+                            const newDoc = await db.collection('employees').add({
+                                fullName: name,
+                                name: name,
+                                name_lower: name.toLowerCase(),
+                                department: dept,
+                                position: job,
+                                accountNumber: account,
+                                status: 'active',
+                                walkingProfileActive: true,
+                                walkingRegistrationDate: firebase.firestore.FieldValue.serverTimestamp(),
+                                walkingSessionState: 'ready',
+                                points: 0,
+                                lastWalkingSession: null
+                            });
+                            employeeId = newDoc.id;
+                        }
+
+                        // 3. Auto-seleccionar y marcar primer día
+                        localStorage.setItem('currentEmployee', JSON.stringify({
+                            id: employeeId,
+                            name: finalName
+                        }));
+                        localStorage.setItem('firstDayWelcome', 'true');
+                        location.reload();
+
+                    } catch (e) {
+                        console.error("Error en registro rápido:", e);
+                        alert("Hubo un problema al registrar. Por favor intenta de nuevo.");
+                        regSubmitBtn.disabled = false;
+                        regSubmitBtn.innerHTML = 'Crear Perfil e Iniciar Caminata <i class="fa-solid fa-person-running ml-2"></i>';
+                    }
+                };
+            }
+
+            if (manualBtn) {
+                manualBtn.onclick = async () => {
+                    const query = manualInput.value.trim().toLowerCase();
+                    if (query.length < 3) return alert("Ingresa al menos 3 caracteres");
+
+                    manualResults.innerHTML = '<p style="text-align:center; padding: 1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Buscando...</p>';
+
+                    try {
+                        const snap = await db.collection('employees').where('accountNumber', '==', query).get();
+                        let results = [];
+                        snap.forEach(doc => results.push({ id: doc.id, ...doc.data() }));
+
+                        if (results.length === 0) {
+                            const endQuery = query.replace(/.$/, c => String.fromCharCode(c.charCodeAt(0) + 1));
+                            const snapName = await db.collection('employees').where('name_lower', '>=', query).where('name_lower', '<', endQuery).limit(5).get();
+                            snapName.forEach(doc => results.push({ id: doc.id, ...doc.data() }));
+                        }
+
+                        manualResults.innerHTML = '';
+                        if (results.length === 0) {
+                            manualResults.innerHTML = '<p style="text-align:center; color:#9ca3af; padding: 1rem;">No se encontraron resultados</p>';
+                        } else {
+                            results.forEach(emp => {
+                                const btn = document.createElement('button');
+                                btn.className = 'magic-btn';
+                                btn.style.cssText = "display: flex; align-items: center; gap: 0.8rem; background: #f9fafb; border: 1px solid #e5e7eb; padding: 0.8rem; border-radius: 10px; cursor: pointer; width: 100%; text-align: left; margin-bottom: 0.5rem;";
+                                const empName = emp.fullName || emp.name;
+                                btn.innerHTML = `<span style="flex:1; font-weight:600;">${empName}</span><i class="fa-solid fa-chevron-right" style="color:#d1d5db;"></i>`;
+                                btn.onclick = () => {
+                                    localStorage.setItem('currentEmployee', JSON.stringify({ id: emp.id, name: empName }));
+                                    location.reload();
+                                };
+                                manualResults.appendChild(btn);
+                            });
+                        }
+                    } catch (e) { console.error(e); }
+                };
+            }
+        }
+
+        function changeUserSelection() {
+            if (confirm("¿Seguro que quieres cambiar de usuario?")) {
+                localStorage.removeItem('currentEmployee');
+                location.reload();
+            }
+        }
+
+        // --- SESSION MONITORING ---
+        async function monitorActiveSession() {
+            const storedUser = localStorage.getItem('currentEmployee');
+            let employeeId = null;
+
+            if (storedUser) {
+                employeeId = JSON.parse(storedUser).id;
+            } else {
+                const user = firebase.auth().currentUser;
+                if (!user) {
+                    setTimeout(monitorActiveSession, 2000);
+                    return;
+                }
+                // Buscar por email si no hay selección
+                const snap = await db.collection('employees').where('email', '==', user.email).get();
+                if (!snap.empty) employeeId = snap.docs[0].id;
+            }
+
+            if (!employeeId) {
+                setTimeout(monitorActiveSession, 2000);
+                return;
+            }
+
+            // Escuchar cambios en el perfil del empleado (independiente de quién esté logueado)
+            db.collection('employees').doc(employeeId)
+                .onSnapshot(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        if (data.walkingSessionState === 'active' && !isRunning) {
+                            showSpecialSessionStart();
+                        }
+                    }
+                });
+        }
+
+        function showSpecialSessionStart() {
+            if (document.getElementById('special-start-modal')) return;
+            const modal = document.createElement('div');
+            modal.id = 'special-start-modal';
+            modal.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(59, 130, 246, 0.95)); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; padding: 2rem;`;
+            modal.innerHTML = `
+                <i class="fa-solid fa-person-walking fa-5x mb-4 pulse-animation"></i>
+                <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem;">¡Sesión de Caminata!</h1>
+                <p style="font-size: 1.25rem; margin-bottom: 2rem; max-width: 400px;">
+                    El administrador ha iniciado una sesión de 25 minutos con <b>Examen Ignaciano</b>. ¡Caminemos juntos!
+                </p>
+                <button onclick="start25MinSession()" class="btn-primary" style="background: white; color: #10b981; width: auto; padding: 1rem 3rem; font-size: 1.25rem; border-radius: 50px; font-weight: 800; border: none; cursor: pointer;">
+                    ¡COMENZAR AHORA!
+                </button>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function setupSpecialSession(isGuided, elem) {
+            isSpecialSession = isGuided;
+
+            // UI Updates
+            const guidedBtn = document.getElementById('btn-mode-guided');
+            const freeBtn = document.getElementById('btn-mode-free');
+
+            if (isGuided) {
+                guidedBtn.style.borderColor = '#10b981';
+                guidedBtn.style.background = '#f0fdf4';
+                guidedBtn.querySelector('i').style.color = '#10b981';
+                guidedBtn.querySelector('span').style.color = '#065f46';
+
+                freeBtn.style.borderColor = '#e5e7eb';
+                freeBtn.style.background = 'white';
+                freeBtn.querySelector('i').style.color = '#6b7280';
+                freeBtn.querySelector('span').style.color = '#4b5563';
+
+                seconds = 1500;
+            } else {
+                freeBtn.style.borderColor = '#10b981';
+                freeBtn.style.background = '#f0fdf4';
+                freeBtn.querySelector('i').style.color = '#10b981';
+                freeBtn.querySelector('span').style.color = '#065f46';
+
+                guidedBtn.style.borderColor = '#e5e7eb';
+                guidedBtn.style.background = 'white';
+                guidedBtn.querySelector('i').style.color = '#6b7280';
+                guidedBtn.querySelector('span').style.color = '#4b5563';
+
+                seconds = 0;
+            }
+            lastQuestionIndex = -1;
+            updateTimerDisplay();
+        }
+
+        function start25MinSession() {
+            document.getElementById('special-start-modal')?.remove();
+            isSpecialSession = true;
+            showStep(2);
+            seconds = 1500; // 25m
+
+            // Si es primer día, cargar script especial en la guía automática
+            const isFirstDay = document.getElementById('first-day-reg-container') ? !document.getElementById('first-day-reg-container').classList.contains('hidden') : false;
+            if (localStorage.getItem('firstDayWelcome') || isFirstDay) {
+                console.log("🌟 Cargando script de primer día para la guía timed...");
+                INTERVAL_QUESTIONS[0].question = "¿Qué te motivó a inscribirte en este programa de caminatas?";
+                INTERVAL_QUESTIONS[0].options = ["Salud", "Convivencia", "Curiosidad", "Recomendación"];
+
+                INTERVAL_QUESTIONS[1].question = "¿Cómo describirías tu nivel actual de actividad física?";
+                INTERVAL_QUESTIONS[1].options = ["Sedentario", "Ligero", "Activo", "Atleta"];
+                INTERVAL_QUESTIONS[1].responseMode = "multiple";
+
+                INTERVAL_QUESTIONS[2].question = "¿Sabías que 7,000 pasos al día reducen significativamente el riesgo de mortalidad?";
+                INTERVAL_QUESTIONS[2].options = ["Sí", "No", "Tenía idea", "No me importa"];
+
+                INTERVAL_QUESTIONS[3].question = "¿Cuántos días a la semana te gustaría caminar con el grupo?";
+                INTERVAL_QUESTIONS[3].options = ["1 día", "2 días", "3+ días", "Veremos"];
+                INTERVAL_QUESTIONS[3].responseMode = "multiple";
+
+                INTERVAL_QUESTIONS[4].question = "¿Cómo te sientes después de estos primeros pasos?";
+                INTERVAL_QUESTIONS[4].options = ["Emocionado", "Cansado", "Motivado", "Indiferente"];
+            }
+
+            updateTimerDisplay();
+            toggleTimer();
+            setTimeout(checkIntervals, 500);
+        }
+
+        // --- WIZARD & UI ---
+        function showStep(step) {
+            document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+            document.getElementById(`step-${step}`).classList.add('active');
+            document.querySelectorAll('.step-dot').forEach((el, i) => i + 1 === step ? el.classList.add('active') : el.classList.remove('active'));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function nextStep(step) {
+            if (step === 2 && !document.getElementById('input_mood_pre').value) {
+                alert("Por favor, selecciona cómo te sientes."); return;
+            }
+            showStep(step);
+        }
+
+        function prevStep(step) { showStep(step); }
+
+        function selectOption(cat, val, elem) {
+            document.getElementById(`input_${cat}`).value = val;
+            elem.parentElement.querySelectorAll('.selection-btn').forEach(b => b.classList.remove('selected'));
+            elem.classList.add('selected');
+        }
+
+        function selectBorg(val, elem) {
+            document.getElementById('input_borg').value = val;
+            document.getElementById('borg-selector').querySelectorAll('.borg-item').forEach(b => b.classList.remove('selected'));
+            elem.classList.add('selected');
+        }
+
+        // --- TIMER & GPS ---
+        function toggleTimer() {
+            const btn = document.getElementById('btn-timer-toggle');
+            const icon = btn.querySelector('i');
+            const status = document.getElementById('timer-status');
+
+            if (isRunning) {
+                clearInterval(timerInterval);
+                isRunning = false;
+                const stats = tracker.stop();
+                status.textContent = `Pausado: ${stats.distance_km}km | ${stats.steps} pasos`;
+                btn.classList.remove('pulse-animation');
+                btn.style.background = '#10b981';
+                icon.className = 'fas fa-play';
+                document.getElementById('input_steps').value = stats.steps;
+                document.getElementById('input_distance').value = stats.distance_km;
+
+                // Rehabilitar selección
+                document.getElementById('mode-selector-container').style.opacity = '1';
+                document.getElementById('mode-selector-container').style.pointerEvents = 'auto';
+            } else {
+                tracker.start(m => {
+                    document.getElementById('input_steps').value = m.steps;
+                    document.getElementById('input_distance').value = m.distance;
+                    status.textContent = `Registrando: ${m.distance}km | ${m.speed} km/h`;
+                });
+                isRunning = true;
+                btn.classList.add('pulse-animation');
+                btn.style.background = '#ef4444';
+                icon.className = 'fas fa-pause';
+
+                // Deshabilitar selección durante caminata
+                document.getElementById('mode-selector-container').style.opacity = '0.5';
+                document.getElementById('mode-selector-container').style.pointerEvents = 'none';
+
+                if (isSpecialSession) checkIntervals();
+
+                timerInterval = setInterval(() => {
+                    if (isSpecialSession) seconds--; else seconds++;
+                    updateTimerDisplay();
+                    if (isSpecialSession) checkIntervals();
+                }, 1000);
+            }
+        }
+
+        function updateTimerDisplay() {
+            const total = Math.abs(seconds);
+            const h = Math.floor(total / 3600), m = Math.floor((total % 3600) / 60), s = total % 60;
+            const display = document.getElementById('timer-display');
+            if (display) display.textContent = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function checkIntervals() {
+            // Verificar bloques de 5 minutos
+            INTERVAL_QUESTIONS.forEach((q, index) => {
+                // Usamos <= porque es cuenta regresiva y lastQuestionIndex para evitar repetición
+                if (seconds <= q.time && lastQuestionIndex < index) {
+                    lastQuestionIndex = index;
+                    showIntervalQuestion(q);
+                    try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) { }
+                }
+            });
+
+            // Verificar mensaje de cierre (90 segundos antes del final)
+            if (seconds <= CLOSURE_MESSAGE.time && lastQuestionIndex < 99) {
+                lastQuestionIndex = 99; // Usamos un ID especial para el cierre
+                showIntervalQuestion(CLOSURE_MESSAGE);
+                try { if (navigator.vibrate) navigator.vibrate([500]); } catch (e) { }
+            }
+
+            if (seconds <= 0) {
+                clearInterval(timerInterval);
+                finishSession();
+            }
+        }
+
+        function finishSession() {
+            isRunning = false;
+            if (timerInterval) clearInterval(timerInterval);
+            tracker.stop();
+            // Mostrar modal de felicitación final o ir directo al paso 3
+            alert("¡Felicidades! Has completado los 25 minutos de tu primera caminata guiada.");
+            showStep(3);
+        }
+
+        function showIntervalQuestion(q) {
+            console.log("🔔 Mostrando bloque:", q.title);
+            currentLiveQuestion = q; // Sincronizar para sendLiveResponse
+
+            // Eliminar overlay anterior si existe
+            const oldOverlay = document.getElementById('session-guide-overlay');
+            if (oldOverlay) {
+                oldOverlay.style.opacity = '0';
+                setTimeout(() => oldOverlay.remove(), 300);
+            }
+
+            const overlay = document.createElement('div');
+            overlay.id = 'session-guide-overlay';
+            overlay.style.cssText = `
+                position: fixed; top: 100px; left: 20px; right: 20px;
+                background: white; border-radius: 20px; z-index: 9999;
+                box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 3px solid #10b981;
+                padding: 1.5rem; animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+                overflow: hidden;
+            `;
+
+            let interactiveContent = '';
+            if (q.responseMode === 'multiple' && q.options) {
+                interactiveContent = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 1rem;">
+                        ${q.options.map(opt => `
+                            <button onclick="sendLiveResponse('${opt}')" class="btn-primary" style="background: white; color: #10b981; border: 2px solid #10b981; font-size: 0.8rem; padding: 0.6rem; font-weight: 700;">${opt}</button>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (q.responseMode === 'text') {
+                interactiveContent = `
+                    <div style="margin-top: 1rem;">
+                        <textarea id="guide-text-response" class="form-control" placeholder="Escribe tu reflexión..." style="height: 60px; margin-bottom: 0.5rem; border: 2px solid #10b981; font-size: 0.9rem;"></textarea>
+                        <button onclick="sendLiveResponse(document.getElementById('guide-text-response').value)" class="btn-primary" style="background: #10b981; width: 100%; font-size: 0.9rem; padding: 0.6rem;">ENVIAR</button>
+                    </div>
+                `;
+            }
+
+            overlay.innerHTML = `
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 6px; background: linear-gradient(to r, #10b981, #3b82f6);"></div>
+                <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="background: #f0fdf4; color: #10b981; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; border: 1px solid #10b981;">GUÍA DE CAMINATA ✨</span>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" style="background:none; border:none; color:#d1d5db; font-size: 1.2rem; cursor:pointer;"><i class="fa-solid fa-circle-xmark"></i></button>
+                    </div>
+                    <h3 style="font-size: 1.1rem; color: #1f2937; font-weight: 900; margin: 0;">${q.title}</h3>
+                    <p style="font-size: 0.9rem; color: #6b7280; margin: 0; line-height: 1.3;">${q.message}</p>
+                    <div style="background: rgba(16, 185, 129, 0.05); padding: 1rem; border-radius: 12px; border-left: 5px solid #10b981;">
+                        <p style="font-size: 1rem; color: #064e3b; font-weight: 800; margin: 0; line-height: 1.2;">"${q.question}"</p>
+                    </div>
+                    
+                    ${interactiveContent}
+
+                    <p style="font-size: 0.8rem; font-style: italic; color: #3b82f6; font-weight: 600; margin: 0;">💬 ${q.note || q.nota}</p>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            // Vibración fuerte al aparecer
+            try { if (navigator.vibrate) navigator.vibrate([300, 100, 300]); } catch (e) { }
+
+            // No cerrar automáticamente si es interactivo, o cerrar después de un tiempo prudente
+            if (q.responseMode === 'none') {
+                setTimeout(() => { if (overlay) overlay.remove(); }, 60000);
+            }
+        }
+
+        function validateStep2() { if (isRunning) toggleTimer(); nextStep(3); }
+
+        // --- LÓGICA DE INTERACCIÓN EN VIVO (RECEPTOR) ---
+        function initLiveSessionReceiver() {
+            db.collection('live_walking_sessions').doc('current')
+                .onSnapshot(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        if (data.active) {
+                            showLiveInteraction(data);
+                        }
+                    } else {
+                        // Limpiar si se borra la sesión
+                        const old = document.getElementById('live-interaction-overlay');
+                        if (old) old.remove();
+                    }
+                });
+        }
+
+        let currentLiveQuestion = null;
+
+        function showLiveInteraction(data) {
+            currentLiveQuestion = data;
+            const old = document.getElementById('live-interaction-overlay');
+            if (old && old.dataset.updated === data.lastUpdated?.seconds.toString()) return;
+            if (old) old.remove();
+
+            const overlay = document.createElement('div');
+            overlay.id = 'live-interaction-overlay';
+            overlay.dataset.updated = data.lastUpdated?.seconds.toString();
+            overlay.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+                z-index: 10000; display: flex; align-items: center; justify-content: center;
+                padding: 1.5rem; animation: fadeIn 0.5s ease;
+            `;
+
+            let interactiveContent = '';
+            if (data.responseMode === 'multiple' && data.options) {
+                interactiveContent = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem;">
+                        ${data.options.map(opt => `
+                            <button onclick="sendLiveResponse('${opt}')" class="btn-primary" style="background: white; color: #10b981; border: 2px solid #10b981; font-size: 0.9rem; padding: 1rem;">${opt}</button>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (data.responseMode === 'text') {
+                interactiveContent = `
+                    <div style="margin-top: 1.5rem;">
+                        <textarea id="live-text-response" class="form-control" placeholder="Escribe tu reflexión aquí..." style="height: 100px; margin-bottom: 1rem; border: 2px solid #10b981;"></textarea>
+                        <button onclick="sendLiveResponse(document.getElementById('live-text-response').value)" class="btn-primary" style="background: #10b981; width: 100%;">ENVIAR RESPUESTA</button>
+                    </div>
+                `;
+            }
+
+            overlay.innerHTML = `
+                <div class="wellness-card fade-in" style="width: 100%; max-width: 450px; padding: 2.5rem 1.5rem; border-radius: 25px; text-align: center; border: 3px solid #10b981;">
+                    <span style="background: #10b981; color: white; padding: 4px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: 800; display: inline-block; margin-bottom: 1rem;">EL INSTRUCTOR DICE:</span>
+                    <h2 style="font-size: 1.3rem; font-weight: 900; color: #1f2937; margin-bottom: 0.5rem;">${data.title}</h2>
+                    <p style="font-size: 1.1rem; color: #065f46; font-weight: 700; line-height: 1.4; margin-bottom: 1.5rem;">"${data.question}"</p>
+                    
+                    ${interactiveContent || '<p style="color: #6b7280; font-style: italic;">Escucha la indicación de tu instructor y reflexiona...</p>'}
+                    
+                    <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 2rem; background: none; border: none; color: #9ca3af; font-weight: 700; cursor: pointer;">CERRAR VENTANA</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            try { if (navigator.vibrate) navigator.vibrate([200, 50, 200]); } catch (e) { }
+        }
+
+        async function sendLiveResponse(value) {
+            if (!value) return alert("Por favor escribe o selecciona algo");
+            const storedUser = localStorage.getItem('currentEmployee');
+            const user = storedUser ? JSON.parse(storedUser) : { name: "Anónimo", id: "anon" };
+
+            try {
+                await db.collection('walking_live_responses').add({
+                    employeeId: user.id,
+                    employeeName: user.name,
+                    response: value,
+                    question: currentLiveQuestion ? (currentLiveQuestion.question || 'Reflexión libre') : 'Reflexión libre',
+                    questionIndex: lastQuestionIndex >= 0 ? lastQuestionIndex : -1,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                // Cerrar cualquier overlay activo (instructor o guía local)
+                const liveOverlay = document.getElementById('live-interaction-overlay');
+                const guideOverlay = document.getElementById('session-guide-overlay');
+                if (liveOverlay) liveOverlay.remove();
+                if (guideOverlay) guideOverlay.remove();
+                // Toast discreto en lugar de alert para no interrumpir la caminata
+                const toast = document.createElement('div');
+                toast.textContent = '✅ ¡Respuesta enviada! Sigue caminando.';
+                toast.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:#10b981;color:white;padding:1rem 2rem;border-radius:50px;font-weight:700;z-index:99999;box-shadow:0 10px 25px rgba(16,185,129,0.4);animation:fadeIn 0.3s ease;';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            } catch (e) { console.error('Error guardando respuesta:', e); }
+        }
+
+        function showScientificBasis(e) {
+            e.preventDefault();
+            document.getElementById('scientific-basis-modal').style.display = 'flex';
+        }
+
+        // Inicializar receptor de voz
+        initLiveSessionReceiver();
+
+        async function submitSession() {
+            const storedUser = localStorage.getItem('currentEmployee');
+            let employeeId = null;
+            if (storedUser) {
+                employeeId = JSON.parse(storedUser).id;
+            } else {
+                const user = firebase.auth().currentUser;
+                if (!user) return alert("Sesión no iniciada");
+                const snap = await db.collection('employees').where('email', '==', user.email).get();
+                if (!snap.empty) employeeId = snap.docs[0].id;
+            }
+
+            if (!employeeId) return alert("Perfil no identificado");
+
+            const data = {
+                weather: document.getElementById('input_weather').value,
+                moodPre: document.getElementById('input_mood_pre').value,
+                hydration: document.querySelector('input[name="hydration"]:checked')?.value || 'optimal',
+                steps: document.getElementById('input_steps').value,
+                distance: document.getElementById('input_distance').value,
+                cadence: document.getElementById('input_cadence').value || 0,
+                duration: Math.ceil(Math.abs(seconds) / 60) || 1,
+                borgScale: document.getElementById('input_borg').value,
+                moodPost: document.getElementById('input_mood_post').value,
+                gratitudeText: document.getElementById('input_gratitude').value
+            };
+            document.getElementById('loading-overlay').style.display = 'flex';
+            try {
+                const res = await window.saveChiWalkingSession(data);
+                if (res.success) {
+                    await db.collection('employees').doc(employeeId).update({
+                        walkingSessionState: 'completed',
+                        lastWalkingSession: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    alert("¡Sesión guardada!"); location.reload();
+                } else alert("Error: " + res.error);
+            } catch (e) { alert("Error: " + e.message); }
+            finally { document.getElementById('loading-overlay').style.display = 'none'; }
+        }
+
+        // --- HISTORY & CHARTS ---
+        async function loadMoodHistory() {
+            const storedUser = localStorage.getItem('currentEmployee');
+            let userEmail = null;
+
+            if (storedUser) {
+                // Empleado por selección mágica (puede no tener login)
+                const employeeId = JSON.parse(storedUser).id;
+                try {
+                    const empDoc = await db.collection('employees').doc(employeeId).get();
+                    if (empDoc.exists) {
+                        const empData = empDoc.data();
+                        // Usar email real si existe, si no usar identificador local
+                        userEmail = empData.email || `emp_${employeeId}@ibero-activate.local`;
+                    }
+                } catch (e) {
+                    // Sin permisos o error: no cargar historial silenciosamente
+                    return;
+                }
+            } else {
+                const user = firebase.auth().currentUser;
+                if (!user) { setTimeout(loadMoodHistory, 2000); return; }
+                userEmail = user.email;
+            }
+
+            if (!userEmail) return;
+
+            try {
+                const snap = await db.collection('wellness_records').doc(userEmail).collection('chi_sessions').orderBy('timestamp', 'desc').limit(5).get();
+                const sessions = []; snap.forEach(doc => sessions.unshift(doc.data()));
+                renderMoodChart(sessions);
+                renderHistoryTable(sessions.slice().reverse());
+            } catch (e) {
+                // Si no tiene historial aún o no tiene permisos, no mostrar error
+                console.log('Historial no disponible aún para este empleado.');
+            }
+        }
+
+        function renderMoodChart(sessions) {
+            const container = document.querySelector('.mood-chart-container');
+            if (!sessions.length || !container) return;
+            container.innerHTML = '';
+            document.getElementById('mood-impact-section').style.display = 'block';
+            const moodMap = { 'stressed': 1, 'tired': 2, 'neutral': 3, 'good': 4, 'relaxed': 4, 'happy': 5, 'energized': 5 };
+            sessions.forEach(s => {
+                const pre = moodMap[s.tech_values?.perception?.mood_pre] || 3;
+                const post = moodMap[s.tech_values?.perception?.mood_post] || 3;
+                const date = new Date(s.date).toLocaleDateString(undefined, { weekday: 'short' });
+                container.innerHTML += `<div class="mood-bar-group"><div class="mood-bars"><div class="bar bar-pre" style="height: ${pre * 20}px;"></div><div class="bar bar-post" style="height: ${post * 20}px; background-color: ${post > 3 ? '#10b981' : '#ef4444'}"></div></div><span class="mood-date">${date}</span></div>`;
+            });
+        }
+
+        function renderHistoryTable(sessions) {
+            const tbody = document.getElementById('history-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = sessions.map(s => `<tr><td class="p-3">${new Date(s.date).toLocaleDateString()}</td><td class="p-3"><b>${s.tech_values?.performance?.steps || 0} pasos</b><br>${(s.tech_values?.performance?.distance_km || 0).toFixed(2)}km</td><td class="p-3">${s.tech_values?.perception?.borg_scale || '-'}</td><td class="p-3">${s.tech_values?.perception?.mood_post || '-'}</td></tr>`).join('');
+        }
+    </script>
+</body>
+
+</html>

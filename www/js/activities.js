@@ -9,6 +9,16 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = 'login.html';
         } else {
             loadActivities();
+
+            // Check for edit parameter in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const editId = urlParams.get('edit');
+            if (editId) {
+                // Wait for activities to load, then open edit modal
+                setTimeout(() => {
+                    editActivity(editId);
+                }, 500);
+            }
         }
     });
 

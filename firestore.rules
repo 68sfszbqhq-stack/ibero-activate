@@ -309,6 +309,9 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-
+    // TRIVIA JEOPARDY
+    match /trivia_jep_session/{document=**} {
+      allow read, write: if true;
+    }
   }
 }

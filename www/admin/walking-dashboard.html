@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Dashboard Caminatas - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <!-- Reusing dashboard css but will override colors inline or via new class -->
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase & Chart.js -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* Green Theme Overrides for Walking Admin */
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --primary-light: #d1fae5;
+            --secondary: #3b82f6;
+        }
+
+        .sidebar-header {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+        }
+
+        .nav-link.active {
+            background: rgba(16, 185, 129, 0.1) !important;
+            color: #10b981 !important;
+            border-left-color: #10b981 !important;
+        }
+
+        .stat-number {
+            color: #10b981 !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-person-walking"></i>
+                <h2>IBERO CAMINATAS</h2>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="walking-dashboard.html" class="nav-link active">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-calendar.html" class="nav-link ">
+                        <i class="fa-solid fa-calendar-days"></i> Calendario
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-attendance.html" class="nav-link ">
+                        <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-reports.html" class="nav-link ">
+                        <i class="fa-solid fa-file-pdf"></i> Reportes
+                    </a>
+                </li>
+                <!-- Shared Resources -->
+                <li class="nav-item">
+                    <a href="walking-employees.html" class="nav-link ">
+                        <i class="fa-solid fa-users"></i> Empleados (Global)
+                    </a>
+                <li class="nav-item"
+                    style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                    <a href="dashboard.html" class="nav-link">
+                        <i class="fa-solid fa-arrow-left"></i> Volver a Admin Central
+                    </a>
+                </li>
+            </ul>
+
+            <button onclick="logout()" class="nav-link logout-btn">
+                <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="page-header">
+                <div>
+                    <h1>Dashboard de Caminatas</h1>
+                    <p id="current-date-display">Métricas de actividad física y recorridos</p>
+                </div>
+                <div class="week-selector">
+                    <button id="prev-week" class="btn-secondary"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span id="current-week-label" style="margin: 0 1rem; font-weight: 600;">Semana Actual</span>
+                    <button id="next-week" class="btn-secondary"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </header>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+
+                <!-- Sesiones Totales -->
+                <div class="stat-card card">
+                    <h3 style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Caminatas Realizadas</h3>
+                    <div class="stat-main">
+                        <p class="stat-number" id="total-walks">0</p>
+                        <i class="fa-solid fa-person-hiking" style="font-size: 2rem; color: #d1fae5;"></i>
+                    </div>
+                </div>
+
+                <!-- Kilómetros Recorridos -->
+                <div class="stat-card card">
+                    <h3 style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Total Kilómetros</h3>
+                    <div class="stat-main">
+                        <p class="stat-number" id="total-km">0.0 km</p>
+                        <i class="fa-solid fa-route" style="font-size: 2rem; color: #d1fae5;"></i>
+                    </div>
+                </div>
+
+                <!-- Pasos Acumulados -->
+                <div class="stat-card card">
+                    <h3 style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Pasos Totales</h3>
+                    <div class="stat-main">
+                        <p class="stat-number" id="total-steps">0</p>
+                        <i class="fa-solid fa-shoe-prints" style="font-size: 2rem; color: #d1fae5;"></i>
+                    </div>
+                </div>
+
+                <!-- Duración Promedio -->
+                <div class="stat-card card">
+                    <h3 style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Tiempo Promedio</h3>
+                    <div class="stat-main">
+                        <p class="stat-number" id="avg-duration">0 min</p>
+                        <i class="fa-solid fa-stopwatch" style="font-size: 2rem; color: #d1fae5;"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-section"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div class="chart-container card">
+                    <h2 style="margin-bottom: 1rem; font-size: 1.2rem;">KMs por Día</h2>
+                    <canvas id="km-chart"></canvas>
+                </div>
+                <div class="chart-container card">
+                    <h2 style="margin-bottom: 1rem; font-size: 1.2rem;">Participación por Grupo</h2>
+                    <canvas id="group-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Leaderboard -->
+            <div class="leaderboard card">
+                <h2 style="margin-bottom: 1.5rem; font-size: 1.2rem;">🏆 Top Caminantes</h2>
+                <div style="overflow-x: auto;">
+                    <table id="leaderboard-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 2px solid #f3f4f6;">
+                                <th style="padding: 1rem;">#</th>
+                                <th style="padding: 1rem;">Nombre</th>
+                                <th style="padding: 1rem;">Área</th>
+                                <th style="padding: 1rem;">Caminatas</th>
+                                <th style="padding: 1rem;">Distancia (km)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/security-utils.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/roles.js"></script>
+    <!-- New JS Logic for Walking Dashboard -->
+    <script src="../js/walking-dashboard.js"></script>
+</body>
+
+</html>

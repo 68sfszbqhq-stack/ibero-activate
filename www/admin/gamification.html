@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gamificación - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        .ranking-card {
+            background: linear-gradient(135deg, #ffffff, #f9fafb);
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .ranking-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary);
+        }
+
+        .ranking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .ranking-position {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .position-1 {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+        }
+
+        .position-2 {
+            background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
+            box-shadow: 0 4px 12px rgba(192, 192, 192, 0.4);
+        }
+
+        .position-3 {
+            background: linear-gradient(135deg, #cd7f32, #e8a87c);
+            box-shadow: 0 4px 12px rgba(205, 127, 50, 0.4);
+        }
+
+        .position-other {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .area-info {
+            flex: 1;
+            margin: 0 1.5rem;
+        }
+
+        .area-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .area-stats {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        .stat-item i {
+            color: var(--primary);
+        }
+
+        .points-display {
+            text-align: right;
+        }
+
+        .points-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .points-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .trophy-icon {
+            font-size: 2rem;
+            margin-right: 0.5rem;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .loader {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6b7280;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            color: #d1d5db;
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #764ba2);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .medal-icon {
+            font-size: 1.2rem;
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <h2>IBERO ACTÍVATE</h2>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link ">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="program-overview.html" class="nav-link ">
+                        <i class="fa-solid fa-calendar-star"></i> Programa 19 Semanas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="calendar.html" class="nav-link ">
+                        <i class="fa-solid fa-calendar-days"></i> Calendario
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="ai-reports.html" class="nav-link ">
+                        <i class="fa-solid fa-sparkles"></i> Reportes IA
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="activities.html" class="nav-link ">
+                        <i class="fa-solid fa-dumbbell"></i> Actividades
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="attendance.html" class="nav-link ">
+                        <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="attendance-late.html" class="nav-link ">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Pase Extemporáneo
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="employees.html" class="nav-link ">
+                        <i class="fa-solid fa-user-plus"></i> Empleados
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="reports.html" class="nav-link ">
+                        <i class="fa-solid fa-file-pdf"></i> Reportes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="gamification.html" class="nav-link active">
+                        <i class="fa-solid fa-trophy"></i> Gamificación
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="health-dashboard.html" class="nav-link ">
+                        <i class="fa-solid fa-heartbeat"></i> Dashboard de Salud
+                    </a>
+                </li>
+            </ul>
+
+            <button onclick="logout()" class="nav-link logout-btn">
+                <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="page-header">
+                <div>
+                    <h1>🏆 Ranking de Áreas</h1>
+                    <p>Competencia por puntos entre las diferentes áreas de la universidad</p>
+                </div>
+            </header>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="loading-state">
+                <div class="loader"></div>
+                <p>Cargando ranking...</p>
+            </div>
+
+            <!-- Ranking Container -->
+            <div id="ranking-container" style="display: none;">
+                <!-- Se llenará dinámicamente con JavaScript -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <i class="fa-solid fa-trophy"></i>
+                <h2>No hay datos de gamificación aún</h2>
+                <p>Los puntos se acumularán automáticamente cuando los empleados asistan a las actividades.</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/roles.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/gamification-ranking.js"></script>
+</body>
+
+</html>

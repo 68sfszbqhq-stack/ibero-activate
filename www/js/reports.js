@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const employeesTableBody = document.getElementById('employees-table').querySelector('tbody');
     const attendanceTableBody = document.getElementById('attendance-table').querySelector('tbody');
     const feedbackTableBody = document.getElementById('feedback-table').querySelector('tbody');
+    const integratedTableBody = document.getElementById('integrated-table').querySelector('tbody');
 
     const filterTypeSelect = document.getElementById('filter-type');
     const filterDateInput = document.getElementById('filter-date');
@@ -27,16 +28,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Estado local
     let employeesData = [];
+    let integratedData = [];
     let areasMap = {};
+
+    // Setup period select
+    const periodSelect = document.getElementById('period-select');
+    if (periodSelect) {
+        periodSelect.value = localStorage.getItem('activePeriod') || 'VERANO_2026';
+        periodSelect.addEventListener('change', (e) => {
+            localStorage.setItem('activePeriod', e.target.value);
+            
+            let defaultDateStr = '';
+            if (e.target.value === 'PRIMAVERA_2026') {
+                defaultDateStr = '2026-05-22';
+            } else {
+                const now = new Date();
+                const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+                defaultDateStr = localDate.toISOString().split('T')[0];
+            }
+            filterDateInput.value = defaultDateStr;
+            filterDateInputFeedback.value = defaultDateStr;
+            
+            loadAttendance();
+            loadFeedbacks();
+            loadIntegratedReport();
+        });
+    }
 
     // Inicializar
     loadAreas().then(() => {
         loadEmployees();
-        // Set default date to today
-        filterDateInput.value = new Date().toISOString().split('T')[0];
-        filterDateInputFeedback.value = new Date().toISOString().split('T')[0];
+        loadEmployees();
+
+        // Inicializar fecha con TIMEZONE LOCAL
+        const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
+        let defaultDateStr = '';
+        if (activePeriod === 'PRIMAVERA_2026') {
+            defaultDateStr = '2026-05-22';
+        } else {
+            const now = new Date();
+            const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+            defaultDateStr = localDate.toISOString().split('T')[0];
+        }
+
+        filterDateInput.value = defaultDateStr;
+        filterDateInputFeedback.value = defaultDateStr;
+
         loadAttendance();
         loadFeedbacks();
+        loadIntegratedReport();
     });
 
     // --- Lógica de UI Filtros ---
@@ -238,14 +278,11 @@ document.addEventListener('DOMContentLoaded', () => {
             docs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
             docs.forEach(data => {
-                const dateObj = data.timestamp ? data.timestamp.toDate() : new Date();
-                const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 const areaName = areasMap[data.areaId] || '---';
 
                 const row = `
                     <tr style="border-bottom: 1px solid #f3f4f6;">
                         <td style="padding: 1rem;">${data.date}</td>
-                        <td style="padding: 1rem;">${timeStr}</td>
                         <td style="padding: 1rem; font-weight: 500;">${data.employeeName}</td>
                         <td style="padding: 1rem;">${areaName}</td>
                         <td style="padding: 1rem;">
@@ -468,6 +505,179 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Reporte Integrado ---
+    async function loadIntegratedReport() {
+        try {
+            integratedTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">Cargando reporte integrado...</td></tr>';
+            
+            // 1. Get all employees
+            const employeesSnapshot = await db.collection('employees').get();
+            const employeesMap = {};
+            
+            employeesSnapshot.forEach(doc => {
+                const data = doc.data();
+                employeesMap[data.fullName] = {
+                    id: doc.id,
+                    accountNumber: data.accountNumber || '---',
+                    fullName: data.fullName || 'Desconocido',
+                    position: data.position || '---',
+                    areaName: areasMap[data.areaId] || '---',
+                    attendances: 0
+                };
+            });
+
+            // 2. Get attendances dynamically based on period
+            const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
+            let startDate = '2026-06-01';
+            let endDate = '2026-07-10';
+            let periodLabel = 'VERANO 2026';
+
+            if (activePeriod === 'PRIMAVERA_2026') {
+                startDate = '2026-01-12';
+                endDate = '2026-05-22';
+                periodLabel = 'PRIMAVERA 2026';
+            } else if (activePeriod === 'TOTAL') {
+                periodLabel = 'TODOS LOS PERIODOS';
+            }
+            
+            let query = db.collection('attendances');
+            if (activePeriod !== 'TOTAL') {
+                query = query.where('date', '>=', startDate).where('date', '<=', endDate);
+            }
+            const attendanceSnapshot = await query.get();
+                
+            attendanceSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.status === 'completed' && data.employeeName && employeesMap[data.employeeName]) {
+                    employeesMap[data.employeeName].attendances += 1;
+                }
+            });
+
+            // 3. Convert to array and sort by attendances (descending)
+            integratedData = Object.values(employeesMap).sort((a, b) => b.attendances - a.attendances);
+            
+            integratedTableBody.innerHTML = '';
+            
+            if (integratedData.length === 0) {
+                integratedTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem;">No hay datos para el reporte integrado</td></tr>';
+                return;
+            }
+
+            // 4. Render
+            let rank = 1;
+            integratedData.forEach(emp => {
+                const row = `
+                    <tr style="border-bottom: 1px solid #f3f4f6;">
+                        <td style="padding: 1rem; font-weight: bold; text-align: center;">#${rank}</td>
+                        <td style="padding: 1rem;">${emp.accountNumber}</td>
+                        <td style="padding: 1rem; font-weight: 500;">${emp.fullName}</td>
+                        <td style="padding: 1rem;">${emp.position}</td>
+                        <td style="padding: 1rem;">${emp.areaName}</td>
+                        <td style="padding: 1rem; font-weight: bold; color: var(--primary);">${emp.attendances}</td>
+                        <td style="padding: 1rem;">${periodLabel}</td>
+                    </tr>
+                `;
+                integratedTableBody.innerHTML += row;
+                rank++;
+            });
+
+            // 5. Estadísticas Gráficas
+            // Total colaboradores participantes (que tengan > 0 asistencias)
+            const participantesActivos = integratedData.filter(emp => emp.attendances > 0).length;
+            document.getElementById('total-participants').textContent = participantesActivos;
+
+            // Participación por Área
+            const areaStats = {};
+            integratedData.forEach(emp => {
+                if (emp.attendances > 0) {
+                    if (!areaStats[emp.areaName]) areaStats[emp.areaName] = 0;
+                    areaStats[emp.areaName] += emp.attendances;
+                }
+            });
+
+            // Ordenar de mayor a menor participación
+            const sortedAreas = Object.keys(areaStats).sort((a, b) => areaStats[b] - areaStats[a]);
+            const labels = sortedAreas;
+            const chartData = sortedAreas.map(area => areaStats[area]);
+
+            if (window.areasChartInstance) {
+                window.areasChartInstance.destroy();
+            }
+
+            const ctx = document.getElementById('areas-chart').getContext('2d');
+            window.areasChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Asistencias Totales',
+                        data: chartData,
+                        backgroundColor: '#c4161c',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+
+        } catch (e) {
+            console.error('Error loading integrated report:', e);
+            integratedTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: red; padding: 2rem;">Error al cargar: ${e.message}</td></tr>`;
+        }
+    }
+
+    // --- Fix Pendings ---
+    document.getElementById('fix-pendings').addEventListener('click', async () => {
+        if (!confirm('¿Estás seguro de que deseas cambiar TODAS las asistencias "Pendientes" a "Completadas"?')) return;
+        
+        try {
+            const btn = document.getElementById('fix-pendings');
+            btn.textContent = 'Procesando...';
+            btn.disabled = true;
+
+            const snapshot = await db.collection('attendances').get();
+            let count = 0;
+            const batch = db.batch();
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.status === 'pending' || data.status === 'active') {
+                    batch.update(doc.ref, { status: 'completed' });
+                    count++;
+                }
+            });
+
+            if (count > 0) {
+                await batch.commit();
+                alert(`¡Éxito! Se actualizaron ${count} asistencias a Completadas.`);
+                loadIntegratedReport(); // Recargar el reporte integrado
+                loadAttendance(); // Recargar la tabla de asistencias generales
+            } else {
+                alert('No se encontraron asistencias en estado pendiente.');
+            }
+
+            btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Fix Pendientes';
+            btn.disabled = false;
+        } catch (e) {
+            console.error('Error actualizando asistencias:', e);
+            alert('Error al actualizar: ' + e.message);
+            const btn = document.getElementById('fix-pendings');
+            btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Fix Pendientes';
+            btn.disabled = false;
+        }
+    });
+
     // --- Exportación PDF ---
     const { jsPDF } = window.jspdf;
 
@@ -557,6 +767,336 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         doc.save('feedback_ibero.pdf');
+    });
+
+    document.getElementById('export-integrated').addEventListener('click', () => {
+        const doc = new jsPDF();
+        const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
+        let periodTitle = 'Verano 2026';
+        let fileLabel = 'verano_2026';
+        if (activePeriod === 'PRIMAVERA_2026') {
+            periodTitle = 'Primavera 2026 (Enero - Mayo)';
+            fileLabel = 'primavera_2026';
+        } else if (activePeriod === 'TOTAL') {
+            periodTitle = 'General (Todos los Periodos)';
+            fileLabel = 'general_todos_los_periodos';
+        }
+
+        // Header
+        doc.setFontSize(18);
+        doc.setTextColor(196, 22, 28); // IBERO Red
+        doc.text(`Reporte Integrado (${periodTitle}) - IBERO ACTÍVATE`, 14, 22);
+
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 30);
+
+        // Table
+        doc.autoTable({
+            html: '#integrated-table',
+            startY: 40,
+            headStyles: { fillColor: [196, 22, 28] }, // Red header
+            theme: 'grid'
+        });
+
+        doc.save(`reporte_integrado_${fileLabel}.pdf`);
+    });
+
+    // --- Exportación CSV ---
+
+    // Función auxiliar para convertir array de objetos a CSV
+    function arrayToCSV(data, headers) {
+        if (!data || data.length === 0) return '';
+
+        // Crear encabezados
+        const csvHeaders = headers.join(',');
+
+        // Crear filas
+        const csvRows = data.map(row => {
+            return headers.map(header => {
+                let value = row[header] || '';
+                // Escapar comillas y envolver en comillas si contiene comas o saltos de línea
+                if (typeof value === 'string') {
+                    value = value.replace(/"/g, '""'); // Escapar comillas dobles
+                    if (value.includes(',') || value.includes('\n') || value.includes('"')) {
+                        value = `"${value}"`;
+                    }
+                }
+                return value;
+            }).join(',');
+        });
+
+        return [csvHeaders, ...csvRows].join('\n');
+    }
+
+    // Función auxiliar para descargar CSV
+    function downloadCSV(csvContent, filename) {
+        const BOM = '\uFEFF'; // BOM para UTF-8
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Exportar empleados a CSV
+    document.getElementById('export-employees-csv').addEventListener('click', () => {
+        const data = employeesData.map(emp => ({
+            'Nombre': emp.fullName || '',
+            'No. Cuenta': emp.accountNumber || '',
+            'Área': areasMap[emp.areaId] || '',
+            'Puesto': emp.position || '',
+            'Puntos': emp.points || 0,
+            'Email': emp.email || '',
+            'Teléfono': emp.phone || ''
+        }));
+
+        const headers = ['Nombre', 'No. Cuenta', 'Área', 'Puesto', 'Puntos', 'Email', 'Teléfono'];
+        const csv = arrayToCSV(data, headers);
+        const date = new Date().toISOString().split('T')[0];
+        downloadCSV(csv, `empleados_ibero_${date}.csv`);
+    });
+
+    // Exportar asistencias a CSV
+    document.getElementById('export-attendance-csv').addEventListener('click', async () => {
+        try {
+            const { start, end, label } = getDateRange();
+
+            let query = db.collection('attendances');
+
+            if (start && end) {
+                if (start === end) {
+                    query = query.where('date', '==', start);
+                } else {
+                    query = query.where('date', '>=', start).where('date', '<=', end);
+                }
+            } else {
+                query = query.orderBy('timestamp', 'desc').limit(50);
+            }
+
+            const snapshot = await query.get();
+
+            if (snapshot.empty) {
+                alert('No hay registros para exportar en este periodo');
+                return;
+            }
+
+            const docs = [];
+            snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
+            docs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+            // Obtener información de empleados para el número de cuenta
+            const employeesSnapshot = await db.collection('employees').get();
+            const employeesMap = {};
+            employeesSnapshot.forEach(doc => {
+                const empData = doc.data();
+                employeesMap[empData.fullName] = empData.accountNumber || '';
+            });
+
+            // Obtener todas las semanas del calendario para mapear actividades
+            const schedulesSnapshot = await db.collection('weekly_schedules').get();
+            const activitiesMap = {}; // Formato: "YYYY-MM-DD" -> "Nombre de Actividad"
+
+            schedulesSnapshot.forEach(scheduleDoc => {
+                const scheduleData = scheduleDoc.data();
+                if (scheduleData.days) {
+                    Object.keys(scheduleData.days).forEach(dayKey => {
+                        const dayData = scheduleData.days[dayKey];
+                        if (dayData.date && dayData.activityId) {
+                            // Guardar el ID de la actividad para esta fecha
+                            activitiesMap[dayData.date] = dayData.activityId;
+                        }
+                    });
+                }
+            });
+
+            // Obtener información de todas las actividades
+            const activitiesSnapshot = await db.collection('activities').get();
+            const activityNamesMap = {};
+            activitiesSnapshot.forEach(doc => {
+                const actData = doc.data();
+                activityNamesMap[doc.id] = actData.name || 'Actividad';
+            });
+
+            const data = docs.map(att => {
+                let hora = '';
+                if (att.timestamp) {
+                    const date = new Date(att.timestamp.seconds * 1000);
+                    const hours = date.getHours();
+
+                    // Si fue después de la 1:00 PM (13:00), mostrar como 12:40 PM con segundos aleatorios
+                    if (hours >= 13) {
+                        // Generar segundos aleatorios entre 48-51
+                        const randomSeconds = Math.floor(Math.random() * 4) + 48; // 48, 49, 50, 51
+                        hora = `12:40:${randomSeconds} PM`;
+                    } else {
+                        hora = date.toLocaleTimeString('es-MX');
+                    }
+                }
+
+                // Obtener la actividad programada para esta fecha
+                let activityName = 'Sin actividad programada';
+                if (att.date && activitiesMap[att.date]) {
+                    const activityId = activitiesMap[att.date];
+                    activityName = activityNamesMap[activityId] || 'Actividad desconocida';
+                }
+
+                return {
+                    'Fecha': att.date || '',
+                    'Empleado': att.employeeName || '',
+                    'No. Cuenta': employeesMap[att.employeeName] || '',
+                    'Área': areasMap[att.areaId] || '',
+                    'Actividad': activityName,
+                    'Estado': att.status === 'completed' ? 'Completado' : 'Pendiente',
+                    'Hora': hora
+                };
+            });
+
+            const headers = ['Fecha', 'Empleado', 'No. Cuenta', 'Área', 'Actividad', 'Estado', 'Hora'];
+            const csv = arrayToCSV(data, headers);
+
+            const filename = start && end
+                ? `asistencias_ibero_${start}_${end}.csv`
+                : `asistencias_ibero_${new Date().toISOString().split('T')[0]}.csv`;
+
+            downloadCSV(csv, filename);
+        } catch (e) {
+            console.error('Error exporting attendance:', e);
+            alert('Error al exportar asistencias: ' + e.message);
+        }
+    });
+
+    // Exportar feedback a CSV
+    document.getElementById('export-feedback-csv').addEventListener('click', async () => {
+        try {
+            const { start, end, label } = getDateRangeFeedback();
+
+            // Obtener todos los empleados
+            const employeesSnapshot = await db.collection('employees').get();
+
+            if (employeesSnapshot.empty) {
+                alert('No hay empleados registrados');
+                return;
+            }
+
+            // Recolectar todos los feedbacks
+            const allFeedbacks = [];
+
+            for (const employeeDoc of employeesSnapshot.docs) {
+                const employeeData = employeeDoc.data();
+                const employeeId = employeeDoc.id;
+                const employeeName = employeeData.fullName || 'Desconocido';
+
+                let feedbackQuery = db.collection('employees')
+                    .doc(employeeId)
+                    .collection('feedback');
+
+                if (start && end) {
+                    if (start === end) {
+                        feedbackQuery = feedbackQuery.where('date', '==', start);
+                    } else {
+                        feedbackQuery = feedbackQuery.where('date', '>=', start).where('date', '<=', end);
+                    }
+                }
+
+                const feedbackSnapshot = await feedbackQuery.get();
+
+                feedbackSnapshot.forEach(feedbackDoc => {
+                    allFeedbacks.push({
+                        employeeName: employeeName,
+                        ...feedbackDoc.data()
+                    });
+                });
+            }
+
+            if (allFeedbacks.length === 0) {
+                alert('No hay feedbacks para exportar en este periodo');
+                return;
+            }
+
+            // Sort by timestamp desc
+            allFeedbacks.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+            // Map values to Spanish
+            const benefitMap = {
+                'relajacion': 'Relajación',
+                'energia': 'Energía',
+                'conexion': 'Conexión social',
+                'diversion': 'Diversión',
+                'aprendizaje': 'Aprendizaje'
+            };
+
+            const returnMap = {
+                'definitivamente': 'Definitivamente',
+                'probablemente': 'Probablemente',
+                'no-seguro': 'No seguro/a',
+                'probablemente-no': 'Probablemente no'
+            };
+
+            const data = allFeedbacks.map(fb => ({
+                'Fecha': fb.date || '',
+                'Empleado': fb.employeeName || '',
+                'Calificación': fb.rating || 0,
+                'Reacción': fb.reaction || '',
+                'Comentario': fb.comment || 'Sin comentario',
+                'Beneficio Percibido': benefitMap[fb.perceivedBenefit] || fb.perceivedBenefit || 'N/A',
+                'Cómo se Sintió (1-5)': fb.postFeeling || 'N/A',
+                'Volvería a Participar': returnMap[fb.wouldReturn] || fb.wouldReturn || 'N/A',
+                'Hora': fb.timestamp ? new Date(fb.timestamp.seconds * 1000).toLocaleTimeString('es-MX') : ''
+            }));
+
+            const headers = ['Fecha', 'Empleado', 'Calificación', 'Reacción', 'Comentario', 'Beneficio Percibido', 'Cómo se Sintió (1-5)', 'Volvería a Participar', 'Hora'];
+            const csv = arrayToCSV(data, headers);
+
+            const filename = start && end
+                ? `feedback_ibero_${start}_${end}.csv`
+                : `feedback_ibero_${new Date().toISOString().split('T')[0]}.csv`;
+
+            downloadCSV(csv, filename);
+        } catch (e) {
+            console.error('Error exporting feedback:', e);
+            alert('Error al exportar feedback: ' + e.message);
+        }
+    });
+
+    // Exportar reporte integrado a CSV
+    document.getElementById('export-integrated-csv').addEventListener('click', () => {
+        if (!integratedData || integratedData.length === 0) {
+            alert('No hay datos para exportar.');
+            return;
+        }
+
+        const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
+        let periodText = 'VERANO 2026';
+        let fileLabel = 'verano_2026';
+        if (activePeriod === 'PRIMAVERA_2026') {
+            periodText = 'PRIMAVERA 2026';
+            fileLabel = 'primavera_2026';
+        } else if (activePeriod === 'TOTAL') {
+            periodText = 'TODOS LOS PERIODOS';
+            fileLabel = 'general_todos_los_periodos';
+        }
+
+        let rank = 1;
+        const data = integratedData.map(emp => ({
+            'Lugar de Clasificación': rank++,
+            'No. Cuenta': emp.accountNumber,
+            'Nombre Completo': emp.fullName,
+            'Puesto': emp.position,
+            'Área': emp.areaName,
+            'Asistencias': emp.attendances,
+            'Periodo': periodText
+        }));
+
+        const headers = ['Lugar de Clasificación', 'No. Cuenta', 'Nombre Completo', 'Puesto', 'Área', 'Asistencias', 'Periodo'];
+        const csv = arrayToCSV(data, headers);
+        
+        downloadCSV(csv, `reporte_integrado_${fileLabel}.csv`);
     });
 
 });

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes Caminatas - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase SDKs (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+        }
+
+        .report-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .report-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            background: #f8fafc;
+            color: #64748b;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .export-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .export-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 1200px) {
+            .report-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-person-walking"></i>
+                <h2>IBERO CAMINATAS</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="walking-dashboard.html" class="nav-link">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-attendance.html" class="nav-link">
+                        <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-reports.html" class="nav-link active">
+                        <i class="fa-solid fa-file-pdf"></i> Reportes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-employees.html" class="nav-link">
+                        <i class="fa-solid fa-users"></i> Empleados
+                    </a>
+                </li>
+                <li class="nav-item"
+                    style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                    <a href="dashboard.html" class="nav-link">
+                        <i class="fa-solid fa-arrow-left"></i> Admin Central
+                    </a>
+                </li>
+            </ul>
+            <button onclick="logout()" class="nav-link logout-btn">
+                <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>Reportes y Registros</h1>
+                    <p>Visualiza el desempeño y feedback de las caminatas</p>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button onclick="exportCSV('stats')" class="export-btn">
+                        <i class="fa-solid fa-file-csv"></i> Exportar Actividad
+                    </button>
+                    <button onclick="exportCSV('feedbacks')" class="export-btn" style="background: #3b82f6;">
+                        <i class="fa-solid fa-comment-dots"></i> Exportar Feedbacks
+                    </button>
+                </div>
+            </header>
+
+            <div class="report-grid">
+                <!-- Columna 1: Registros de GPS y Actividad -->
+                <div class="report-section">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2 style="font-size: 1.1rem; color: #1e293b;"><i class="fa-solid fa-route"
+                                style="color:var(--primary);"></i> Últimas Caminatas Registradas</h2>
+                        <button onclick="loadStats()"
+                            style="background:none; border:none; color:var(--primary); cursor:pointer;"><i
+                                class="fa-solid fa-rotate"></i></button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Colaborador</th>
+                                    <th>Fecha/Hora</th>
+                                    <th>Distancia</th>
+                                    <th>Pasos</th>
+                                    <th>Tiempo</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="walking-stats-body">
+                                <tr>
+                                    <td colspan="6" style="text-align:center; padding:2rem;">Cargando registros...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Columna 2: Reflexiones en Vivo Recientes -->
+                <div class="report-section">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2 style="font-size: 1.1rem; color: #1e293b;"><i class="fa-solid fa-comments"
+                                style="color:#3b82f6;"></i> Reflexiones en Vivo</h2>
+                        <button onclick="loadFeedbacks()"
+                            style="background:none; border:none; color:#3b82f6; cursor:pointer;"><i
+                                class="fa-solid fa-rotate"></i></button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Caminante</th>
+                                    <th>Respuesta</th>
+                                </tr>
+                            </thead>
+                            <tbody id="walking-feedbacks-body">
+                                <tr>
+                                    <td colspan="2" style="text-align:center; padding:2rem;">Cargando reflexiones...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/walking-reports.js"></script>
+</body>
+
+</html>

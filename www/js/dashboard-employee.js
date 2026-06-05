@@ -61,33 +61,76 @@ document.addEventListener('DOMContentLoaded', async () => {
             const detailsDisplay = document.getElementById('dashboard-details');
             if (detailsDisplay) detailsDisplay.textContent = `Colaborador • #${myAccount}`;
 
-            // 2. RECALCULAR PUNTOS Y BADGES (Datos Reales)
+            // 2. FILTRAR POR PERIODO ACTIVO (En memoria para evitar crear índices compuestos)
+            const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
+
             // Consultar todas las asistencias
-            // Obtener asistencias y feedbacks de subcollections
             const attendancesSnapshot = await db.collection('employees')
                 .doc(empId)
                 .collection('attendance')
                 .get();
-            const totalAttendances = attendancesSnapshot.size;
 
             // Consultar todos los feedbacks
             const feedbacksSnapshot = await db.collection('employees')
                 .doc(empId)
                 .collection('feedback')
                 .get();
-            const totalFeedbacks = feedbacksSnapshot.size;
 
-            // Calcular Puntos: (Asistencias * 10) + (Feedbacks * 5 [Bonus])
-            // Nota: El usuario pidió badges por feedback, asumimos que feedback también da puntos o solo badges.
-            // Mantendremos la lógica de puntos simple: 10 por asistencia + puntos extra guardados en feedback si los hubiera.
-            // Para simplificar y "limpiar" errores pasados:
+            // Filtrar asistencias según periodo
+            const filteredAttendancesDocs = [];
+            attendancesSnapshot.forEach(doc => {
+                const data = doc.data();
+                const dateStr = data.date;
+                if (activePeriod === 'VERANO_2026') {
+                    if (dateStr >= '2026-06-01' && dateStr <= '2026-07-10') {
+                        filteredAttendancesDocs.push(doc);
+                    }
+                } else if (activePeriod === 'PRIMAVERA_2026') {
+                    if (dateStr >= '2026-01-12' && dateStr <= '2026-05-22') {
+                        filteredAttendancesDocs.push(doc);
+                    }
+                } else if (activePeriod === 'TOTAL') {
+                    filteredAttendancesDocs.push(doc);
+                }
+            });
+
+            // Filtrar feedbacks según periodo
+            const filteredFeedbacksDocs = [];
+            feedbacksSnapshot.forEach(doc => {
+                const data = doc.data();
+                const dateStr = data.date || (data.timestamp ? data.timestamp.toDate().toISOString().split('T')[0] : '');
+                if (activePeriod === 'VERANO_2026') {
+                    if (dateStr >= '2026-06-01' && dateStr <= '2026-07-10') {
+                        filteredFeedbacksDocs.push(doc);
+                    }
+                } else if (activePeriod === 'PRIMAVERA_2026') {
+                    if (dateStr >= '2026-01-12' && dateStr <= '2026-05-22') {
+                        filteredFeedbacksDocs.push(doc);
+                    }
+                } else if (activePeriod === 'TOTAL') {
+                    filteredFeedbacksDocs.push(doc);
+                }
+            });
+
+            const totalAttendances = filteredAttendancesDocs.length;
+            const totalFeedbacks = filteredFeedbacksDocs.length;
+
+            // Crear mock snapshots para reusar funciones existentes
+            const mockAttendancesSnapshot = {
+                empty: totalAttendances === 0,
+                forEach: (cb) => filteredAttendancesDocs.forEach(cb)
+            };
+
+            const mockFeedbacksSnapshot = {
+                empty: totalFeedbacks === 0,
+                forEach: (cb) => filteredFeedbacksDocs.forEach(cb)
+            };
+
+            // Calcular Puntos del periodo
             let calculatedPoints = 0;
-
-            // Sumar puntos de asistencias
             calculatedPoints += totalAttendances * 10;
 
-            // Sumar puntos de feedbacks (Rating * 2)
-            feedbacksSnapshot.forEach(doc => {
+            filteredFeedbacksDocs.forEach(doc => {
                 const data = doc.data();
                 calculatedPoints += (data.rating || 0) * 2;
             });
@@ -96,8 +139,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const pointsCard = document.getElementById('dashboard-points');
             if (pointsCard) pointsCard.textContent = calculatedPoints;
 
-            // Actualizar Firestore si hay discrepancia (Auto-fix)
-            if (empData.points !== calculatedPoints) {
+            // Actualizar Firestore si hay discrepancia (Auto-fix) - SOLO para el periodo activo
+            if (activePeriod === 'VERANO_2026' && empData.points !== calculatedPoints) {
                 console.log('Corrigiendo puntos...', empData.points, '->', calculatedPoints);
                 db.collection('employees').doc(empId).update({ points: calculatedPoints });
             }
@@ -118,7 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (rankCard) rankCard.textContent = `#${myRank}`;
 
             // 4. CALCULAR RACHA REAL (días consecutivos)
-            const streak = calculateStreak(attendancesSnapshot);
+            const streak = calculateStreak(mockAttendancesSnapshot);
             const streakCard = document.getElementById('dashboard-streak');
             if (streakCard) streakCard.innerHTML = `${streak} <span style="font-size: 1rem;">${streak === 1 ? 'semana' : 'semanas'}</span>`;
 
@@ -126,8 +169,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             const badges = calculateBadges(totalAttendances, totalFeedbacks, streak, calculatedPoints);
             renderBadges(badges);
 
-            // 6. Calendario Mensual
-            renderMonthlyCalendar(attendancesSnapshot, new Date());
+            // 6. CONTROL DE TARJETA PRIMER DÍA (Caminatas)
+            const firstDayCard = document.getElementById('first-day-card');
+            if (firstDayCard && empData.walkingProfileActive) {
+                firstDayCard.style.display = 'none';
+            }
+
+            // 7. Calendario Mensual
+            let defaultCalendarDate = new Date();
+            if (activePeriod === 'PRIMAVERA_2026') {
+                defaultCalendarDate = new Date('2026-05-22T12:00:00');
+            }
+            renderMonthlyCalendar(mockAttendancesSnapshot, defaultCalendarDate);
 
         } catch (error) {
             console.error('Error cargando datos de empleado:', error);
@@ -224,13 +277,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('next-month')?.addEventListener('click', () => {
         if (!allAttendances) return;
         const today = new Date();
-        if (currentCalendarMonth.getMonth() >= today.getMonth() &&
-            currentCalendarMonth.getFullYear() >= today.getFullYear()) {
-            return; // Don't go beyond current month
+        const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
+        if (activePeriod === 'VERANO_2026') {
+            if (currentCalendarMonth.getMonth() >= today.getMonth() &&
+                currentCalendarMonth.getFullYear() >= today.getFullYear()) {
+                return; // Don't go beyond current month in Verano
+            }
         }
         currentCalendarMonth.setMonth(currentCalendarMonth.getMonth() + 1);
         renderMonthlyCalendar(allAttendances, currentCalendarMonth);
     });
+
+    // Selector de Periodo
+    const periodSelect = document.getElementById('period-select');
+    if (periodSelect) {
+        periodSelect.value = localStorage.getItem('activePeriod') || 'VERANO_2026';
+        periodSelect.addEventListener('change', (e) => {
+            localStorage.setItem('activePeriod', e.target.value);
+            loadEmployeeData(employeeId);
+        });
+    }
 });
 
 // CALCULAR RACHA (días consecutivos con asistencia)

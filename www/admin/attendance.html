@@ -6,8 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Content Security Policy para prevenir XSS -->
-    <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://firestore.googleapis.com; img-src 'self' data: https: https://chart.googleapis.com;">
+    <meta http-equiv="Content-Security-Policy" content="
+            default-src 'self'; 
+            script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com; 
+            style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; 
+            font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; 
+            connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com; 
+            img-src 'self' data: https:;
+        ">
 
     <title>Pase de Lista - IBERO ACTÍVATE</title>
     <link rel="stylesheet" href="../css/design-system.css">
@@ -79,6 +85,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="walking-attendance.html" class="nav-link" style="color: #10b981; font-weight: 700;">
+                        <i class="fa-solid fa-tower-broadcast"></i> Admin Caminatas
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="attendance-late.html" class="nav-link ">
                         <i class="fa-solid fa-clock-rotate-left"></i> Pase Extemporáneo
                     </a>
@@ -94,7 +105,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link ">
+                    <a href="gamification.html" class="nav-link ">
                         <i class="fa-solid fa-trophy"></i> Gamificación
                     </a>
                 </li>
@@ -162,13 +173,12 @@
             <div class="filters-bar">
                 <div class="filter-group">
                     <label for="area-dropdown">Seleccionar Área / Departamento</label>
-                    <!-- Wrapper label for Safari iOS compatibility -->
-                    <label class="select-wrapper" onclick="">
-                        <select id="area-dropdown">
-                            <option value="">-- Seleccione un área --</option>
-                            <!-- Cargado dinámicamente -->
-                        </select>
-                    </label>
+                    <div id="area-buttons-container" class="area-buttons-grid">
+                        <!-- Botones de áreas generados dinámicamente -->
+                        <div style="text-align: center; color: #9ca3af; padding: 1rem;">Cargando áreas...</div>
+                    </div>
+                    <!-- Hidden input to maintain compatibility with existing JS logic if needed (optional, but good practice is to update JS) -->
+                    <input type="hidden" id="area-dropdown" value="">
                 </div>
 
                 <div class="filter-group">
@@ -191,6 +201,14 @@
                         </label>
                     </div>
                 </div>
+
+                <div class="filter-group" style="display: flex; flex-direction: column; justify-content: flex-end;">
+                    <button id="btn-no-attendance" onclick="markNoAttendance()"
+                        style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3); transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem; height: 42px; white-space: nowrap;">
+                        <i class="fa-solid fa-user-slash"></i>
+                        <span>Sin Asistencia</span>
+                    </button>
+                </div>
             </div>
 
             <div id="empty-state"
@@ -211,7 +229,9 @@
     <script defer src="../js/security-utils.js"></script>
 
     <script defer src="../js/firebase-config.js"></script>
+    <script src="../js/roles.js"></script>
     <script defer src="../js/attendance.js"></script>
+    <script src="../js/create-area-helper.js"></script> <!-- Auto-crear área faltante -->
 
     <!-- QR Code Script -->
     <script>

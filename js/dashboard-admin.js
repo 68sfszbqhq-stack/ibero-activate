@@ -19,6 +19,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Data global para modales
     let globalData = {};
 
+    // Setup period select
+    const periodSelect = document.getElementById('period-select');
+    if (periodSelect) {
+        periodSelect.value = localStorage.getItem('activePeriod') || 'VERANO_2026';
+        periodSelect.addEventListener('change', (e) => {
+            localStorage.setItem('activePeriod', e.target.value);
+            loadDashboardData();
+            loadProgramSummary();
+        });
+    }
+
     // Inicializar
     loadDashboardData();
     loadProgramSummary(); // Program Periodization
@@ -62,10 +73,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         .get()
                 ]);
 
+                const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
+                let startPeriodDate = null;
+                let endPeriodDate = null;
+
+                if (activePeriod === 'VERANO_2026') {
+                    startPeriodDate = '2026-06-01';
+                    endPeriodDate = '2026-07-10';
+                } else if (activePeriod === 'PRIMAVERA_2026') {
+                    startPeriodDate = '2026-01-12';
+                    endPeriodDate = '2026-05-22';
+                }
+
                 // Procesar attendances
                 const empAttendances = [];
                 attSnapshot.forEach(doc => {
                     const data = doc.data();
+                    const attDate = data.date; // format: 'YYYY-MM-DD'
+                    if (startPeriodDate && (attDate < startPeriodDate || attDate > endPeriodDate)) {
+                        return; // Excluir si está fuera del periodo
+                    }
                     if (data.areaId) areasSet.add(data.areaId);
                     empAttendances.push({ id: doc.id, ...data, employeeId: empId, employeeName: empData.fullName || 'Desconocido' });
                 });
@@ -75,6 +102,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 let empTotalRating = 0;
                 fbSnapshot.forEach(doc => {
                     const data = doc.data();
+                    const fbDate = data.date; // format: 'YYYY-MM-DD' or timestamp
+                    let fbDateStr = fbDate;
+                    if (!fbDateStr && data.timestamp) {
+                        fbDateStr = data.timestamp.toDate().toISOString().split('T')[0];
+                    }
+                    if (!fbDateStr) {
+                        fbDateStr = data.createdAt ? new Date(data.createdAt).toISOString().split('T')[0] : '';
+                    }
+                    if (startPeriodDate && (fbDateStr < startPeriodDate || fbDateStr > endPeriodDate)) {
+                        return; // Excluir si está fuera del periodo
+                    }
                     empTotalRating += data.rating || 0;
                     empFeedbacks.push({ id: doc.id, ...data, employeeId: empId, employeeName: empData.fullName || 'Desconocido' });
                 });
@@ -83,8 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     attendances: empAttendances,
                     feedbacks: empFeedbacks,
                     totalRating: empTotalRating,
-                    attendanceCount: attSnapshot.size,
-                    feedbackCount: fbSnapshot.size
+                    attendanceCount: empAttendances.length,
+                    feedbackCount: empFeedbacks.length
                 };
             });
 
@@ -989,12 +1027,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load Program Peridization Summary
     async function loadProgramSummary() {
         try {
+            const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
+            if (activePeriod === 'TOTAL') {
+                const summaryCard = document.getElementById('program-summary');
+                if (summaryCard) summaryCard.style.display = 'none';
+                return;
+            }
+            const docId = activePeriod === 'PRIMAVERA_2026' ? 'primavera_2026' : 'current_macrocycle';
+
             const doc = await db.collection('program_periodization')
-                .doc('current_macrocycle')
+                .doc(docId)
                 .get();
 
             if (!doc.exists) {
                 // No program configured, hide the summary card
+                const summaryCard = document.getElementById('program-summary');
+                if (summaryCard) summaryCard.style.display = 'none';
                 return;
             }
 
@@ -1052,7 +1100,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const startDate = new Date(programData.startDate);
         const today = new Date();
 
-        const diffTime = today - startDate;
+        const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
+        let referenceDate = today;
+        if (activePeriod === 'PRIMAVERA_2026') {
+            const end = new Date('2026-05-22T23:59:59');
+            if (today > end) referenceDate = end;
+        }
+
+        const diffTime = referenceDate - startDate;
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         const weekNumber = Math.max(1, Math.min(
             Math.floor(diffDays / 7) + 1,

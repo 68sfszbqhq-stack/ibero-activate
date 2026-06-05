@@ -18,6 +18,9 @@
     <!-- PDF Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -77,7 +80,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link ">
+                    <a href="gamification.html" class="nav-link ">
                         <i class="fa-solid fa-trophy"></i> Gamificación
                     </a>
                 </li>
@@ -90,16 +93,23 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <header class="page-header">
+            <header class="page-header" style="display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
                 <div>
                     <h1>Reportes y Exportación</h1>
                     <p style="color: #666;">Genera listas completas y expórtalas a PDF</p>
+                </div>
+                <div>
+                    <select id="period-select" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid #e5e7eb; font-weight: 600; color: #374151; outline: none; cursor: pointer; background: #f9fafb; min-width: 180px;">
+                        <option value="VERANO_2026">Verano 2026 (Activo)</option>
+                        <option value="PRIMAVERA_2026">Primavera 2026 (Historial)</option>
+                        <option value="TOTAL">General (Todos los Periodos)</option>
+                    </select>
                 </div>
             </header>
 
             <!-- Tabs -->
             <div class="tabs-container"
-                style="margin-bottom: 2rem; border-bottom: 1px solid #e5e7eb; display: flex; gap: 2rem;">
+                style="margin-bottom: 2rem; border-bottom: 1px solid #e5e7eb; display: flex; gap: 1rem; flex-wrap: wrap;">
                 <button class="tab-btn active" data-target="employees-tab"
                     style="padding: 1rem; border: none; background: none; font-weight: 600; color: var(--primary); border-bottom: 2px solid var(--primary); cursor: pointer;">
                     <i class="fa-solid fa-users"></i> Lista de Empleados
@@ -112,6 +122,10 @@
                     style="padding: 1rem; border: none; background: none; font-weight: 500; color: #666; cursor: pointer;">
                     <i class="fa-solid fa-comments"></i> Feedback
                 </button>
+                <button class="tab-btn" data-target="integrated-tab"
+                    style="padding: 1rem; border: none; background: none; font-weight: 500; color: #666; cursor: pointer;">
+                    <i class="fa-solid fa-chart-pie"></i> Exportación Unificada
+                </button>
             </div>
 
             <!-- Employees Tab -->
@@ -120,9 +134,15 @@
                     <div class="card-header"
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                         <h2>Empleados Registrados</h2>
-                        <button id="export-employees" class="btn-primary">
-                            <i class="fa-solid fa-file-pdf"></i> Exportar PDF
-                        </button>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button id="export-employees" class="btn-primary">
+                                <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+                            </button>
+                            <button id="export-employees-csv" class="btn-primary"
+                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                            </button>
+                        </div>
                     </div>
                     <div class="table-container" style="overflow-x: auto;">
                         <table id="employees-table" style="width: 100%; border-collapse: collapse;">
@@ -174,6 +194,10 @@
                             <button id="export-attendance" class="btn-primary">
                                 <i class="fa-solid fa-file-pdf"></i> Exportar PDF
                             </button>
+                            <button id="export-attendance-csv" class="btn-primary"
+                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                            </button>
                         </div>
                     </div>
                     <div class="table-container" style="overflow-x: auto;">
@@ -181,7 +205,6 @@
                             <thead>
                                 <tr style="background: #f9fafb; text-align: left;">
                                     <th style="padding: 1rem;">Fecha</th>
-                                    <th style="padding: 1rem;">Hora</th>
                                     <th style="padding: 1rem;">Empleado</th>
                                     <th style="padding: 1rem;">Área</th>
                                     <th style="padding: 1rem;">Estado</th>
@@ -226,6 +249,10 @@
                             <button id="export-feedback" class="btn-primary">
                                 <i class="fa-solid fa-file-pdf"></i> Exportar PDF
                             </button>
+                            <button id="export-feedback-csv" class="btn-primary"
+                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                            </button>
                         </div>
                     </div>
                     <div class="table-container" style="overflow-x: auto;">
@@ -251,10 +278,73 @@
                 </div>
             </div>
 
+            <!-- Integrated Report Tab -->
+            <div id="integrated-tab" class="tab-content hidden">
+                <div class="card">
+                    <div class="card-header"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2>Exportación Unificada (Enero - 30 de Abril 2026)</h2>
+                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                            <button id="fix-pendings" class="btn-primary" style="background: #eab308;">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Fix Pendientes
+                            </button>
+                            <button id="export-integrated" class="btn-primary">
+                                <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+                            </button>
+                            <button id="export-integrated-csv" class="btn-primary"
+                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-container" style="overflow-x: auto;">
+                        <table id="integrated-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f9fafb; text-align: left;">
+                                    <th style="padding: 1rem;">Lugar de Clasificación</th>
+                                    <th style="padding: 1rem;">No. Cuenta</th>
+                                    <th style="padding: 1rem;">Nombre Completo</th>
+                                    <th style="padding: 1rem;">Puesto</th>
+                                    <th style="padding: 1rem;">Área</th>
+                                    <th style="padding: 1rem;">Asistencias</th>
+                                    <th style="padding: 1rem;">Periodo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JS Load -->
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 2rem;">Cargando reporte integrado...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Estadísticas Section -->
+                    <div class="stats-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 2rem;">
+                        <!-- Total Participants -->
+                        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, var(--primary) 0%, #991b1b 100%); color: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                            <i class="fa-solid fa-users" style="font-size: 3.5rem; margin-bottom: 1rem;"></i>
+                            <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem; color: #fecaca; font-weight: 500;">Total de Colaboradores Participantes</h3>
+                            <p id="total-participants" style="font-size: 4rem; font-weight: 800; margin: 0; line-height: 1;">0</p>
+                        </div>
+                        
+                        <!-- Chart -->
+                        <div style="padding: 1.5rem; background: white; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                            <h3 style="margin-bottom: 1rem; color: #374151; text-align: center;">Asistencias Totales por Área</h3>
+                            <div style="position: relative; height: 250px; width: 100%;">
+                                <canvas id="areas-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
         </main>
     </div>
 
     <script src="../js/firebase-config.js"></script>
+    <script src="../js/roles.js"></script>
     <script src="../js/reports.js"></script>
 </body>
 

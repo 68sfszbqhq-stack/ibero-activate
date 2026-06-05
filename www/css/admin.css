@@ -231,7 +231,7 @@
 .select-wrapper {
     display: block;
     margin-bottom: 0;
-    cursor: pointer;
+    position: relative;
 }
 
 .filter-group select,
@@ -240,32 +240,53 @@
     padding: 12px;
     border: 1px solid var(--color-border-dark);
     border-radius: 8px;
-    background: var(--white);
+    background-color: #ffffff;
     font-size: 16px;
     /* Prevents zoom on iOS */
+    color: #1f2937;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    min-height: 44px;
+    /* iOS touch target minimum */
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    /* Critical iOS fixes */
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
+
+    /* Custom dropdown arrow */
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
     padding-right: 36px;
-    cursor: pointer;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    min-height: 44px;
-    /* iOS touch target minimum */
-    -webkit-tap-highlight-color: rgba(102, 126, 234, 0.1);
-    /* Safari iOS specific fixes */
-    position: relative;
-    z-index: 1;
+
+    /* iOS Safari specific fixes */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+
+    /* Ensure proper rendering */
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
 }
 
-/* Force pointer cursor on Safari */
+/* Force proper styling on Safari */
 .filter-group select {
     cursor: pointer !important;
-    -webkit-touch-callout: none;
+    /* Remove any iOS default styling */
+    -webkit-border-radius: 8px;
+    border-radius: 8px;
+}
+
+/* iOS select option styling */
+.filter-group select option {
+    background-color: #ffffff;
+    color: #1f2937;
+    padding: 12px;
+    font-size: 16px;
 }
 
 .filter-group select:focus,
@@ -851,4 +872,95 @@ html {
     .login-card {
         padding: 2rem 1.5rem;
     }
+}
+/* Area Buttons Grid */
+.area-buttons-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.area-btn {
+    background: white;
+    border: 1px solid #e5e7eb;
+    padding: 0.6rem 1.2rem;
+    border-radius: 12px; /* iOS style rounded corners */
+    font-weight: 600;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.area-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border-color: #c7d2fe;
+}
+
+.area-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Colores por día para botones de área */
+.area-btn.day-mon-wed {
+    background: linear-gradient(135deg, #3b82f6, #2563eb); /* Azul */
+    color: white;
+    border-color: #1d4ed8;
+}
+
+.area-btn.day-tue-thu {
+    background: linear-gradient(135deg, #10b981, #059669); /* Verde */
+    color: white;
+    border-color: #047857;
+}
+
+.area-btn.day-fri {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed); /* Morado */
+    color: white;
+    border-color: #6d28d9;
+}
+
+/* Hover effects for colored buttons */
+.area-btn.day-mon-wed:hover,
+.area-btn.day-tue-thu:hover,
+.area-btn.day-fri:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Active state for colored buttons (adds a ring) */
+.area-btn.day-mon-wed.active,
+.area-btn.day-tue-thu.active,
+.area-btn.day-fri.active {
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.5), 0 4px 12px rgba(0,0,0,0.3); 
+    border-color: white;
+}
+
+/* Separator Line */
+.areas-separator {
+    width: 100%;
+    margin: 1.5rem 0 1rem 0;
+    border-top: 1px dashed #d1d5db;
+    position: relative;
+    text-align: center;
+}
+
+.areas-separator span {
+    position: relative;
+    top: -12px;
+    background: white; /* Match container bg */
+    padding: 0 10px;
+    color: #9ca3af;
+    font-size: 0.8rem;
+    font-weight: 500;
 }

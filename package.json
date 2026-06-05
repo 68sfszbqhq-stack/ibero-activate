@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "description": "Scripts de migración de Firestore para IBERO ACTÍVATE",
     "scripts": {
+        "dev": "npx -y http-server . -p 8080",
         "backup": "node scripts/migration-backup.js",
         "migrate:dry-run": "node scripts/migrate-to-subcollections.js --dry-run",
         "migrate:execute": "node scripts/migrate-to-subcollections.js --execute",

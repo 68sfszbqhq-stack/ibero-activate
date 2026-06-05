@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>🔍 Debug Firestore - walking_v2_users</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: monospace;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 1.5rem;
+        }
+
+        h1 {
+            color: #f87171;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        h2 {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            margin: 1.5rem 0 .5rem;
+        }
+
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: .75rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: .2rem .5rem;
+            border-radius: 4px;
+            font-size: .7rem;
+            font-weight: 700;
+        }
+
+        .green {
+            background: rgba(34, 197, 94, .2);
+            color: #4ade80;
+        }
+
+        .red {
+            background: rgba(239, 68, 68, .2);
+            color: #f87171;
+        }
+
+        .blue {
+            background: rgba(99, 102, 241, .2);
+            color: #818cf8;
+        }
+
+        .log {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 6px;
+            padding: .75rem;
+            font-size: .78rem;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            color: #94a3b8;
+        }
+
+        input,
+        select {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #e2e8f0;
+            padding: .5rem .75rem;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: .85rem;
+            width: 100%;
+            margin-bottom: .5rem;
+        }
+
+        button {
+            background: #C41230;
+            color: #fff;
+            border: none;
+            padding: .55rem 1.1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: .85rem;
+            font-weight: 700;
+            margin-right: .5rem;
+            margin-top: .25rem;
+        }
+
+        button.secondary {
+            background: #1e40af;
+        }
+
+        button.danger {
+            background: #7f1d1d;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: .75rem;
+        }
+
+        .field {
+            font-size: .72rem;
+            color: #64748b;
+            margin-top: .25rem;
+        }
+
+        .field span {
+            color: #cbd5e1;
+        }
+
+        #status {
+            font-size: .8rem;
+            padding: .4rem .75rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            background: rgba(251, 191, 36, .1);
+            border: 1px solid rgba(251, 191, 36, .3);
+            color: #fbbf24;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Debug Firestore — collection: walking_v2_users</h1>
+    <div id="status">Conectando a Firebase...</div>
+
+    <!-- USUARIOS EN FIRESTORE -->
+    <h2>👥 Usuarios en Firestore (<span id="count">0</span>)</h2>
+    <div id="users-grid" class="grid"></div>
+
+    <!-- AGREGAR USUARIO -->
+    <h2>➕ Agregar usuario manualmente</h2>
+    <div class="card" style="max-width:500px;">
+        <input id="add-name" placeholder="Nombre completo" />
+        <input id="add-email" placeholder="correo@iberopuebla.mx" />
+        <input id="add-dept" placeholder="Departamento / Área" />
+        <input id="add-uid" placeholder="UID de Firebase Auth (opcional — se genera si está vacío)" />
+        <button onclick="addUser()">💾 Agregar a Firestore</button>
+        <button class="secondary" onclick="createAndAdd()">🔑 Crear Auth + Agregar</button>
+    </div>
+
+    <!-- IMPORTAR LISTA -->
+    <h2>📋 Importar lista de nombres (uno por línea: Nombre,correo@ibero.mx,Departamento)</h2>
+    <div class="card" style="max-width:600px;">
+        <textarea id="bulk-input" rows="6" style="background:#0f172a;border:1px solid #334155;color:#e2e8f0;
+            padding:.5rem;border-radius:6px;font-family:monospace;font-size:.78rem;width:100%;margin-bottom:.5rem;"
+            placeholder="Juan García López,715919@iberopuebla.mx,RH
+María Pérez Torres,715920@iberopuebla.mx,TI
+..."></textarea>
+        <button onclick="bulkImport()">📥 Importar todos</button>
+    </div>
+
+    <!-- LOG -->
+    <h2>📟 Consola</h2>
+    <div id="log" class="log">Esperando...\n</div>
+
+    <!-- FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+
+    <script>
+        const logEl = document.getElementById('log');
+        function log(msg, color) {
+            const line = `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+            logEl.textContent += line;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(msg);
+        }
+
+        function setStatus(msg, ok = null) {
+            const el = document.getElementById('status');
+            el.textContent = msg;
+            el.style.background = ok === true ? 'rgba(34,197,94,.1)' :
+                ok === false ? 'rgba(239,68,68,.1)' :
+                    'rgba(251,191,36,.1)';
+            el.style.borderColor = ok === true ? 'rgba(34,197,94,.3)' :
+                ok === false ? 'rgba(239,68,68,.3)' :
+                    'rgba(251,191,36,.3)';
+            el.style.color = ok === true ? '#4ade80' : ok === false ? '#f87171' : '#fbbf24';
+        }
+
+        // ── Cargar usuarios al iniciar ──
+        async function loadUsers() {
+            log('Cargando walking_v2_users...');
+            try {
+                const snap = await db.collection('walking_v2_users').orderBy('name').get();
+                document.getElementById('count').textContent = snap.size;
+                const grid = document.getElementById('users-grid');
+                grid.innerHTML = '';
+
+                if (snap.empty) {
+                    log('⚠️ Colección vacía — no hay usuarios en Firestore');
+                    grid.innerHTML = '<div class="card" style="color:#f87171;">Sin usuarios en walking_v2_users</div>';
+                    return;
+                }
+
+                snap.forEach(doc => {
+                    const u = doc.data();
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                    <div style="font-weight:700;color:#f1f5f9;margin-bottom:.4rem;">
+                        ${u.name || '(sin nombre)'}
+                        <span class="badge blue" style="margin-left:.4rem;">UID: ${doc.id.slice(0, 8)}…</span>
+                    </div>
+                    <div class="field">Email: <span>${u.email || '-'}</span></div>
+                    <div class="field">Cuenta: <span>${u.accountNumber || '-'}</span></div>
+                    <div class="field">Dpto: <span>${u.department || '-'}</span></div>
+                    <div class="field">Sesiones: <span>${u.totalSessions || 0}</span></div>
+                    <div style="margin-top:.6rem;">
+                        <button class="danger" onclick="deleteUser('${doc.id}','${(u.name || '').replace(/'/g, "\\'")}')">🗑 Borrar</button>
+                    </div>
+                `;
+                    grid.appendChild(card);
+                    log(`✅ ${u.name} (${u.email}) — uid: ${doc.id}`);
+                });
+
+                setStatus(`✅ ${snap.size} usuario(s) cargado(s) de Firestore`, true);
+            } catch (e) {
+                log('❌ Error: ' + e.message);
+                setStatus('❌ Error al leer Firestore: ' + e.message, false);
+            }
+        }
+
+        // ── Agregar usuario solo a Firestore (con UID manual o generado) ──
+        async function addUser() {
+            const name = document.getElementById('add-name').value.trim();
+            const email = document.getElementById('add-email').value.trim();
+            const dept = document.getElementById('add-dept').value.trim();
+            let uid = document.getElementById('add-uid').value.trim();
+
+            if (!name || !email) { alert('Nombre y correo son obligatorios'); return; }
+
+            if (!uid) {
+                // Generar UID aleatorio si no se proporciona
+                uid = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+            }
+
+            const password = email.split('@')[0].replace(/\D/g, '') || '123456';
+
+            try {
+                await db.collection('walking_v2_users').doc(uid).set({
+                    uid, name, email, department: dept,
+                    accountNumber: password,
+                    totalSessions: 0, cumulativeKm: 0, cumulativeSteps: 0,
+                    cumulativeMinutes: 0, cumulativeCalories: 0,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                log(`✅ Agregado en Firestore: ${name} (${email}) → uid: ${uid}`);
+                clearForm();
+                await loadUsers();
+            } catch (e) {
+                log('❌ Error Firestore: ' + e.message);
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // ── Crear cuenta en Auth Y agregar a Firestore ──
+        async function createAndAdd() {
+            const name = document.getElementById('add-name').value.trim();
+            const email = document.getElementById('add-email').value.trim();
+            const dept = document.getElementById('add-dept').value.trim();
+
+            if (!name || !email) { alert('Nombre y correo son obligatorios'); return; }
+            const password = email.split('@')[0].replace(/\D/g, '');
+            if (password.length < 4) { alert('El correo debe tener al menos 4 dígitos antes del @'); return; }
+
+            log(`Creando cuenta Auth para ${email}...`);
+            try {
+                // App secundaria para no deslogear al admin
+                let secondaryApp;
+                try { secondaryApp = firebase.app('secondary-debug'); }
+                catch (e) { secondaryApp = firebase.initializeApp(firebase.app().options, 'secondary-debug'); }
+
+                const cred = await secondaryApp.auth().createUserWithEmailAndPassword(email, password);
+                const uid = cred.user.uid;
+                await secondaryApp.auth().signOut();
+
+                await db.collection('walking_v2_users').doc(uid).set({
+                    uid, name, email, department: dept,
+                    accountNumber: password,
+                    totalSessions: 0, cumulativeKm: 0, cumulativeSteps: 0,
+                    cumulativeMinutes: 0, cumulativeCalories: 0,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                log(`✅ Auth creado + Firestore guardado: ${name} (${email}) → uid: ${uid} pass: ${password}`);
+                clearForm();
+                await loadUsers();
+            } catch (e) {
+                log('❌ Error: ' + e.message);
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // ── Importar lista masiva ──
+        async function bulkImport() {
+            const lines = document.getElementById('bulk-input').value.trim().split('\n').filter(l => l.trim());
+            if (!lines.length) { alert('Escribe al menos una línea'); return; }
+
+            log(`Importando ${lines.length} usuarios...`);
+            let ok = 0, fail = 0;
+
+            let secondaryApp;
+            try { secondaryApp = firebase.app('secondary-bulk'); }
+            catch (e) { secondaryApp = firebase.initializeApp(firebase.app().options, 'secondary-bulk'); }
+
+            for (const line of lines) {
+                const parts = line.split(',').map(p => p.trim());
+                const name = parts[0];
+                const email = parts[1] || '';
+                const dept = parts[2] || '';
+
+                if (!name || !email) { log(`⚠️ Línea inválida: "${line}"`); fail++; continue; }
+                const password = email.split('@')[0].replace(/\D/g, '');
+                if (password.length < 4) { log(`⚠️ Contraseña muy corta para ${email}`); fail++; continue; }
+
+                try {
+                    const cred = await secondaryApp.auth().createUserWithEmailAndPassword(email, password);
+                    const uid = cred.user.uid;
+                    await secondaryApp.auth().signOut();
+
+                    await db.collection('walking_v2_users').doc(uid).set({
+                        uid, name, email, department: dept,
+                        accountNumber: password,
+                        totalSessions: 0, cumulativeKm: 0, cumulativeSteps: 0,
+                        cumulativeMinutes: 0, cumulativeCalories: 0,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    log(`✅ ${name} (${email})`);
+                    ok++;
+                } catch (e) {
+                    if (e.code === 'auth/email-already-in-use') {
+                        log(`⚠️ Ya existe: ${email} — omitido`);
+                    } else {
+                        log(`❌ Error ${email}: ${e.message}`);
+                        fail++;
+                    }
+                }
+            }
+
+            log(`\n📊 Resultado: ${ok} importados, ${fail} fallidos`);
+            document.getElementById('bulk-input').value = '';
+            await loadUsers();
+        }
+
+        // ── Borrar usuario de Firestore ──
+        async function deleteUser(uid, name) {
+            if (!confirm(`¿Borrar a "${name}" de Firestore?\n\nNota: su cuenta de Firebase Auth NO se borrará.`)) return;
+            try {
+                await db.collection('walking_v2_users').doc(uid).delete();
+                log(`🗑 Borrado de Firestore: ${name} (${uid})`);
+                await loadUsers();
+            } catch (e) {
+                log('❌ Error al borrar: ' + e.message);
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('add-name').value = '';
+            document.getElementById('add-email').value = '';
+            document.getElementById('add-dept').value = '';
+            document.getElementById('add-uid').value = '';
+        }
+
+        // ── Init ──
+        firebase.auth().onAuthStateChanged(async user => {
+            if (user) {
+                setStatus(`🔐 Logueado como: ${user.email}`);
+                log(`Auth UID activo: ${user.uid}`);
+                await loadUsers();
+            } else {
+                setStatus('⚠️ No hay sesión activa — los permisos de Firestore pueden fallar', false);
+                log('⚠️ Sin sesión. Abre primero el panel admin e inicia sesión.');
+                // Intentar cargar de todas formas (las reglas permiten lectura pública)
+                await loadUsers();
+            }
+        });
+    </script>
+</body>
+
+</html>

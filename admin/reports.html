@@ -93,10 +93,17 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <header class="page-header">
+            <header class="page-header" style="display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
                 <div>
                     <h1>Reportes y Exportación</h1>
                     <p style="color: #666;">Genera listas completas y expórtalas a PDF</p>
+                </div>
+                <div>
+                    <select id="period-select" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid #e5e7eb; font-weight: 600; color: #374151; outline: none; cursor: pointer; background: #f9fafb; min-width: 180px;">
+                        <option value="VERANO_2026">Verano 2026 (Activo)</option>
+                        <option value="PRIMAVERA_2026">Primavera 2026 (Historial)</option>
+                        <option value="TOTAL">General (Todos los Periodos)</option>
+                    </select>
                 </div>
             </header>
 

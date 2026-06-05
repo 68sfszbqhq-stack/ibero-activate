@@ -1,0 +1,677 @@
+/* ========================================
+   DAILY HABITS DASHBOARD STYLES
+   ========================================
+   Estilos específicos para el dashboard de hábitos diarios
+   ======================================== */
+
+/* ===== PÁGINA DE HÁBITOS ===== */
+.habits-page {
+    background: #f9fafb;
+    min-height: 100vh;
+}
+
+/* ===== HEADER ===== */
+.habits-header {
+    background: linear-gradient(135deg, var(--health-primary), var(--health-secondary));
+    color: white;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.back-btn,
+.sync-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.back-btn:hover,
+.sync-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.sync-btn.spinning i {
+    animation: spin 1s linear infinite;
+}
+
+.header-title {
+    flex: 1;
+    text-align: center;
+}
+
+.header-title h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.header-title p {
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+
+/* ===== MAIN CONTAINER ===== */
+.habits-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* ===== WELLNESS SCORE CARD ===== */
+.wellness-score-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.score-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.score-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.score-subtitle {
+    color: #6b7280;
+    font-size: 0.95rem;
+}
+
+.score-circle {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+.score-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.score-value span {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.score-value small {
+    font-size: 1rem;
+    color: #6b7280;
+}
+
+.score-breakdown {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.breakdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 12px;
+}
+
+.breakdown-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: white;
+}
+
+.breakdown-icon.hydration {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.breakdown-icon.nutrition {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.breakdown-icon.activity {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.breakdown-icon.continuous {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.breakdown-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.breakdown-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.breakdown-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+/* ===== HABIT CARD ===== */
+.habit-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.card-header h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.card-header p {
+    color: #6b7280;
+    font-size: 0.95rem;
+}
+
+/* ===== WATER TRACKER ===== */
+.glasses-container {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.water-glass {
+    aspect-ratio: 1;
+    border: 3px solid #e5e7eb;
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    background: white;
+}
+
+.water-glass:hover {
+    border-color: #3b82f6;
+    transform: translateY(-4px);
+}
+
+.glass-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+    background: linear-gradient(180deg, #60a5fa, #3b82f6);
+    transition: height 0.4s ease;
+}
+
+.water-glass.filled .glass-fill {
+    height: 100%;
+}
+
+.water-glass.filled {
+    border-color: #3b82f6;
+}
+
+.glass-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #9ca3af;
+    z-index: 1;
+}
+
+.water-glass.filled .glass-number {
+    color: white;
+}
+
+.hydration-stats {
+    display: flex;
+    justify-content: space-around;
+    padding: 1.5rem;
+    background: #f9fafb;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+.hydration-message {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #eff6ff;
+    border-radius: 12px;
+    color: #1e40af;
+    font-size: 0.95rem;
+}
+
+.hydration-message.success {
+    background: #ecfdf5;
+    color: #065f46;
+}
+
+.hydration-message i {
+    font-size: 1.25rem;
+}
+
+/* ===== NUTRITION SELECTOR ===== */
+.nutrition-selector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.nutrition-option {
+    padding: 1.5rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.nutrition-option:hover {
+    border-color: var(--health-accent);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.nutrition-option.selected {
+    border-color: var(--health-primary);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.option-emoji {
+    font-size: 3rem;
+    margin-bottom: 0.75rem;
+}
+
+.option-label {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.option-description {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.75rem;
+}
+
+.option-points {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--health-primary);
+}
+
+.nutrition-notes {
+    margin-top: 1rem;
+}
+
+.nutrition-notes label {
+    display: block;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.nutrition-notes textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: vertical;
+}
+
+.nutrition-notes textarea:focus {
+    outline: none;
+    border-color: var(--health-primary);
+}
+
+/* ===== ACTIVITY TRACKER ===== */
+.activity-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.activity-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: #f9fafb;
+    border-radius: 12px;
+}
+
+.activity-stat-card i {
+    font-size: 1.75rem;
+    color: var(--health-primary);
+}
+
+.continuous-walk-toggle {
+    margin-bottom: 1rem;
+}
+
+.toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: #f9fafb;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.toggle-container:hover {
+    background: #f3f4f6;
+}
+
+.toggle-container input[type="checkbox"] {
+    display: none;
+}
+
+.toggle-slider {
+    width: 56px;
+    height: 32px;
+    background: #d1d5db;
+    border-radius: 999px;
+    position: relative;
+    transition: background 0.3s ease;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background: white;
+    border-radius: 50%;
+    top: 4px;
+    left: 4px;
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-container input[type="checkbox"]:checked+.toggle-slider {
+    background: var(--health-primary);
+}
+
+.toggle-container input[type="checkbox"]:checked+.toggle-slider::before {
+    transform: translateX(24px);
+}
+
+.toggle-label {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.toggle-label i {
+    font-size: 1.5rem;
+    color: var(--health-primary);
+}
+
+.toggle-label strong {
+    display: block;
+    color: #1f2937;
+    font-size: 1rem;
+}
+
+.toggle-label small {
+    display: block;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.sync-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #ecfdf5;
+    border-radius: 12px;
+    color: #065f46;
+    font-size: 0.95rem;
+}
+
+/* ===== INSIGHTS CARD ===== */
+.insights-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.card-icon.insights {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.insights-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.insight-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border-left: 4px solid;
+}
+
+.insight-item.insight-success {
+    background: #ecfdf5;
+    border-color: var(--health-success);
+}
+
+.insight-item.insight-warning {
+    background: #fef3c7;
+    border-color: var(--health-warning);
+}
+
+.insight-item.insight-info {
+    background: #eff6ff;
+    border-color: var(--health-info);
+}
+
+.insight-item.insight-medical {
+    background: #fef2f2;
+    border-color: var(--health-danger);
+}
+
+.insight-item.insight-motivation {
+    background: #f5f3ff;
+    border-color: #8b5cf6;
+}
+
+.insight-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.insight-content strong {
+    display: block;
+    color: #1f2937;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.insight-content p {
+    color: #6b7280;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ===== SAVE SECTION ===== */
+.save-section {
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.btn-save {
+    padding: 1rem 2.5rem;
+    background: linear-gradient(135deg, var(--health-primary), var(--health-secondary));
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-size: 1.125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+}
+
+.btn-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);
+}
+
+.btn-save:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.save-hint {
+    margin-top: 1rem;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+    .score-breakdown {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .activity-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-title h1 {
+        font-size: 1.25rem;
+    }
+
+    .glasses-container {
+        grid-template-columns: repeat(5, 1fr);
+    }
+
+    .nutrition-selector {
+        grid-template-columns: 1fr;
+    }
+
+    .score-breakdown {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .habits-container {
+        padding: 1rem;
+    }
+
+    .habit-card,
+    .wellness-score-card,
+    .insights-card {
+        padding: 1.5rem;
+    }
+
+    .score-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+}

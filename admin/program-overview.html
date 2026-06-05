@@ -824,6 +824,27 @@
 
         <!-- Main Content -->
         <main class="main-content">
+            <!-- Period & Control Selector -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; background: white; padding: 1rem 1.5rem; border-radius: 12px; box-shadow: var(--shadow-sm);">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <i class="fa-solid fa-calendar-days" style="font-size: 1.5rem; color: var(--primary);"></i>
+                    <div>
+                        <h3 style="font-size: 0.95rem; margin: 0; font-weight: 700; color: #1f2937;">Periodo de Actividad</h3>
+                        <p style="font-size: 0.8rem; color: #6b7280; margin: 0;">Selecciona el periodo para ver su programación</p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <select id="period-select" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid #e5e7eb; font-weight: 600; color: #374151; outline: none; cursor: pointer; background: #f9fafb; min-width: 180px;">
+                        <option value="VERANO_2026">Verano 2026 (Activo)</option>
+                        <option value="PRIMAVERA_2026">Primavera 2026 (Historial)</option>
+                        <option value="TOTAL">General (Todos los Periodos)</option>
+                    </select>
+                    <button id="btn-init-verano" class="btn-primary-action" style="background: linear-gradient(135deg, #10b981, #059669); margin: 0; padding: 0.5rem 1rem; font-size: 0.9rem; display: none;">
+                        <i class="fa-solid fa-circle-play"></i> Iniciar Verano 2026
+                    </button>
+                </div>
+            </div>
+
             <!-- Hero Section -->
             <div class="program-hero" id="program-hero">
                 <div class="program-hero">

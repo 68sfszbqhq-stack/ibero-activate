@@ -5,6 +5,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!user) {
             window.location.href = 'login.html';
         } else {
+            // Setup Period Selector
+            const periodSelect = document.getElementById('period-select');
+            if (periodSelect) {
+                periodSelect.value = localStorage.getItem('activePeriod') || 'VERANO_2026';
+                periodSelect.addEventListener('change', (e) => {
+                    localStorage.setItem('activePeriod', e.target.value);
+                    loadProgramData();
+                });
+            }
+
+            // Setup Init Verano Button Click
+            const btnInitVerano = document.getElementById('btn-init-verano');
+            if (btnInitVerano) {
+                btnInitVerano.addEventListener('click', handleInitVerano);
+            }
+
             loadProgramData();
         }
     });
@@ -15,9 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let programContext = null;
 
     async function loadProgramData() {
-        // NO mostrar loading state - dejar el hero como está
-        // showLoadingState();
-
         // Timeout de seguridad: si no carga en 10 segundos, mostrar error
         const timeoutId = setTimeout(() => {
             console.error('⏱️ Timeout: La carga tomó más de 10 segundos');
@@ -27,12 +40,27 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             console.log('📊 [Program Overview] Iniciando carga de datos...');
 
-            programData = await ProgramUtils.loadProgramData();
+            const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
+            if (activePeriod === 'TOTAL') {
+                clearTimeout(timeoutId);
+                showInfoMessage('Por favor, selecciona un periodo específico (Primavera o Verano) en la parte superior para ver su programación detallada.');
+                return;
+            }
+            const docId = activePeriod === 'PRIMAVERA_2026' ? 'primavera_2026' : 'current_macrocycle';
+
+            programData = await ProgramUtils.loadProgramData(docId);
             console.log('📊 [Program Overview] Datos cargados:', programData ? 'SÍ' : 'NO');
+
+            const btnInitVerano = document.getElementById('btn-init-verano');
 
             if (!programData) {
                 clearTimeout(timeoutId);
                 showNoProgramMessage();
+                
+                // Show init button if active period is VERANO_2026 (since no macrocycle is configured yet)
+                if (btnInitVerano && activePeriod === 'VERANO_2026') {
+                    btnInitVerano.style.display = 'flex';
+                }
                 return;
             }
 
@@ -48,9 +76,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Control del botón de inicialización
+            if (btnInitVerano) {
+                if (activePeriod === 'VERANO_2026' && programData.totalWeeks === 19) {
+                    btnInitVerano.style.display = 'flex';
+                } else {
+                    btnInitVerano.style.display = 'none';
+                }
+            }
+
             // Calcular contexto actual
             console.log('📊 [Program Overview] Calculando contexto...');
-            programContext = ProgramUtils.calculateProgramWeek(programData);
+            let checkDate = new Date();
+            if (activePeriod === 'PRIMAVERA_2026') {
+                const end = new Date('2026-05-22T23:59:59');
+                if (checkDate > end) checkDate = end;
+            }
+            programContext = ProgramUtils.calculateProgramWeek(programData, checkDate);
             console.log('📊 [Program Overview] Contexto:', programContext);
 
             if (!programContext) {
@@ -78,6 +120,173 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('❌ [Program Overview] Error loading program data:', error);
             console.error('Stack trace:', error.stack);
             showErrorMessage('Error al cargar el programa: ' + error.message);
+        }
+    }
+
+    async function handleInitVerano() {
+        const confirmInit = confirm(
+            "⚠️ ATENCIÓN: Esta acción inicializará el periodo VERANO 2026.\n\n" +
+            "1. Se respaldará la programación de Primavera 2026 (19 semanas) en la base de datos.\n" +
+            "2. Se sobreescribirá la programación activa con el calendario de Verano 2026 (6 semanas, del 1 de Junio al 10 de Julio).\n\n" +
+            "¿Desea continuar con la inicialización?"
+        );
+
+        if (!confirmInit) return;
+
+        const btn = document.getElementById('btn-init-verano');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Inicializando...';
+
+        try {
+            console.log("📦 Respaldando Primavera 2026...");
+            
+            const currentDoc = await db.collection('program_periodization')
+                .doc('current_macrocycle')
+                .get();
+                
+            if (currentDoc.exists && currentDoc.data().totalWeeks === 19) {
+                await db.collection('program_periodization')
+                    .doc('primavera_2026')
+                    .set(currentDoc.data());
+                console.log("✅ Respaldo de Primavera 2026 guardado.");
+            } else {
+                console.log("⚠️ No se encontró programación de Primavera 2026 o ya está respaldada. Continuando...");
+            }
+
+            // Datos de Verano 2026
+            const verano2026Macrocycle = {
+                programName: "IBERO ACTÍVATE - Macrociclo de Bienestar Verano 2026",
+                totalWeeks: 6,
+                startDate: "2026-06-01",
+                phases: [
+                    {
+                        phaseId: 1,
+                        name: "Adaptación Anatómica",
+                        nomenclatura: "Mesociclo de Adaptación Física y Social",
+                        weekRange: [1, 2],
+                        objetivoDominante: "Cardiovascular-Social",
+                        intensidad: "Baja",
+                        colorTheme: "#10b981",
+                        icon: "fa-heart-pulse",
+                        justificacionCientifica: "Fase de Adaptación Anatómica de 2 semanas enfocada en la preparación muscular y la hidratación. Las caminatas suaves permiten restablecer la rutina sin estrés para el sistema músculo-esquelético, mientras que la hidratación adecuada incrementa los niveles de energía y previene la fatiga física y mental en temporada de calor.",
+                        objetivosFase: [
+                            "Preparar el sistema cardiovascular y locomotor para el esfuerzo progresivo.",
+                            "Establecer la rutina de hidratación sistemática (mínimo 8 vasos de agua al día).",
+                            "Conectar socioemocionalmente con los compañeros al inicio del periodo."
+                        ],
+                        metricsTarget: {
+                            intensidadFC: "50-60% FCmáx",
+                            volumen: "15 min/sesión, 2-3 sesiones/semana",
+                            cargaSocial: "Alta",
+                            participacionObjetivo: "30-50%"
+                        },
+                        actividadesRecomendadas: [
+                            "Caminatas de Integración",
+                            "Pausas de Hidratación"
+                        ]
+                    },
+                    {
+                        phaseId: 2,
+                        name: "Base de Resistencia",
+                        nomenclatura: "Mesociclo de Desarrollo Cardiovascular",
+                        weekRange: [3, 4],
+                        objetivoDominante: "Físico-Coordinativo",
+                        intensidad: "Moderada",
+                        colorTheme: "#3b82f6",
+                        icon: "fa-running",
+                        justificacionCientifica: "Fase de Base de Resistencia de 2 semanas enfocada en caminatas continuas de más de 15 minutos. Caminar a un ritmo continuo y moderado estimula el volumen sistólico del corazón, mejora la oxigenación y ayuda a consolidar el hábito de pausas activas físicas.",
+                        objetivosFase: [
+                            "Desarrollar la capacidad aeróbica general.",
+                            "Implementar al menos una caminata continua diaria de más de 15 minutos.",
+                            "Alternar dinámicas lúdicas y caminatas al aire libre."
+                        ],
+                        metricsTarget: {
+                            intensidadFC: "60-70% FCmáx",
+                            volumen: "15-20 min/sesión",
+                            cargaSocial: "Media",
+                            participacionObjetivo: "50-60%"
+                        },
+                        actividadesRecomendadas: [
+                            "Caminatas de Resistencia Aeróbica",
+                            "Juegos de Coordinación al Aire Libre"
+                        ]
+                    },
+                    {
+                        phaseId: 3,
+                        name: "Consolidación",
+                        nomenclatura: "Mesociclo de Consolidación y Hábitos Saludables",
+                        weekRange: [5, 6],
+                        objetivoDominante: "Físico-Social",
+                        intensidad: "Moderada-Alta",
+                        colorTheme: "#8b5cf6",
+                        icon: "fa-trophy",
+                        justificacionCientifica: "Fase de Consolidación hacia la meta final del club: caminar de manera sostenida para lograr 7,000 pasos de meta diaria promedio. El entrenamiento físico acumulado durante las semanas anteriores se consolida aquí y sienta las bases para la autonomía del bienestar.",
+                        objetivosFase: [
+                            "Consolidar el hábito diario de pasos apuntando al club de los 7K.",
+                            "Fomentar la autogestión de pausas saludables por departamento.",
+                            "Cierre del periodo con evaluación post-programa."
+                        ],
+                        metricsTarget: {
+                            intensidadFC: "65-75% FCmáx",
+                            volumen: "20 min/sesión",
+                            cargaSocial: "Alta (celebraciones)",
+                            participacionObjetivo: "60-70%"
+                        },
+                        actividadesRecomendadas: [
+                            "Retos de Pasos 7K Club",
+                            "Caminatas de Cierre y Celebración"
+                        ]
+                    }
+                ],
+                weeklySchedule: [
+                    { week: 1, phase: 1, activity: "Caminata de Bienvenida e Hidratación", objetivo: "Adaptación Cardiovascular", intensidad: "Baja" },
+                    { week: 2, phase: 1, activity: "Dinámicas de Integración y Agua", objetivo: "Adaptación Cardiovascular", intensidad: "Baja-Mod" },
+                    { week: 3, phase: 2, activity: "Caminata de 15 Minutos Continuos", objetivo: "Base de Resistencia", intensidad: "Moderada" },
+                    { week: 4, phase: 2, activity: "Mini Deportes de Raqueta / Voleibol", objetivo: "Coordinación y Aeróbico", intensidad: "Moderada" },
+                    { week: 5, phase: 3, activity: "Reto de Pasos hacia los 7K", objetivo: "Intensidad y Consolidación", intensidad: "Moderada-Alta" },
+                    { week: 6, phase: 3, activity: "Cierre, Gratitud y Celebración", objetivo: "Cierre y Autonomía", intensidad: "Baja-Moderada" }
+                ],
+                principiosCientificos: [
+                    {
+                        nombre: "Variación Estratégica",
+                        descripcion: "Alternancia entre actividades físicas, cognitivas y sociales cada 1-2 semanas, adaptando la carga al periodo vacacional."
+                    },
+                    {
+                        nombre: "Sobrecarga Progresiva",
+                        descripcion: "Incremento de complejidad cognitiva e intensidad física de manera gradual a lo largo de las 6 semanas de Verano."
+                    },
+                    {
+                        nombre: "Especificidad de Hábitos",
+                        descripcion: "Focalización en hidratación al inicio (verano/calor) y culminación en la meta óptima de 7,000 pasos al día."
+                    }
+                ],
+                sistemaEvaluacion: {
+                    cuantitativas: [
+                        "Asistencia: Registro diario de participación en caminatas",
+                        "Satisfacción: Encuesta digital semanal",
+                        "Registro de Pasos: Metas del club 7K en walking_stats"
+                    ],
+                    cualitativas: [
+                        "Comentarios semanales: Feedback de hidratación y energía",
+                        "Evaluación de hábitos: Registro voluntario de autocuidado"
+                    ]
+                }
+            };
+
+            console.log("💾 Guardando programación de Verano 2026...");
+            await db.collection('program_periodization')
+                .doc('current_macrocycle')
+                .set(verano2026Macrocycle);
+
+            alert("✅ ¡Éxito! El periodo Verano 2026 ha sido inicializado correctamente y Primavera 2026 fue respaldado.");
+            localStorage.setItem('activePeriod', 'VERANO_2026');
+            window.location.reload();
+
+        } catch (error) {
+            console.error("❌ Error en la inicialización:", error);
+            alert("Hubo un error al inicializar el periodo: " + error.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-circle-play"></i> Iniciar Verano 2026';
         }
     }
 
@@ -286,6 +495,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 <i class="fa-solid fa-exclamation-circle" style="font-size: 3rem; margin-bottom: 1rem; color: #ef4444;"></i>
                 <h2>Error al cargar el programa</h2>
                 <p>${message}</p>
+            </div>
+        `;
+        document.getElementById('phase-timeline').innerHTML = '';
+        document.getElementById('weeks-grid').innerHTML = '';
+    }
+
+    function showInfoMessage(message) {
+        const hero = document.getElementById('program-hero');
+        hero.innerHTML = `
+            <div style="text-align: center; padding: 3rem 2rem; background: white; border-radius: 16px; box-shadow: var(--shadow-md);">
+                <i class="fa-solid fa-calendar-days" style="font-size: 4rem; margin-bottom: 1.5rem; color: var(--primary);"></i>
+                <h2 style="color: #1f2937; margin-bottom: 0.5rem;">Periodo General Seleccionado</h2>
+                <p style="color: #4b5563; max-width: 500px; margin: 0 auto; line-height: 1.6;">${message}</p>
             </div>
         `;
         document.getElementById('phase-timeline').innerHTML = '';
@@ -642,7 +864,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             doc.setFontSize(16);
             doc.setTextColor(60, 60, 60);
-            doc.text('Programa Completo de 19 Semanas', 105, 30, { align: 'center' });
+            doc.text(`Programa Completo de ${programData.totalWeeks} Semanas`, 105, 30, { align: 'center' });
 
             doc.setFontSize(10);
             doc.setTextColor(120, 120, 120);
@@ -685,7 +907,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             doc.setFontSize(16);
             doc.setTextColor(102, 126, 234);
-            doc.text('Calendario Detallado - 19 Semanas', 105, yPos, { align: 'center' });
+            doc.text(`Calendario Detallado - ${programData.totalWeeks} Semanas`, 105, yPos, { align: 'center' });
             yPos += 15;
 
             // For each week
@@ -802,14 +1024,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Save PDF
-            doc.save('IBERO_ACTIVATE_Plan_Completo_19_Semanas.pdf');
+            doc.save(`IBERO_ACTIVATE_Plan_Completo_${programData.totalWeeks}_Semanas.pdf`);
 
         } catch (error) {
             console.error('Error generating PDF:', error);
             alert('Error al generar el PDF: ' + error.message);
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-download"></i> <span>Descargar Plan Completo 19 Semanas (PDF)</span>';
+            btn.innerHTML = `<i class="fa-solid fa-download"></i> <span>Descargar Plan Completo ${programData.totalWeeks} Semanas (PDF)</span>`;
         }
     }
 

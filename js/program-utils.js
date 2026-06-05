@@ -6,10 +6,10 @@ const ProgramUtils = {
      * Carga los datos del programa de periodización desde Firestore
      * @returns {Promise<Object|null>} Datos del programa o null si no existe
      */
-    async loadProgramData() {
+    async loadProgramData(docId = 'current_macrocycle') {
         try {
             const doc = await db.collection('program_periodization')
-                .doc('current_macrocycle')
+                .doc(docId)
                 .get();
             return doc.exists ? doc.data() : null;
         } catch (error) {

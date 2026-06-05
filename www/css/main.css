@@ -8,6 +8,14 @@
    ========================================
 */
 
+/* ===== SAFE AREA VARIABLES (iOS Notch Protection) ===== */
+:root {
+  --safe-area-top: env(safe-area-inset-top);
+  --safe-area-bottom: env(safe-area-inset-bottom);
+  --safe-area-left: env(safe-area-inset-left);
+  --safe-area-right: env(safe-area-inset-right);
+}
+
 /* ===== RESET BÁSICO ===== */
 * {
   margin: 0;
@@ -22,8 +30,9 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   min-height: 100dvh;
-  /* Mobile support */
-  padding-bottom: env(safe-area-inset-bottom);
+  /* iOS Safe Area Protection - Evita que el contenido quede debajo del notch */
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
   -webkit-text-size-adjust: 100%;
 }
 
@@ -156,6 +165,44 @@ body {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-sm);
+}
+
+/* ===== WALKING CARD STYLES ===== */
+
+.walking-card {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+}
+
+.walking-card .icon-wrapper {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.walking-card:hover .icon-wrapper {
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.walking-card h2,
+.walking-card p {
+  color: white;
+}
+
+.walking-card .btn-text {
+  color: white;
+}
+
+.walking-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.3), 0 10px 10px -5px rgba(16, 185, 129, 0.2);
+  border-color: transparent;
+}
+
+.admin-walking-card:hover {
+  border-color: #10b981 !important;
+  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.15);
 }
 
 .landing-footer {
@@ -296,7 +343,7 @@ body {
   justify-content: center;
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
-  lineheight: 1;
+  line-height: 1;
 }
 
 .close-btn:hover {

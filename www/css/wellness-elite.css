@@ -1,0 +1,421 @@
+/* ========================================
+   WELLNESS ELITE - ESTILO PREMIUM
+   Inspirado en apps de alto rendimiento
+   ======================================== */
+
+:root {
+    /* Paleta Oscura "Elite" */
+    --bg-app: #0f172a;
+    /* Slate 900 */
+    --bg-card: #1e293b;
+    /* Slate 800 */
+    --bg-nav: rgba(30, 41, 59, 0.95);
+
+    --text-primary: #f1f5f9;
+    /* Slate 100 */
+    --text-secondary: #94a3b8;
+    /* Slate 400 */
+
+    /* Métricas */
+    --color-strain: #3b82f6;
+    /* Blue 500 */
+    --color-recovery: #10b981;
+    /* Emerald 500 */
+    --color-sleep: #8b5cf6;
+    /* Violet 500 */
+
+    /* Acción */
+    --color-action: #fca5a5;
+    /* Red light (Whoop stye) or Gold? Let's go Gold/Amber for energetic action */
+    --color-action-btn: #f59e0b;
+
+    --nav-height: 70px;
+    --safe-area-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+body {
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    font-family: 'Outfit', sans-serif;
+    margin: 0;
+    padding-bottom: calc(var(--nav-height) + var(--safe-area-bottom));
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ===== UTILITIES ===== */
+.gradient-text {
+    background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* ===== HEADER ===== */
+.elite-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    background: linear-gradient(to bottom, rgba(15, 23, 42, 1), rgba(15, 23, 42, 0));
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.user-greeting h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.user-greeting p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 4px 0 0 0;
+}
+
+.header-stats {
+    display: flex;
+    gap: 15px;
+}
+
+.battery-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: var(--color-recovery);
+    font-weight: 600;
+}
+
+/* ===== DASHBOARD GRID ===== */
+.dashboard-grid {
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Main Cards - Tappable */
+.metric-card {
+    background: var(--bg-card);
+    border-radius: 24px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+.metric-card:active {
+    transform: scale(0.98);
+}
+
+.metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.metric-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.metric-value-lg {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.metric-subtext {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-top: 8px;
+}
+
+/* Specific Card Styles */
+.card-strain .metric-value-lg {
+    color: var(--color-strain);
+}
+
+.card-recovery .metric-value-lg {
+    color: var(--color-recovery);
+}
+
+.card-sleep .metric-value-lg {
+    color: var(--color-sleep);
+}
+
+/* Progress Rings (Simplified for CSS) */
+/* In a real scenario, use SVG. Here we simulate nicely. */
+.ring-container {
+    width: 120px;
+    height: 120px;
+    position: relative;
+}
+
+/* ===== MICRO METRICS ROW ===== */
+.micro-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 0 20px;
+    margin-top: 20px;
+}
+
+.micro-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+}
+
+.micro-icon {
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+}
+
+.micro-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.micro-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+/* ===== BOTTOM NAVIGATION ===== */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: calc(var(--nav-height) + var(--safe-area-bottom));
+    background: var(--bg-nav);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-around;
+    padding-bottom: var(--safe-area-bottom);
+    z-index: 100;
+}
+
+.nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.nav-item.active {
+    color: var(--text-primary);
+}
+
+.nav-item i {
+    font-size: 1.4rem;
+    margin-bottom: 2px;
+}
+
+.nav-item.active i {
+    background: linear-gradient(135deg, var(--color-recovery), var(--color-strain));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Pulse Action Button */
+.nav-fab-container {
+    position: relative;
+    top: -25px;
+    /* Protrude upwards */
+    width: 60px;
+    height: 60px;
+}
+
+.nav-fab {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border: 4px solid var(--bg-app);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.nav-fab:active {
+    transform: scale(0.95);
+}
+
+/* ===== VIEWS (SPA Logic) ===== */
+.view-section {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.view-section.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== ACTION SHEET (Modal) ===== */
+.action-sheet-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+}
+
+.action-sheet-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.action-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: var(--bg-card);
+    border-radius: 24px 24px 0 0;
+    padding: 30px 20px calc(20px + var(--safe-area-bottom));
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.action-sheet-overlay.active .action-sheet {
+    transform: translateY(0);
+}
+
+.action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.action-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    color: white;
+    cursor: pointer;
+}
+
+.action-btn:active {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.action-btn i {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    display: block;
+    color: var(--color-action-btn);
+}
+
+/* ===== AI CHAT (Basic) ===== */
+.chat-container {
+    height: calc(100vh - 200px);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.ai-message {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 0 16px 16px 16px;
+    margin-bottom: 15px;
+    max-width: 85%;
+    border-left: 3px solid var(--color-recovery);
+}
+
+.user-message {
+    background: var(--color-strain);
+    color: white;
+    padding: 15px;
+    border-radius: 16px 16px 0 16px;
+    margin-bottom: 15px;
+    align-self: flex-end;
+    max-width: 85%;
+}
+
+/* ===== TOAST NOTIFICATIONS ===== */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: rgba(30, 41, 59, 0.95);
+    backdrop-filter: blur(10px);
+    color: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    border-left: 4px solid var(--color-recovery);
+    margin-bottom: 10px;
+    overflow: hidden;
+    animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast.error {
+    border-left-color: #ef4444;
+}
+
+.toast.success {
+    border-left-color: #10b981;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

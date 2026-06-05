@@ -31,22 +31,48 @@ document.addEventListener('DOMContentLoaded', () => {
     let integratedData = [];
     let areasMap = {};
 
+    // Setup period select
+    const periodSelect = document.getElementById('period-select');
+    if (periodSelect) {
+        periodSelect.value = localStorage.getItem('activePeriod') || 'VERANO_2026';
+        periodSelect.addEventListener('change', (e) => {
+            localStorage.setItem('activePeriod', e.target.value);
+            
+            let defaultDateStr = '';
+            if (e.target.value === 'PRIMAVERA_2026') {
+                defaultDateStr = '2026-05-22';
+            } else {
+                const now = new Date();
+                const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+                defaultDateStr = localDate.toISOString().split('T')[0];
+            }
+            filterDateInput.value = defaultDateStr;
+            filterDateInputFeedback.value = defaultDateStr;
+            
+            loadAttendance();
+            loadFeedbacks();
+            loadIntegratedReport();
+        });
+    }
+
     // Inicializar
     loadAreas().then(() => {
         loadEmployees();
         loadEmployees();
 
         // Inicializar fecha con TIMEZONE LOCAL
-        // (Evita que a las 10pm cambie a mañana por UTC)
-        const now = new Date();
-        // Ajustar al offset local en minutos, convertidos a ms
-        // .getTimezoneOffset() devuleve minutos positivos si estamos DETRÁS de UTC (ej. Mexico es UTC-6 -> 360)
-        // Restamos el offset para obtener la hora local en formato ISO simulado
-        const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
-        const todayStr = localDate.toISOString().split('T')[0];
+        const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
+        let defaultDateStr = '';
+        if (activePeriod === 'PRIMAVERA_2026') {
+            defaultDateStr = '2026-05-22';
+        } else {
+            const now = new Date();
+            const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+            defaultDateStr = localDate.toISOString().split('T')[0];
+        }
 
-        filterDateInput.value = todayStr;
-        filterDateInputFeedback.value = todayStr;
+        filterDateInput.value = defaultDateStr;
+        filterDateInputFeedback.value = defaultDateStr;
 
         loadAttendance();
         loadFeedbacks();
@@ -479,7 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- Reporte Integrado (Ene-Abr) ---
+    // --- Reporte Integrado ---
     async function loadIntegratedReport() {
         try {
             integratedTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">Cargando reporte integrado...</td></tr>';
@@ -500,14 +526,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             });
 
-            // 2. Get attendances between 2026-01-01 and 2026-04-30
-            const startDate = '2026-01-01';
-            const endDate = '2026-04-30';
+            // 2. Get attendances dynamically based on period
+            const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
+            let startDate = '2026-06-01';
+            let endDate = '2026-07-10';
+            let periodLabel = 'VERANO 2026';
+
+            if (activePeriod === 'PRIMAVERA_2026') {
+                startDate = '2026-01-12';
+                endDate = '2026-05-22';
+                periodLabel = 'PRIMAVERA 2026';
+            } else if (activePeriod === 'TOTAL') {
+                periodLabel = 'TODOS LOS PERIODOS';
+            }
             
-            const attendanceSnapshot = await db.collection('attendances')
-                .where('date', '>=', startDate)
-                .where('date', '<=', endDate)
-                .get();
+            let query = db.collection('attendances');
+            if (activePeriod !== 'TOTAL') {
+                query = query.where('date', '>=', startDate).where('date', '<=', endDate);
+            }
+            const attendanceSnapshot = await query.get();
                 
             attendanceSnapshot.forEach(doc => {
                 const data = doc.data();
@@ -537,7 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td style="padding: 1rem;">${emp.position}</td>
                         <td style="padding: 1rem;">${emp.areaName}</td>
                         <td style="padding: 1rem; font-weight: bold; color: var(--primary);">${emp.attendances}</td>
-                        <td style="padding: 1rem;">PRIMAVERA 2026</td>
+                        <td style="padding: 1rem;">${periodLabel}</td>
                     </tr>
                 `;
                 integratedTableBody.innerHTML += row;
@@ -734,11 +771,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('export-integrated').addEventListener('click', () => {
         const doc = new jsPDF();
+        const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
+        let periodTitle = 'Verano 2026';
+        let fileLabel = 'verano_2026';
+        if (activePeriod === 'PRIMAVERA_2026') {
+            periodTitle = 'Primavera 2026 (Enero - Mayo)';
+            fileLabel = 'primavera_2026';
+        } else if (activePeriod === 'TOTAL') {
+            periodTitle = 'General (Todos los Periodos)';
+            fileLabel = 'general_todos_los_periodos';
+        }
 
         // Header
         doc.setFontSize(18);
         doc.setTextColor(196, 22, 28); // IBERO Red
-        doc.text('Reporte Integrado (Enero - 30 de Abril) - IBERO ACTÍVATE', 14, 22);
+        doc.text(`Reporte Integrado (${periodTitle}) - IBERO ACTÍVATE`, 14, 22);
 
         doc.setFontSize(11);
         doc.setTextColor(100);
@@ -752,7 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
             theme: 'grid'
         });
 
-        doc.save('reporte_integrado_ene_abr.pdf');
+        doc.save(`reporte_integrado_${fileLabel}.pdf`);
     });
 
     // --- Exportación CSV ---
@@ -1024,6 +1071,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
+        let periodText = 'VERANO 2026';
+        let fileLabel = 'verano_2026';
+        if (activePeriod === 'PRIMAVERA_2026') {
+            periodText = 'PRIMAVERA 2026';
+            fileLabel = 'primavera_2026';
+        } else if (activePeriod === 'TOTAL') {
+            periodText = 'TODOS LOS PERIODOS';
+            fileLabel = 'general_todos_los_periodos';
+        }
+
         let rank = 1;
         const data = integratedData.map(emp => ({
             'Lugar de Clasificación': rank++,
@@ -1032,13 +1090,13 @@ document.addEventListener('DOMContentLoaded', () => {
             'Puesto': emp.position,
             'Área': emp.areaName,
             'Asistencias': emp.attendances,
-            'Periodo': 'PRIMAVERA 2026'
+            'Periodo': periodText
         }));
 
         const headers = ['Lugar de Clasificación', 'No. Cuenta', 'Nombre Completo', 'Puesto', 'Área', 'Asistencias', 'Periodo'];
         const csv = arrayToCSV(data, headers);
         
-        downloadCSV(csv, `reporte_integrado_ene_abr.csv`);
+        downloadCSV(csv, `reporte_integrado_${fileLabel}.csv`);
     });
 
 });
