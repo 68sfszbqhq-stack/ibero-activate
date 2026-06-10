@@ -201,13 +201,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Crear mapa de asistencias: ID_Empleado -> Status
                     const attendanceMap = new Map();
+                    const standsMap = new Map();
                     attSnapshot.forEach(doc => {
                         const data = doc.data();
                         if (data.employeeId) { // Asegurar que tenga ID
-                            // Si hay duplicados (raro), el último gana.
-                            // Importante: Diferenciar 'active' de 'completed'
                             attendanceMap.set(data.employeeId, data.status);
-                            console.log(`  - ${data.employeeName}: ${data.status}`);
+                            standsMap.set(data.employeeId, data.chairStandsCount);
+                            console.log(`  - ${data.employeeName}: ${data.status} (Silla: ${data.chairStandsCount ?? 'N/A'})`);
                         }
                     });
 
@@ -215,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     let updatedCount = 0;
                     employees.forEach(emp => {
                         const status = attendanceMap.get(emp.id); // 'active', 'completed', or undefined
+                        const count = standsMap.get(emp.id);
                         const card = document.getElementById(`card-${emp.id}`);
                         const previousStatus = card ? card.dataset.status : null;
 
@@ -223,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             updatedCount++;
                         }
 
-                        updateEmployeeCardStatus(emp.id, status);
+                        updateEmployeeCardStatus(emp.id, status, count);
                     });
 
                     console.log(`✅ Listener completado - ${updatedCount} tarjetas actualizadas`);
@@ -275,8 +276,46 @@ document.addEventListener('DOMContentLoaded', () => {
         infoDiv.appendChild(h3);
         infoDiv.appendChild(p);
 
+        // Contenedor para prueba de sentarse/levantarse de silla (30 segundos)
+        const testDiv = document.createElement('div');
+        testDiv.className = 'chair-stands-container';
+        testDiv.style.cssText = 'margin-top: 8px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #f3f4f6; padding-top: 8px; width: 100%;';
+        
+        const testLabel = document.createElement('span');
+        testLabel.style.cssText = 'font-size: 0.75rem; color: #4b5563; font-weight: 500; white-space: nowrap;';
+        testLabel.textContent = 'Prueba Silla (30s):';
+        
+        const testInput = document.createElement('input');
+        testInput.type = 'number';
+        testInput.className = 'chair-stands-input';
+        testInput.min = '0';
+        testInput.max = '99';
+        testInput.placeholder = '-';
+        testInput.style.cssText = 'width: 55px; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-align: center; color: #111827; outline: none; transition: border-color 0.2s;';
+        
+        testInput.addEventListener('focus', () => {
+            testInput.style.borderColor = '#667eea';
+        });
+        testInput.addEventListener('blur', () => {
+            testInput.style.borderColor = '#d1d5db';
+        });
+
+        testInput.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevenir toggle de asistencia al hacer clic en el input
+        });
+
+        testInput.addEventListener('change', async (e) => {
+            const val = parseInt(e.target.value, 10);
+            const countValue = isNaN(val) ? null : val;
+            await saveChairStandsCount(id, countValue);
+        });
+
+        testDiv.appendChild(testLabel);
+        testDiv.appendChild(testInput);
+
         card.appendChild(iconDiv);
         card.appendChild(infoDiv);
+        card.appendChild(testDiv);
 
         // Click Event: Toggle Asistencia
         card.addEventListener('click', () => toggleAttendance(card, id, emp));
@@ -284,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
         employeeList.appendChild(card);
     }
 
-    function updateEmployeeCardStatus(id, status) {
+    function updateEmployeeCardStatus(id, status, count = '') {
         const card = document.getElementById(`card-${id}`);
         if (!card) return;
 
@@ -295,6 +334,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Limpiar clases de estado previo
         card.classList.remove('selected', 'completed');
+
+        // Actualizar el valor del input si el usuario no está enfocado en él
+        const input = card.querySelector('.chair-stands-input');
+        if (input && document.activeElement !== input) {
+            input.value = (count !== undefined && count !== null) ? count : '';
+        }
 
         if (status === 'active') {
             // ASISTENCIA MARCADA (Pendiente de feedback) - AHORA EN VERDE TAMBIÉN
@@ -366,6 +411,100 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Guardar status actual
         card.dataset.status = status || 'absent';
+    }
+
+    async function saveChairStandsCount(employeeId, countValue) {
+        const selectedDate = currentDate.toLocaleDateString('en-CA');
+        
+        try {
+            // Buscar si ya existe la asistencia para hoy
+            const snapshot = await db.collection('employees')
+                .doc(employeeId)
+                .collection('attendance')
+                .where('date', '==', selectedDate)
+                .get();
+                
+            const topLevelSnapshot = await db.collection('attendances')
+                .where('employeeId', '==', employeeId)
+                .where('date', '==', selectedDate)
+                .get();
+
+            const batch = db.batch();
+            
+            if (!snapshot.empty) {
+                // Actualizar documentos existentes
+                snapshot.docs.forEach(doc => {
+                    batch.update(doc.ref, { chairStandsCount: countValue });
+                });
+                topLevelSnapshot.docs.forEach(doc => {
+                    batch.update(doc.ref, { chairStandsCount: countValue });
+                });
+                await batch.commit();
+                
+                const card = document.getElementById(`card-${employeeId}`);
+                const name = card ? card.querySelector('h3').textContent : 'Empleado';
+                showToast(`✓ Repeticiones guardadas para ${name}`);
+            } else {
+                // Si no existe, crear la asistencia primero con el count
+                const skipFeedback = document.getElementById('skip-feedback-toggle').checked;
+                const status = skipFeedback ? 'completed' : 'active';
+                
+                const card = document.getElementById(`card-${employeeId}`);
+                const empData = card ? { fullName: card.querySelector('h3').textContent } : { fullName: 'Empleado' };
+                
+                // Obtener ID del área
+                const hiddenInput = document.getElementById('area-dropdown');
+                const areaId = hiddenInput ? hiddenInput.value : '';
+                
+                if (!areaId) {
+                    alert('Error: Selecciona un área primero.');
+                    return;
+                }
+
+                const attendanceData = {
+                    employeeId: employeeId,
+                    employeeName: empData.fullName,
+                    areaId: areaId,
+                    date: selectedDate,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: status,
+                    weekNumber: getWeekNumber(currentDate),
+                    year: currentDate.getFullYear(),
+                    chairStandsCount: countValue
+                };
+                
+                const subRef = db.collection('employees').doc(employeeId).collection('attendance').doc();
+                batch.set(subRef, attendanceData);
+                
+                const topRef = db.collection('attendances').doc(subRef.id);
+                batch.set(topRef, attendanceData);
+                
+                if (skipFeedback) {
+                    const empRef = db.collection('employees').doc(employeeId);
+                    batch.update(empRef, {
+                        points: firebase.firestore.FieldValue.increment(20),
+                        lastAttendance: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    const feedRef = db.collection('employees').doc(employeeId).collection('feedback').doc();
+                    batch.set(feedRef, {
+                        attendanceId: subRef.id,
+                        rating: 5,
+                        reaction: '⚡',
+                        comment: 'Feedback omitido por admin (Auto +20 pts)',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        date: selectedDate,
+                        autoGenerated: true
+                    });
+                }
+                
+                await batch.commit();
+                showToast(`✓ Asistencia y repeticiones guardadas para ${empData.fullName}`);
+            }
+        } catch (error) {
+            console.error('Error al guardar repeticiones:', error);
+            showToast('❌ Error al guardar repeticiones');
+        }
     }
 
     // Nueva función para borrar explícitamente desde el botón
