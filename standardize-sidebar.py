@@ -8,7 +8,7 @@ import re
 import glob
 from pathlib import Path
 
-# Sidebar completo (10 items)
+# Sidebar completo (con Módulo Caminatas)
 STANDARD_SIDEBAR = '''        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
@@ -67,6 +67,31 @@ STANDARD_SIDEBAR = '''        <!-- Sidebar -->
                         <i class="fa-solid fa-trophy"></i> Gamificación
                     </a>
                 </li>
+
+                <!-- Separador Módulo Caminatas -->
+                <li style="margin: 1.5rem 0 0.5rem 1rem; color: #9ca3af; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; list-style-type: none;">
+                    Módulo Caminatas
+                </li>
+                <li class="nav-item">
+                    <a href="walking-dashboard.html" class="nav-link {CLASS_WALKING_DASHBOARD}">
+                        <i class="fa-solid fa-person-hiking" style="color: #10b981;"></i> Dashboard Caminatas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-attendance.html" class="nav-link {CLASS_WALKING_ATTENDANCE}">
+                        <i class="fa-solid fa-clipboard-check" style="color: #10b981;"></i> Pase Caminatas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-reports.html" class="nav-link {CLASS_WALKING_REPORTS}">
+                        <i class="fa-solid fa-file-invoice" style="color: #10b981;"></i> Reportes Caminatas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-calendar.html" class="nav-link {CLASS_WALKING_CALENDAR}">
+                        <i class="fa-solid fa-calendar-days" style="color: #10b981;"></i> Calendario Caminatas
+                    </a>
+                </li>
             </ul>
 
             <button onclick="logout()" class="nav-link logout-btn">
@@ -85,6 +110,10 @@ ACTIVE_CLASS_MAP = {
     'attendance-late.html': 'CLASS_ATTENDANCE_LATE',
     'employees.html': 'CLASS_EMPLOYEES',
     'reports.html': 'CLASS_REPORTS',
+    'walking-dashboard.html': 'CLASS_WALKING_DASHBOARD',
+    'walking-attendance.html': 'CLASS_WALKING_ATTENDANCE',
+    'walking-reports.html': 'CLASS_WALKING_REPORTS',
+    'walking-calendar.html': 'CLASS_WALKING_CALENDAR',
 }
 
 def replace_sidebar(html_file):
@@ -107,6 +136,10 @@ def replace_sidebar(html_file):
         'CLASS_EMPLOYEES': '',
         'CLASS_REPORTS': '',
         'CLASS_GAMIFICATION': '',
+        'CLASS_WALKING_DASHBOARD': '',
+        'CLASS_WALKING_ATTENDANCE': '',
+        'CLASS_WALKING_REPORTS': '',
+        'CLASS_WALKING_CALENDAR': '',
     }
     
     if filename in ACTIVE_CLASS_MAP:

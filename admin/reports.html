@@ -28,6 +28,7 @@
         <!-- Sidebar -->
         <!-- Sidebar -->
         <!-- Sidebar -->
+        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <i class="fa-solid fa-heart-pulse"></i>
@@ -85,6 +86,31 @@
                         <i class="fa-solid fa-trophy"></i> Gamificación
                     </a>
                 </li>
+
+                <!-- Separador Módulo Caminatas -->
+                <li style="margin: 1.5rem 0 0.5rem 1rem; color: #9ca3af; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; list-style-type: none;">
+                    Módulo Caminatas
+                </li>
+                <li class="nav-item">
+                    <a href="walking-dashboard.html" class="nav-link ">
+                        <i class="fa-solid fa-person-hiking" style="color: #10b981;"></i> Dashboard Caminatas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-attendance.html" class="nav-link ">
+                        <i class="fa-solid fa-clipboard-check" style="color: #10b981;"></i> Pase Caminatas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-reports.html" class="nav-link ">
+                        <i class="fa-solid fa-file-invoice" style="color: #10b981;"></i> Reportes Caminatas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="walking-calendar.html" class="nav-link ">
+                        <i class="fa-solid fa-calendar-days" style="color: #10b981;"></i> Calendario Caminatas
+                    </a>
+                </li>
             </ul>
 
             <button onclick="logout()" class="nav-link logout-btn">
@@ -126,6 +152,10 @@
                 <button class="tab-btn" data-target="integrated-tab"
                     style="padding: 1rem; border: none; background: none; font-weight: 500; color: #666; cursor: pointer;">
                     <i class="fa-solid fa-chart-pie"></i> Exportación Unificada
+                </button>
+                <button class="tab-btn" onclick="window.location.href='walking-reports.html'"
+                    style="padding: 1rem; border: none; background: none; font-weight: 600; color: #10b981; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-person-hiking"></i> Reportes de Caminatas
                 </button>
             </div>
 
