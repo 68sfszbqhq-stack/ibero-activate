@@ -73,13 +73,18 @@ STANDARD_SIDEBAR = '''        <!-- Sidebar -->
                     Módulo Caminatas
                 </li>
                 <li class="nav-item">
+                    <a href="walking-v2.html" class="nav-link {CLASS_WALKING_V2}">
+                        <i class="fa-solid fa-person-walking" style="color: #c41230;"></i> Admin Caminatas V2
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="walking-dashboard.html" class="nav-link {CLASS_WALKING_DASHBOARD}">
                         <i class="fa-solid fa-person-hiking" style="color: #10b981;"></i> Dashboard Caminatas
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="walking-attendance.html" class="nav-link {CLASS_WALKING_ATTENDANCE}">
-                        <i class="fa-solid fa-clipboard-check" style="color: #10b981;"></i> Pase Caminatas
+                        <i class="fa-solid fa-clipboard-check" style="color: #10b981;"></i> Pase Caminatas V1
                     </a>
                 </li>
                 <li class="nav-item">
@@ -110,6 +115,7 @@ ACTIVE_CLASS_MAP = {
     'attendance-late.html': 'CLASS_ATTENDANCE_LATE',
     'employees.html': 'CLASS_EMPLOYEES',
     'reports.html': 'CLASS_REPORTS',
+    'walking-v2.html': 'CLASS_WALKING_V2',
     'walking-dashboard.html': 'CLASS_WALKING_DASHBOARD',
     'walking-attendance.html': 'CLASS_WALKING_ATTENDANCE',
     'walking-reports.html': 'CLASS_WALKING_REPORTS',
@@ -136,6 +142,7 @@ def replace_sidebar(html_file):
         'CLASS_EMPLOYEES': '',
         'CLASS_REPORTS': '',
         'CLASS_GAMIFICATION': '',
+        'CLASS_WALKING_V2': '',
         'CLASS_WALKING_DASHBOARD': '',
         'CLASS_WALKING_ATTENDANCE': '',
         'CLASS_WALKING_REPORTS': '',
