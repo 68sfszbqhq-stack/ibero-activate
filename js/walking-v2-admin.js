@@ -1089,6 +1089,245 @@ async function downloadFullReport() {
     }
 }
 
+// ──── DESCARGAR REPORTE DETALLADO COMPLETO (CON ASISTENCIA Y FOTOS) ────
+async function downloadFullDetailedReport() {
+    showToast('Generando reporte detallado con fotos. Por favor, espere...', 'info');
+    try {
+        // Cargar todas las sesiones en orden cronológico (más antigua primero)
+        const snap = await db.collection('walking_v2_sessions')
+            .orderBy('date', 'asc').get();
+
+        if (snap.empty) { showToast('No hay sesiones registradas', 'error'); return; }
+
+        const sessionPromises = snap.docs.map(async doc => {
+            const s = doc.data();
+            const id = doc.id;
+
+            // Cargar asistencia
+            const attSnap = await doc.ref.collection('attendance').get();
+            const presents = [];
+            const absents = [];
+            attSnap.forEach(attDoc => {
+                const a = attDoc.data();
+                if (a.present) presents.push(a.name || attDoc.id);
+                else absents.push(a.name || attDoc.id);
+            });
+
+            // Cargar fotos
+            const photoSnap = await doc.ref.collection('photos').orderBy('uploadedAt').get();
+            const photos = [];
+            photoSnap.forEach(pDoc => {
+                const p = pDoc.data();
+                if (p.base64) photos.push(p.base64);
+            });
+
+            return {
+                id,
+                ...s,
+                presents,
+                absents,
+                photos
+            };
+        });
+
+        const detailedSessions = await Promise.all(sessionPromises);
+
+        const typeLabel = { matutina: '🌅 Matutina', vespertina: '🌇 Vespertina', especial: '⭐ Especial' };
+        const fmt = n => Number(n).toLocaleString('es-MX');
+        const fmtKm = n => Number(n).toFixed(2);
+
+        let sessionsHtml = '';
+        detailedSessions.forEach((s, idx) => {
+            const st = s.stats || {};
+            
+            // Generar cuadrícula de estadísticas
+            const statsGridHtml = `
+                <div style="display:grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; margin: 1rem 0;">
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.6rem; text-align:center; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <span style="font-size:1.2rem;">🛣️</span>
+                        <div style="font-size:0.9rem; font-weight:700; color:#1B3060; margin: 0.2rem 0;">${st.km || 0} km</div>
+                        <div style="font-size:0.6rem; color:#64748b; text-transform:uppercase; font-weight:600;">Distancia</div>
+                    </div>
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.6rem; text-align:center; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <span style="font-size:1.2rem;">👟</span>
+                        <div style="font-size:0.9rem; font-weight:700; color:#1B3060; margin: 0.2rem 0;">${fmt(st.steps || 0)}</div>
+                        <div style="font-size:0.6rem; color:#64748b; text-transform:uppercase; font-weight:600;">Pasos Prom.</div>
+                    </div>
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.6rem; text-align:center; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <span style="font-size:1.2rem;">⏱️</span>
+                        <div style="font-size:0.9rem; font-weight:700; color:#1B3060; margin: 0.2rem 0;">${st.duration || 0} min</div>
+                        <div style="font-size:0.6rem; color:#64748b; text-transform:uppercase; font-weight:600;">Duración</div>
+                    </div>
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.6rem; text-align:center; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <span style="font-size:1.2rem;">🔥</span>
+                        <div style="font-size:0.9rem; font-weight:700; color:#1B3060; margin: 0.2rem 0;">${fmt(st.calories || 0)} kcal</div>
+                        <div style="font-size:0.6rem; color:#64748b; text-transform:uppercase; font-weight:600;">Calorías</div>
+                    </div>
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.6rem; text-align:center; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <span style="font-size:1.2rem;">❤️</span>
+                        <div style="font-size:0.9rem; font-weight:700; color:#1B3060; margin: 0.2rem 0;">${st.hr ? st.hr + ' lpm' : '—'}</div>
+                        <div style="font-size:0.6rem; color:#64748b; text-transform:uppercase; font-weight:600;">FC Prom.</div>
+                    </div>
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.6rem; text-align:center; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <span style="font-size:1.2rem;">🏃</span>
+                        <div style="font-size:0.9rem; font-weight:700; color:#1B3060; margin: 0.2rem 0;">${st.cadence ? st.cadence + ' p/m' : '—'}</div>
+                        <div style="font-size:0.6rem; color:#64748b; text-transform:uppercase; font-weight:600;">Cadencia</div>
+                    </div>
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.6rem; text-align:center; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <span style="font-size:1.2rem;">🌤️</span>
+                        <div style="font-size:0.9rem; font-weight:700; color:#1B3060; margin: 0.2rem 0;">${st.weather || '—'}</div>
+                        <div style="font-size:0.6rem; color:#64748b; text-transform:uppercase; font-weight:600;">Clima</div>
+                    </div>
+                </div>
+            `;
+
+            // Generar listas de asistentes (presentes y ausentes)
+            const presentsListHtml = s.presents.length > 0 
+                ? s.presents.map(p => `
+                    <div style="background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.2); border-radius:6px; padding:.35rem .6rem; font-size:.78rem; color:#1F2937; display:flex; align-items:center; gap:.45rem; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <span style="color:#22c55e; font-weight:bold;">✓</span>
+                        <span style="font-weight:500;">${p}</span>
+                    </div>
+                  `).join('')
+                : '<div style="color:#94a3b8; font-size:.75rem; font-style:italic; padding:0.5rem;">Sin asistentes presentes</div>';
+
+            const absentsListHtml = s.absents.length > 0 
+                ? s.absents.map(a => `
+                    <div style="background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.15); border-radius:6px; padding:.35rem .6rem; font-size:.78rem; color:#1F2937; display:flex; align-items:center; gap:.45rem; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <span style="color:#ef4444; font-weight:bold;">✗</span>
+                        <span style="font-weight:500;">${a}</span>
+                    </div>
+                  `).join('')
+                : '<div style="color:#94a3b8; font-size:.75rem; font-style:italic; padding:0.5rem;">Sin asistentes ausentes</div>';
+
+            // Generar sección de fotos
+            let photosHtml = '';
+            if (s.photos.length > 0) {
+                photosHtml = `
+                    <div style="margin-top: 1.25rem;">
+                        <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:#C41230; margin-bottom:0.5rem; letter-spacing:0.05em;">📸 Fotografías de la Ruta (${s.photos.length})</div>
+                        <div class="photos-grid">
+                            ${s.photos.map(base64 => `<div class="photo-wrapper"><img src="${base64}" /></div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Notas
+            const notesHtml = st.notes 
+                ? `<div style="margin: 1rem 0; background:#f8fafc; border-left:4px solid #1B3060; padding:0.6rem 1rem; font-size:0.8rem; border-radius:4px; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                     <b>Notas del Entrenador:</b> ${st.notes}
+                   </div>` 
+                : '';
+
+            sessionsHtml += `
+                <div class="session-card">
+                    <div class="session-card-header">
+                        <div class="session-title">Sesión ${idx + 1}: ${formatDate(s.date)} — ${typeLabel[s.type] || s.type}</div>
+                        <div class="session-meta">Semana ${s.week || '-'} · ${s.totalAttendees || 0} presentes de ${s.totalUsers || 0} inscritos</div>
+                    </div>
+                    
+                    <div style="padding: 0 1.5rem 1.5rem 1.5rem;">
+                        ${statsGridHtml}
+                        ${notesHtml}
+                        
+                        <div style="margin-top: 1.25rem;">
+                            <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:#E8394F; margin-bottom:0.6rem; letter-spacing:0.05em;">👥 Lista de Asistencia</div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                                <div>
+                                    <div style="font-size:.72rem; color:#22c55e; font-weight:600; margin-bottom:.4rem; text-transform:uppercase;">
+                                        ✅ Presentes (${s.presents.length})
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; gap:.35rem;">
+                                        ${presentsListHtml}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style="font-size:.72rem; color:#ef4444; font-weight:600; margin-bottom:.4rem; text-transform:uppercase;">
+                                        ❌ Ausentes (${s.absents.length})
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; gap:.35rem;">
+                                        ${absentsListHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${photosHtml}
+                    </div>
+                </div>
+            `;
+        });
+
+        const now = new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+        const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte Histórico Detallado de Caminatas — IBERO Actívate</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Arial', sans-serif; color: #1B3060; background: #f1f5f9; padding: 2rem; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start;
+              border-bottom: 3px solid #C41230; padding-bottom: 1rem; margin-bottom: 2rem; background:white; padding:1.5rem; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+    .header h1 { font-size: 1.5rem; color: #C41230; font-weight: 800; }
+    .header .sub { font-size: .8rem; color: #64748b; margin-top: .25rem; }
+    .header .logo { font-size: 2rem; }
+    
+    .session-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px;
+                    margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                    break-inside: avoid; page-break-inside: avoid; overflow: hidden; }
+    .session-card-header { background: linear-gradient(135deg, #C41230, #1B3060); padding: 1.2rem 1.8rem; color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .session-title { font-size: 1.25rem; font-weight: 800; }
+    .session-meta { font-size: 0.8rem; color: #e2e8f0; font-weight: 600; margin-top: 0.15rem; }
+    
+    .photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem; margin-top: 0.5rem; }
+    .photo-wrapper { border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; border: 1px solid #cbd5e1; }
+    .photo-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+    
+    @media print {
+      body { padding: 0; background: none; }
+      .header { border-radius:0; box-shadow:none; padding:1rem 0; margin-bottom: 1.5rem; }
+      .session-card { border-radius: 0; border: none; border-bottom: 1px solid #cbd5e1; box-shadow: none; margin-bottom: 2rem; page-break-after: always; break-after: page; }
+      button { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>🏃 Reporte Histórico Detallado de Caminatas</h1>
+      <div class="sub">IBERO Actívate — Generado: ${now}</div>
+      <div class="sub" style="margin-top:.3rem;">Total de sesiones detalladas: <b>${detailedSessions.length}</b></div>
+    </div>
+    <div class="logo">🎓</div>
+  </div>
+
+  <div>
+    ${sessionsHtml}
+  </div>
+
+  <div style="margin-top:2rem; text-align:center;">
+    <button onclick="window.print()" style="background:#C41230;color:#fff;border:none;
+        padding:.6rem 2rem;border-radius:8px;cursor:pointer;font-size:1rem;font-weight:700;box-shadow: 0 4px 12px rgba(196, 18, 48, 0.3);">
+      🖨️ Imprimir / Guardar PDF Completo
+    </button>
+  </div>
+</body>
+</html>`;
+
+        const win = window.open('', '_blank');
+        win.document.write(html);
+        win.document.close();
+        win.focus();
+
+    } catch (e) {
+        console.error(e);
+        showToast('Error al generar reporte detallado: ' + e.message, 'error');
+    }
+}
+
 // ──── DELETE SESSION ────
 async function deleteSession(sessionId) {
     const confirmed = confirm(
