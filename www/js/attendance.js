@@ -472,7 +472,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 let areaId = hiddenInput ? hiddenInput.value : '';
                 
                 // Si el área tiene múltiples IDs por deduplicación, buscar la del empleado o usar el primer ID
-                const card = document.getElementById(`card-${employeeId}`);
                 if (card && card.dataset.areaId) {
                     areaId = card.dataset.areaId;
                 } else if (areaId.includes(',')) {
