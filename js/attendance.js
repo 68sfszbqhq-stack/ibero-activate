@@ -76,13 +76,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const snapshot = await db.collection('areas').get();
             container.innerHTML = ''; // Limpiar mensaje de carga
 
-            let areas = [];
+            // Deduplicar por nombre normalizado, agrupando todos los IDs
+            const normalize = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+            const grouped = new Map(); // normName -> { id, name, allIds[], ...data }
+
             snapshot.forEach(doc => {
-                areas.push({ id: doc.id, ...doc.data() });
+                const data = doc.data();
+                const normName = normalize(data.name);
+                if (grouped.has(normName)) {
+                    grouped.get(normName).allIds.push(doc.id);
+                } else {
+                    grouped.set(normName, { id: doc.id, ...data, allIds: [doc.id] });
+                }
             });
 
+            let areas = [...grouped.values()];
+
             // ORDENAR SEGÚN RECORRIDO POR DÍAS
-            // TODO: Implementar lógica de ruta cuando el admin confirme el recorrido
             areas = sortAreasByRoute(areas);
 
             if (areas.length === 0) {
@@ -94,6 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const btn = document.createElement('button');
                 btn.className = 'area-btn';
                 btn.dataset.id = area.id;
+                btn.dataset.allIds = area.allIds.join(',');
 
                 // Icono por defecto
                 const iconContent = '<i class="fa-solid fa-building"></i>';
@@ -105,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.innerHTML = `${iconContent} ${safeName}`;
 
                 btn.addEventListener('click', () => {
-                    selectArea(area.id, btn);
+                    selectArea(area.allIds.join(','), btn);
                 });
 
                 container.appendChild(btn);
@@ -123,10 +134,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return areas.sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    function selectArea(areaId, btnElement) {
-        // Actualizar input oculto para compatibilidad
+    function selectArea(areaIdOrIds, btnElement) {
+        // Actualizar input oculto — puede contener múltiples IDs separados por coma
         const hiddenInput = document.getElementById('area-dropdown');
-        if (hiddenInput) hiddenInput.value = areaId;
+        if (hiddenInput) hiddenInput.value = areaIdOrIds;
 
         // Actualizar visualmente
         document.querySelectorAll('.area-btn').forEach(b => b.classList.remove('active'));
@@ -139,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let unsubscribe = null; // Para detener el listener cuando cambie la fecha/área
 
     async function loadEmployees() {
-        const areaId = areaDropdown.value;
+        const areaValue = areaDropdown.value;
         const emptyState = document.getElementById('empty-state');
 
         employeeList.innerHTML = ''; // Limpiar lista
@@ -150,19 +161,22 @@ document.addEventListener('DOMContentLoaded', () => {
             unsubscribe = null;
         }
 
-        if (!areaId) {
+        if (!areaValue) {
             emptyState.style.display = 'block';
             return;
         }
+
+        // Soportar múltiples IDs separados por coma (áreas deduplicadas)
+        const areaIds = areaValue.includes(',') ? areaValue.split(',') : [areaValue];
 
         // Ocultar empty state y mostrar loading
         emptyState.style.display = 'none';
         employeeList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem;"></i><br><br>Cargando empleados...</div>';
 
         try {
-            // 1. Obtener empleados del área (Static fetch)
+            // 1. Obtener empleados del área (soporta múltiples IDs con 'in')
             const snapshot = await db.collection('employees')
-                .where('areaId', '==', areaId)
+                .where('areaId', 'in', areaIds)
                 .get();
 
             if (snapshot.empty) {
@@ -249,6 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
         card.className = 'employee-card';
         card.id = `card-${id}`;
         card.dataset.id = id;
+        card.dataset.areaId = emp.areaId || '';
 
         // SEGURIDAD XSS: Crear estructura de forma segura
         const iconDiv = document.createElement('div');
@@ -454,7 +469,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Obtener ID del área
                 const hiddenInput = document.getElementById('area-dropdown');
-                const areaId = hiddenInput ? hiddenInput.value : '';
+                let areaId = hiddenInput ? hiddenInput.value : '';
+                
+                // Si el área tiene múltiples IDs por deduplicación, buscar la del empleado o usar el primer ID
+                const card = document.getElementById(`card-${employeeId}`);
+                if (card && card.dataset.areaId) {
+                    areaId = card.dataset.areaId;
+                } else if (areaId.includes(',')) {
+                    areaId = areaId.split(',')[0];
+                }
                 
                 if (!areaId) {
                     alert('Error: Selecciona un área primero.');
@@ -558,7 +581,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Obtener ID del área de forma segura (re-query por si acaso)
         const hiddenInput = document.getElementById('area-dropdown');
-        const areaId = hiddenInput ? hiddenInput.value : '';
+        let areaId = hiddenInput ? hiddenInput.value : '';
+
+        // Si el área contiene múltiples IDs separados por coma, usar el areaId específico del empleado
+        if (employeeData && employeeData.areaId) {
+            areaId = employeeData.areaId;
+        } else if (areaId.includes(',')) {
+            areaId = areaId.split(',')[0];
+        }
 
         if (!areaId) {
             alert('Error: No se ha seleccionado un área válida. Por favor recarga la página.');
@@ -995,23 +1025,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const snapshot = await db.collection('areas').get();
             container.innerHTML = '';
 
-            let areas = [];
-            // Deduplicate names map
-            const seenNames = new Set();
-
+            // Deduplicar por nombre normalizado, agrupando todos los IDs
             const normalize = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+            const grouped = new Map(); // normName -> { id, name, allIds[], ...data }
 
             snapshot.forEach(doc => {
                 const data = doc.data();
                 const normName = normalize(data.name);
-
-                // --- FIX DUPLICATES: Si ya vimos este nombre exacto, saltamos ---
-                // "Direcciones Generales" vs "Direcciones Generales" (Duplicate doc)
-                if (seenNames.has(normName)) return;
-                seenNames.add(normName);
-
-                areas.push({ id: doc.id, ...data });
+                if (grouped.has(normName)) {
+                    grouped.get(normName).allIds.push(doc.id);
+                } else {
+                    grouped.set(normName, { id: doc.id, ...data, allIds: [doc.id] });
+                }
             });
+
+            let areas = [...grouped.values()];
 
             // 1. Identificar Día Actual
             // FORCE CHANGE FOR TESTING: const today = 2; 
@@ -1136,6 +1164,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = document.createElement('button');
         btn.className = `area-btn ${extraClass}`;
         btn.dataset.id = area.id;
+        btn.dataset.allIds = area.allIds ? area.allIds.join(',') : area.id;
 
         // Icono por defecto
         const iconContent = '<i class="fa-solid fa-building"></i>';
@@ -1160,7 +1189,8 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.style.alignItems = 'center';
 
         btn.addEventListener('click', () => {
-            selectArea(area.id, btn);
+            const ids = area.allIds ? area.allIds.join(',') : area.id;
+            selectArea(ids, btn);
         });
 
         container.appendChild(btn);

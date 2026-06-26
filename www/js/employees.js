@@ -118,11 +118,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const snapshot = await db.collection('areas').orderBy('name').get();
             areaSelect.innerHTML = '<option value="">-- Selecciona un Área --</option>';
 
+            // Deduplicar por nombre normalizado
+            const normalize = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+            const grouped = new Map(); // normName -> { name, ids[] }
+
             snapshot.forEach(doc => {
                 const area = doc.data();
+                const normName = normalize(area.name);
+                if (grouped.has(normName)) {
+                    grouped.get(normName).ids.push(doc.id);
+                } else {
+                    grouped.set(normName, { name: area.name, ids: [doc.id] });
+                }
+            });
+
+            // Ordenar alfabéticamente por nombre visible
+            const sorted = [...grouped.values()].sort((a, b) => a.name.localeCompare(b.name));
+
+            sorted.forEach(group => {
                 const option = document.createElement('option');
-                option.value = doc.id;
-                option.textContent = area.name;
+                option.value = group.ids[0]; // Primer ID para compatibilidad al registrar
+                option.dataset.ids = group.ids.join(','); // Todos los IDs agrupados
+                option.textContent = group.name;
                 areaSelect.appendChild(option);
             });
         } catch (error) {

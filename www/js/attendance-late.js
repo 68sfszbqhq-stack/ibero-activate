@@ -49,11 +49,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const snapshot = await db.collection('areas').get();
             areaDropdown.innerHTML = '<option value="">-- Seleccione un área --</option>';
 
+            // Deduplicar por nombre normalizado
+            const normalize = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+            const grouped = new Map(); // normName -> { name, ids[] }
+
             snapshot.forEach(doc => {
                 const area = doc.data();
+                const normName = normalize(area.name);
+                if (grouped.has(normName)) {
+                    grouped.get(normName).ids.push(doc.id);
+                } else {
+                    grouped.set(normName, { name: area.name, ids: [doc.id] });
+                }
+            });
+
+            // Ordenar alfabéticamente por nombre visible
+            const sorted = [...grouped.values()].sort((a, b) => a.name.localeCompare(b.name));
+
+            sorted.forEach(group => {
                 const option = document.createElement('option');
-                option.value = doc.id;
-                option.textContent = area.name;
+                option.value = group.ids.join(',');
+                option.textContent = group.name;
                 areaDropdown.appendChild(option);
             });
         } catch (error) {
@@ -62,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadEmployees() {
-        const areaId = areaDropdown.value;
+        const areaValue = areaDropdown.value;
 
         employeeList.innerHTML = ''; // Limpiar lista
 
@@ -77,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (!areaId) {
+        if (!areaValue) {
             emptyState.style.display = 'block';
             emptyState.innerHTML = `
                 <i class="fa-solid fa-users-viewfinder" style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
@@ -91,10 +107,12 @@ document.addEventListener('DOMContentLoaded', () => {
         emptyState.style.display = 'none';
         employeeList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem;"></i><br><br>Cargando empleados...</div>';
 
+        const areaIds = areaValue.includes(',') ? areaValue.split(',') : [areaValue];
+
         try {
-            // 1. Obtener empleados del área
+            // 1. Obtener empleados del área (soporta múltiples IDs con 'in')
             const snapshot = await db.collection('employees')
-                .where('areaId', '==', areaId)
+                .where('areaId', 'in', areaIds)
                 .get();
 
             employeeList.innerHTML = ''; // Limpiar mensaje de carga
@@ -169,7 +187,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const isSelected = card.classList.contains('selected');
         const selectedDate = currentDate.toISOString().split('T')[0];
-        const areaId = areaDropdown.value;
+        const areaValue = areaDropdown.value;
+
+        // Resolver el ID de área específico
+        let areaId = employeeData.areaId || (areaValue.includes(',') ? areaValue.split(',')[0] : areaValue);
 
         try {
             if (!isSelected) {
