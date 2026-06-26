@@ -178,11 +178,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td style="padding: 1rem;">${data.position || '---'}</td>
                         <td style="padding: 1rem; font-weight: bold;">${data.points || 0}</td>
                         <td style="padding: 1rem;">
-                            <button onclick="deleteEmployee('${doc.id}', '${data.fullName}')" 
-                                    style="background: #fee2e2; color: #dc2626; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;"
-                                    title="Eliminar Empleado">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
+                             <button onclick="deleteEmployee('${doc.id}', this)" 
+                                     style="background: #fee2e2; color: #dc2626; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;"
+                                     title="Eliminar Empleado">
+                                 <i class="fa-solid fa-trash"></i>
+                             </button>
                         </td>
                     </tr>
                 `;
@@ -195,7 +195,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Hacer global para onclick
-    window.deleteEmployee = async (id, name) => {
+    window.deleteEmployee = async (id, nameOrBtn) => {
+        let name = 'este empleado';
+        if (typeof nameOrBtn === 'string') {
+            name = nameOrBtn;
+        } else if (nameOrBtn && nameOrBtn.closest) {
+            const row = nameOrBtn.closest('tr');
+            if (row) {
+                const link = row.querySelector('a');
+                if (link) name = link.textContent.trim();
+            }
+        }
         if (confirm(`¿Estás seguro de eliminar a ${name}? Esta acción es irreversible.`)) {
             try {
                 await db.collection('employees').doc(id).delete();
