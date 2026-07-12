@@ -991,7 +991,82 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderCharts(attendances, areasMap, areaEmployeeCounts, period) {
         renderWeekTrendChart(attendances, period);
         renderAreaRateChart(attendances, areasMap, areaEmployeeCounts);
+        renderAreaWeekHeatmap(attendances, areasMap, period);
         await renderPeriodCompareChart();
+    }
+
+    // 4) Mapa de calor área × semana (detecta áreas que se enfrían).
+    //    Rampa secuencial azul (dataviz): pálido = pocas asistencias.
+    function renderAreaWeekHeatmap(attendances, areasMap, period) {
+        const container = document.getElementById('area-week-heatmap');
+        if (!container) return;
+
+        const weekOf = (att) => {
+            if (period && period.startDate && window.Periods) return window.Periods.programWeekForDate(period, att.date);
+            return att.weekNumber || null;
+        };
+
+        const counts = {}; // areaId -> { total, weeks:{w:count} }
+        const weeksSet = new Set();
+        let maxWeek = 0;
+        attendances.forEach(att => {
+            const w = weekOf(att); if (w == null) return;
+            const a = att.areaId; if (!a) return;
+            if (!counts[a]) counts[a] = { total: 0, weeks: {} };
+            counts[a].weeks[w] = (counts[a].weeks[w] || 0) + 1;
+            counts[a].total++;
+            weeksSet.add(w);
+            if (w > maxWeek) maxWeek = w;
+        });
+
+        const areaIds = Object.keys(counts);
+        if (areaIds.length === 0) {
+            container.innerHTML = '<p style="color:#9ca3af; padding:1rem;">Sin datos para este periodo.</p>';
+            const lg = document.getElementById('heatmap-legend'); if (lg) lg.innerHTML = '';
+            return;
+        }
+
+        let weeks;
+        if (period && period.startDate) {
+            weeks = [];
+            for (let w = 1; w <= (maxWeek || 1); w++) weeks.push(w);
+        } else {
+            weeks = [...weeksSet].sort((a, b) => a - b);
+        }
+
+        let maxCell = 0;
+        areaIds.forEach(a => weeks.forEach(w => { maxCell = Math.max(maxCell, counts[a].weeks[w] || 0); }));
+        areaIds.sort((a, b) => counts[b].total - counts[a].total);
+
+        const RAMP = ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'];
+        const colorFor = (v) => {
+            if (!v) return '#f6f8fb';
+            const t = maxCell > 0 ? v / maxCell : 0;
+            return RAMP[Math.min(RAMP.length - 1, Math.floor(t * (RAMP.length - 1)))];
+        };
+        const textFor = (v) => (!v ? '#cbd5e1' : ((maxCell > 0 ? v / maxCell : 0) > 0.5 ? '#ffffff' : '#1f2937'));
+
+        let html = '<table style="border-collapse:separate; border-spacing:3px; font-size:0.8rem;"><thead><tr>';
+        html += '<th style="text-align:left; padding:4px 8px; color:#6b7280; font-weight:600; position:sticky; left:0; background:#fff;">Área</th>';
+        weeks.forEach(w => { html += `<th style="padding:4px 6px; color:#9ca3af; font-weight:600; min-width:34px;">S${w}</th>`; });
+        html += '<th style="padding:4px 8px; color:#6b7280; font-weight:700;">Total</th></tr></thead><tbody>';
+
+        areaIds.forEach(a => {
+            const name = areasMap[a] || 'Área';
+            html += `<tr><td style="text-align:left; padding:4px 8px; white-space:nowrap; position:sticky; left:0; background:#fff; font-weight:500; color:#374151;">${name}</td>`;
+            weeks.forEach(w => {
+                const v = counts[a].weeks[w] || 0;
+                html += `<td title="${name} · S${w}: ${v} asistencia(s)" style="text-align:center; padding:6px 4px; border-radius:6px; background:${colorFor(v)}; color:${textFor(v)}; font-weight:600;">${v || ''}</td>`;
+            });
+            html += `<td style="text-align:center; padding:4px 8px; font-weight:700; color:#374151;">${counts[a].total}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+
+        const legend = document.getElementById('heatmap-legend');
+        if (legend) {
+            legend.innerHTML = 'Bajo ' + RAMP.map(c => `<span style="display:inline-block; width:14px; height:14px; border-radius:3px; background:${c};"></span>`).join('') + ' Alto';
+        }
     }
 
     // 1) Participación semana a semana (línea, 1 serie).

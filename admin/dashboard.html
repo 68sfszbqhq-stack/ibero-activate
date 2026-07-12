@@ -372,6 +372,16 @@
                 <div style="position:relative; height:320px;"><canvas id="period-compare-chart"></canvas></div>
             </div>
         </div>
+
+        <!-- Mapa de calor: áreas × semanas (detecta áreas que se enfrían) -->
+        <div class="chart-container card">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; gap:1rem; flex-wrap:wrap;">
+                <h2 style="margin-bottom:0.25rem; font-size:1.2rem;">Mapa de calor: áreas por semana</h2>
+                <span id="heatmap-legend" style="font-size:0.8rem; color:#6b7280; display:flex; align-items:center; gap:0.5rem;"></span>
+            </div>
+            <p style="font-size:0.8rem; color:#9ca3af; margin:0 0 0.75rem;">Cada celda = asistencias del área esa semana. Las áreas <strong>más pálidas están bajas</strong> — úsalo para reactivarlas.</p>
+            <div id="area-week-heatmap" style="overflow-x:auto;"></div>
+        </div>
     </div>
 
     <!-- Leaderboard -->
@@ -415,7 +425,7 @@
     <script src="../js/roles.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/period-utils.js?v=2"></script>
-    <script src="../js/dashboard-admin.js?v=4"></script>
+    <script src="../js/dashboard-admin.js?v=5"></script>
 </body>
 
 </html>
