@@ -22,6 +22,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Instancias de Chart.js (para destruirlas antes de re-renderizar).
     const chartInstances = {};
 
+    // Control de recargas: debounce (colapsa ráfagas de eventos en una sola
+    // recarga) y token de generación (evita que renders concurrentes se
+    // entrecrucen, p. ej. en el leaderboard asíncrono).
+    let reloadTimer = null;
+    let loadGeneration = 0;
+    function scheduleReload() {
+        clearTimeout(reloadTimer);
+        reloadTimer = setTimeout(() => loadDashboardData(), 500);
+    }
+
     // Periodo (temporada) seleccionado en el dashboard. '__all__' = todos.
     let dashPeriods = [];
     let dashSelectedPeriodId = null;
@@ -85,6 +95,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupRealtimeListeners(); // NEW: Real-time updates
 
     async function loadDashboardData() {
+        // Token de esta ejecución: si empieza otra recarga, las tareas async
+        // de ésta (p. ej. el leaderboard) se abortan para no entrecruzarse.
+        const myGen = ++loadGeneration;
         try {
             // 0. Cargar Mapa de Áreas (ID → Nombre)
             const areasMap = {};
@@ -231,8 +244,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // 4. Generar Gráficas (pasamos arrays con datos agregados)
             renderCharts(allAttendances, areasMap, areaEmployeeCounts, dashPeriod);
 
-            // 5. Generar Leaderboard
-            generateLeaderboard(allAttendances, allFeedbacks, areasMap);
+            // 5. Generar Leaderboard (con el token de esta ejecución)
+            generateLeaderboard(allAttendances, allFeedbacks, areasMap, myGen);
 
             // 6. Cargar conteo de actividades
             const activitiesSnapshot = await db.collection('activities').get();
@@ -246,38 +259,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // NEW: Setup real-time listeners for automatic updates
+    // Setup real-time listeners for automatic updates.
+    // IMPORTANTE: antes se creaban 2 listeners POR CADA empleado (cientos en
+    // total), que se disparaban todos a la vez al cargar y provocaban una
+    // tormenta de recargas concurrentes (el leaderboard se duplicaba). Ahora
+    // se usan 2 listeners top-level + debounce → una sola recarga por ráfaga.
     function setupRealtimeListeners() {
         console.log('🔄 Configurando listeners en tiempo real...');
 
-        // Listen to all employees' attendance subcollections
-        db.collection('employees').get().then(employeesSnapshot => {
-            employeesSnapshot.forEach(empDoc => {
-                const empId = empDoc.id;
+        db.collection('attendances').onSnapshot(() => {
+            scheduleReload();
+        }, error => console.error('Error en listener de asistencias:', error));
 
-                // Listen to attendance changes
-                db.collection('employees')
-                    .doc(empId)
-                    .collection('attendance')
-                    .onSnapshot(() => {
-                        console.log('✨ Cambio detectado en asistencias - Actualizando dashboard...');
-                        loadDashboardData();
-                    }, error => {
-                        console.error('Error en listener de attendance:', error);
-                    });
-
-                // Listen to feedback changes
-                db.collection('employees')
-                    .doc(empId)
-                    .collection('feedback')
-                    .onSnapshot(() => {
-                        console.log('✨ Cambio detectado en feedback - Actualizando dashboard...');
-                        loadDashboardData();
-                    }, error => {
-                        console.error('Error en listener de feedback:', error);
-                    });
-            });
-        });
+        db.collectionGroup('feedback').onSnapshot(() => {
+            scheduleReload();
+        }, error => console.error('Error en listener de feedback:', error));
     }
 
     function calculateAndDisplayChanges(attendances, feedbacks, totalAtt, avgRating, activeAreas, feedbackRate) {
@@ -1192,7 +1188,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function generateLeaderboard(attendances, feedbacks, areasMap) {
+    async function generateLeaderboard(attendances, feedbacks, areasMap, gen) {
         // Agrupar por empleado
         const employeeStats = {};
 
@@ -1220,6 +1216,9 @@ document.addEventListener('DOMContentLoaded', () => {
             .sort((a, b) => b.points - a.points)
             .slice(0, 10);
 
+        // Si empezó otra recarga mientras tanto, aborta (evita duplicados).
+        if (gen !== undefined && gen !== loadGeneration) return;
+
         // Renderizar tabla
         leaderboardTable.innerHTML = '';
 
@@ -1229,6 +1228,8 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const [index, stat] of sortedEmployees.entries()) {
             try {
                 const empDoc = await db.collection('employees').doc(stat.id).get();
+                // Si una recarga más nueva tomó el control, deja de agregar filas.
+                if (gen !== undefined && gen !== loadGeneration) return;
                 const empData = empDoc.data() || { fullName: 'Desconocido', areaId: 'N/A' };
 
                 // Resolver nombre del área
