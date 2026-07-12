@@ -210,6 +210,12 @@
             <div class="filters-bar">
                 <div class="filter-group">
                     <label for="area-dropdown">Seleccionar Área / Departamento</label>
+                    <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center; font-size:0.8rem; color:#6b7280; margin:0 0 0.6rem;">
+                        <span style="font-weight:600;">Semáforo:</span>
+                        <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#10b981; vertical-align:middle; margin-right:4px;"></span>Al día (≤3 días)</span>
+                        <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#f59e0b; vertical-align:middle; margin-right:4px;"></span>Pronto (4–6 días)</span>
+                        <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ef4444; vertical-align:middle; margin-right:4px;"></span>Atrasada (una semana o más)</span>
+                    </div>
                     <div id="area-buttons-container" class="area-buttons-grid">
                         <!-- Botones de áreas generados dinámicamente -->
                         <div style="text-align: center; color: #9ca3af; padding: 1rem;">Cargando áreas...</div>
@@ -268,7 +274,7 @@
     <script defer src="../js/firebase-config.js"></script>
     <script src="../js/roles.js"></script>
     <script defer src="../js/period-utils.js"></script>
-    <script defer src="../js/attendance.js?v=3"></script>
+    <script defer src="../js/attendance.js?v=4"></script>
     <script src="../js/create-area-helper.js"></script> <!-- Auto-crear área faltante -->
 
     <!-- QR Code Script -->

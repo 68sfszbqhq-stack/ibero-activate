@@ -128,6 +128,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Semáforo: última asistencia por área (para marcar en rojo las áreas
+            // que llevan una semana o más sin pase de lista).
+            const recency = await getAreaRecency();
+
             areas.forEach(area => {
                 const btn = document.createElement('button');
                 btn.className = 'area-btn';
@@ -141,7 +145,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? window.SecurityUtils.escapeHTML(area.name)
                     : area.name;
 
-                btn.innerHTML = `${iconContent} ${safeName}`;
+                // Fecha más reciente entre todos los IDs del área
+                let lastDate = null;
+                area.allIds.forEach(id => {
+                    const d = recency[id];
+                    if (d && (!lastDate || d > lastDate)) lastDate = d;
+                });
+                const days = daysSinceDate(lastDate);
+                const tl = trafficLight(days);
+
+                btn.style.borderLeft = `5px solid ${tl.color}`;
+                btn.title = lastDate
+                    ? `Última asistencia: hace ${days} día(s) — ${tl.label}`
+                    : 'Sin asistencias en los últimos 30 días — ¡reactívala!';
+
+                const dot = `<span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${tl.color}; margin-right:6px; box-shadow:0 0 0 2px ${tl.color}33; vertical-align:middle;"></span>`;
+                btn.innerHTML = `${dot}${iconContent} ${safeName}`;
 
                 btn.addEventListener('click', () => {
                     selectArea(area.allIds.join(','), btn);
@@ -160,6 +179,43 @@ document.addEventListener('DOMContentLoaded', () => {
         // Aquí implementaremos la lógica del recorrido
         // Por ahora, orden alfabético
         return areas.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    // --- SEMÁFORO DE ÁREAS ---
+    // Devuelve un mapa areaId -> fecha (YYYY-MM-DD) de la última asistencia
+    // en los últimos 30 días. Una sola consulta acotada por fecha.
+    async function getAreaRecency() {
+        const map = {};
+        try {
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - 30);
+            const cutoffStr = cutoff.toLocaleDateString('en-CA');
+            const snap = await db.collection('attendances').where('date', '>=', cutoffStr).get();
+            snap.forEach(doc => {
+                const d = doc.data();
+                if (!d.areaId || !d.date) return;
+                if (!map[d.areaId] || d.date > map[d.areaId]) map[d.areaId] = d.date;
+            });
+        } catch (e) {
+            console.error('Error obteniendo recencia de áreas:', e);
+        }
+        return map;
+    }
+
+    // Días transcurridos desde una fecha 'YYYY-MM-DD' hasta hoy (Infinity si no hay).
+    function daysSinceDate(dateStr) {
+        if (!dateStr) return Infinity;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const d = new Date(dateStr + 'T00:00:00');
+        return Math.floor((today - d) / 86400000);
+    }
+
+    // Color del semáforo: verde (al día), amarillo (unos días), rojo (una semana+).
+    function trafficLight(days) {
+        if (days <= 3) return { color: '#10b981', label: 'Al día' };
+        if (days <= 6) return { color: '#f59e0b', label: 'Pronto toca' };
+        return { color: '#ef4444', label: 'Atrasada' };
     }
 
     function selectArea(areaIdOrIds, btnElement) {
