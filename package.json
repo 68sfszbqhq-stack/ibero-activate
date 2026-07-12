@@ -8,7 +8,10 @@
         "migrate:dry-run": "node scripts/migrate-to-subcollections.js --dry-run",
         "migrate:execute": "node scripts/migrate-to-subcollections.js --execute",
         "validate": "node scripts/validate-migration.js",
-        "init-periodization": "node scripts/init-periodization-node.js"
+        "init-periodization": "node scripts/init-periodization-node.js",
+        "seed-periods": "node scripts/seed-periods.js",
+        "assign-periods": "node scripts/assign-periods.js",
+        "seed-activities": "node scripts/seed-activities-coach.js"
     },
     "keywords": [
         "firestore",
@@ -25,7 +28,7 @@
         "firebase-admin": "^12.0.0",
         "heic2any": "^0.0.4"
     },
-    "main": ".temp-streak-fix.js",
+    "main": "index.html",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/68sfszbqhq-stack/ibero-activate.git"

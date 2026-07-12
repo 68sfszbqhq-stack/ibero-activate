@@ -39,6 +39,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="periods.html" class="nav-link ">
+                        <i class="fa-solid fa-calendar-week"></i> Periodos
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="program-overview.html" class="nav-link ">
                         <i class="fa-solid fa-calendar-star"></i> Programación por Periodo
                     </a>
@@ -126,6 +131,10 @@
                 <div>
                     <h1>Dashboard Semanal</h1>
                     <p id="current-date-display">Resumen de actividad y participación</p>
+                    <span id="dashboard-period-badge"
+                        style="display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.4rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; background: #f3f4f6; color: #6b7280;">
+                        Cargando periodo...
+                    </span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
                     <select id="period-select" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid #e5e7eb; font-weight: 600; color: #374151; outline: none; cursor: pointer; background: #f9fafb; min-width: 180px;">
@@ -339,15 +348,29 @@
     </div>
 
     <!-- Charts Section -->
-    <div class="charts-section"
-        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="charts-section" style="display: grid; gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Fila 1: Participación semana a semana (ancho completo) -->
         <div class="chart-container card">
-            <h2 style="margin-bottom: 1rem; font-size: 1.2rem;">Participación por Área</h2>
-            <canvas id="area-chart"></canvas>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; gap:1rem; flex-wrap:wrap; margin-bottom:0.25rem;">
+                <h2 style="font-size: 1.2rem; margin:0;">Participación semana a semana</h2>
+                <span id="week-trend-subtitle" style="font-size:0.85rem; color:#6b7280;"></span>
+            </div>
+            <p style="font-size:0.8rem; color:#9ca3af; margin:0 0 0.75rem;">Asistencias por cada semana del programa en el periodo seleccionado.</p>
+            <div style="position:relative; height:280px;"><canvas id="week-trend-chart"></canvas></div>
         </div>
-        <div class="chart-container card">
-            <h2 style="margin-bottom: 1rem; font-size: 1.2rem;">Tendencia Semanal</h2>
-            <canvas id="trend-chart"></canvas>
+
+        <!-- Fila 2: tasa por área + comparativa entre periodos -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(380px,1fr)); gap:1.5rem;">
+            <div class="chart-container card">
+                <h2 style="margin-bottom: 0.25rem; font-size: 1.2rem;">Participación por área</h2>
+                <p style="font-size:0.8rem; color:#9ca3af; margin:0 0 0.75rem;">Asistencias promedio <strong>por persona</strong> (normaliza el tamaño del área).</p>
+                <div style="position:relative; height:320px;"><canvas id="area-rate-chart"></canvas></div>
+            </div>
+            <div class="chart-container card">
+                <h2 style="margin-bottom: 0.25rem; font-size: 1.2rem;">Comparativa entre periodos</h2>
+                <p style="font-size:0.8rem; color:#9ca3af; margin:0 0 0.75rem;">Total de asistencias por temporada.</p>
+                <div style="position:relative; height:320px;"><canvas id="period-compare-chart"></canvas></div>
+            </div>
         </div>
     </div>
 
@@ -391,7 +414,8 @@
     <script src="../js/firebase-config.js"></script>
     <script src="../js/roles.js"></script>
     <script src="../js/auth.js"></script>
-    <script src="../js/dashboard-admin.js"></script>
+    <script src="../js/period-utils.js?v=2"></script>
+    <script src="../js/dashboard-admin.js?v=3"></script>
 </body>
 
 </html>

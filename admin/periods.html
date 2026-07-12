@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Periodos / Temporadas - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        .modal.hidden { display: none; }
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;
+        }
+        .modal-content {
+            background: #fff; border-radius: 16px; width: 100%; max-width: 520px;
+            max-height: 90vh; overflow-y: auto; padding: 0;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1.25rem 1.5rem; border-bottom: 1px solid #f3f4f6;
+        }
+        .modal-header h2 { margin: 0; font-size: 1.25rem; }
+        .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280; }
+        .form-group { margin-bottom: 1rem; padding: 0 1.5rem; }
+        .form-group:first-of-type { padding-top: 1.25rem; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.9rem; color: #374151; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem;
+        }
+        .form-actions {
+            display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1.25rem 1.5rem; border-top: 1px solid #f3f4f6;
+        }
+        .btn-primary { background: #4f46e5; color: #fff; border: none; padding: 0.6rem 1.4rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .btn-secondary { background: #f3f4f6; color: #374151; border: none; padding: 0.6rem 1.4rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    </style>
+</head>
+
+<body>
+    <div class="admin-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <h2>IBERO ACTÍVATE</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="dashboard.html" class="nav-link"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
+                <li class="nav-item"><a href="periods.html" class="nav-link active"><i class="fa-solid fa-calendar-week"></i> Periodos</a></li>
+                <li class="nav-item"><a href="program-overview.html" class="nav-link"><i class="fa-solid fa-calendar-star"></i> Programación por Periodo</a></li>
+                <li class="nav-item"><a href="calendar.html" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Calendario</a></li>
+                <li class="nav-item"><a href="activities.html" class="nav-link"><i class="fa-solid fa-dumbbell"></i> Actividades</a></li>
+                <li class="nav-item"><a href="attendance.html" class="nav-link"><i class="fa-solid fa-clipboard-check"></i> Pase de Lista</a></li>
+                <li class="nav-item"><a href="attendance-late.html" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> Pase Extemporáneo</a></li>
+                <li class="nav-item"><a href="employees.html" class="nav-link"><i class="fa-solid fa-user-plus"></i> Empleados</a></li>
+                <li class="nav-item"><a href="reports.html" class="nav-link"><i class="fa-solid fa-file-pdf"></i> Reportes</a></li>
+            </ul>
+            <button onclick="logout()" class="nav-link logout-btn">
+                <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </aside>
+
+        <main class="main-content" style="background: #f9fafb;">
+            <header class="page-header">
+                <div>
+                    <h1>Periodos / Temporadas 📅</h1>
+                    <p>Aísla las asistencias por temporada. Solo un periodo puede estar <strong>activo</strong> a la vez;
+                       el pase de lista registra en el periodo activo.</p>
+                </div>
+                <button id="btn-new-period" class="btn-primary" style="display:flex; align-items:center; gap:0.5rem;">
+                    <i class="fa-solid fa-plus"></i> Nuevo Periodo
+                </button>
+            </header>
+
+            <div id="periods-list" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:1.25rem; padding:1.5rem;">
+                <!-- Cards renderizadas por JS -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div id="period-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Nuevo Periodo</h2>
+                <button id="btn-close-modal" class="close-btn">&times;</button>
+            </div>
+            <form id="period-form">
+                <input type="hidden" id="period-id">
+
+                <div class="form-group">
+                    <label>Nombre del periodo</label>
+                    <input type="text" id="name" required placeholder="Ej: Primavera 2026">
+                </div>
+
+                <div class="form-group">
+                    <label>Temporada</label>
+                    <select id="season" required>
+                        <option value="primavera">Primavera</option>
+                        <option value="verano">Verano</option>
+                        <option value="otono">Otoño</option>
+                        <option value="invierno">Invierno</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; padding-left:1.5rem; padding-right:1.5rem;">
+                    <div>
+                        <label>Fecha de inicio (lunes)</label>
+                        <input type="date" id="startDate" required>
+                    </div>
+                    <div>
+                        <label>Fecha de fin (opcional)</label>
+                        <input type="date" id="endDate">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Total de semanas</label>
+                    <input type="number" id="totalWeeks" value="19" min="1" max="52">
+                </div>
+
+                <div class="form-group">
+                    <label>Macrociclo asociado (opcional)</label>
+                    <select id="macrocycleId">
+                        <option value="">— Sin macrociclo —</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="display:flex; align-items:center; gap:0.6rem;">
+                    <input type="checkbox" id="isActive" style="width:auto;">
+                    <label for="isActive" style="margin:0;">Marcar como periodo activo (el pase de lista registrará aquí)</label>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="btn-cancel" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Periodo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/roles.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/period-utils.js"></script>
+    <script src="../js/periods.js"></script>
+</body>
+
+</html>

@@ -95,6 +95,14 @@ service cloud.firestore {
       allow write: if isAuth();
     }
 
+    // PERIODOS / TEMPORADAS (Primavera / Verano / Otoño)
+    // Lectura pública (los conteos por periodo se muestran en paneles);
+    // escritura solo autenticados (admin).
+    match /periods/{periodId} {
+      allow read: if true;
+      allow write: if isAuth();
+    }
+
     // ========================================
     // SUBCOLLECTIONS - SIMPLIFICADAS
     // ========================================

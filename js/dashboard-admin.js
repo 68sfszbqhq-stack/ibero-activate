@@ -19,20 +19,67 @@ document.addEventListener('DOMContentLoaded', () => {
     // Data global para modales
     let globalData = {};
 
-    // Setup period select
+    // Instancias de Chart.js (para destruirlas antes de re-renderizar).
+    const chartInstances = {};
+
+    // Periodo (temporada) seleccionado en el dashboard. '__all__' = todos.
+    let dashPeriods = [];
+    let dashSelectedPeriodId = null;
+
     const periodSelect = document.getElementById('period-select');
-    if (periodSelect) {
-        periodSelect.value = localStorage.getItem('activePeriod') || 'VERANO_2026';
-        periodSelect.addEventListener('change', (e) => {
-            localStorage.setItem('activePeriod', e.target.value);
-            loadDashboardData();
-            loadProgramSummary();
-        });
+
+    // Rellena el dropdown con los periodos reales + "Todos".
+    async function setupDashboardPeriodSelect() {
+        if (!window.Periods) return;
+        dashPeriods = await window.Periods.getAllPeriods();
+        const active = await window.Periods.getActivePeriod();
+        const saved = localStorage.getItem('dashboardPeriodId');
+        dashSelectedPeriodId = saved || (active ? active.id : '__all__');
+
+        if (periodSelect) {
+            periodSelect.innerHTML = '';
+            dashPeriods.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = (p.name || 'Periodo') + (p.isActive ? ' (Activo)' : '');
+                periodSelect.appendChild(opt);
+            });
+            const optAll = document.createElement('option');
+            optAll.value = '__all__';
+            optAll.textContent = 'General (Todos los periodos)';
+            periodSelect.appendChild(optAll);
+            periodSelect.value = dashSelectedPeriodId;
+
+            periodSelect.addEventListener('change', (e) => {
+                dashSelectedPeriodId = e.target.value;
+                localStorage.setItem('dashboardPeriodId', dashSelectedPeriodId);
+                loadDashboardData();
+                loadProgramSummary();
+            });
+        }
+    }
+
+    // Muestra el badge del periodo activo en el encabezado del dashboard.
+    function renderDashboardPeriodBadge(period) {
+        const badge = document.getElementById('dashboard-period-badge');
+        if (!badge) return;
+        if (!period) {
+            badge.textContent = 'Todos los periodos';
+            badge.style.background = '#f3f4f6';
+            badge.style.color = '#6b7280';
+            return;
+        }
+        const meta = window.Periods.seasonMeta(period.season);
+        badge.innerHTML = `<i class="fa-solid ${meta.icon}"></i> ${period.name}`;
+        badge.style.background = meta.color + '22';
+        badge.style.color = meta.color;
     }
 
     // Inicializar
-    loadDashboardData();
-    loadProgramSummary(); // Program Periodization
+    setupDashboardPeriodSelect().then(() => {
+        loadDashboardData();
+        loadProgramSummary(); // Program Periodization
+    });
     setupDetailButtons();
     setupModalClose();
     setupRealtimeListeners(); // NEW: Real-time updates
@@ -49,6 +96,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // 1. Cargar todos los empleados para iterar sus subcollections
             const employeesSnapshot = await db.collection('employees').get();
 
+            // Conteo de empleados por área (denominador para la tasa por área).
+            const areaEmployeeCounts = {};
+            employeesSnapshot.forEach(d => {
+                const a = d.data().areaId;
+                if (a) areaEmployeeCounts[a] = (areaEmployeeCounts[a] || 0) + 1;
+            });
+
             let totalAttendances = 0;
             let totalRating = 0;
             let feedbackCount = 0;
@@ -56,86 +110,84 @@ document.addEventListener('DOMContentLoaded', () => {
             const allAttendances = [];
             const allFeedbacks = [];
 
-            // OPTIMIZACIÓN: Usar Promise.all para queries paralelas
-            const employeePromises = employeesSnapshot.docs.map(async (empDoc) => {
-                const empId = empDoc.id;
-                const empData = empDoc.data();
+            // Periodo (temporada) seleccionado: el dashboard muestra SOLO sus
+            // datos para que las temporadas no se entrecrucen. '__all__' = todos.
+            const dashPeriod = (dashSelectedPeriodId && dashSelectedPeriodId !== '__all__')
+                ? (dashPeriods.find(p => p.id === dashSelectedPeriodId) || null)
+                : null;
+            const periodIdFilter = dashPeriod ? dashPeriod.id : null;
+            const periodStart = dashPeriod ? dashPeriod.startDate : null;
+            const periodEnd = dashPeriod ? dashPeriod.endDate : null;
+            renderDashboardPeriodBadge(dashPeriod);
 
-                // Obtener attendances y feedbacks en paralelo
-                const [attSnapshot, fbSnapshot] = await Promise.all([
-                    db.collection('employees')
-                        .doc(empId)
-                        .collection('attendance')
-                        .get(),
-                    db.collection('employees')
-                        .doc(empId)
-                        .collection('feedback')
-                        .get()
-                ]);
+            // ¿La asistencia entra en el periodo activo? Prefiere periodId;
+            // si el doc aún no está migrado, cae al rango de fechas del periodo.
+            const attInPeriod = (data) => {
+                if (!periodIdFilter) return true; // sin periodo: mostrar todo
+                if (data.periodId) return data.periodId === periodIdFilter;
+                if (periodStart) return data.date >= periodStart && (!periodEnd || data.date <= periodEnd);
+                return true;
+            };
 
-                const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
-                let startPeriodDate = null;
-                let endPeriodDate = null;
+            // Mapa empId -> nombre (para adjuntar nombre a asistencias/feedback
+            // que no lo traigan en el documento).
+            const empNameById = {};
+            employeesSnapshot.forEach(d => { empNameById[d.id] = d.data().fullName || 'Desconocido'; });
 
-                if (activePeriod === 'VERANO_2026') {
-                    startPeriodDate = '2026-06-01';
-                    endPeriodDate = '2026-07-10';
-                } else if (activePeriod === 'PRIMAVERA_2026') {
-                    startPeriodDate = '2026-01-12';
-                    endPeriodDate = '2026-05-22';
-                }
+            // ============================================================
+            // OPTIMIZACIÓN (Fase 4): en lugar de leer la subcolección de CADA
+            // empleado (N+1 lecturas), se hacen 2 consultas fijas:
+            //   1) Asistencias de la colección top-level `attendances`,
+            //      filtrada por periodId (misma fuente que los Reportes → los
+            //      números coinciden). Evita además contaminación con el módulo
+            //      de Caminatas (que usa otra subcolección llamada 'attendance').
+            //   2) Todo el feedback vía collectionGroup('feedback') en una sola
+            //      consulta. Escala sin importar el número de empleados.
+            // ============================================================
+            let attQuery = db.collection('attendances');
+            if (periodIdFilter) attQuery = attQuery.where('periodId', '==', periodIdFilter);
 
-                // Procesar attendances
-                const empAttendances = [];
-                attSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    const attDate = data.date; // format: 'YYYY-MM-DD'
-                    if (startPeriodDate && (attDate < startPeriodDate || attDate > endPeriodDate)) {
-                        return; // Excluir si está fuera del periodo
-                    }
-                    if (data.areaId) areasSet.add(data.areaId);
-                    empAttendances.push({ id: doc.id, ...data, employeeId: empId, employeeName: empData.fullName || 'Desconocido' });
+            const [attSnapshot, fbSnapshot] = await Promise.all([
+                attQuery.get(),
+                db.collectionGroup('feedback').get()
+            ]);
+
+            // 1) Asistencias
+            attSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (!attInPeriod(data)) return; // salvaguarda (docs sin periodId)
+                if (data.areaId) areasSet.add(data.areaId);
+                const empId = data.employeeId || (doc.ref.parent.parent && doc.ref.parent.parent.id);
+                allAttendances.push({
+                    id: doc.id, ...data, employeeId: empId,
+                    employeeName: data.employeeName || empNameById[empId] || 'Desconocido'
                 });
-
-                // Procesar feedbacks
-                const empFeedbacks = [];
-                let empTotalRating = 0;
-                fbSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    const fbDate = data.date; // format: 'YYYY-MM-DD' or timestamp
-                    let fbDateStr = fbDate;
-                    if (!fbDateStr && data.timestamp) {
-                        fbDateStr = data.timestamp.toDate().toISOString().split('T')[0];
-                    }
-                    if (!fbDateStr) {
-                        fbDateStr = data.createdAt ? new Date(data.createdAt).toISOString().split('T')[0] : '';
-                    }
-                    if (startPeriodDate && (fbDateStr < startPeriodDate || fbDateStr > endPeriodDate)) {
-                        return; // Excluir si está fuera del periodo
-                    }
-                    empTotalRating += data.rating || 0;
-                    empFeedbacks.push({ id: doc.id, ...data, employeeId: empId, employeeName: empData.fullName || 'Desconocido' });
-                });
-
-                return {
-                    attendances: empAttendances,
-                    feedbacks: empFeedbacks,
-                    totalRating: empTotalRating,
-                    attendanceCount: empAttendances.length,
-                    feedbackCount: empFeedbacks.length
-                };
             });
+            totalAttendances = allAttendances.length;
 
-            // Esperar todas las queries en paralelo
-            const results = await Promise.all(employeePromises);
+            // 2) Feedback (una sola consulta; se filtra por rango de fechas del
+            //    periodo, ya que el feedback no lleva periodId).
+            fbSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (typeof data.rating !== 'number') return; // ignora docs que no sean feedback válido
+                const empId = data.employeeId || (doc.ref.parent.parent && doc.ref.parent.parent.id);
 
-            // Agregar resultados
-            results.forEach(result => {
-                totalAttendances += result.attendanceCount;
-                feedbackCount += result.feedbackCount;
-                totalRating += result.totalRating;
-                allAttendances.push(...result.attendances);
-                allFeedbacks.push(...result.feedbacks);
+                let fbDateStr = data.date;
+                if (!fbDateStr && data.timestamp && data.timestamp.toDate) {
+                    fbDateStr = data.timestamp.toDate().toISOString().split('T')[0];
+                }
+                if (!fbDateStr) {
+                    fbDateStr = data.createdAt ? new Date(data.createdAt).toISOString().split('T')[0] : '';
+                }
+                if (periodStart && fbDateStr && (fbDateStr < periodStart || (periodEnd && fbDateStr > periodEnd))) {
+                    return; // fuera del periodo
+                }
+                totalRating += data.rating || 0;
+                feedbackCount++;
+                allFeedbacks.push({
+                    id: doc.id, ...data, employeeId: empId,
+                    employeeName: empNameById[empId] || 'Desconocido'
+                });
             });
 
             // Guardar datos globales para modales
@@ -177,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
             calculateProgress(totalAttendances, avgRating, areasSet.size, feedbackRate);
 
             // 4. Generar Gráficas (pasamos arrays con datos agregados)
-            renderCharts(allAttendances, allFeedbacks, areasMap);
+            renderCharts(allAttendances, areasMap, areaEmployeeCounts, dashPeriod);
 
             // 5. Generar Leaderboard
             generateLeaderboard(allAttendances, allFeedbacks, areasMap);
@@ -892,61 +944,251 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.classList.remove('show');
     };
 
-    function renderCharts(attendances, feedbacks, areasMap) {
-        // Preparar datos para gráfica de áreas
-        const areaCounts = {};
+    // --- Paleta validada (dataviz skill, modo claro) ---
+    const VIZ = {
+        blue: '#2a78d6',
+        blueFill: 'rgba(42,120,214,0.12)',
+        ink: '#0b0b0b',
+        inkSecondary: '#52514e',
+        muted: '#898781',
+        grid: '#e1e0d9',
+        font: 'system-ui, -apple-system, "Segoe UI", sans-serif'
+    };
+
+    // Plugin ligero para dibujar el valor al final de cada barra (etiqueta
+    // directa; cubre el requisito de "relief" de la paleta y se lee sin hover).
+    function valueLabels({ horizontal = false, format = (v) => String(v) }) {
+        return {
+            id: 'valueLabels_' + (horizontal ? 'h' : 'v') + Math.random().toString(36).slice(2, 6),
+            afterDatasetsDraw(chart) {
+                const { ctx } = chart;
+                ctx.save();
+                ctx.font = '600 12px ' + VIZ.font;
+                ctx.fillStyle = VIZ.inkSecondary;
+                chart.data.datasets.forEach((ds, di) => {
+                    const meta = chart.getDatasetMeta(di);
+                    meta.data.forEach((el, i) => {
+                        const v = ds.data[i];
+                        if (v == null || v === 0) return;
+                        const txt = format(v);
+                        if (horizontal) {
+                            ctx.textAlign = 'left';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(txt, el.x + 6, el.y);
+                        } else {
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+                            ctx.fillText(txt, el.x, el.y - 6);
+                        }
+                    });
+                });
+                ctx.restore();
+            }
+        };
+    }
+
+    const baseScale = {
+        grid: { color: VIZ.grid, drawBorder: false },
+        ticks: { color: VIZ.muted, font: { family: VIZ.font, size: 12 } }
+    };
+
+    async function renderCharts(attendances, areasMap, areaEmployeeCounts, period) {
+        renderWeekTrendChart(attendances, period);
+        renderAreaRateChart(attendances, areasMap, areaEmployeeCounts);
+        await renderPeriodCompareChart();
+    }
+
+    // 1) Participación semana a semana (línea, 1 serie).
+    function renderWeekTrendChart(attendances, period) {
+        const canvas = document.getElementById('week-trend-chart');
+        if (!canvas) return;
+
+        const weekCounts = {};
+        let maxWeek = (period && period.totalWeeks) ? period.totalWeeks : 0;
         attendances.forEach(att => {
-            const areaId = att.areaId;
-            areaCounts[areaId] = (areaCounts[areaId] || 0) + 1;
+            let wk = null;
+            if (period && period.startDate && window.Periods) {
+                wk = window.Periods.programWeekForDate(period, att.date);
+            } else {
+                wk = att.weekNumber || null;
+            }
+            if (wk == null) return;
+            weekCounts[wk] = (weekCounts[wk] || 0) + 1;
+            if (wk > maxWeek) maxWeek = wk;
         });
 
-        // Gráfica de Áreas
-        const areaCtx = document.getElementById('area-chart').getContext('2d');
-        new Chart(areaCtx, {
-            type: 'bar',
+        let labels, data;
+        if (period && period.startDate) {
+            // Timeline completo del programa (muestra también las semanas flojas).
+            labels = [];
+            data = [];
+            for (let w = 1; w <= (maxWeek || 1); w++) {
+                labels.push('S' + w);
+                data.push(weekCounts[w] || 0);
+            }
+        } else {
+            const keys = Object.keys(weekCounts).map(Number).sort((a, b) => a - b);
+            labels = keys.map(k => 'Sem ' + k);
+            data = keys.map(k => weekCounts[k]);
+        }
+
+        const subtitle = document.getElementById('week-trend-subtitle');
+        if (subtitle) subtitle.textContent = period ? period.name : 'Todos los periodos';
+
+        if (chartInstances.week) chartInstances.week.destroy();
+        chartInstances.week = new Chart(canvas.getContext('2d'), {
+            type: 'line',
             data: {
-                labels: Object.keys(areaCounts).map(id => areasMap[id] || 'Desconocido'),
+                labels,
                 datasets: [{
                     label: 'Asistencias',
-                    data: Object.values(areaCounts),
-                    backgroundColor: 'rgba(102, 126, 234, 0.6)',
-                    borderColor: 'rgba(102, 126, 234, 1)',
-                    borderWidth: 1
+                    data,
+                    borderColor: VIZ.blue,
+                    backgroundColor: VIZ.blueFill,
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true,
+                    pointRadius: 3,
+                    pointBackgroundColor: VIZ.blue,
+                    pointHoverRadius: 5
                 }]
             },
             options: {
                 responsive: true,
-                plugins: { legend: { display: false } }
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => 'Semana ' + items[0].label.replace(/\D/g, ''),
+                            label: (item) => item.parsed.y + ' asistencias'
+                        }
+                    }
+                },
+                scales: {
+                    y: { ...baseScale, beginAtZero: true, title: { display: true, text: 'Asistencias', color: VIZ.muted } },
+                    x: { ...baseScale, grid: { display: false } }
+                }
             }
         });
+    }
 
-        // Gráfica de Tendencia (Días)
-        const dayCounts = {};
-        const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    // 2) Participación por área: asistencias por persona (barra horizontal).
+    function renderAreaRateChart(attendances, areasMap, areaEmployeeCounts) {
+        const canvas = document.getElementById('area-rate-chart');
+        if (!canvas) return;
 
+        const areaCounts = {};
         attendances.forEach(att => {
-            const date = new Date(att.date);
-            const dayName = days[date.getDay()];
-            dayCounts[dayName] = (dayCounts[dayName] || 0) + 1;
+            if (att.areaId) areaCounts[att.areaId] = (areaCounts[att.areaId] || 0) + 1;
         });
 
-        const trendCtx = document.getElementById('trend-chart').getContext('2d');
-        new Chart(trendCtx, {
-            type: 'line',
+        const rows = Object.keys(areaCounts).map(id => {
+            const emp = areaEmployeeCounts[id] || 0;
+            const count = areaCounts[id];
+            return {
+                name: areasMap[id] || 'Desconocido',
+                emp,
+                count,
+                rate: emp > 0 ? count / emp : 0
+            };
+        }).filter(r => r.emp > 0).sort((a, b) => b.rate - a.rate);
+
+        if (chartInstances.areaRate) chartInstances.areaRate.destroy();
+        chartInstances.areaRate = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
             data: {
-                labels: Object.keys(dayCounts),
+                labels: rows.map(r => r.name),
                 datasets: [{
-                    label: 'Participación Diaria',
-                    data: Object.values(dayCounts),
-                    borderColor: '#f093fb',
-                    backgroundColor: 'rgba(240, 147, 251, 0.1)',
-                    tension: 0.4,
-                    fill: true
+                    label: 'Asistencias por persona',
+                    data: rows.map(r => Number(r.rate.toFixed(2))),
+                    backgroundColor: VIZ.blue,
+                    borderRadius: 4,
+                    borderSkipped: false,
+                    maxBarThickness: 26,
+                    _meta: rows
                 }]
             },
             options: {
-                responsive: true
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { right: 32 } }, // espacio para la etiqueta al final de la barra
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (item) => {
+                                const r = rows[item.dataIndex];
+                                return `${r.count} asistencias / ${r.emp} personas = ${r.rate.toFixed(2)} por persona`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { ...baseScale, beginAtZero: true },
+                    y: { ...baseScale, grid: { display: false } }
+                }
+            },
+            plugins: [valueLabels({ horizontal: true, format: (v) => v.toFixed(1) })]
+        });
+    }
+
+    // 3) Comparativa entre periodos: total de asistencias por temporada (barras).
+    async function renderPeriodCompareChart() {
+        const canvas = document.getElementById('period-compare-chart');
+        if (!canvas || !window.Periods) return;
+
+        const periods = dashPeriods.length ? dashPeriods : await window.Periods.getAllPeriods();
+
+        // Conteo por periodo: usa agregación count() (eficiente); si el SDK no
+        // la soporta, cae a contar los documentos.
+        const results = [];
+        for (const p of periods) {
+            let total = 0;
+            try {
+                const agg = await db.collection('attendances').where('periodId', '==', p.id).count().get();
+                total = agg.data().count;
+            } catch (e) {
+                const snap = await db.collection('attendances').where('periodId', '==', p.id).get();
+                total = snap.size;
             }
+            results.push({ name: p.name, season: p.season, total });
+        }
+        // Orden cronológico por fecha de inicio ascendente para leer la evolución.
+        results.sort((a, b) => {
+            const pa = periods.find(p => p.name === a.name);
+            const pb = periods.find(p => p.name === b.name);
+            return (pa.startDate || '').localeCompare(pb.startDate || '');
+        });
+
+        if (chartInstances.periodCompare) chartInstances.periodCompare.destroy();
+        chartInstances.periodCompare = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: results.map(r => r.name),
+                datasets: [{
+                    label: 'Asistencias',
+                    data: results.map(r => r.total),
+                    backgroundColor: results.map(r => window.Periods.seasonMeta(r.season).color),
+                    borderRadius: 4,
+                    borderSkipped: false,
+                    maxBarThickness: 64
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (item) => item.parsed.y + ' asistencias' } }
+                },
+                scales: {
+                    y: { ...baseScale, beginAtZero: true },
+                    x: { ...baseScale, grid: { display: false } }
+                }
+            },
+            plugins: [valueLabels({ horizontal: false, format: (v) => String(v) })]
         });
     }
 
@@ -1027,13 +1269,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load Program Peridization Summary
     async function loadProgramSummary() {
         try {
-            const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
-            if (activePeriod === 'TOTAL') {
+            // Con "Todos los periodos" no hay un macrociclo único que mostrar.
+            if (dashSelectedPeriodId === '__all__') {
                 const summaryCard = document.getElementById('program-summary');
                 if (summaryCard) summaryCard.style.display = 'none';
                 return;
             }
-            const docId = activePeriod === 'PRIMAVERA_2026' ? 'primavera_2026' : 'current_macrocycle';
+
+            // Periodo seleccionado → su macrociclo asignado (o el por defecto).
+            const period = dashPeriods.find(p => p.id === dashSelectedPeriodId) || null;
+            const docId = (period && period.macrocycleId) ? period.macrocycleId : 'current_macrocycle';
 
             const doc = await db.collection('program_periodization')
                 .doc(docId)
@@ -1047,7 +1292,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const programData = doc.data();
-            const programContext = calculateProgramWeek(programData);
+            // La fecha de inicio/fin del periodo manda sobre la del macrociclo.
+            if (period && period.startDate) programData.startDate = period.startDate;
+            if (period && period.totalWeeks) programData.totalWeeks = period.totalWeeks;
+            const programContext = calculateProgramWeek(programData, period ? period.endDate : null);
 
             if (!programContext) return;
 
@@ -1092,7 +1340,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function calculateProgramWeek(programData) {
+    function calculateProgramWeek(programData, periodEndDate = null) {
         if (!programData || !programData.startDate) {
             return null;
         }
@@ -1100,10 +1348,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const startDate = new Date(programData.startDate);
         const today = new Date();
 
-        const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
+        // Si el periodo ya terminó, congelar la semana en su fecha de fin.
         let referenceDate = today;
-        if (activePeriod === 'PRIMAVERA_2026') {
-            const end = new Date('2026-05-22T23:59:59');
+        if (periodEndDate) {
+            const end = new Date(periodEndDate + 'T23:59:59');
             if (today > end) referenceDate = end;
         }
 

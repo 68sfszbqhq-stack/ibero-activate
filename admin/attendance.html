@@ -63,6 +63,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="periods.html" class="nav-link ">
+                        <i class="fa-solid fa-calendar-week"></i> Periodos
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="program-overview.html" class="nav-link ">
                         <i class="fa-solid fa-calendar-star"></i> Programación por Periodo
                     </a>
@@ -150,6 +155,10 @@
                 <div>
                     <h1>Pase de Lista (En Vivo)</h1>
                     <p>Toca un nombre para marcar asistencia al instante</p>
+                    <span id="active-period-badge"
+                        style="display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem; padding: 0.3rem 0.8rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; background: #eef2ff; color: #4f46e5;">
+                        <i class="fa-solid fa-calendar"></i> Cargando periodo...
+                    </span>
                 </div>
                 <div style="display: flex; gap: 1rem; align-items: center;">
                     <!-- QR Code Button -->
@@ -258,7 +267,8 @@
 
     <script defer src="../js/firebase-config.js"></script>
     <script src="../js/roles.js"></script>
-    <script defer src="../js/attendance.js?v=2"></script>
+    <script defer src="../js/period-utils.js"></script>
+    <script defer src="../js/attendance.js?v=3"></script>
     <script src="../js/create-area-helper.js"></script> <!-- Auto-crear área faltante -->
 
     <!-- QR Code Script -->

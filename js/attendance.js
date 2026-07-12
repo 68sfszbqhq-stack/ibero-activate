@@ -19,6 +19,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // Variable para la fecha seleccionada (por defecto hoy)
     let currentDate = new Date();
 
+    // Periodo (temporada) activo. Se resuelve una sola vez al cargar la página
+    // y se estampa en cada asistencia para que los conteos NO se entrecrucen
+    // entre Primavera / Verano / Otoño. Ver js/period-utils.js
+    let activePeriodId = null;
+    let activePeriod = null;
+    if (window.Periods) {
+        window.Periods.getActivePeriod().then(p => {
+            activePeriod = p;
+            activePeriodId = p ? p.id : null;
+            renderPeriodBadge(p);
+        });
+    }
+
+    function renderPeriodBadge(period) {
+        const badge = document.getElementById('active-period-badge');
+        if (!badge) return;
+        if (!period) {
+            badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Sin periodo activo — configúralo en Periodos';
+            badge.style.background = '#fef3c7';
+            badge.style.color = '#92400e';
+            return;
+        }
+        const meta = window.Periods.seasonMeta(period.season);
+        badge.innerHTML = `<i class="fa-solid ${meta.icon}"></i> ${period.name}`;
+        badge.style.background = meta.color + '22';
+        badge.style.color = meta.color;
+    }
+
     // Inicializar fecha
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     updateDateDisplay();
@@ -492,6 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     status: status,
                     weekNumber: getWeekNumber(currentDate),
                     year: currentDate.getFullYear(),
+                    periodId: activePeriodId,
                     chairStandsCount: countValue
                 };
                 
@@ -703,7 +732,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                         status: status,
                         weekNumber: getWeekNumber(currentDate),
-                        year: currentDate.getFullYear()
+                        year: currentDate.getFullYear(),
+                        periodId: activePeriodId
                     };
 
                     const batch = db.batch();

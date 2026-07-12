@@ -224,6 +224,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
+                // Resolver el periodo (temporada) según la FECHA de la asistencia,
+                // ya que el pase extemporáneo puede corresponder a un periodo pasado.
+                const periodId = window.Periods
+                    ? await window.Periods.getPeriodIdForDate(selectedDate)
+                    : null;
+
                 // 2. MARCAR ASISTENCIA (Crear documento en subcollection)
                 const docRef = await db.collection('employees')
                     .doc(employeeId)
@@ -236,6 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         status: 'active',
                         weekNumber: getWeekNumber(currentDate),
                         year: currentDate.getFullYear(),
+                        periodId: periodId,
                         isLate: true // Marcar como asistencia extemporánea
                     });
 
@@ -249,6 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     status: 'active',
                     weekNumber: getWeekNumber(currentDate),
                     year: currentDate.getFullYear(),
+                    periodId: periodId,
                     isLate: true
                 });
 

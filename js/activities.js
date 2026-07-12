@@ -2,6 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Variables de Estado
     let allActivities = [];
     let currentCategory = 'all';
+    let currentIntensity = 'all';           // filtro por intensidad
+    let usedActivityIds = new Set();         // actividades ya usadas en el periodo activo
 
     // Auth Check
     auth.onAuthStateChanged(user => {
@@ -59,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Filter Logic
+    // Filter Logic (categoría)
     filterButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             filterButtons.forEach(b => b.classList.remove('active'));
@@ -68,6 +70,54 @@ document.addEventListener('DOMContentLoaded', () => {
             renderActivities();
         });
     });
+
+    // Filter Logic (intensidad)
+    document.querySelectorAll('.intensity-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+            document.querySelectorAll('.intensity-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            currentIntensity = pill.dataset.intensity;
+            renderActivities();
+        });
+    });
+
+    // Marca qué actividades ya se usaron en el periodo activo (para rotarlas).
+    async function loadUsedActivities() {
+        try {
+            if (!window.Periods) return;
+            const period = await window.Periods.getActivePeriod();
+            const snapshot = await db.collection('weekly_schedules').get();
+
+            const inRange = (weekId) => {
+                if (!period || !period.startDate) return true; // sin periodo: cuenta todo
+                const monday = weekIdToMonday(weekId);
+                if (!monday) return true;
+                const iso = monday.toLocaleDateString('en-CA');
+                return iso >= period.startDate && (!period.endDate || iso <= period.endDate);
+            };
+
+            usedActivityIds = new Set();
+            snapshot.forEach(doc => {
+                if (!inRange(doc.id)) return;
+                (doc.data().schedule || []).forEach(item => {
+                    if (item.activityId) usedActivityIds.add(item.activityId);
+                });
+            });
+        } catch (e) {
+            console.error('Error cargando actividades usadas:', e);
+        }
+    }
+
+    // Aproxima el lunes de un weekId "YYYY-WNN" (para acotar al periodo).
+    function weekIdToMonday(weekId) {
+        const m = /^(\d{4})-W(\d+)$/.exec(weekId || '');
+        if (!m) return null;
+        const year = +m[1], week = +m[2];
+        const d = new Date(year, 0, 1 + (week - 1) * 7);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(d.setDate(diff));
+    }
 
     // Load Activities
     async function loadActivities() {
@@ -82,6 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 id: doc.id,
                 ...doc.data()
             }));
+            await loadUsedActivities();
             renderActivities();
         } catch (error) {
             console.error("Error loading activities:", error);
@@ -92,9 +143,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Render Function
     function renderActivities() {
         activitiesGrid.innerHTML = '';
-        const filtered = currentCategory === 'all'
-            ? allActivities
-            : allActivities.filter(a => a.categoria === currentCategory || a.category === currentCategory);
+        const filtered = allActivities.filter(a => {
+            const catOk = currentCategory === 'all' || a.categoria === currentCategory || a.category === currentCategory;
+            const intOk = currentIntensity === 'all' || a.intensity === currentIntensity;
+            return catOk && intOk;
+        });
 
         if (filtered.length === 0) {
             activitiesGrid.innerHTML = `
@@ -114,6 +167,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.intensity === 'baja') badgeClass = 'bg-green-100 text-green-700';
 
             const bgImage = data.imagen || 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=800';
+
+            const usedBadge = usedActivityIds.has(data.id)
+                ? `<span class="absolute bottom-3 left-3 bg-emerald-500/95 text-white px-2 py-1 rounded-md text-xs font-bold shadow-sm" title="Ya programada en el periodo actual">
+                       <i class="fa-solid fa-check mr-1"></i>Usada este periodo
+                   </span>`
+                : '';
 
             card.innerHTML = `
                 <div class="h-48 relative overflow-hidden shrink-0">
@@ -135,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="absolute bottom-3 right-3 bg-black/50 backdrop-blur text-white px-2 py-1 rounded-md text-xs font-medium">
                         <i class="fa-regular fa-clock mr-1"></i>${data.duration} min
                     </span>
+                    ${usedBadge}
                 </div>
 
                 <div class="p-5 flex flex-col grow">

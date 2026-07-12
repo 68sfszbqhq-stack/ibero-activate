@@ -601,6 +601,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="periods.html" class="nav-link ">
+                        <i class="fa-solid fa-calendar-week"></i> Periodos
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="program-overview.html" class="nav-link ">
                         <i class="fa-solid fa-calendar-star"></i> Programación por Periodo
                     </a>
@@ -700,6 +705,14 @@
                     </p>
                 </div>
                 <div class="week-selector">
+                    <button id="btn-autocomplete-week" class="btn-secondary" title="Autocompletar los días vacíos con las actividades sugeridas de la fase del programa"
+                        style="margin-right: 0.5rem; color: #7c3aed; border-color: #7c3aed; font-weight: 600;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Autocompletar
+                    </button>
+                    <button id="btn-copy-week" class="btn-secondary" title="Copiar la planeación de esta semana"
+                        style="margin-right: 0.25rem;"><i class="fa-solid fa-copy"></i></button>
+                    <button id="btn-paste-week" class="btn-secondary" title="Pegar la semana copiada aquí"
+                        style="margin-right: 0.75rem;"><i class="fa-solid fa-paste"></i></button>
                     <button id="btn-generate-unified-report" class="btn-secondary" title="Generar Reporte Unificado DOCX"
                         style="margin-right: 0.5rem; color: #10b981; border-color: #10b981; font-weight: 600;">
                         <i class="fa-solid fa-users-viewfinder"></i> Reporte Unificado
@@ -721,6 +734,10 @@
                     <p>Programa las actividades de la semana</p>
                 </div>
                 <div class="week-selector">
+                    <button id="btn-copy-week-fallback" class="btn-secondary" title="Copiar la planeación de esta semana"
+                        style="margin-right: 0.25rem;"><i class="fa-solid fa-copy"></i></button>
+                    <button id="btn-paste-week-fallback" class="btn-secondary" title="Pegar la semana copiada aquí"
+                        style="margin-right: 0.75rem;"><i class="fa-solid fa-paste"></i></button>
                     <button id="prev-week-fallback" class="btn-secondary"><i
                             class="fa-solid fa-chevron-left"></i></button>
                     <span id="current-week-label-fallback" style="margin: 0 1rem; font-weight: 600;">Semana
@@ -1088,7 +1105,8 @@
     <script src="../js/firebase-config.js"></script>
     <script src="../js/roles.js"></script>
     <script src="../js/auth.js"></script>
-    <script src="../js/calendar.js"></script>
+    <script src="../js/period-utils.js?v=2"></script>
+    <script src="../js/calendar.js?v=2"></script>
 </body>
 
 </html>

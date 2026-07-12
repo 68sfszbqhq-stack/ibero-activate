@@ -103,6 +103,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-delete-schedule').addEventListener('click', deleteSchedule);
     form.addEventListener('submit', saveSchedule);
 
+    // Fase 3: autocompletar semana + copiar/pegar (plantillas)
+    const btnAutocomplete = document.getElementById('btn-autocomplete-week');
+    if (btnAutocomplete) btnAutocomplete.addEventListener('click', autocompleteWeek);
+    ['btn-copy-week', 'btn-copy-week-fallback'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.addEventListener('click', copyWeek);
+    });
+    ['btn-paste-week', 'btn-paste-week-fallback'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.addEventListener('click', pasteWeek);
+    });
+
     // Close modal when clicking outside
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
@@ -394,6 +406,144 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ============================================================
+    // FASE 3: Calendarización ágil
+    // ============================================================
+
+    // Normaliza texto (minúsculas, sin acentos ni signos) para comparar nombres.
+    function normalizeText(s) {
+        return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+    // Palabras "significativas" (>=4 letras) para el emparejamiento por tokens.
+    function significantWords(s) {
+        return normalizeText(s).split(' ').filter(w => w.length >= 4);
+    }
+
+    // Empareja una actividad sugerida del macrociclo (por nombre/tema) con una
+    // actividad del catálogo cargado (activitiesMap). Devuelve el activityId o null.
+    function matchActivityByName(name) {
+        const recWords = significantWords(name);
+        if (recWords.length === 0) return null;
+        const recNorm = normalizeText(name);
+        let best = null, bestScore = 0;
+        for (const [id, act] of Object.entries(activitiesMap)) {
+            const actWords = significantWords(act.name);
+            let score = 0;
+            recWords.forEach(w => { if (actWords.includes(w)) score++; });
+            if (normalizeText(act.name) === recNorm) score += 10; // nombre idéntico
+            if (score > bestScore) { bestScore = score; best = id; }
+        }
+        return bestScore >= 1 ? best : null;
+    }
+
+    // Autocompleta los días vacíos de la semana con las actividades sugeridas
+    // de la fase actual del programa (emparejadas al catálogo por nombre).
+    async function autocompleteWeek() {
+        if (!currentProgramContext || !currentProgramContext.phase) {
+            alert('Esta semana no tiene un programa (macrociclo) configurado, así que no hay sugerencias que aplicar.');
+            return;
+        }
+        const phase = currentProgramContext.phase;
+        const recs = (phase.actividadesRecomendadas || []).slice();
+        if (recs.length === 0 && currentProgramContext.weekSchedule) {
+            recs.push(currentProgramContext.weekSchedule.activity);
+        }
+
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+        const usedDays = new Set(currentSchedule.map(it => it.day));
+        const emptyDays = days.filter(d => !usedDays.has(d));
+
+        if (emptyDays.length === 0) {
+            alert('Todos los días de esta semana ya tienen actividad. Borra alguna si quieres usar el autocompletado.');
+            return;
+        }
+
+        const matched = [], unmatched = [], seenIds = new Set();
+        recs.forEach(rec => {
+            const id = matchActivityByName(rec);
+            // Dedup: no repetir la misma actividad aunque dos sugerencias la mapeen.
+            if (id && !seenIds.has(id)) {
+                seenIds.add(id);
+                matched.push({ rec, id });
+            } else if (!id) {
+                unmatched.push(rec);
+            }
+        });
+
+        if (matched.length === 0) {
+            alert(`No se encontraron actividades del catálogo que coincidan con la fase "${phase.name}".\n\nSugeridas: ${recs.join(', ')}`);
+            return;
+        }
+
+        // Distribuir en los días vacíos (una por día, sin repetir día).
+        const toAdd = matched.slice(0, emptyDays.length).map((m, i) => ({
+            day: emptyDays[i], activityId: m.id, location: 'Explanada'
+        }));
+
+        const lines = toAdd.map(t => `• ${translateDay(t.day)}: ${activitiesMap[t.activityId].emoji} ${activitiesMap[t.activityId].name}`);
+        let msg = `Fase: ${phase.name}\n\nSe agregarán a los días vacíos:\n${lines.join('\n')}`;
+        if (unmatched.length) msg += `\n\n(Sin coincidencia en el catálogo: ${unmatched.join(', ')})`;
+        msg += '\n\n¿Aplicar?';
+        if (!confirm(msg)) return;
+
+        try {
+            const docRef = db.collection('weekly_schedules').doc(getWeekId(currentWeekStart));
+            await db.runTransaction(async (tx) => {
+                const doc = await tx.get(docRef);
+                const schedule = doc.exists ? (doc.data().schedule || []) : [];
+                tx.set(docRef, { schedule: schedule.concat(toAdd) }, { merge: true });
+            });
+            loadSchedule();
+        } catch (err) {
+            console.error('Error autocompletando semana:', err);
+            alert('Error al autocompletar: ' + err.message);
+        }
+    }
+
+    // Copia la planeación de la semana actual al portapapeles (localStorage),
+    // para pegarla en otra semana o periodo (plantilla ligera).
+    function copyWeek() {
+        if (!currentSchedule || currentSchedule.length === 0) {
+            alert('Esta semana no tiene actividades para copiar.');
+            return;
+        }
+        const clean = currentSchedule.map(it => ({
+            day: it.day, activityId: it.activityId, location: it.location || 'Explanada'
+        }));
+        localStorage.setItem('calendarClipboard', JSON.stringify(clean));
+        alert(`Copiadas ${clean.length} actividades. Ve a otra semana y pulsa "Pegar" 📥`);
+    }
+
+    // Pega la semana copiada en la semana actual (se agrega a lo existente).
+    async function pasteWeek() {
+        const raw = localStorage.getItem('calendarClipboard');
+        if (!raw) {
+            alert('No hay una semana copiada. Usa "Copiar" 📋 primero.');
+            return;
+        }
+        let items;
+        try { items = JSON.parse(raw); } catch (e) { items = []; }
+        if (!Array.isArray(items) || items.length === 0) {
+            alert('La semana copiada está vacía.');
+            return;
+        }
+        if (!confirm(`¿Pegar ${items.length} actividades en esta semana? Se agregarán a las que ya haya.`)) return;
+
+        try {
+            const docRef = db.collection('weekly_schedules').doc(getWeekId(currentWeekStart));
+            await db.runTransaction(async (tx) => {
+                const doc = await tx.get(docRef);
+                const schedule = doc.exists ? (doc.data().schedule || []) : [];
+                tx.set(docRef, { schedule: schedule.concat(items) }, { merge: true });
+            });
+            loadSchedule();
+        } catch (err) {
+            console.error('Error pegando semana:', err);
+            alert('Error al pegar: ' + err.message);
+        }
+    }
+
     // Helpers
     function getStartOfWeek(date) {
         const d = new Date(date);
@@ -443,15 +593,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadProgramData() {
         try {
+            // Determinar el macrociclo a cargar según el periodo (temporada) activo.
+            // Si el periodo tiene un macrocycleId asignado se usa ese documento;
+            // si no, se cae al macrociclo por defecto 'current_macrocycle'.
+            let macrocycleId = 'current_macrocycle';
+            let activePeriod = null;
+            if (window.Periods) {
+                activePeriod = await window.Periods.getActivePeriod();
+                if (activePeriod && activePeriod.macrocycleId) {
+                    macrocycleId = activePeriod.macrocycleId;
+                }
+            }
+
             const doc = await db.collection('program_periodization')
-                .doc('current_macrocycle')
+                .doc(macrocycleId)
                 .get();
 
             if (doc.exists) {
                 programData = doc.data();
-                console.log('Program periodization loaded:', programData.programName);
+                // El programa arranca en la fecha de inicio del periodo activo
+                // (permite reutilizar el mismo macrociclo en varias temporadas).
+                if (activePeriod && activePeriod.startDate) {
+                    programData.startDate = activePeriod.startDate;
+                    if (activePeriod.totalWeeks) programData.totalWeeks = activePeriod.totalWeeks;
+                }
+                console.log('Program periodization loaded:', programData.programName, '(macrociclo:', macrocycleId + ')');
             } else {
-                console.log('No program periodization configured');
+                console.log('No program periodization configured for', macrocycleId);
                 showFallbackHeader();
             }
         } catch (error) {

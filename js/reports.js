@@ -31,24 +31,106 @@ document.addEventListener('DOMContentLoaded', () => {
     let integratedData = [];
     let areasMap = {};
 
-    // Setup period select
-    const periodSelect = document.getElementById('period-select');
-    if (periodSelect) {
-        periodSelect.value = localStorage.getItem('activePeriod') || 'VERANO_2026';
-        periodSelect.addEventListener('change', (e) => {
-            localStorage.setItem('activePeriod', e.target.value);
-            
-            let defaultDateStr = '';
-            if (e.target.value === 'PRIMAVERA_2026') {
-                defaultDateStr = '2026-05-22';
-            } else {
-                const now = new Date();
-                const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
-                defaultDateStr = localDate.toISOString().split('T')[0];
+    // Periodo seleccionado para FILTRAR los reportes. '__all__' = todos.
+    // Se conecta al sistema real de periodos (js/period-utils.js) para que
+    // las asistencias NO se entrecrucen entre temporadas.
+    let selectedPeriodId = '__all__';
+
+    // ¿El registro pertenece al periodo seleccionado?
+    function matchesPeriod(data) {
+        if (selectedPeriodId === '__all__') return true;
+        return data.periodId === selectedPeriodId;
+    }
+
+    // ------------------------------------------------------------
+    // Paginador client-side reutilizable para las tablas grandes.
+    // Renderiza `pageSize` filas por página y unos controles (Anterior/
+    // Siguiente + "Mostrando X–Y de Z") justo debajo de la tabla.
+    // ------------------------------------------------------------
+    const PAGE_SIZE = 25;
+    function paginateTable({ data, tbody, renderRow, colspan = 6, controlsId }) {
+        let page = 1;
+        const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
+
+        function ensureControls() {
+            let controls = document.getElementById(controlsId);
+            if (!controls) {
+                const table = tbody.closest('table');
+                controls = document.createElement('div');
+                controls.id = controlsId;
+                controls.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0.75rem 0.25rem; font-size:0.85rem; color:#6b7280; flex-wrap:wrap;';
+                table.parentNode.insertBefore(controls, table.nextSibling);
             }
-            filterDateInput.value = defaultDateStr;
-            filterDateInputFeedback.value = defaultDateStr;
-            
+            return controls;
+        }
+
+        function render() {
+            tbody.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${colspan}" style="text-align:center; padding:2rem;">Sin datos para este periodo.</td></tr>`;
+            } else {
+                const start = (page - 1) * PAGE_SIZE;
+                tbody.innerHTML = data.slice(start, start + PAGE_SIZE)
+                    .map((item, i) => renderRow(item, start + i)).join('');
+            }
+            renderControls();
+        }
+
+        function renderControls() {
+            const controls = ensureControls();
+            if (data.length <= PAGE_SIZE) {
+                controls.innerHTML = data.length ? `<span>${data.length} registro(s)</span>` : '';
+                return;
+            }
+            const start = (page - 1) * PAGE_SIZE + 1;
+            const end = Math.min(page * PAGE_SIZE, data.length);
+            const btnStyle = 'background:#f3f4f6; border:none; padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:600; color:#374151;';
+            const dis = 'opacity:0.4; cursor:not-allowed;';
+            controls.innerHTML = `
+                <span>Mostrando ${start}–${end} de ${data.length}</span>
+                <span style="display:flex; align-items:center; gap:0.75rem;">
+                    <button class="pg-prev" style="${btnStyle}${page === 1 ? dis : ''}" ${page === 1 ? 'disabled' : ''}>← Anterior</button>
+                    <span>Página ${page} / ${totalPages}</span>
+                    <button class="pg-next" style="${btnStyle}${page === totalPages ? dis : ''}" ${page === totalPages ? 'disabled' : ''}>Siguiente →</button>
+                </span>`;
+            const prev = controls.querySelector('.pg-prev');
+            const next = controls.querySelector('.pg-next');
+            if (prev) prev.onclick = () => { if (page > 1) { page--; render(); } };
+            if (next) next.onclick = () => { if (page < totalPages) { page++; render(); } };
+        }
+
+        render();
+    }
+
+    const periodSelect = document.getElementById('period-select');
+
+    // Rellena el dropdown con los periodos reales + opción "Todos".
+    async function setupPeriodSelect() {
+        if (!periodSelect || !window.Periods) return;
+        const periods = await window.Periods.getAllPeriods();
+        const active = await window.Periods.getActivePeriod();
+
+        periodSelect.innerHTML = '';
+        periods.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            const suffix = p.isActive ? ' (Activo)' : '';
+            opt.textContent = (p.name || 'Periodo') + suffix;
+            periodSelect.appendChild(opt);
+        });
+        const optAll = document.createElement('option');
+        optAll.value = '__all__';
+        optAll.textContent = 'General (Todos los periodos)';
+        periodSelect.appendChild(optAll);
+
+        // Selección inicial: el periodo activo, o el guardado, o todos.
+        const saved = localStorage.getItem('reportsPeriodId');
+        selectedPeriodId = saved || (active ? active.id : '__all__');
+        periodSelect.value = selectedPeriodId;
+
+        periodSelect.addEventListener('change', (e) => {
+            selectedPeriodId = e.target.value;
+            localStorage.setItem('reportsPeriodId', selectedPeriodId);
             loadAttendance();
             loadFeedbacks();
             loadIntegratedReport();
@@ -56,20 +138,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Inicializar
-    loadAreas().then(() => {
-        loadEmployees();
+    loadAreas().then(async () => {
         loadEmployees();
 
-        // Inicializar fecha con TIMEZONE LOCAL
-        const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
-        let defaultDateStr = '';
-        if (activePeriod === 'PRIMAVERA_2026') {
-            defaultDateStr = '2026-05-22';
-        } else {
-            const now = new Date();
-            const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
-            defaultDateStr = localDate.toISOString().split('T')[0];
-        }
+        await setupPeriodSelect();
+
+        // Fecha por defecto: hoy (TIMEZONE LOCAL)
+        const now = new Date();
+        const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+        const defaultDateStr = localDate.toISOString().split('T')[0];
 
         filterDateInput.value = defaultDateStr;
         filterDateInputFeedback.value = defaultDateStr;
@@ -155,20 +232,21 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadEmployees() {
         try {
             const snapshot = await db.collection('employees').orderBy('fullName').get();
-            employeesData = [];
-            employeesTableBody.innerHTML = '';
+            employeesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                employeesData.push(data);
-
-                const areaName = areasMap[data.areaId] || '---';
-                const row = `
+            paginateTable({
+                data: employeesData,
+                tbody: employeesTableBody,
+                colspan: 6,
+                controlsId: 'employees-pagination',
+                renderRow: (data) => {
+                    const areaName = areasMap[data.areaId] || '---';
+                    return `
                     <tr style="border-bottom: 1px solid #f3f4f6;">
                         <td style="padding: 1rem;">
-                            <a href="employee-detail.html?id=${doc.id}" 
+                            <a href="employee-detail.html?id=${data.id}"
                                style="color: var(--primary); text-decoration: none; font-weight: 500; transition: opacity 0.2s;"
-                               onmouseover="this.style.opacity='0.7'" 
+                               onmouseover="this.style.opacity='0.7'"
                                onmouseout="this.style.opacity='1'">
                                 ${data.fullName}
                             </a>
@@ -178,15 +256,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td style="padding: 1rem;">${data.position || '---'}</td>
                         <td style="padding: 1rem; font-weight: bold;">${data.points || 0}</td>
                         <td style="padding: 1rem;">
-                             <button onclick="deleteEmployee('${doc.id}', this)" 
+                             <button onclick="deleteEmployee('${data.id}', this)"
                                      style="background: #fee2e2; color: #dc2626; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;"
                                      title="Eliminar Empleado">
                                  <i class="fa-solid fa-trash"></i>
                              </button>
                         </td>
-                    </tr>
-                `;
-                employeesTableBody.innerHTML += row;
+                    </tr>`;
+                }
             });
         } catch (e) {
             console.error('Error loading employees:', e);
@@ -283,35 +360,49 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Client-side sort by timestamp desc (since we might have filtered by date range)
+            // Filtrado por periodo para que las temporadas NO se entrecrucen.
             const docs = [];
-            snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
+            snapshot.forEach(doc => {
+                const data = { id: doc.id, ...doc.data() };
+                if (matchesPeriod(data)) docs.push(data);
+            });
             docs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
-            docs.forEach(data => {
-                const areaName = areasMap[data.areaId] || '---';
+            if (docs.length === 0) {
+                attendanceTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem;">No hay registros para este periodo</td></tr>';
+                const oldControls = document.getElementById('attendance-pagination');
+                if (oldControls) oldControls.innerHTML = '';
+                return;
+            }
 
-                const row = `
+            paginateTable({
+                data: docs,
+                tbody: attendanceTableBody,
+                colspan: 5,
+                controlsId: 'attendance-pagination',
+                renderRow: (data) => {
+                    const areaName = areasMap[data.areaId] || '---';
+                    return `
                     <tr style="border-bottom: 1px solid #f3f4f6;">
                         <td style="padding: 1rem;">${data.date}</td>
                         <td style="padding: 1rem; font-weight: 500;">${data.employeeName}</td>
                         <td style="padding: 1rem;">${areaName}</td>
                         <td style="padding: 1rem;">
-                            <span style="background: ${data.status === 'completed' ? '#dcfce7' : '#fee2e2'}; 
-                                         color: ${data.status === 'completed' ? '#16a34a' : '#dc2626'}; 
+                            <span style="background: ${data.status === 'completed' ? '#dcfce7' : '#fee2e2'};
+                                         color: ${data.status === 'completed' ? '#16a34a' : '#dc2626'};
                                          padding: 2px 8px; border-radius: 10px; font-size: 0.85rem;">
                                 ${data.status === 'completed' ? 'Completado' : 'Pendiente'}
                             </span>
                         </td>
                         <td style="padding: 1rem;">
-                            <button onclick="deleteAttendance('${data.id}')" 
+                            <button onclick="deleteAttendance('${data.id}')"
                                     style="background: #fee2e2; color: #dc2626; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;"
                                     title="Eliminar Asistencia">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </td>
-                    </tr>
-                `;
-                attendanceTableBody.innerHTML += row;
+                    </tr>`;
+                }
             });
 
         } catch (e) {
@@ -424,48 +515,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // Clear loading message
-            feedbackTableBody.innerHTML = '';
-
             if (allFeedbacks.length === 0) {
                 feedbackTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">No hay feedbacks para este periodo</td></tr>';
+                const oldControls = document.getElementById('feedback-pagination');
+                if (oldControls) oldControls.innerHTML = '';
                 return;
             }
 
             // Sort by timestamp desc
             allFeedbacks.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
-            // Display feedbacks
-            allFeedbacks.forEach(data => {
-                const stars = '⭐'.repeat(data.rating || 0);
-                const reaction = data.reaction || '—';
-                const comment = data.comment || 'Sin comentario';
+            const benefitMap = {
+                'relajacion': '😌 Relajación', 'energia': '⚡ Energía', 'conexion': '🤝 Conexión social',
+                'diversion': '🎉 Diversión', 'aprendizaje': '💡 Aprendizaje'
+            };
+            const returnMap = {
+                'definitivamente': '✅ Definitivamente', 'probablemente': '👍 Probablemente',
+                'no-seguro': '🤔 No seguro/a', 'probablemente-no': '👎 Probablemente no'
+            };
 
-                // NUEVO: Mostrar datos del wellness questionnaire
-                const perceivedBenefit = data.perceivedBenefit || 'N/A';
-                const postFeeling = data.postFeeling ? `${data.postFeeling}/5` : 'N/A';
-                const wouldReturn = data.wouldReturn || 'N/A';
-
-                // Map values to Spanish
-                const benefitMap = {
-                    'relajacion': '😌 Relajación',
-                    'energia': '⚡ Energía',
-                    'conexion': '🤝 Conexión social',
-                    'diversion': '🎉 Diversión',
-                    'aprendizaje': '💡 Aprendizaje'
-                };
-
-                const returnMap = {
-                    'definitivamente': '✅ Definitivamente',
-                    'probablemente': '👍 Probablemente',
-                    'no-seguro': '🤔 No seguro/a',
-                    'probablemente-no': '👎 Probablemente no'
-                };
-
-                const benefitDisplay = benefitMap[perceivedBenefit] || perceivedBenefit;
-                const returnDisplay = returnMap[wouldReturn] || wouldReturn;
-
-                const row = `
+            paginateTable({
+                data: allFeedbacks,
+                tbody: feedbackTableBody,
+                colspan: 6,
+                controlsId: 'feedback-pagination',
+                renderRow: (data) => {
+                    const stars = '⭐'.repeat(data.rating || 0);
+                    const reaction = data.reaction || '—';
+                    const comment = data.comment || 'Sin comentario';
+                    const benefitDisplay = benefitMap[data.perceivedBenefit] || (data.perceivedBenefit || 'N/A');
+                    const postFeeling = data.postFeeling ? `${data.postFeeling}/5` : 'N/A';
+                    const returnDisplay = returnMap[data.wouldReturn] || (data.wouldReturn || 'N/A');
+                    return `
                     <tr style="border-bottom: 1px solid #f3f4f6;">
                         <td style="padding: 1rem;">${data.date}</td>
                         <td style="padding: 1rem; font-weight: 500;">${data.employeeName}</td>
@@ -480,15 +561,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </td>
                         <td style="padding: 1rem;">
-                            <button onclick="deleteFeedback('${data.employeeId}', '${data.id}')" 
+                            <button onclick="deleteFeedback('${data.employeeId}', '${data.id}')"
                                     style="background: #fee2e2; color: #dc2626; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;"
                                     title="Eliminar Feedback">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </td>
-                    </tr>
-                `;
-                feedbackTableBody.innerHTML += row;
+                    </tr>`;
+                }
             });
 
         } catch (e) {
@@ -536,28 +616,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             });
 
-            // 2. Get attendances dynamically based on period
-            const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
-            let startDate = '2026-06-01';
-            let endDate = '2026-07-10';
-            let periodLabel = 'VERANO 2026';
+            // 2. Get attendances filtradas por el periodo seleccionado
+            //    (aísla las temporadas; '__all__' = todas).
+            const attendanceSnapshot = await db.collection('attendances').get();
 
-            if (activePeriod === 'PRIMAVERA_2026') {
-                startDate = '2026-01-12';
-                endDate = '2026-05-22';
-                periodLabel = 'PRIMAVERA 2026';
-            } else if (activePeriod === 'TOTAL') {
-                periodLabel = 'TODOS LOS PERIODOS';
-            }
-            
-            let query = db.collection('attendances');
-            if (activePeriod !== 'TOTAL') {
-                query = query.where('date', '>=', startDate).where('date', '<=', endDate);
-            }
-            const attendanceSnapshot = await query.get();
-                
             attendanceSnapshot.forEach(doc => {
                 const data = doc.data();
+                if (!matchesPeriod(data)) return;
                 if (data.status === 'completed' && data.employeeName && employeesMap[data.employeeName]) {
                     employeesMap[data.employeeName].attendances += 1;
                 }
@@ -566,29 +631,36 @@ document.addEventListener('DOMContentLoaded', () => {
             // 3. Convert to array and sort by attendances (descending)
             integratedData = Object.values(employeesMap).sort((a, b) => b.attendances - a.attendances);
             
-            integratedTableBody.innerHTML = '';
-            
             if (integratedData.length === 0) {
                 integratedTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem;">No hay datos para el reporte integrado</td></tr>';
+                const oldControls = document.getElementById('integrated-pagination');
+                if (oldControls) oldControls.innerHTML = '';
                 return;
             }
 
-            // 4. Render
-            let rank = 1;
-            integratedData.forEach(emp => {
-                const row = `
+            // Etiqueta del periodo para la columna (del dropdown real).
+            const periodLabel = (selectedPeriodId === '__all__')
+                ? 'Todos'
+                : ((periodSelect && periodSelect.selectedOptions[0])
+                    ? periodSelect.selectedOptions[0].textContent
+                    : selectedPeriodId);
+
+            // 4. Render paginado (el índice global mantiene el ranking correcto).
+            paginateTable({
+                data: integratedData,
+                tbody: integratedTableBody,
+                colspan: 7,
+                controlsId: 'integrated-pagination',
+                renderRow: (emp, index) => `
                     <tr style="border-bottom: 1px solid #f3f4f6;">
-                        <td style="padding: 1rem; font-weight: bold; text-align: center;">#${rank}</td>
+                        <td style="padding: 1rem; font-weight: bold; text-align: center;">#${index + 1}</td>
                         <td style="padding: 1rem;">${emp.accountNumber}</td>
                         <td style="padding: 1rem; font-weight: 500;">${emp.fullName}</td>
                         <td style="padding: 1rem;">${emp.position}</td>
                         <td style="padding: 1rem;">${emp.areaName}</td>
                         <td style="padding: 1rem; font-weight: bold; color: var(--primary);">${emp.attendances}</td>
                         <td style="padding: 1rem;">${periodLabel}</td>
-                    </tr>
-                `;
-                integratedTableBody.innerHTML += row;
-                rank++;
+                    </tr>`
             });
 
             // 5. Estadísticas Gráficas
@@ -781,16 +853,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('export-integrated').addEventListener('click', () => {
         const doc = new jsPDF();
-        const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
-        let periodTitle = 'Verano 2026';
-        let fileLabel = 'verano_2026';
-        if (activePeriod === 'PRIMAVERA_2026') {
-            periodTitle = 'Primavera 2026 (Enero - Mayo)';
-            fileLabel = 'primavera_2026';
-        } else if (activePeriod === 'TOTAL') {
-            periodTitle = 'General (Todos los Periodos)';
-            fileLabel = 'general_todos_los_periodos';
-        }
+        // Título/nombre de archivo del periodo actualmente seleccionado.
+        const periodTitle = (selectedPeriodId === '__all__')
+            ? 'General (Todos los Periodos)'
+            : ((periodSelect && periodSelect.selectedOptions[0]) ? periodSelect.selectedOptions[0].textContent : 'Periodo');
+        const fileLabel = periodTitle.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
 
         // Header
         doc.setFontSize(18);
@@ -897,8 +964,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const docs = [];
-            snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
+            snapshot.forEach(doc => {
+                const data = { id: doc.id, ...doc.data() };
+                if (matchesPeriod(data)) docs.push(data);
+            });
             docs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+            if (docs.length === 0) {
+                alert('No hay registros para exportar en este periodo');
+                return;
+            }
 
             // Obtener información de empleados para el número de cuenta
             const employeesSnapshot = await db.collection('employees').get();
@@ -1081,16 +1156,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const activePeriod = localStorage.getItem('activePeriod') || 'VERANO_2026';
-        let periodText = 'VERANO 2026';
-        let fileLabel = 'verano_2026';
-        if (activePeriod === 'PRIMAVERA_2026') {
-            periodText = 'PRIMAVERA 2026';
-            fileLabel = 'primavera_2026';
-        } else if (activePeriod === 'TOTAL') {
-            periodText = 'TODOS LOS PERIODOS';
-            fileLabel = 'general_todos_los_periodos';
-        }
+        const periodText = ((selectedPeriodId === '__all__')
+            ? 'TODOS LOS PERIODOS'
+            : ((periodSelect && periodSelect.selectedOptions[0]) ? periodSelect.selectedOptions[0].textContent : 'PERIODO')).toUpperCase();
+        const fileLabel = periodText.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
 
         let rank = 1;
         const data = integratedData.map(emp => ({

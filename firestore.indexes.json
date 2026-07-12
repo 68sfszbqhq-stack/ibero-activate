@@ -1,4 +1,29 @@
 {
-    "indexes": [],
+    "indexes": [
+        {
+            "collectionGroup": "attendances",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "periodId", "order": "ASCENDING" },
+                { "fieldPath": "date", "order": "ASCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "attendances",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "periodId", "order": "ASCENDING" },
+                { "fieldPath": "areaId", "order": "ASCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "attendances",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "periodId", "order": "ASCENDING" },
+                { "fieldPath": "timestamp", "order": "DESCENDING" }
+            ]
+        }
+    ],
     "fieldOverrides": []
 }
