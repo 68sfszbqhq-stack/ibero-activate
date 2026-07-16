@@ -35,24 +35,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let inventoryItems = []; // Caché local para filtrado rápido
 
-    // 3. Semilla de datos iniciales del Excel
+    // 3. Semilla de datos iniciales del Excel (Versión más reciente de 18 artículos)
     const SEED_INVENTORY = [
-        { name: "JUEGO DE MESA DOBBLE", quantity: 1, status: "OPTIMO", location: "CAJON OFICINA JAVIER", observations: "55 TARJETAS" },
-        { name: "CAJA CON 12 TUBOS CON 3 PELOTAS CADA TUBO", quantity: 36, status: "OPTIMO", location: "CAJON OFICINA JAVIER", observations: "36 PELOTAS DE TENIS" },
-        { name: "JUEGO UNO STACKO", quantity: 1, status: "OPTIMO", location: "CAJON OFICINA JAVIER", observations: "" },
-        { name: "JUEGO DE MESA BASTA", quantity: 1, status: "OPTIMO", location: "CAJON OFICINA JAVIER", observations: "REQUIERE BATERIAS" },
-        { name: "JUEGO DE MESA THE MIND", quantity: 1, status: "OPTIMO", location: "CAJON OFICINA JAVIER", observations: "120 TARJETAS APROX" },
-        { name: "JUEGO DE LOTERIA", quantity: 1, status: "OPTIMO", location: "CAJON OFICINA JAVIER", observations: "" },
-        { name: "JUEGO DE MESA BANANAGRAMS", quantity: 1, status: "OPTIMO", location: "CAJON OFICINA JAVIER", observations: "" },
-        { name: "TABLAS CON CLIP", quantity: 10, status: "OPTIMO", location: "CAJON OFICINA JAVIER", observations: "NO RECUERDO EL NUMERO EXACTO ENTRE 20 Y 12" },
-        { name: "JUEGO TWISTTER", quantity: 1, status: "OPTIMO", location: "CAJON OFICINA JAVIER", observations: "" },
-        { name: "JUEGO CRAZY TOWER", quantity: 1, status: "OPTIMO", location: "CAJON OFICINA JAVIER", observations: "" },
-        { name: "CARTAS DE CONEXIÓN SOMOS", quantity: 1, status: "OPTIMO", location: "CAJON OFICINA JAVIER", observations: "" },
-        { name: "SET PORTATIL BADMINTON", quantity: 1, status: "OPTIMO", location: "AL LADO DE LA CAJONERA", observations: "CONTIENE 2 RAQUETAS DOS GALLITOS DOS TUBOS EXPANDIBLES Y UNA RED" },
-        { name: "JUEGO DE MESA TACO GATO CABRA QUESO PIZZA", quantity: 1, status: "OPTIMO", location: "CAJON OFICINA JAVIER", observations: "" },
-        { name: "THATS NOT A HAT", quantity: 1, status: "OPTIMO", location: "CAJON OFICINA JAVIER", observations: "" },
-        { name: "JUEGO DE MESA EXPLODING KITTENS", quantity: 1, status: "OPTIMO", location: "CAJON OFICINA JAVIER", observations: "" },
-        { name: "CAJA CON 20 SPAGUETIS DE NATACION", quantity: 1, status: "OPTIMO", location: "BODEGA GIMNASIO", observations: "ALGUNOS HAN SUFRIDO DESGASTE POR USO" }
+        { name: "JUEGO DE MESA DOBBLE", quantity: 1, status: "OPTIMO", location: "ARCHIVERO PAUSAS ACTIVAS", observations: "55 TARJETAS" },
+        { name: "CAJA DE PELOTAS DE TENIS CON 12 TUBOS CON 3 PELOTAS CADA TUBO", quantity: 36, status: "OPTIMO", location: "ARCHIVERO PAUSAS ACTIVAS", observations: "36 PELOTAS DE TENIS" },
+        { name: "JUEGO UNO STACKO", quantity: 1, status: "OPTIMO", location: "ARCHIVERO PAUSAS ACTIVAS", observations: "45 BLOQUES" },
+        { name: "JUEGO DE MESA BASTA FOTORAMA", quantity: 1, status: "OPTIMO", location: "ARCHIVERO PAUSAS ACTIVAS", observations: "REQUIERE BATERIAS" },
+        { name: "JUEGO DE MESA THE MIND", quantity: 1, status: "OPTIMO", location: "ARCHIVERO PAUSAS ACTIVAS", observations: "120 TARJETAS APROX" },
+        { name: "JUEGO DE LOTERIA", quantity: 1, status: "OPTIMO", location: "ARCHIVERO PAUSAS ACTIVAS", observations: "Caja de Naipes de Loteria 54 piezas y 54 Tabletas de Loteria" },
+        { name: "JUEGO DE MESA BANANAGRAMS", quantity: 1, status: "OPTIMO", location: "ARCHIVERO PAUSAS ACTIVAS", observations: "144 FICHAS 11 BOLSA" },
+        { name: "TABLAS CON CLIP", quantity: 18, status: "OPTIMO", location: "ARCHIVERO PAUSAS ACTIVAS", observations: "18 tablas de anotacion" },
+        { name: "JUEGO TWISTTER", quantity: 1, status: "OPTIMO", location: "ARCHIVERO PAUSAS ACTIVAS", observations: "Dancing Challenge Mat solo para 2 jugadores Compra no optima para las pausas" },
+        { name: "JUEGO CRAZY TOWER", quantity: 1, status: "OPTIMO", location: "ARCHIVERO PAUSAS ACTIVAS", observations: "cartones y piezas plasticas" },
+        { name: "CARTAS DE CONEXIÓN SOMOS", quantity: 1, status: "OPTIMO", location: "ARCHIVERO PAUSAS ACTIVAS", observations: "150 TARJETAS" },
+        { name: "SET PORTATIL BADMINTON", quantity: 1, status: "OPTIMO", location: "PARTE SUPERIOR LIBRERO OFICINA MAESTRO AGUSTIN", observations: "CONTIENE 2 RAQUETAS DOS GALLITOS DOS TUBOS EXPANDIBLES Y UNA RED Y BASE" },
+        { name: "JUEGO DE MESA TACO GATO CABRA QUESO PIZZA", quantity: 1, status: "OPTIMO", location: "ARCHIVERO PAUSAS ACTIVAS", observations: "54 cartas" },
+        { name: "THATS NOT A HAT", quantity: 1, status: "OPTIMO", location: "ARCHIVERO PAUSAS ACTIVAS", observations: "100 cartas" },
+        { name: "JUEGO DE MESA EXPLODING KITTENS", quantity: 1, status: "OPTIMO", location: "ARCHIVERO PAUSAS ACTIVAS", observations: "CAJA CON 56 CARTAS" },
+        { name: "CAJA CON 20 SPAGUETIS DE NATACION", quantity: 1, status: "OPTIMO", location: "BODEGA GIMNASIO", observations: "ALGUNOS HAN SUFRIDO DESGASTE POR USO" },
+        { name: "PIZARRONES PORTATILES CON KIT DE BORRADOR 4 PLUMONES Y 4 IMANES", quantity: 2, status: "OPTIMO", location: "ARCHIVERO PAUSAS ACTIVAS", observations: "BOLSAS CON PIEZAS PEQUEÑAS" },
+        { name: "2 PORTERIAS PORTATILES", quantity: 2, status: "OPTIMO", location: "BODEGA GIMNASIO", observations: "CAJA CON2 REDES QUE CUBREN LOS TUBOS Y ACCESORIOS NECESARIOS PARA EL ARMADO" }
     ];
 
     // Inicializar y cargar datos
@@ -60,10 +62,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function initInventory() {
         try {
-            // Verificar si la colección está vacía
+            // Verificar si la colección está vacía o tiene la versión anterior de 16 elementos
             const snapshot = await db.collection('inventory').get();
-            if (snapshot.empty) {
-                console.log('🌱 Sembrando inventario inicial en Firestore...');
+            if (snapshot.empty || snapshot.size <= 16) {
+                console.log('🌱 Sembrando o actualizando inventario con la versión más reciente...');
+                
+                // Limpiar colección existente si no está vacía para evitar duplicados
+                if (!snapshot.empty) {
+                    const cleanBatch = db.batch();
+                    snapshot.forEach(doc => {
+                        cleanBatch.delete(doc.ref);
+                    });
+                    await cleanBatch.commit();
+                }
+
+                // Insertar los 18 nuevos elementos
                 const batch = db.batch();
                 SEED_INVENTORY.forEach(item => {
                     const docRef = db.collection('inventory').doc();
@@ -73,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 });
                 await batch.commit();
-                console.log('✅ Sembrado inicial exitoso');
+                console.log('✅ Sembrado y actualización de inventario completada');
             }
             
             // Escuchar cambios en tiempo real
