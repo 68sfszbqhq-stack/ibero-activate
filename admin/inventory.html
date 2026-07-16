@@ -15,6 +15,10 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
+    <!-- jsPDF for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
     <style>
         /* Custom inventory responsive overrides */
         .inventory-filters {
@@ -352,9 +356,14 @@
                     <!-- Rellenado dinámicamente -->
                 </select>
 
-                <button id="btn-add-item" class="btn-primary" style="padding: 10px 18px; display: flex; align-items: center; gap: 0.5rem; margin-left: auto;">
-                    <i class="fa-solid fa-plus"></i> Agregar Artículo
-                </button>
+                <div style="display: flex; gap: 0.5rem; margin-left: auto;">
+                    <button id="btn-download-pdf" class="btn-secondary" style="padding: 10px 18px; display: flex; align-items: center; gap: 0.5rem; border: 1px solid #d1d5db; background: white; color: #374151; cursor: pointer; border-radius: 8px; font-weight: 600;">
+                        <i class="fa-solid fa-file-pdf" style="color: #dc2626;"></i> Descargar PDF
+                    </button>
+                    <button id="btn-add-item" class="btn-primary" style="padding: 10px 18px; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fa-solid fa-plus"></i> Agregar Artículo
+                    </button>
+                </div>
             </div>
 
             <!-- Inventory Table Card -->
@@ -363,6 +372,9 @@
                     <table style="width: 100%; border-collapse: collapse; text-align: left;">
                         <thead>
                             <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb; color: #4b5563; font-weight: 600;">
+                                <th style="padding: 1rem 1.5rem; width: 50px; text-align: center;">
+                                    <input type="checkbox" id="select-all-items" style="width: 1.15rem; height: 1.15rem; cursor: pointer; accent-color: var(--primary);">
+                                </th>
                                 <th style="padding: 1rem 1.5rem; min-width: 250px;">Artículo</th>
                                 <th style="padding: 1rem; width: 140px;">Cantidad</th>
                                 <th style="padding: 1rem; width: 160px;">Estado</th>

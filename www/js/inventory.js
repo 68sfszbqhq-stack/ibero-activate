@@ -99,9 +99,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function listenToInventory() {
         db.collection('inventory').orderBy('name').onSnapshot(snapshot => {
+            const previousChecked = {};
+            inventoryItems.forEach(item => {
+                if (item.checked) previousChecked[item.id] = true;
+            });
+
             inventoryItems = [];
             snapshot.forEach(doc => {
-                inventoryItems.push({ id: doc.id, ...doc.data() });
+                const id = doc.id;
+                inventoryItems.push({ 
+                    id, 
+                    ...doc.data(),
+                    checked: !!previousChecked[id]
+                });
             });
             
             // Actualizar filtros dropdowns, estadísticas y renderizar la tabla
@@ -168,6 +178,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             tr.innerHTML = `
+                <td style="padding: 1rem 1.5rem; text-align: center;">
+                    <input type="checkbox" class="item-checkbox" data-id="${item.id}" ${item.checked ? 'checked' : ''} style="width: 1.15rem; height: 1.15rem; cursor: pointer; accent-color: var(--primary);">
+                </td>
                 <td style="padding: 1rem; font-weight: 600; color: #1f2937;">
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
                         <div style="width: 36px; height: 36px; border-radius: 8px; background: #f3f4f6; color: #6b7280; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
@@ -204,6 +217,9 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             // Asignar listeners
+            tr.querySelector('.item-checkbox').addEventListener('change', (e) => {
+                item.checked = e.target.checked;
+            });
             tr.querySelector('.btn-edit').addEventListener('click', () => openEditModal(item));
             tr.querySelector('.btn-delete').addEventListener('click', () => deleteItem(item.id, item.name));
 
@@ -330,6 +346,146 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.addEventListener('input', renderTable);
     filterStatus.addEventListener('change', renderTable);
     filterLocation.addEventListener('change', renderTable);
+
+    // Seleccionar/Deseleccionar Todos los Artículos Filtrados
+    const selectAllCheckbox = document.getElementById('select-all-items');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', (e) => {
+            const checked = e.target.checked;
+            const query = searchInput.value.toLowerCase().trim();
+            const statusVal = filterStatus.value;
+            const locationVal = filterLocation.value;
+
+            inventoryItems.forEach(item => {
+                const matchesQuery = item.name.toLowerCase().includes(query) || 
+                                     (item.observations && item.observations.toLowerCase().includes(query));
+                const matchesStatus = !statusVal || item.status === statusVal;
+                const matchesLocation = !locationVal || item.location === locationVal;
+                
+                if (matchesQuery && matchesStatus && matchesLocation) {
+                    item.checked = checked;
+                }
+            });
+
+            renderTable();
+        });
+    }
+
+    // Generación y descarga de PDF
+    const btnDownloadPDF = document.getElementById('btn-download-pdf');
+    if (btnDownloadPDF) {
+        btnDownloadPDF.addEventListener('click', () => {
+            // Filtrar los artículos que tienen la casilla marcada
+            let selectedItems = inventoryItems.filter(item => item.checked);
+
+            // Si no hay ninguno seleccionado, preguntar si se desea descargar todo el inventario
+            if (selectedItems.length === 0) {
+                const confirmAll = confirm('No has seleccionado ningún artículo de la lista.\n¿Deseas descargar el reporte con todos los artículos del inventario?');
+                if (!confirmAll) return;
+                selectedItems = inventoryItems;
+            }
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                const primaryColor = [79, 70, 229]; // Indigo
+                const darkText = [31, 41, 55]; // Gray 800
+
+                // 1. Barra de cabecera institucional
+                doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+                doc.rect(0, 0, 210, 35, 'F');
+
+                // Texto de cabecera
+                doc.setTextColor(255, 255, 255);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(22);
+                doc.text('IBERO ACTÍVATE', 15, 18);
+                
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(10);
+                doc.text('Sistema de Gestión de Pausas Activas', 15, 26);
+                
+                const today = new Date();
+                const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                const dateStr = today.toLocaleDateString('es-MX', dateOptions);
+                doc.text(`Fecha del Reporte: ${dateStr}`, 120, 26);
+
+                // 2. Título del Reporte
+                doc.setTextColor(darkText[0], darkText[1], darkText[2]);
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.text('REPORTE DE VERIFICACIÓN DE MATERIALES', 15, 48);
+
+                // 3. Resumen en tarjetas grises
+                doc.setFillColor(243, 244, 246);
+                doc.rect(15, 53, 180, 18, 'F');
+                
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Artículos incluidos: ${selectedItems.length}`, 20, 64);
+                
+                const totalUnits = selectedItems.reduce((acc, item) => acc + (parseInt(item.quantity) || 0), 0);
+                doc.text(`Unidades físicas totales: ${totalUnits}`, 80, 64);
+
+                const locationCount = [...new Set(selectedItems.map(item => item.location.trim().toUpperCase()))].length;
+                doc.text(`Ubicaciones involucradas: ${locationCount}`, 140, 64);
+
+                // 4. Mapear datos para la tabla
+                const tableData = selectedItems.map(item => [
+                    item.name.toUpperCase(),
+                    `${item.quantity} ${item.quantity === 1 ? 'un.' : 'un.'}`,
+                    item.status === 'OPTIMO' ? 'ÓPTIMO' : (item.status === 'REGULAR' ? 'REGULAR' : 'REQUIERE ATENCIÓN'),
+                    item.location.toUpperCase(),
+                    item.observations || '---',
+                    item.checked ? '[X] VERIFICADO' : '[ ] PENDIENTE'
+                ]);
+
+                // 5. Renderizar tabla con autoTable
+                doc.autoTable({
+                    startY: 78,
+                    head: [['Artículo', 'Cantidad', 'Estado', 'Ubicación', 'Observaciones', 'Control Diario']],
+                    body: tableData,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: primaryColor,
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold',
+                        fontSize: 9
+                    },
+                    styles: {
+                        fontSize: 8,
+                        cellPadding: 3,
+                        overflow: 'linebreak'
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 50 },
+                        1: { cellWidth: 20 },
+                        2: { cellWidth: 25 },
+                        3: { cellWidth: 35 },
+                        4: { cellWidth: 30 },
+                        5: { cellWidth: 20 }
+                    },
+                    margin: { left: 15, right: 15 }
+                });
+
+                // 6. Firmas
+                const finalY = doc.lastAutoTable.finalY || 150;
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Material verificado por: __________________________', 15, finalY + 25);
+                doc.text('Firma de conformidad: __________________________', 120, finalY + 25);
+
+                const pdfName = `Inventario_Pausas_Activas_${today.toISOString().split('T')[0]}.pdf`;
+                doc.save(pdfName);
+
+                showToast('✅ Reporte PDF generado correctamente');
+            } catch (error) {
+                console.error('Error al generar PDF:', error);
+                alert('Ocurrió un error al generar el PDF del reporte.');
+            }
+        });
+    }
 
     // Helpers
     function escapeHTML(str) {
