@@ -825,6 +825,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnGenerateReport = document.getElementById('btn-generate-report');
     const btnGenerateUnifiedReport = document.getElementById('btn-generate-unified-report');
     const btnExportCalendar = document.getElementById('btn-export-calendar');
+    const btnExportProgram = document.getElementById('btn-export-program');
 
     // Event Listeners
     if (btnSelectEvidence && fileInput) {
@@ -850,6 +851,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnExportCalendar) {
         btnExportCalendar.addEventListener('click', exportCalendarDocx);
+    }
+
+    if (btnExportProgram) {
+        btnExportProgram.addEventListener('click', exportFullProgramDocx);
     }
 
     async function saveEvidence() {
@@ -1543,7 +1548,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType,
                 Table, TableRow, TableCell, WidthType, Packer, BorderStyle } = window.docx;
 
-            const period = await Periods.getActivePeriod();
+            // force: true — el periodo activo se cachea en memoria, y si alguien
+            // lo cambió mientras esta pestaña estaba abierta exportaríamos el viejo.
+            const period = await Periods.getActivePeriod(true);
             if (!period || !period.startDate) {
                 throw new Error('No hay un periodo activo configurado. Créalo en la sección Periodos.');
             }
@@ -1661,6 +1668,263 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             btnExportCalendar.innerHTML = original;
             btnExportCalendar.disabled = false;
+        }
+    }
+
+    // ============================================================
+    // Exportar el PROGRAMA COMPLETO a DOCX editable
+    // ============================================================
+    // Documento largo, para entregar o archivar: portada, los mesociclos
+    // con su fundamento, la tabla de todas las semanas y una ficha por
+    // semana con material e instrucciones de cada actividad.
+
+    async function exportFullProgramDocx() {
+        const original = btnExportProgram.innerHTML;
+        btnExportProgram.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
+        btnExportProgram.disabled = true;
+
+        try {
+            if (typeof window.docx === 'undefined') {
+                throw new Error('La librería docx no está cargada. Recarga la página e intenta de nuevo.');
+            }
+            const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType,
+                Table, TableRow, TableCell, WidthType, Packer, BorderStyle, PageBreak } = window.docx;
+
+            const period = await Periods.getActivePeriod(true);
+            if (!period || !period.startDate) {
+                throw new Error('No hay un periodo activo configurado. Créalo en la sección Periodos.');
+            }
+
+            // El macrociclo del periodo; si no tiene uno asignado cae al de por defecto,
+            // que puede ser de otra temporada — se avisa en el documento.
+            const macrocycleId = period.macrocycleId || 'current_macrocycle';
+            const macroDoc = await db.collection('program_periodization').doc(macrocycleId).get();
+            const program = macroDoc.exists ? macroDoc.data() : null;
+
+            const start = getStartOfWeek(new Date(period.startDate + 'T00:00:00'));
+            const end = new Date((period.endDate || period.startDate) + 'T23:59:59');
+            const weekIds = [];
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 7)) {
+                weekIds.push(getWeekId(new Date(d)));
+            }
+            const snaps = await Promise.all(
+                weekIds.map(id => db.collection('weekly_schedules').doc(id).get())
+            );
+
+            const LINEA = { style: BorderStyle.SINGLE, size: 4, color: 'BFBFBF' };
+            const bordes = { top: LINEA, bottom: LINEA, left: LINEA, right: LINEA };
+            const celda = (texto, { bold = false, fondo = null, ancho = null } = {}) => new TableCell({
+                borders: bordes,
+                shading: fondo ? { fill: fondo } : undefined,
+                width: ancho ? { size: ancho, type: WidthType.PERCENTAGE } : undefined,
+                margins: { top: 60, bottom: 60, left: 100, right: 100 },
+                children: [new Paragraph({ children: [new TextRun({ text: texto, bold, size: 18 })] })]
+            });
+            const parrafo = (texto, opts = {}) => new Paragraph({
+                spacing: { after: opts.after || 120 },
+                children: [new TextRun({
+                    text: texto, size: opts.size || 20, bold: !!opts.bold,
+                    italics: !!opts.italics, color: opts.color
+                })]
+            });
+
+            const hijos = [];
+
+            // ---------- Portada ----------
+            hijos.push(
+                new Paragraph({
+                    text: 'Programa de Pausas Activas',
+                    heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.CENTER, spacing: { after: 200 },
+                    children: [new TextRun({ text: 'IBERO Puebla', size: 26, color: '595959' })]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.CENTER, spacing: { after: 400 },
+                    children: [new TextRun({
+                        text: (period.name || 'Periodo') + '  ·  ' + period.startDate + ' al ' + (period.endDate || '—') +
+                            '  ·  ' + weekIds.length + ' semanas',
+                        size: 22, bold: true
+                    })]
+                })
+            );
+
+            if (program && program.programName) {
+                hijos.push(parrafo(program.programName, { bold: true, size: 22, after: 300 }));
+            }
+            if (!period.macrocycleId) {
+                hijos.push(parrafo(
+                    'Aviso: este periodo no tiene un programa propio asignado, así que se está usando el programa por defecto, que puede pertenecer a otra temporada. Revísalo en la sección Periodos.',
+                    { italics: true, color: 'B0432C', after: 300 }));
+            }
+
+            // ---------- Mesociclos ----------
+            if (program && Array.isArray(program.phases) && program.phases.length) {
+                hijos.push(new Paragraph({
+                    text: 'Mesociclos', heading: HeadingLevel.HEADING_1, spacing: { before: 200, after: 200 }
+                }));
+
+                program.phases.forEach(f => {
+                    const rango = Array.isArray(f.weekRange) ? ('Semanas ' + f.weekRange[0] + ' a ' + f.weekRange[1]) : '';
+                    hijos.push(new Paragraph({
+                        text: (f.phaseId ? f.phaseId + '. ' : '') + (f.name || ''),
+                        heading: HeadingLevel.HEADING_2, spacing: { before: 240, after: 80 }
+                    }));
+                    hijos.push(parrafo([rango, f.nomenclatura, f.intensidad ? 'Intensidad: ' + f.intensidad : '']
+                        .filter(Boolean).join('  ·  '), { italics: true, color: '595959', size: 18 }));
+                    if (f.objetivoDominante) hijos.push(parrafo('Objetivo dominante: ' + f.objetivoDominante));
+
+                    if (f.justificacionCientifica) {
+                        // El texto trae **negritas** de markdown; se limpian para Word.
+                        String(f.justificacionCientifica).split('\n').forEach(linea => {
+                            const t = linea.replace(/\*\*/g, '').trim();
+                            if (t) hijos.push(parrafo(t, { size: 19 }));
+                        });
+                    }
+                    if (Array.isArray(f.objetivosFase) && f.objetivosFase.length) {
+                        hijos.push(parrafo('Objetivos de la fase:', { bold: true, size: 19, after: 60 }));
+                        f.objetivosFase.forEach(o => hijos.push(new Paragraph({
+                            text: o, bullet: { level: 0 },
+                            spacing: { after: 40 }
+                        })));
+                    }
+                    if (f.metricsTarget && typeof f.metricsTarget === 'object') {
+                        hijos.push(parrafo('Métricas objetivo:', { bold: true, size: 19, after: 60 }));
+                        Object.entries(f.metricsTarget).forEach(([k, v]) => hijos.push(new Paragraph({
+                            text: k + ': ' + v, bullet: { level: 0 }, spacing: { after: 40 }
+                        })));
+                    }
+                });
+            }
+
+            // ---------- Tabla resumen ----------
+            hijos.push(new Paragraph({ children: [new PageBreak()] }));
+            hijos.push(new Paragraph({
+                text: 'Calendario del periodo', heading: HeadingLevel.HEADING_1, spacing: { after: 200 }
+            }));
+
+            const filas = [new TableRow({
+                tableHeader: true,
+                children: [
+                    celda('Sem', { bold: true, fondo: 'E8E8E1', ancho: 7 }),
+                    celda('Fechas', { bold: true, fondo: 'E8E8E1', ancho: 13 }),
+                    ...DIAS_ORDEN.map(d => celda(DIA_CORTO[d], { bold: true, fondo: 'E8E8E1', ancho: 16 }))
+                ]
+            })];
+
+            const detalle = [];
+            let programadas = 0;
+
+            snaps.forEach((snap, i) => {
+                const semana = i + 1;
+                const schedule = snap.exists ? (snap.data().schedule || []) : [];
+                const lunes = mondayFromWeekId(weekIds[i]);
+                const viernes = new Date(lunes);
+                viernes.setDate(viernes.getDate() + 4);
+
+                const celdasDia = DIAS_ORDEN.map(dia => {
+                    const item = schedule.find(x => x.day === dia);
+                    if (!item) return celda('—');
+                    const act = activitiesMap[item.activityId];
+                    programadas++;
+                    return celda(act ? act.name : 'Actividad no encontrada');
+                });
+
+                filas.push(new TableRow({
+                    cantSplit: true,
+                    children: [
+                        celda(String(semana), { bold: true, fondo: 'F6F6F3' }),
+                        celda(fechaCorta(lunes) + ' – ' + fechaCorta(viernes), { fondo: 'F6F6F3' }),
+                        ...celdasDia
+                    ]
+                }));
+
+                detalle.push({ semana, schedule, lunes, viernes });
+            });
+
+            hijos.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: filas }));
+            hijos.push(parrafo(weekIds.length + ' semanas · ' + programadas + ' sesiones programadas',
+                { italics: true, color: '808080', size: 16, after: 200 }));
+
+            // ---------- Detalle semana por semana ----------
+            hijos.push(new Paragraph({ children: [new PageBreak()] }));
+            hijos.push(new Paragraph({
+                text: 'Detalle por semana', heading: HeadingLevel.HEADING_1, spacing: { after: 200 }
+            }));
+
+            const faseDe = semana => {
+                if (!program || !Array.isArray(program.phases)) return null;
+                return program.phases.find(f => Array.isArray(f.weekRange) &&
+                    semana >= f.weekRange[0] && semana <= f.weekRange[1]) || null;
+            };
+
+            detalle.forEach(({ semana, schedule, lunes, viernes }) => {
+                const f = faseDe(semana);
+                hijos.push(new Paragraph({
+                    text: 'Semana ' + semana + ' · ' + fechaCorta(lunes) + ' al ' + fechaCorta(viernes),
+                    heading: HeadingLevel.HEADING_2, spacing: { before: 260, after: 60 }
+                }));
+                if (f) hijos.push(parrafo('Mesociclo ' + (f.phaseId || '') + ': ' + (f.name || '') +
+                    (f.intensidad ? '  ·  Intensidad ' + f.intensidad : ''),
+                    { italics: true, color: '595959', size: 18 }));
+
+                if (!schedule.length) {
+                    hijos.push(parrafo('Sin actividades programadas.', { italics: true, color: '808080' }));
+                    return;
+                }
+
+                // Agrupa los días que comparten la misma actividad
+                const porActividad = new Map();
+                DIAS_ORDEN.forEach(dia => {
+                    const item = schedule.find(x => x.day === dia);
+                    if (!item) return;
+                    if (!porActividad.has(item.activityId)) porActividad.set(item.activityId, { dias: [], location: item.location });
+                    porActividad.get(item.activityId).dias.push(DIA_CORTO[dia]);
+                });
+
+                porActividad.forEach((info, activityId) => {
+                    const a = activitiesMap[activityId];
+                    if (!a) {
+                        hijos.push(parrafo('Actividad no encontrada en el catálogo.', { italics: true, color: 'B0432C' }));
+                        return;
+                    }
+                    hijos.push(parrafo(a.name + '  —  ' + info.dias.join(', '), { bold: true, size: 21, after: 60 }));
+                    const meta = [
+                        a.duration ? a.duration + ' min' : null,
+                        a.intensity ? 'intensidad ' + a.intensity : null,
+                        info.location || null
+                    ].filter(Boolean).join('  ·  ');
+                    if (meta) hijos.push(parrafo(meta, { italics: true, color: '595959', size: 17, after: 60 }));
+                    if (a.objetivo) hijos.push(parrafo('Objetivo: ' + a.objetivo, { size: 19 }));
+                    if (a.materials) hijos.push(parrafo('Material: ' + a.materials, { size: 19 }));
+                    if (Array.isArray(a.instrucciones) && a.instrucciones.length) {
+                        hijos.push(parrafo('Cómo se aplica:', { bold: true, size: 19, after: 40 }));
+                        a.instrucciones.forEach(ins => hijos.push(new Paragraph({
+                            text: ins, bullet: { level: 0 }, spacing: { after: 40 }
+                        })));
+                    }
+                });
+            });
+
+            // ---------- Cierre ----------
+            hijos.push(parrafo(
+                'Generado el ' + new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }) +
+                ' desde IBERO ACTÍVATE. Este documento es editable: los cambios que hagas aquí no se guardan en la aplicación.',
+                { italics: true, color: '808080', size: 16, after: 0 }
+            ));
+
+            const doc = new Document({ sections: [{ children: hijos }] });
+            const blob = await Packer.toBlob(doc);
+            const slug = (period.name || 'Periodo').replace(/\s+/g, '_');
+            saveAs(blob, 'Programa_Completo_' + slug + '_' + new Date().toLocaleDateString('en-CA') + '.docx');
+
+        } catch (e) {
+            console.error('[programa docx]', e);
+            alert('Error al generar el programa: ' + e.message);
+        } finally {
+            btnExportProgram.innerHTML = original;
+            btnExportProgram.disabled = false;
         }
     }
 
