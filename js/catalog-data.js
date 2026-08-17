@@ -158,19 +158,19 @@ const CATALOGO_COMPLETO = [
     // SECCIÓN FG: FÍSICOS / GRUPALES (12)
     // ==========================================
     {
-        activityId: "FG-01",
-        categoria: "Físicos/Grupal",
-        name: "Spaghetti-Vóley",
-        objetivo: "Trabajo en equipo y coordinación.",
+        activityId: 'FG-01',
+        categoria: 'Físicos/Grupal',
+        name: 'Spaghetti-Vóley',
+        objetivo: 'Trabajo en equipo y coordinación.',
         duration: 15,
-        materials: "Tubos de espuma, globo o pelota.",
-        imagen: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?q=80&w=800",
+        materials: 'Tubos de espuma (spaguetis) y una pelota inflable de playa.',
         instrucciones: [
-            "Dividir equipos con línea imaginaria.",
-            "Pasar el globo usando solo los spaguetis.",
-            "Si cae, punto para el rival."
+            'Dos equipos separados por una línea en el piso marcada con spaguetis.',
+            'La pelota de playa se pasa golpeándola SOLO con el spagueti, nunca con las manos.',
+            'Si toca el suelo del lado contrario, es punto.',
+            'Sets cortos a 10 puntos para que roten todos.'
         ],
-        emoji: "🎈", type: "outdoor", intensity: "moderada", benefitType: ["Social", "Físico"], specificBenefits: ["Trabajo en equipo", "Coordinación"], description: "Vóley con tubos de espuma."
+        emoji: '🎈', type: 'outdoor', intensity: 'moderada', benefitType: ['Social', 'Físico'], specificBenefits: ['Trabajo en equipo', 'Coordinación'], description: 'Primer deporte adaptado del periodo y paso previo al torneo de voleibol de la semana 10. El tubo de espuma y la pelota de playa quitan por completo el miedo a no saber jugar: la pelota baja lento, no lastima y nadie queda expuesto por fallar un golpe. Sirve para que la gente que nunca ha jugado voleibol entienda la dinámica de pasar y sostener el balón en el aire antes de tomarlo con las manos.'
     },
     {
         activityId: "FG-02",
@@ -217,19 +217,19 @@ const CATALOGO_COMPLETO = [
         emoji: "🎾", type: "outdoor", intensity: "moderada", benefitType: ["Físico", "Social"], specificBenefits: ["Reacción", "Atención"], description: "Juego de reacción con pelota."
     },
     {
-        activityId: "FG-05",
-        categoria: "Físicos/Grupal",
-        name: "Círculo de Toques",
-        objetivo: "Cooperación y comunicación no verbal.",
+        activityId: 'FG-05',
+        categoria: 'Físicos/Grupal',
+        name: 'Círculo de Toques',
+        objetivo: 'Cooperación y comunicación no verbal.',
         duration: 10,
-        materials: "Pelota de playa/globo.",
-        imagen: "https://images.unsplash.com/photo-1533561098687-9d7fc240bd3b?q=80&w=800",
+        materials: 'Una pelota inflable de playa.',
         instrucciones: [
-            "Mantener la pelota en el aire en círculo.",
-            "Usar cualquier parte del cuerpo.",
-            "Contar toques consecutivos."
+            'Todo el grupo en círculo, de pie.',
+            'Sostener la pelota en el aire usando cualquier parte del cuerpo.',
+            'Contar en voz alta los toques consecutivos del grupo.',
+            'Cada ronda se busca superar el récord anterior del área.'
         ],
-        emoji: "⭕", type: "outdoor", intensity: "baja", benefitType: ["Social", "Físico"], specificBenefits: ["Cooperación", "Comunicación"], description: "Mantener pelota en el aire."
+        emoji: '⭕', type: 'outdoor', intensity: 'moderada', benefitType: ['Físico', 'Social'], specificBenefits: ['Mejora postura', 'Reduce dolor muscular', 'Mejora movilidad', 'Activa circulación', 'Mejora flexibilidad', 'Reduce estrés', 'Fomenta trabajo en equipo', 'Mejora clima laboral', 'Fomenta integración', 'Mejora comunicación'], description: 'Reto cooperativo donde el marcador es del grupo entero, no de nadie en particular: se cuenta cuántos toques logra sostener el equipo sin que la pelota caiga. La pelota de playa es lenta y ligera, así que participa igual quien tiene condición y quien no, y a nadie se le culpa por el fallo porque el conteo es colectivo. Refuerza la mecánica de toque que se usará en el torneo de voleibol.'
     },
     {
         activityId: "FG-06",
@@ -306,19 +306,20 @@ const CATALOGO_COMPLETO = [
         emoji: "🎪", type: "outdoor", intensity: "moderada", benefitType: ["Físico"], specificBenefits: ["Motricidad", "Diversidad"], description: "Circuito de habilidades."
     },
     {
-        activityId: "FG-12",
-        categoria: "Físicos/Grupal",
-        name: "Mini Voleibol",
-        objetivo: "Activación en espacio reducido.",
+        activityId: 'FG-12',
+        categoria: 'Físicos/Grupal',
+        name: 'Mini Voleibol',
+        objetivo: 'Activación en espacio reducido.',
         duration: 15,
-        materials: "Red portátil, pelota suave.",
-        imagen: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?q=80&w=800",
+        materials: 'La pelota de voleibol de plástico. La red del set de bádminton, o una línea de spaguetis en el piso si no se monta.',
         instrucciones: [
-            "Versión simplificada del voleibol.",
-            "Pasar balón sin que toque suelo.",
-            "Sin raquetas, uso de manos."
+            'Equipos por área, cancha delimitada con la red de bádminton o con spaguetis en el piso.',
+            'Se permite dejar botar la pelota una vez: baja la exigencia y alarga las jugadas.',
+            'Máximo tres toques por equipo antes de pasarla.',
+            'Sets a 10 puntos, rotación obligatoria en cada saque para que todos toquen la pelota.',
+            'Viernes: llaves de eliminación entre áreas y marcador en el pizarrón portátil.'
         ],
-        emoji: "🏐", type: "outdoor", intensity: "moderada", benefitType: ["Físico", "Social"], specificBenefits: ["Activación", "Equipo"], description: "Voleibol simplificado."
+        emoji: '🏐', type: 'outdoor', intensity: 'moderada', benefitType: ['Físico', 'Social'], specificBenefits: ['Activa circulación', 'Aumenta energía', 'Fomenta trabajo en equipo', 'Mejora comunicación'], description: 'El torneo que pidieron los propios participantes y el pico de participación del periodo. Cierra la progresión que empezó en la semana 4 con el Spaghetti-Vóley y siguió en la 6 con el Círculo de Toques: primero se aprende a sostener la pelota en el aire con ayuda, después con el cuerpo, y aquí ya se juega el partido real con la pelota de plástico. Las dos reglas adaptadas (se vale un bote y rotación obligatoria) existen para que jueguen también quienes nunca han practicado voleibol, que es la mayoría del personal administrativo.'
     },
 
     // ==========================================
@@ -608,15 +609,23 @@ const CATALOGO_COMPLETO = [
         emoji: "🙆", type: "indoor", intensity: "baja", benefitType: ["Físico"], specificBenefits: ["Alivio muscular", "Flexibilidad"], description: "Estiramientos suaves."
     },
     {
-        activityId: "RC-04",
-        categoria: "Relax",
-        name: "Automasaje Pelotas",
-        objetivo: "Liberar nudos.",
+        activityId: 'RC-04',
+        categoria: 'Relax',
+        name: 'Automasaje con Pelota',
+        objetivo: 'Liberar puntos de tensión muscular y enseñar una herramienta de autocuidado que cada quien pueda repetir solo.',
         duration: 10,
-        materials: "Pelotas tenis, pared.",
-        imagen: "https://images.unsplash.com/photo-1544367563-12123d832d61?q=80&w=800",
-        instrucciones: ["Presionar pelota contra pared con espalda u hombros."],
-        emoji: "🎾", type: "indoor", intensity: "baja", benefitType: ["Físico"], specificBenefits: ["Liberación miofascial", "Relajación"], description: "Masaje con pelotas."
+        materials: 'Una pelota de tenis por persona y una pared. Las 36 pelotas del archivero son de uso exclusivo para esto: no se usan en juegos ni se ensucian en el piso.',
+        instrucciones: [
+            'PLANTA DEL PIE (1 min por pie). De pie, apoyo ligero sobre la pelota y rodarla del talón a los dedos, lento. Al encontrar un punto sensible, detenerse y sostener 20 segundos respirando.',
+            'PANTORRILLA (1 min por pierna). Sentado, tobillo cruzado sobre la rodilla contraria, con la pelota entre la pantorrilla y el muslo. Presionar y hacer círculos pequeños.',
+            'GLÚTEO (1 min por lado). Sentado sobre la pelota, inclinar el peso hacia un lado hasta encontrar el punto y sostener sin rebotar.',
+            'ESPALDA ALTA (2 min). Pelota entre la pared y el omóplato. Flexionar y estirar las rodillas para que la pelota recorra la zona. Nunca sobre la columna: siempre a un costado de ella.',
+            'TRAPECIO Y CUELLO (1 min por lado). Misma posición contra la pared, pelota entre el hombro y la oreja. Presión suave, girando despacio la cabeza al lado contrario.',
+            'PECTORAL (1 min por lado). Pelota entre la pared y la parte alta del pecho, cerca del hombro. Es la zona que más se acorta al estar encorvado frente a la computadora.',
+            'ANTEBRAZO (1 min). Pelota sobre el escritorio, rodar el antebrazo encima con la palma hacia abajo. Alivia a quien teclea o usa el ratón todo el día.',
+            'CIERRE. Rodar los hombros diez veces hacia atrás y respirar profundo tres veces.'
+        ],
+        emoji: '🎾', type: 'indoor', intensity: 'baja', benefitType: ['Físico', 'Psicológico'], specificBenefits: ['Libera contracturas y puntos gatillo', 'Alivia dolor de espalda alta y cuello', 'Contrarresta la postura frente a la computadora', 'Mejora movilidad de hombros', 'Activa la circulación', 'Herramienta de autocuidado repetible en casa'], description: 'Sesión guiada de liberación miofascial con pelota de tenis, recorriendo en orden las siete zonas donde más se acumula la tensión de una jornada de escritorio: planta del pie, pantorrilla, glúteo, espalda alta, trapecio, pectoral y antebrazo. La regla técnica es presión sostenida, no fricción rápida: al encontrar un punto sensible se mantiene la presión entre 20 y 30 segundos respirando, hasta que la molestia cede. Nunca se rueda directamente sobre la columna vertebral ni sobre articulaciones, siempre sobre el músculo a un costado. El valor real de la actividad es que es la única del programa que el participante puede repetir solo, en su casa o en su lugar de trabajo, sin instructor y sin equipo: por eso las pelotas se reservan exclusivamente para este uso y no se mezclan con juegos.'
     },
     {
         activityId: "RC-06",
@@ -676,5 +685,40 @@ const CATALOGO_COMPLETO = [
         imagen: "https://images.unsplash.com/photo-1521791136064-7986c2920277?q=80&w=800",
         instrucciones: ["Responder preguntas profundas en grupos pequeños."],
         emoji: "🃏", type: "outdoor", intensity: "baja", benefitType: ["Social"], specificBenefits: ["Empatía", "Conexión"], description: "Juego de preguntas profundas."
+    },
+
+    // ==========================================
+    // NUEVAS OTOÑO 2026 (material del inventario real)
+    // ==========================================
+    {
+        activityId: 'FG-15',
+        categoria: 'Físicos/Grupal',
+        name: 'Copa Pausas Activas',
+        objetivo: 'Pico de participación del periodo con torneo entre áreas.',
+        duration: 20,
+        materials: 'Spaguetis de natación, las 2 porterías portátiles, el set de bádminton y un pizarrón para el marcador.',
+        instrucciones: [
+            'Tres retos simultáneos, equipos por área que rotan cada 5 minutos.',
+            'Reto 1 — Relevo de spagueti: llevarlo en equilibrio sobre la palma extendida, ida y vuelta, y entregarlo al siguiente sin que caiga.',
+            'Reto 2 — Túnel de porterías: pasar el equipo completo por debajo de las dos porterías tomados de la mano, sin soltarse. Si se sueltan, reinician.',
+            'Reto 3 — Duelo de gallito: con las dos raquetas de bádminton, cuántos toques seguidos sostiene la pareja sin que caiga.',
+            'El marcador de cada área se lleva en el pizarrón portátil, a la vista de todos.'
+        ],
+        emoji: '🏆', type: 'outdoor', intensity: 'moderada', benefitType: ['Físico', 'Social'], specificBenefits: ['Cardio', 'Coordinación', 'Identidad de equipo', 'Competencia sana'], description: 'El evento grande del periodo: torneo por estaciones entre áreas que pone a trabajar a la vez los spaguetis, las porterías y el set de bádminton. Está pensado como pico de participación más que de intensidad, porque lo que sostiene la asistencia es el ambiente de competencia y el marcador público. Los tres retos exigen habilidades distintas (equilibrio, coordinación de grupo y precisión) para que ningún área gane solo por condición física, y ninguno requiere pelotas: las del inventario están reservadas para el automasaje.'
+    },
+    {
+        activityId: 'JM-23',
+        categoria: 'Mesa',
+        name: 'Stacko Activo',
+        objetivo: 'Juego de mesa con micropausas de movimiento.',
+        duration: 15,
+        materials: 'UNO Stacko (45 bloques).',
+        instrucciones: [
+            'Torre armada, se juega por turnos como el Stacko normal.',
+            'El color del bloque retirado manda un micro-ejercicio de 10 segundos para todos.',
+            'Rojo sentadillas, azul elevación de talones, verde estiramiento de cuello, amarillo círculos de hombro.',
+            'Si la torre cae, el grupo entero hace 20 segundos de marcha en el lugar y se rearma.'
+        ],
+        emoji: '🧱', type: 'indoor', intensity: 'baja', benefitType: ['Físico', 'Social', 'Psicológico'], specificBenefits: ['Pulso y precisión', 'Movimiento intercalado', 'Diversión'], description: 'El UNO Stacko del inventario nunca se había programado. Esta versión le añade una capa de movimiento: cada bloque retirado dispara un micro-ejercicio breve para todo el grupo, no solo para quien juega. Así un juego de mesa sedentario reparte movimiento entre los que miran, que suelen ser mayoría, y funciona como actividad de descarga en las semanas de baja intensidad.'
     }
 ];
