@@ -824,6 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ratingDisplayEl = document.getElementById('current-activity-rating-display');
     const btnGenerateReport = document.getElementById('btn-generate-report');
     const btnGenerateUnifiedReport = document.getElementById('btn-generate-unified-report');
+    const btnExportCalendar = document.getElementById('btn-export-calendar');
 
     // Event Listeners
     if (btnSelectEvidence && fileInput) {
@@ -845,6 +846,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnGenerateUnifiedReport) {
         btnGenerateUnifiedReport.addEventListener('click', generateUnifiedReport);
+    }
+
+    if (btnExportCalendar) {
+        btnExportCalendar.addEventListener('click', exportCalendarDocx);
     }
 
     async function saveEvidence() {
@@ -1490,6 +1495,172 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             btnGenerateUnifiedReport.innerHTML = '<i class="fa-solid fa-users-viewfinder"></i> Reporte Unificado';
             btnGenerateUnifiedReport.disabled = false;
+        }
+    }
+
+    // ============================================================
+    // Exportar el calendario del periodo completo a DOCX editable
+    // ============================================================
+    // A diferencia de los dos reportes de arriba, que documentan lo que ya
+    // pasó en la semana visible, esto exporta la PLANEACIÓN completa del
+    // periodo activo: una fila por semana con la actividad de cada día.
+    // Sale como tabla de Word para poder ajustarla a mano y compartirla.
+
+    // Convierte el weekId ("2026-W33") al lunes que le corresponde, usando
+    // la misma fórmula que getWeekId() para que ambos coincidan siempre.
+    function mondayFromWeekId(weekId) {
+        const [year, wPart] = weekId.split('-W');
+        const y = parseInt(year, 10);
+        const target = parseInt(wPart, 10);
+        const d = new Date(y, 0, 1);
+        while (d.getFullYear() === y) {
+            if (getWeekId(d) === weekId && d.getDay() === 1) return new Date(d);
+            d.setDate(d.getDate() + 1);
+        }
+        // Si el año empieza a media semana, la semana 1 puede no tener lunes.
+        const fallback = new Date(y, 0, 1);
+        fallback.setDate(fallback.getDate() + (target - 1) * 7);
+        return getStartOfWeek(fallback);
+    }
+
+    const DIA_CORTO = { monday: 'Lunes', tuesday: 'Martes', wednesday: 'Miércoles', thursday: 'Jueves', friday: 'Viernes' };
+    const DIAS_ORDEN = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+
+    function fechaCorta(date) {
+        return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+    }
+
+    async function exportCalendarDocx() {
+        const original = btnExportCalendar.innerHTML;
+        btnExportCalendar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
+        btnExportCalendar.disabled = true;
+
+        try {
+            if (typeof window.docx === 'undefined') {
+                throw new Error('La librería docx no está cargada. Recarga la página e intenta de nuevo.');
+            }
+
+            const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType,
+                Table, TableRow, TableCell, WidthType, Packer, BorderStyle } = window.docx;
+
+            const period = await Periods.getActivePeriod();
+            if (!period || !period.startDate) {
+                throw new Error('No hay un periodo activo configurado. Créalo en la sección Periodos.');
+            }
+
+            // Recorre semana por semana desde el inicio hasta el fin del periodo
+            const start = getStartOfWeek(new Date(period.startDate + 'T00:00:00'));
+            const end = new Date((period.endDate || period.startDate) + 'T23:59:59');
+            const weekIds = [];
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 7)) {
+                weekIds.push(getWeekId(new Date(d)));
+            }
+
+            // Una sola lectura por semana; el catálogo ya está en activitiesMap
+            const snaps = await Promise.all(
+                weekIds.map(id => db.collection('weekly_schedules').doc(id).get())
+            );
+
+            const NEGRO = { style: BorderStyle.SINGLE, size: 4, color: 'BFBFBF' };
+            const bordes = { top: NEGRO, bottom: NEGRO, left: NEGRO, right: NEGRO };
+
+            const celda = (texto, { bold = false, fondo = null, ancho = null } = {}) => new TableCell({
+                borders: bordes,
+                shading: fondo ? { fill: fondo } : undefined,
+                width: ancho ? { size: ancho, type: WidthType.PERCENTAGE } : undefined,
+                margins: { top: 60, bottom: 60, left: 100, right: 100 },
+                children: [new Paragraph({
+                    children: [new TextRun({ text: texto, bold, size: 18 })]
+                })]
+            });
+
+            const filas = [
+                new TableRow({
+                    tableHeader: true,
+                    children: [
+                        celda('Semana', { bold: true, fondo: 'E8E8E1', ancho: 10 }),
+                        celda('Fechas', { bold: true, fondo: 'E8E8E1', ancho: 14 }),
+                        ...DIAS_ORDEN.map(d => celda(DIA_CORTO[d], { bold: true, fondo: 'E8E8E1', ancho: 15.2 }))
+                    ]
+                })
+            ];
+
+            let programadas = 0;
+            snaps.forEach((snap, i) => {
+                const schedule = snap.exists ? (snap.data().schedule || []) : [];
+                const lunes = mondayFromWeekId(weekIds[i]);
+                const viernes = new Date(lunes);
+                viernes.setDate(viernes.getDate() + 4);
+
+                const celdasDia = DIAS_ORDEN.map(dia => {
+                    const item = schedule.find(x => x.day === dia);
+                    if (!item) return celda('—');
+                    const act = activitiesMap[item.activityId];
+                    programadas++;
+                    return celda(act ? act.name : 'Actividad no encontrada');
+                });
+
+                filas.push(new TableRow({
+                    children: [
+                        celda(String(i + 1), { bold: true, fondo: 'F6F6F3' }),
+                        celda(fechaCorta(lunes) + ' – ' + fechaCorta(viernes), { fondo: 'F6F6F3' }),
+                        ...celdasDia
+                    ]
+                }));
+            });
+
+            const doc = new Document({
+                sections: [{
+                    properties: { page: { size: { orientation: 'landscape' } } },
+                    children: [
+                        new Paragraph({
+                            text: 'Calendario de Pausas Activas',
+                            heading: HeadingLevel.HEADING_1,
+                            alignment: AlignmentType.CENTER
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            spacing: { after: 300 },
+                            children: [new TextRun({
+                                text: (period.name || 'Periodo') + '  ·  ' +
+                                    period.startDate + ' al ' + (period.endDate || '—'),
+                                size: 22, color: '595959'
+                            })]
+                        }),
+                        new Table({
+                            width: { size: 100, type: WidthType.PERCENTAGE },
+                            rows: filas
+                        }),
+                        new Paragraph({
+                            spacing: { before: 300 },
+                            children: [new TextRun({
+                                text: weekIds.length + ' semanas · ' + programadas +
+                                    ' sesiones programadas · generado el ' +
+                                    new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }),
+                                size: 16, italics: true, color: '808080'
+                            })]
+                        }),
+                        new Paragraph({
+                            spacing: { before: 120 },
+                            children: [new TextRun({
+                                text: 'Este documento es editable: los cambios que hagas aquí no se guardan en la aplicación.',
+                                size: 16, italics: true, color: '808080'
+                            })]
+                        })
+                    ]
+                }]
+            });
+
+            const blob = await Packer.toBlob(doc);
+            const slug = (period.name || 'Periodo').replace(/\s+/g, '_');
+            saveAs(blob, 'Calendario_' + slug + '_' + new Date().toLocaleDateString('en-CA') + '.docx');
+
+        } catch (e) {
+            console.error('[calendario docx]', e);
+            alert('Error al generar el calendario: ' + e.message);
+        } finally {
+            btnExportCalendar.innerHTML = original;
+            btnExportCalendar.disabled = false;
         }
     }
 

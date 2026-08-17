@@ -103,6 +103,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-delete-schedule').addEventListener('click', deleteSchedule);
     form.addEventListener('submit', saveSchedule);
 
+    // Fase 3: autocompletar semana + copiar/pegar (plantillas)
+    const btnAutocomplete = document.getElementById('btn-autocomplete-week');
+    if (btnAutocomplete) btnAutocomplete.addEventListener('click', autocompleteWeek);
+    ['btn-copy-week', 'btn-copy-week-fallback'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.addEventListener('click', copyWeek);
+    });
+    ['btn-paste-week', 'btn-paste-week-fallback'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.addEventListener('click', pasteWeek);
+    });
+
     // Close modal when clicking outside
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
@@ -394,6 +406,144 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ============================================================
+    // FASE 3: Calendarización ágil
+    // ============================================================
+
+    // Normaliza texto (minúsculas, sin acentos ni signos) para comparar nombres.
+    function normalizeText(s) {
+        return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+    // Palabras "significativas" (>=4 letras) para el emparejamiento por tokens.
+    function significantWords(s) {
+        return normalizeText(s).split(' ').filter(w => w.length >= 4);
+    }
+
+    // Empareja una actividad sugerida del macrociclo (por nombre/tema) con una
+    // actividad del catálogo cargado (activitiesMap). Devuelve el activityId o null.
+    function matchActivityByName(name) {
+        const recWords = significantWords(name);
+        if (recWords.length === 0) return null;
+        const recNorm = normalizeText(name);
+        let best = null, bestScore = 0;
+        for (const [id, act] of Object.entries(activitiesMap)) {
+            const actWords = significantWords(act.name);
+            let score = 0;
+            recWords.forEach(w => { if (actWords.includes(w)) score++; });
+            if (normalizeText(act.name) === recNorm) score += 10; // nombre idéntico
+            if (score > bestScore) { bestScore = score; best = id; }
+        }
+        return bestScore >= 1 ? best : null;
+    }
+
+    // Autocompleta los días vacíos de la semana con las actividades sugeridas
+    // de la fase actual del programa (emparejadas al catálogo por nombre).
+    async function autocompleteWeek() {
+        if (!currentProgramContext || !currentProgramContext.phase) {
+            alert('Esta semana no tiene un programa (macrociclo) configurado, así que no hay sugerencias que aplicar.');
+            return;
+        }
+        const phase = currentProgramContext.phase;
+        const recs = (phase.actividadesRecomendadas || []).slice();
+        if (recs.length === 0 && currentProgramContext.weekSchedule) {
+            recs.push(currentProgramContext.weekSchedule.activity);
+        }
+
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+        const usedDays = new Set(currentSchedule.map(it => it.day));
+        const emptyDays = days.filter(d => !usedDays.has(d));
+
+        if (emptyDays.length === 0) {
+            alert('Todos los días de esta semana ya tienen actividad. Borra alguna si quieres usar el autocompletado.');
+            return;
+        }
+
+        const matched = [], unmatched = [], seenIds = new Set();
+        recs.forEach(rec => {
+            const id = matchActivityByName(rec);
+            // Dedup: no repetir la misma actividad aunque dos sugerencias la mapeen.
+            if (id && !seenIds.has(id)) {
+                seenIds.add(id);
+                matched.push({ rec, id });
+            } else if (!id) {
+                unmatched.push(rec);
+            }
+        });
+
+        if (matched.length === 0) {
+            alert(`No se encontraron actividades del catálogo que coincidan con la fase "${phase.name}".\n\nSugeridas: ${recs.join(', ')}`);
+            return;
+        }
+
+        // Distribuir en los días vacíos (una por día, sin repetir día).
+        const toAdd = matched.slice(0, emptyDays.length).map((m, i) => ({
+            day: emptyDays[i], activityId: m.id, location: 'Explanada'
+        }));
+
+        const lines = toAdd.map(t => `• ${translateDay(t.day)}: ${activitiesMap[t.activityId].emoji} ${activitiesMap[t.activityId].name}`);
+        let msg = `Fase: ${phase.name}\n\nSe agregarán a los días vacíos:\n${lines.join('\n')}`;
+        if (unmatched.length) msg += `\n\n(Sin coincidencia en el catálogo: ${unmatched.join(', ')})`;
+        msg += '\n\n¿Aplicar?';
+        if (!confirm(msg)) return;
+
+        try {
+            const docRef = db.collection('weekly_schedules').doc(getWeekId(currentWeekStart));
+            await db.runTransaction(async (tx) => {
+                const doc = await tx.get(docRef);
+                const schedule = doc.exists ? (doc.data().schedule || []) : [];
+                tx.set(docRef, { schedule: schedule.concat(toAdd) }, { merge: true });
+            });
+            loadSchedule();
+        } catch (err) {
+            console.error('Error autocompletando semana:', err);
+            alert('Error al autocompletar: ' + err.message);
+        }
+    }
+
+    // Copia la planeación de la semana actual al portapapeles (localStorage),
+    // para pegarla en otra semana o periodo (plantilla ligera).
+    function copyWeek() {
+        if (!currentSchedule || currentSchedule.length === 0) {
+            alert('Esta semana no tiene actividades para copiar.');
+            return;
+        }
+        const clean = currentSchedule.map(it => ({
+            day: it.day, activityId: it.activityId, location: it.location || 'Explanada'
+        }));
+        localStorage.setItem('calendarClipboard', JSON.stringify(clean));
+        alert(`Copiadas ${clean.length} actividades. Ve a otra semana y pulsa "Pegar" 📥`);
+    }
+
+    // Pega la semana copiada en la semana actual (se agrega a lo existente).
+    async function pasteWeek() {
+        const raw = localStorage.getItem('calendarClipboard');
+        if (!raw) {
+            alert('No hay una semana copiada. Usa "Copiar" 📋 primero.');
+            return;
+        }
+        let items;
+        try { items = JSON.parse(raw); } catch (e) { items = []; }
+        if (!Array.isArray(items) || items.length === 0) {
+            alert('La semana copiada está vacía.');
+            return;
+        }
+        if (!confirm(`¿Pegar ${items.length} actividades en esta semana? Se agregarán a las que ya haya.`)) return;
+
+        try {
+            const docRef = db.collection('weekly_schedules').doc(getWeekId(currentWeekStart));
+            await db.runTransaction(async (tx) => {
+                const doc = await tx.get(docRef);
+                const schedule = doc.exists ? (doc.data().schedule || []) : [];
+                tx.set(docRef, { schedule: schedule.concat(items) }, { merge: true });
+            });
+            loadSchedule();
+        } catch (err) {
+            console.error('Error pegando semana:', err);
+            alert('Error al pegar: ' + err.message);
+        }
+    }
+
     // Helpers
     function getStartOfWeek(date) {
         const d = new Date(date);
@@ -443,15 +593,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadProgramData() {
         try {
+            // Determinar el macrociclo a cargar según el periodo (temporada) activo.
+            // Si el periodo tiene un macrocycleId asignado se usa ese documento;
+            // si no, se cae al macrociclo por defecto 'current_macrocycle'.
+            let macrocycleId = 'current_macrocycle';
+            let activePeriod = null;
+            if (window.Periods) {
+                activePeriod = await window.Periods.getActivePeriod();
+                if (activePeriod && activePeriod.macrocycleId) {
+                    macrocycleId = activePeriod.macrocycleId;
+                }
+            }
+
             const doc = await db.collection('program_periodization')
-                .doc('current_macrocycle')
+                .doc(macrocycleId)
                 .get();
 
             if (doc.exists) {
                 programData = doc.data();
-                console.log('Program periodization loaded:', programData.programName);
+                // El programa arranca en la fecha de inicio del periodo activo
+                // (permite reutilizar el mismo macrociclo en varias temporadas).
+                if (activePeriod && activePeriod.startDate) {
+                    programData.startDate = activePeriod.startDate;
+                    if (activePeriod.totalWeeks) programData.totalWeeks = activePeriod.totalWeeks;
+                }
+                console.log('Program periodization loaded:', programData.programName, '(macrociclo:', macrocycleId + ')');
             } else {
-                console.log('No program periodization configured');
+                console.log('No program periodization configured for', macrocycleId);
                 showFallbackHeader();
             }
         } catch (error) {
@@ -656,6 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ratingDisplayEl = document.getElementById('current-activity-rating-display');
     const btnGenerateReport = document.getElementById('btn-generate-report');
     const btnGenerateUnifiedReport = document.getElementById('btn-generate-unified-report');
+    const btnExportCalendar = document.getElementById('btn-export-calendar');
 
     // Event Listeners
     if (btnSelectEvidence && fileInput) {
@@ -677,6 +846,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnGenerateUnifiedReport) {
         btnGenerateUnifiedReport.addEventListener('click', generateUnifiedReport);
+    }
+
+    if (btnExportCalendar) {
+        btnExportCalendar.addEventListener('click', exportCalendarDocx);
     }
 
     async function saveEvidence() {
@@ -1322,6 +1495,172 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             btnGenerateUnifiedReport.innerHTML = '<i class="fa-solid fa-users-viewfinder"></i> Reporte Unificado';
             btnGenerateUnifiedReport.disabled = false;
+        }
+    }
+
+    // ============================================================
+    // Exportar el calendario del periodo completo a DOCX editable
+    // ============================================================
+    // A diferencia de los dos reportes de arriba, que documentan lo que ya
+    // pasó en la semana visible, esto exporta la PLANEACIÓN completa del
+    // periodo activo: una fila por semana con la actividad de cada día.
+    // Sale como tabla de Word para poder ajustarla a mano y compartirla.
+
+    // Convierte el weekId ("2026-W33") al lunes que le corresponde, usando
+    // la misma fórmula que getWeekId() para que ambos coincidan siempre.
+    function mondayFromWeekId(weekId) {
+        const [year, wPart] = weekId.split('-W');
+        const y = parseInt(year, 10);
+        const target = parseInt(wPart, 10);
+        const d = new Date(y, 0, 1);
+        while (d.getFullYear() === y) {
+            if (getWeekId(d) === weekId && d.getDay() === 1) return new Date(d);
+            d.setDate(d.getDate() + 1);
+        }
+        // Si el año empieza a media semana, la semana 1 puede no tener lunes.
+        const fallback = new Date(y, 0, 1);
+        fallback.setDate(fallback.getDate() + (target - 1) * 7);
+        return getStartOfWeek(fallback);
+    }
+
+    const DIA_CORTO = { monday: 'Lunes', tuesday: 'Martes', wednesday: 'Miércoles', thursday: 'Jueves', friday: 'Viernes' };
+    const DIAS_ORDEN = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+
+    function fechaCorta(date) {
+        return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+    }
+
+    async function exportCalendarDocx() {
+        const original = btnExportCalendar.innerHTML;
+        btnExportCalendar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
+        btnExportCalendar.disabled = true;
+
+        try {
+            if (typeof window.docx === 'undefined') {
+                throw new Error('La librería docx no está cargada. Recarga la página e intenta de nuevo.');
+            }
+
+            const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType,
+                Table, TableRow, TableCell, WidthType, Packer, BorderStyle } = window.docx;
+
+            const period = await Periods.getActivePeriod();
+            if (!period || !period.startDate) {
+                throw new Error('No hay un periodo activo configurado. Créalo en la sección Periodos.');
+            }
+
+            // Recorre semana por semana desde el inicio hasta el fin del periodo
+            const start = getStartOfWeek(new Date(period.startDate + 'T00:00:00'));
+            const end = new Date((period.endDate || period.startDate) + 'T23:59:59');
+            const weekIds = [];
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 7)) {
+                weekIds.push(getWeekId(new Date(d)));
+            }
+
+            // Una sola lectura por semana; el catálogo ya está en activitiesMap
+            const snaps = await Promise.all(
+                weekIds.map(id => db.collection('weekly_schedules').doc(id).get())
+            );
+
+            const NEGRO = { style: BorderStyle.SINGLE, size: 4, color: 'BFBFBF' };
+            const bordes = { top: NEGRO, bottom: NEGRO, left: NEGRO, right: NEGRO };
+
+            const celda = (texto, { bold = false, fondo = null, ancho = null } = {}) => new TableCell({
+                borders: bordes,
+                shading: fondo ? { fill: fondo } : undefined,
+                width: ancho ? { size: ancho, type: WidthType.PERCENTAGE } : undefined,
+                margins: { top: 60, bottom: 60, left: 100, right: 100 },
+                children: [new Paragraph({
+                    children: [new TextRun({ text: texto, bold, size: 18 })]
+                })]
+            });
+
+            const filas = [
+                new TableRow({
+                    tableHeader: true,
+                    children: [
+                        celda('Semana', { bold: true, fondo: 'E8E8E1', ancho: 10 }),
+                        celda('Fechas', { bold: true, fondo: 'E8E8E1', ancho: 14 }),
+                        ...DIAS_ORDEN.map(d => celda(DIA_CORTO[d], { bold: true, fondo: 'E8E8E1', ancho: 15.2 }))
+                    ]
+                })
+            ];
+
+            let programadas = 0;
+            snaps.forEach((snap, i) => {
+                const schedule = snap.exists ? (snap.data().schedule || []) : [];
+                const lunes = mondayFromWeekId(weekIds[i]);
+                const viernes = new Date(lunes);
+                viernes.setDate(viernes.getDate() + 4);
+
+                const celdasDia = DIAS_ORDEN.map(dia => {
+                    const item = schedule.find(x => x.day === dia);
+                    if (!item) return celda('—');
+                    const act = activitiesMap[item.activityId];
+                    programadas++;
+                    return celda(act ? act.name : 'Actividad no encontrada');
+                });
+
+                filas.push(new TableRow({
+                    children: [
+                        celda(String(i + 1), { bold: true, fondo: 'F6F6F3' }),
+                        celda(fechaCorta(lunes) + ' – ' + fechaCorta(viernes), { fondo: 'F6F6F3' }),
+                        ...celdasDia
+                    ]
+                }));
+            });
+
+            const doc = new Document({
+                sections: [{
+                    properties: { page: { size: { orientation: 'landscape' } } },
+                    children: [
+                        new Paragraph({
+                            text: 'Calendario de Pausas Activas',
+                            heading: HeadingLevel.HEADING_1,
+                            alignment: AlignmentType.CENTER
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            spacing: { after: 300 },
+                            children: [new TextRun({
+                                text: (period.name || 'Periodo') + '  ·  ' +
+                                    period.startDate + ' al ' + (period.endDate || '—'),
+                                size: 22, color: '595959'
+                            })]
+                        }),
+                        new Table({
+                            width: { size: 100, type: WidthType.PERCENTAGE },
+                            rows: filas
+                        }),
+                        new Paragraph({
+                            spacing: { before: 300 },
+                            children: [new TextRun({
+                                text: weekIds.length + ' semanas · ' + programadas +
+                                    ' sesiones programadas · generado el ' +
+                                    new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }),
+                                size: 16, italics: true, color: '808080'
+                            })]
+                        }),
+                        new Paragraph({
+                            spacing: { before: 120 },
+                            children: [new TextRun({
+                                text: 'Este documento es editable: los cambios que hagas aquí no se guardan en la aplicación.',
+                                size: 16, italics: true, color: '808080'
+                            })]
+                        })
+                    ]
+                }]
+            });
+
+            const blob = await Packer.toBlob(doc);
+            const slug = (period.name || 'Periodo').replace(/\s+/g, '_');
+            saveAs(blob, 'Calendario_' + slug + '_' + new Date().toLocaleDateString('en-CA') + '.docx');
+
+        } catch (e) {
+            console.error('[calendario docx]', e);
+            alert('Error al generar el calendario: ' + e.message);
+        } finally {
+            btnExportCalendar.innerHTML = original;
+            btnExportCalendar.disabled = false;
         }
     }
 
