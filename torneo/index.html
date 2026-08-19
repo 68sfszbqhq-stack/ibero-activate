@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copa IBERO de Voleibol · Pausas Activas</title>
+<meta name="description" content="Torneo recreativo de voleibol entre áreas. IBERO Puebla.">
+<style>
+  :root{
+    --guinda:#9C1B32; --guinda-osc:#7A1427; --guinda-cl:#C8465C;
+    --arena:#F6F3EE; --papel:#FFFFFF; --linea:#E2DCD3;
+    --tinta:#1F1A18; --tinta-2:#5E544E; --tinta-3:#8C817A;
+    --oro:#C98B2E; --cancha:#2E6E5B;
+    --sans:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',system-ui,sans-serif;
+    --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --guinda:#D4536B; --guinda-osc:#B03A52; --guinda-cl:#E88099;
+    --arena:#16130F; --papel:#1E1A16; --linea:#332C25;
+    --tinta:#F0EAE3; --tinta-2:#B5A99F; --tinta-3:#857A71;
+    --oro:#E0A94F; --cancha:#4E9B82;}}
+  :root[data-theme="dark"]{
+    --guinda:#D4536B; --guinda-osc:#B03A52; --guinda-cl:#E88099;
+    --arena:#16130F; --papel:#1E1A16; --linea:#332C25;
+    --tinta:#F0EAE3; --tinta-2:#B5A99F; --tinta-3:#857A71;
+    --oro:#E0A94F; --cancha:#4E9B82;}
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--arena);color:var(--tinta);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 20px 80px}
+
+  /* ---------- portada ---------- */
+  .hero{background:var(--guinda);color:#fff;margin-bottom:36px;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;inset:0;
+    background:repeating-linear-gradient(115deg,transparent 0 38px,rgba(255,255,255,.05) 38px 40px);pointer-events:none}
+  .hero-in{max-width:1200px;margin:0 auto;padding:52px 20px 44px;position:relative;z-index:1}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.85;margin-bottom:12px}
+  .hero h1{font-size:clamp(2.3rem,7vw,4rem);line-height:.98;font-weight:800;letter-spacing:-.035em;text-wrap:balance}
+  .hero .sub{font-size:clamp(1rem,2.4vw,1.2rem);opacity:.92;margin-top:14px;max-width:52ch}
+  .datos{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+  .dato{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);padding:9px 15px;font-family:var(--mono);font-size:.76rem;letter-spacing:.04em}
+  .dato b{font-size:.95rem;display:block;letter-spacing:0;font-family:var(--sans)}
+
+  .aviso{background:var(--oro);color:#2B1D06;font-family:var(--mono);font-size:.74rem;
+    letter-spacing:.1em;text-transform:uppercase;text-align:center;padding:9px 20px;font-weight:600}
+
+  h2{font-size:1.5rem;font-weight:750;letter-spacing:-.02em;margin-bottom:6px}
+  .lead{color:var(--tinta-2);max-width:62ch;margin-bottom:22px}
+  section{margin-bottom:48px}
+
+  /* ---------- bracket ---------- */
+  .bracket-scroll{overflow-x:auto;padding-bottom:14px;-webkit-overflow-scrolling:touch}
+  .bracket{display:flex;gap:26px;min-width:940px;align-items:stretch}
+  .ronda{flex:1;min-width:200px;display:flex;flex-direction:column}
+  .ronda-t{font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--tinta-3);text-align:center;padding-bottom:12px;border-bottom:2px solid var(--linea);margin-bottom:16px}
+  .llaves{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:12px}
+
+  .duelo{background:var(--papel);border:1px solid var(--linea);border-left:3px solid var(--guinda)}
+  .duelo.final{border-left-color:var(--oro);border-width:1px 1px 1px 4px}
+  .duelo-h{display:flex;justify-content:space-between;align-items:center;gap:8px;
+    padding:5px 10px;background:var(--arena);border-bottom:1px solid var(--linea)}
+  .duelo-h .cuando{font-family:var(--mono);font-size:.63rem;letter-spacing:.06em;color:var(--tinta-3);text-transform:uppercase}
+  .duelo-h .estado{font-family:var(--mono);font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;
+    padding:1px 6px;border:1px solid currentColor;color:var(--tinta-3)}
+  .estado.jugado{color:var(--cancha)}
+  .equipo{display:grid;grid-template-columns:1fr 34px;align-items:center;gap:8px;padding:8px 10px}
+  .equipo + .equipo{border-top:1px dashed var(--linea)}
+  .equipo .nm{font-size:.83rem;font-weight:600;line-height:1.25}
+  .equipo .nm small{display:block;font-weight:400;font-size:.68rem;color:var(--tinta-3);letter-spacing:.02em}
+  .marcador{font-family:var(--mono);font-size:1rem;font-weight:700;text-align:center;
+    border:1px solid var(--linea);background:var(--arena);padding:3px 0;color:var(--tinta-3);
+    font-variant-numeric:tabular-nums}
+  .marcador.lleno{background:var(--cancha);border-color:var(--cancha);color:#fff}
+  .equipo.gana .nm{color:var(--guinda)}
+  .equipo.pendiente .nm{color:var(--tinta-3);font-style:italic;font-weight:500}
+
+  /* ---------- equipos ---------- */
+  .grid-eq{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:1px;background:var(--linea);border:1px solid var(--linea)}
+  .eq{background:var(--papel);padding:13px 15px;display:flex;flex-direction:column;gap:3px}
+  .eq .s{font-family:var(--mono);font-size:.65rem;color:var(--tinta-3);letter-spacing:.08em}
+  .eq .n{font-weight:650;font-size:.92rem;line-height:1.25}
+  .eq .j{font-size:.78rem;color:var(--tinta-2)}
+  .eq.combo{background:linear-gradient(var(--papel),var(--papel)) padding-box}
+  .eq.combo .n::after{content:" ·  combinado";font-family:var(--mono);font-size:.6rem;color:var(--oro);letter-spacing:.06em}
+
+  /* ---------- formato ---------- */
+  .reglas{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1px;background:var(--linea);border:1px solid var(--linea)}
+  .regla{background:var(--papel);padding:18px}
+  .regla h3{font-size:.76rem;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--guinda);margin-bottom:7px}
+  .regla p{font-size:.88rem;color:var(--tinta-2)}
+  .regla p strong{color:var(--tinta)}
+
+  table.cal{width:100%;border-collapse:collapse;font-size:.88rem}
+  table.cal th,table.cal td{border:1px solid var(--linea);padding:9px 12px;text-align:left}
+  table.cal th{background:var(--papel);font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--tinta-2)}
+  table.cal td{background:var(--papel)}
+  table.cal td.f{font-family:var(--mono);white-space:nowrap;color:var(--tinta-2)}
+
+  footer{border-top:1px solid var(--linea);padding-top:20px;font-size:.82rem;color:var(--tinta-3)}
+  @media(max-width:600px){.hero-in{padding:38px 20px 32px}.bracket{min-width:880px}}
+</style>
+</head>
+<body>
+
+<div class="aviso">Vista previa · Las llaves y los marcadores son de ejemplo</div>
+
+<div class="hero">
+  <div class="hero-in">
+    <div class="kicker">IBERO Puebla · Pausas Activas</div>
+    <h1>Copa IBERO<br>de Voleibol</h1>
+    <p class="sub">Torneo recreativo entre áreas. Se juega en la pausa activa, con reglas adaptadas para que participe quien nunca ha tocado un balón.</p>
+    <div class="datos">
+      <div class="dato">Equipos<b>16 áreas</b></div>
+      <div class="dato">Cuándo<b>Martes y jueves</b></div>
+      <div class="dato">Horario<b>8:00 a 8:30</b></div>
+      <div class="dato">Sede<b>Explanada</b></div>
+      <div class="dato">Duración<b>4 semanas</b></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section>
+    <h2>Las llaves</h2>
+    <p class="lead">Así se movería el torneo. Los marcadores se van llenando conforme se juegan los partidos; los que están en blanco todavía no se disputan.</p>
+    <div class="bracket-scroll"><div class="bracket" id="bracket"></div></div>
+  </section>
+
+  <section>
+    <h2>Los 16 equipos</h2>
+    <p class="lead">Las áreas con seis o más personas compiten solas. Las más pequeñas se agrupan con sus vecinas de siempre, las mismas con las que ya comparten la pausa.</p>
+    <div class="grid-eq" id="equipos"></div>
+  </section>
+
+  <section>
+    <h2>Cómo se juega</h2>
+    <div class="reglas">
+      <div class="regla"><h3>Se vale un bote</h3><p>El balón puede tocar el piso <strong>una vez</strong> antes de devolverlo. Alarga las jugadas y permite jugar a quien no tiene reflejo entrenado.</p></div>
+      <div class="regla"><h3>Rotación obligatoria</h3><p>En cada saque el equipo rota. <strong>Todos tocan el balón</strong>, nadie se queda de espectador.</p></div>
+      <div class="regla"><h3>Sets a 10 puntos</h3><p>Partidos de <strong>12 minutos</strong> o el primero que llegue a 10. Caben dos partidos por sesión.</p></div>
+      <div class="regla"><h3>Balón blando</h3><p>Se juega con pelota de plástico ligera. <strong>No lastima las manos</strong> y baja despacio.</p></div>
+      <div class="regla"><h3>Mínimo cuatro</h3><p>Un equipo se presenta con <strong>al menos cuatro personas</strong>. Si falta gente, se completa con el área vecina.</p></div>
+      <div class="regla"><h3>Punto por participación</h3><p>Cada persona distinta que juega suma <strong>un punto extra</strong> a su área. Conviene rotar a todos.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Calendario propuesto</h2>
+    <table class="cal">
+      <thead><tr><th>Ronda</th><th>Fechas</th><th>Partidos</th><th>Sesiones</th></tr></thead>
+      <tbody id="calendario"></tbody>
+    </table>
+  </section>
+
+  <footer>
+    <p>Copa IBERO de Voleibol · Programa de Pausas Activas, IBERO Puebla. Vista previa del torneo: la estructura es real, los resultados son de ejemplo.</p>
+  </footer>
+</div>
+
+<script>
+// ============================================================
+// DATOS DEL TORNEO
+// ------------------------------------------------------------
+// Estructura pensada para que el backend la llene. Cuando exista
+// la colección en Firestore, basta sustituir el objeto TORNEO por
+// el resultado de la consulta: la página se dibuja sola desde aquí.
+//
+//   torneo_voleibol/{edicion}
+//     equipos:  [{ id, nombre, areas[], jugadores }]
+//     partidos: [{ id, ronda, fecha, equipoA, equipoB,
+//                  puntosA, puntosB, jugado }]
+//
+// puntosA / puntosB en null = partido aún no jugado (caja vacía).
+// ============================================================
+
+const TORNEO = {
+  equipos: [
+    { id:'cs',  nombre:'Ciencias Sociales',        jugadores:15 },
+    { id:'idit',nombre:'IDIT',                     jugadores:14 },
+    { id:'se',  nombre:'Servicios Escolares',      jugadores:12 },
+    { id:'adm', nombre:'Admisiones',               jugadores:11 },
+    { id:'dci', nombre:'Comunicación Institucional',jugadores:10 },
+    { id:'vi',  nombre:'Villas Ibero',             jugadores:10 },
+    { id:'egr', nombre:'Egresados',                jugadores:10 },
+    { id:'per', nombre:'Dirección de Personal',    jugadores:10 },
+    { id:'com', nombre:'Compras',                  jugadores:9  },
+    { id:'sal', nombre:'Ciencias de la Salud',     jugadores:9  },
+    { id:'mkt', nombre:'Marketing',                jugadores:9  },
+    { id:'pf',  nombre:'Planta Física',            jugadores:8  },
+    { id:'tes', nombre:'Tesorería + Educación Continua', jugadores:13, combo:true,
+      areas:['Tesorería','Educación Continua'] },
+    { id:'ia',  nombre:'Ibero Activate + Prepa Ibero',   jugadores:14, combo:true,
+      areas:['Ibero Activate','Preparatoria Ibero'] },
+    { id:'aid', nombre:'AIDEL + DADA + Direcciones Generales', jugadores:15, combo:true,
+      areas:['AIDEL','DADA','Direcciones Generales'] },
+    { id:'ser', nombre:'Los Servicios',            jugadores:21, combo:true,
+      areas:['Defensoría','Servicio Social','Atención Tecnológica','Nutrición','LAINES','y demás áreas pequeñas'] }
+  ],
+
+  // puntosA/puntosB en null = caja vacía esperando al backend
+  partidos: [
+    { ronda:'octavos', fecha:'Mar 25 ago', a:'cs',  b:'ser', puntosA:10, puntosB:7 },
+    { ronda:'octavos', fecha:'Mar 25 ago', a:'idit',b:'aid', puntosA:8,  puntosB:10 },
+    { ronda:'octavos', fecha:'Jue 27 ago', a:'se',  b:'ia',  puntosA:10, puntosB:6 },
+    { ronda:'octavos', fecha:'Jue 27 ago', a:'adm', b:'tes', puntosA:9,  puntosB:10 },
+    { ronda:'octavos', fecha:'Mar 1 sep',  a:'dci', b:'pf',  puntosA:null,puntosB:null },
+    { ronda:'octavos', fecha:'Mar 1 sep',  a:'vi',  b:'mkt', puntosA:null,puntosB:null },
+    { ronda:'octavos', fecha:'Jue 3 sep',  a:'egr', b:'sal', puntosA:null,puntosB:null },
+    { ronda:'octavos', fecha:'Jue 3 sep',  a:'per', b:'com', puntosA:null,puntosB:null },
+
+    { ronda:'cuartos', fecha:'Mar 8 sep',  a:'cs',  b:'aid', puntosA:null,puntosB:null },
+    { ronda:'cuartos', fecha:'Mar 8 sep',  a:'se',  b:'tes', puntosA:null,puntosB:null },
+    { ronda:'cuartos', fecha:'Jue 10 sep', a:null,  b:null,  puntosA:null,puntosB:null },
+    { ronda:'cuartos', fecha:'Jue 10 sep', a:null,  b:null,  puntosA:null,puntosB:null },
+
+    { ronda:'semifinal', fecha:'Mar 15 sep', a:null, b:null, puntosA:null,puntosB:null },
+    { ronda:'semifinal', fecha:'Mar 15 sep', a:null, b:null, puntosA:null,puntosB:null },
+
+    { ronda:'final', fecha:'Jue 17 sep', a:null, b:null, puntosA:null,puntosB:null }
+  ],
+
+  calendario: [
+    { ronda:'Octavos de final', fechas:'25 y 27 de agosto · 1 y 3 de septiembre', partidos:8, sesiones:4 },
+    { ronda:'Cuartos de final', fechas:'8 y 10 de septiembre', partidos:4, sesiones:2 },
+    { ronda:'Semifinales',      fechas:'15 de septiembre',     partidos:2, sesiones:1 },
+    { ronda:'Final',            fechas:'17 de septiembre',     partidos:1, sesiones:1 }
+  ]
+};
+
+const RONDAS = [
+  ['octavos','Octavos'], ['cuartos','Cuartos'], ['semifinal','Semifinal'], ['final','Final']
+];
+
+const equipoPorId = id => TORNEO.equipos.find(e => e.id === id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function filaEquipo(id, pts, rival) {
+  const e = id ? equipoPorId(id) : null;
+  const gana = pts !== null && rival !== null && pts > rival;
+  const clase = 'equipo' + (e ? (gana ? ' gana' : '') : ' pendiente');
+  const nombre = e
+    ? esc(e.nombre) + (e.areas ? '<small>' + esc(e.areas.join(' · ')) + '</small>' : '')
+    : 'Por definir';
+  const caja = pts === null ? '<span class="marcador">–</span>'
+                            : '<span class="marcador lleno">' + pts + '</span>';
+  return '<div class="' + clase + '"><span class="nm">' + nombre + '</span>' + caja + '</div>';
+}
+
+function dibujarBracket() {
+  document.getElementById('bracket').innerHTML = RONDAS.map(([clave, titulo]) => {
+    const duelos = TORNEO.partidos.filter(p => p.ronda === clave).map(p => {
+      const jugado = p.puntosA !== null && p.puntosB !== null;
+      return '<div class="duelo' + (clave === 'final' ? ' final' : '') + '">' +
+          '<div class="duelo-h"><span class="cuando">' + esc(p.fecha) + '</span>' +
+          '<span class="estado' + (jugado ? ' jugado' : '') + '">' + (jugado ? 'Jugado' : 'Pendiente') + '</span></div>' +
+          filaEquipo(p.a, p.puntosA, p.puntosB) +
+          filaEquipo(p.b, p.puntosB, p.puntosA) +
+        '</div>';
+    }).join('');
+    return '<div class="ronda"><div class="ronda-t">' + titulo + '</div><div class="llaves">' + duelos + '</div></div>';
+  }).join('');
+}
+
+function dibujarEquipos() {
+  document.getElementById('equipos').innerHTML = TORNEO.equipos.map((e, i) =>
+    '<div class="eq' + (e.combo ? ' combo' : '') + '">' +
+      '<span class="s">Equipo ' + String(i + 1).padStart(2, '0') + '</span>' +
+      '<span class="n">' + esc(e.nombre) + '</span>' +
+      '<span class="j">' + e.jugadores + ' personas</span>' +
+    '</div>').join('');
+}
+
+function dibujarCalendario() {
+  document.getElementById('calendario').innerHTML = TORNEO.calendario.map(r =>
+    '<tr><td><strong>' + esc(r.ronda) + '</strong></td><td class="f">' + esc(r.fechas) + '</td>' +
+    '<td>' + r.partidos + '</td><td>' + r.sesiones + '</td></tr>').join('');
+}
+
+dibujarBracket();
+dibujarEquipos();
+dibujarCalendario();
+</script>
+</body>
+</html>

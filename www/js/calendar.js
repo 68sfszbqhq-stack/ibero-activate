@@ -1928,6 +1928,48 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+
+    // Pinta la capa organizacional en el panel de detalle. Es lo que convierte
+    // el juego en intervención de equipo: sin el cierre, es solo un juego.
+    function renderCapaOrganizacional(capa) {
+        const seccion = document.getElementById('detail-org-section');
+        const cont = document.getElementById('detail-org');
+        if (!seccion || !cont) return;
+
+        if (!capa || !capa.competencia) {
+            seccion.style.display = 'none';
+            cont.innerHTML = '';
+            return;
+        }
+
+        const lista = (arr, clase) => (Array.isArray(arr) && arr.length)
+            ? '<' + (clase ? 'ol class="' + clase + '"' : 'ul') + '>' +
+              arr.map(x => '<li>' + escapeHtml(x) + '</li>').join('') +
+              '</' + (clase ? 'ol' : 'ul') + '>'
+            : '';
+
+        let html = '<span class="org-comp">' + escapeHtml(capa.competencia) + '</span>';
+        if (capa.objetivoOrganizacional) html += '<p><strong>' + escapeHtml(capa.objetivoOrganizacional) + '</strong></p>';
+        if (capa.conductaObservable) html += '<p>' + escapeHtml(capa.conductaObservable) + '</p>';
+        if (capa.queObservar && capa.queObservar.length) {
+            html += '<h4>Qué observar mientras juegan</h4>' + lista(capa.queObservar);
+        }
+        if (capa.cierre && capa.cierre.length) {
+            html += '<h4>Cierre de 5 minutos</h4>' + lista(capa.cierre, 'org-cierre');
+        }
+        if (capa.cuandoNoUsarlo) {
+            html += '<div class="org-warn"><strong>Cuándo no usarlo:</strong> ' + escapeHtml(capa.cuandoNoUsarlo) + '</div>';
+        }
+
+        cont.innerHTML = html;
+        seccion.style.display = '';
+    }
+
+    function escapeHtml(t) {
+        return String(t == null ? '' : t).replace(/[&<>"']/g, c =>
+            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
     // --- ACTIVITY DETAIL PANEL FUNCTIONS ---
 
     let currentActivityId = null; // Store current activity ID for editing
@@ -1973,6 +2015,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Objective - try both objetivo and objective
         const objetivo = activity.objetivo || activity.objective;
         document.getElementById('detail-objective').textContent = objetivo || 'Sin objetivo definido. Haz clic en el botón de editar para agregar un objetivo.';
+
+        // Capa organizacional: qué competencia trabaja el juego, qué observar
+        // mientras se aplica y las preguntas de cierre. Solo se muestra en las
+        // fichas que la tienen; el resto del panel queda igual.
+        renderCapaOrganizacional(activity.capaOrganizacional);
 
         // Evidence Display Logic
         const evidenceContainer = document.getElementById('evidence-preview-container');
