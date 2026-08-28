@@ -14,7 +14,8 @@ const CATALOGO_COMPLETO = [
         instrucciones: [
             "1 min: Lubricación (Cuello, hombros, torso).",
             "3 min: Circuito (Sentadillas, Elevación rodillas, Flexiones pared, Saltos tijera).",
-            "1 min: Vuelta a la calma (Estiramientos)."
+            "1 min: Vuelta a la calma (Estiramientos).",
+            "Uso que piden los colaboradores: como calentamiento inicial de las actividades físicas, no solo como opción de rescate cuando queda poco tiempo."
         ],
         emoji: "⚡", type: "indoor", intensity: "moderada", benefitType: ["Físico", "Psicológico"], specificBenefits: ["Aumenta energía", "Mejora ánimo", "Reduce fatiga"], description: "Rutina rápida para elevar la energía."
     },
@@ -44,7 +45,8 @@ const CATALOGO_COMPLETO = [
         instrucciones: [
             "1 min: Lubricación (Cadera, hombros, trote ligero).",
             "3 min: Circuito (Jumping Jacks, Burpees s/flexión, Rodillas altas, Sentadillas).",
-            "1 min: Vuelta a la calma (Respiración profunda, cuádriceps)."
+            "1 min: Vuelta a la calma (Respiración profunda, cuádriceps).",
+            "Aviso de campo: a esta intensidad hay quien la rechaza porque despeina y agita de más. Anuncia antes de empezar la versión sin salto (marcha en el lugar en vez de jumping jacks y burpees) y deja que cada quien elija."
         ],
         emoji: "❤️", type: "indoor", intensity: "alta", benefitType: ["Físico"], specificBenefits: ["Cardio", "Oxigenación"], description: "Elevar el ritmo cardiaco."
     },
@@ -168,7 +170,8 @@ const CATALOGO_COMPLETO = [
             'Dos equipos separados por una línea en el piso marcada con spaguetis.',
             'La pelota de playa se pasa golpeándola SOLO con el spagueti, nunca con las manos.',
             'Si toca el suelo del lado contrario, es punto.',
-            'Sets cortos a 10 puntos para que roten todos.'
+            'Sets cortos a 10 puntos para que roten todos.',
+            'Regla de seguridad probada en campo: se golpea SOLO por debajo de la cadera. Sin esa regla aparecen golpes fuertes por la velocidad del juego.'
         ],
         emoji: '🎈', type: 'outdoor', intensity: 'moderada', benefitType: ['Social', 'Físico'], specificBenefits: ['Trabajo en equipo', 'Coordinación'], description: 'Primer deporte adaptado del periodo y paso previo al torneo de voleibol de la semana 10. El tubo de espuma y la pelota de playa quitan por completo el miedo a no saber jugar: la pelota baja lento, no lastima y nadie queda expuesto por fallar un golpe. Sirve para que la gente que nunca ha jugado voleibol entienda la dinámica de pasar y sostener el balón en el aire antes de tomarlo con las manos.'
     },
@@ -183,7 +186,9 @@ const CATALOGO_COMPLETO = [
         instrucciones: [
             "Colocar vasos a distintas distancias.",
             "Lanzar pelotas (directo o con bote) para encestar.",
-            "Asignar puntos según dificultad."
+            "Asignar puntos según dificultad.",
+            "Lleva marcador visible y cuenta los puntos en voz alta: sin marcador el juego se desinfla.",
+            "Pon una caja o cubeta detrás de los vasos. Sin eso, recoger las pelotas se come el tiempo de la pausa."
         ],
         emoji: "🎯", type: "indoor", intensity: "baja", benefitType: ["Físico", "Psicológico"], specificBenefits: ["Concentración", "Motricidad fina"], description: "Juego de puntería."
     },
@@ -193,11 +198,13 @@ const CATALOGO_COMPLETO = [
         name: "Mini Bádminton",
         objetivo: "Precisión y paciencia.",
         duration: 15,
-        materials: "Set portátil, raquetas, gallitos.",
+        materials: "Set portátil, raquetas (revisar que estén completas antes de salir), gallitos. Opcional: tablas de ping pong.",
         imagen: "https://images.unsplash.com/photo-1626224583764-847649623d9c?q=80&w=800",
         instrucciones: [
             "Armar cancha en espacio reducido.",
-            "Partidos básicos buscando que caiga en lado contrario."
+            "Partidos básicos buscando que caiga en lado contrario.",
+            "Funciona mejor en grupos pequeños; con grupo grande la mayoría se queda mirando.",
+            "Alternativa cuando faltan raquetas o el espacio es cerrado: llevar tablas de ping pong y jugar sobre mesa."
         ],
         emoji: "🏸", type: "outdoor", intensity: "moderada", benefitType: ["Físico", "Social"], specificBenefits: ["Precisión", "Paciencia"], description: "Bádminton en espacio reducido."
     },
@@ -207,12 +214,13 @@ const CATALOGO_COMPLETO = [
         name: "Rebote-Reto",
         objetivo: "Velocidad de reacción.",
         duration: 10,
-        materials: "Pelota de tenis, pared.",
+        materials: "Pelota de goma que rebote parejo (la de tenis se desvía), pared lisa y sin ventanas.",
         imagen: "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?q=80&w=800",
         instrucciones: [
             "Grupo en semicírculo frente a pared.",
             "Lanzar pelota y gritar nombre de alguien.",
-            "La persona nombrada debe atraparla antes del segundo bote."
+            "La persona nombrada debe atraparla antes del segundo bote.",
+            "Revisa la pared antes de programarla: en superficies irregulares o con ventanas la pelota sale disparada y el juego se rompe."
         ],
         emoji: "🎾", type: "outdoor", intensity: "moderada", benefitType: ["Físico", "Social"], specificBenefits: ["Reacción", "Atención"], description: "Juego de reacción con pelota."
     },
@@ -301,7 +309,8 @@ const CATALOGO_COMPLETO = [
             "Circuito de 3 estaciones.",
             "1: Spagueti + Globo.",
             "2: Tenis pared.",
-            "3: Precisión vasos."
+            "3: Precisión vasos.",
+            "Nota de campo: con tres estaciones y mezcla de materiales el montaje se vuelve complejo. Si vas solo, baja a dos estaciones o pide apoyo para montar."
         ],
         emoji: "🎪", type: "outdoor", intensity: "moderada", benefitType: ["Físico"], specificBenefits: ["Motricidad", "Diversidad"], description: "Circuito de habilidades."
     },
@@ -317,7 +326,8 @@ const CATALOGO_COMPLETO = [
             'Se permite dejar botar la pelota una vez: baja la exigencia y alarga las jugadas.',
             'Máximo tres toques por equipo antes de pasarla.',
             'Sets a 10 puntos, rotación obligatoria en cada saque para que todos toquen la pelota.',
-            'Viernes: llaves de eliminación entre áreas y marcador en el pizarrón portátil.'
+            'Viernes: llaves de eliminación entre áreas y marcador en el pizarrón portátil.',
+            'Variante para espacio cerrado: sin red, todos en círculo de toques, contando cuántos pases sostiene el grupo sin que la pelota caiga.'
         ],
         emoji: '🏐', type: 'outdoor', intensity: 'moderada', benefitType: ['Físico', 'Social'], specificBenefits: ['Activa circulación', 'Aumenta energía', 'Fomenta trabajo en equipo', 'Mejora comunicación'], description: 'El torneo que pidieron los propios participantes y el pico de participación del periodo. Cierra la progresión que empezó en la semana 4 con el Spaghetti-Vóley y siguió en la 6 con el Círculo de Toques: primero se aprende a sostener la pelota en el aire con ayuda, después con el cuerpo, y aquí ya se juega el partido real con la pelota de plástico. Las dos reglas adaptadas (se vale un bote y rotación obligatoria) existen para que jueguen también quienes nunca han practicado voleibol, que es la mayoría del personal administrativo.'
     },
@@ -333,7 +343,10 @@ const CATALOGO_COMPLETO = [
         duration: 10,
         materials: "Juego Mini Hockey.",
         imagen: "https://images.unsplash.com/photo-1593165239247-49f390099443?q=80&w=800",
-        instrucciones: ["Marcar goles usando palancas/discos."],
+        instrucciones: [
+            "Marcar goles usando palancas/discos.",
+            "Su límite es que juegan dos a la vez. Para grupo grande, arma torneo relámpago de partidas de 2 minutos con marcador en el pizarrón, así los que esperan tienen algo que seguir."
+        ],
         emoji: "🏒", type: "desk", intensity: "baja", benefitType: ["Psicológico", "Social"], specificBenefits: ["Reflejos", "Diversión"], description: "Hockey de mesa rápido."
     },
     {
@@ -344,7 +357,11 @@ const CATALOGO_COMPLETO = [
         duration: 15,
         materials: "Tablas y fichas.",
         imagen: "https://images.unsplash.com/photo-1630946263725-3037998ce774?q=80&w=800",
-        instrucciones: ["Gritón canta cartas, jugadores marcan."],
+        instrucciones: [
+            "Gritón canta cartas, jugadores marcan.",
+            "Ten un premio pequeño para quien gane: con un dulce basta y sube mucho la participación.",
+            "Es la carta fuerte de septiembre, en el ambiente de fiestas patrias."
+        ],
         emoji: "🃏", type: "desk", intensity: "baja", benefitType: ["Social"], specificBenefits: ["Integración", "Atención"], description: "Lotería tradicional."
     },
     {
@@ -366,7 +383,10 @@ const CATALOGO_COMPLETO = [
         duration: 15,
         materials: "Cartas UNO.",
         imagen: "https://images.unsplash.com/photo-1605304383472-3c2243e39c4f?q=80&w=800",
-        instrucciones: ["Coincidir color/número. Gana quien se quede sin cartas."],
+        instrucciones: [
+            "Coincidir color/número. Gana quien se quede sin cartas.",
+            "El clásico se alarga de más. Juega variantes cortas con temporizador: una sola ronda, o gana quien tenga menos cartas cuando suene el reloj."
+        ],
         emoji: "🎴", type: "desk", intensity: "baja", benefitType: ["Social"], specificBenefits: ["Estrategia", "Diversión"], description: "Juego de cartas UNO."
     },
     {
