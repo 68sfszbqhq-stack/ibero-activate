@@ -721,4 +721,364 @@ const CATALOGO_COMPLETO = [
         ],
         emoji: '🧱', type: 'indoor', intensity: 'baja', benefitType: ['Físico', 'Social', 'Psicológico'], specificBenefits: ['Pulso y precisión', 'Movimiento intercalado', 'Diversión'], description: 'El UNO Stacko del inventario nunca se había programado. Esta versión le añade una capa de movimiento: cada bloque retirado dispara un micro-ejercicio breve para todo el grupo, no solo para quien juega. Así un juego de mesa sedentario reparte movimiento entre los que miran, que suelen ser mayoría, y funciona como actividad de descarga en las semanas de baja intensidad.'
     }
+,
+    // ==========================================
+    // SECCIÓN AM: AUTOMASAJE CON SET 6 EN 1 (8)
+    // 8 sets disponibles. Cada set: rodillo de espuma,
+    // palo de masaje, bola de pinchos, bola de fascia,
+    // cinturón elástico y bolsa de traslado.
+    // ==========================================
+    {
+        activityId: 'AM-01',
+        categoria: 'Relax',
+        name: 'Circuito de Automasaje — 5 Estaciones',
+        objetivo: 'Descargar espalda, piernas, hombros y pies en formato circuito rotatorio.',
+        duration: 15,
+        materials: '8 sets 6 en 1 repartidos por implemento: 8 rodillos, 8 palos, 8 bolas de pinchos, 8 bolas de fascia, 8 cinturones. Cronómetro y bocina.',
+        instrucciones: [
+            'Montaje: separa los 8 sets por implemento y arma 5 estaciones. Cada estación atiende hasta 8 personas a la vez (hasta 40 en total).',
+            'E1 Rodillo — espalda alta y dorsal: rodar de omóplatos a costillas bajas, 8 pasadas lentas. NUNCA sobre la zona lumbar ni el cuello.',
+            'E2 Palo de masaje — cuádriceps y pantorrilla: presión de rodilla hacia cadera y de tobillo hacia rodilla, 6 pasadas por pierna.',
+            'E3 Bola de fascia — trapecio contra la pared: apoya la bola entre la pared y el hombro, busca el punto tenso y sostén 30 s respirando.',
+            'E4 Bola de pinchos — planta del pie y antebrazo: rueda descalzo o con calcetín 45 s por pie; luego antebrazo sobre la mesa 30 s por brazo.',
+            'E5 Cinturón elástico — estiramiento profundo: isquiotibiales tumbado y apertura de hombro, 30 s por posición sin rebotes.',
+            'Rotación: 2 min por estación + 30 s para cambiar. Suena la bocina y todos avanzan a la derecha.',
+            'Cierre: 1 min de respiración de pie y recoger cada implemento en su bolsa.'
+        ],
+        emoji: '🔄', type: 'indoor', intensity: 'baja',
+        benefitType: ['Físico'],
+        specificBenefits: ['Libera tensión miofascial', 'Mejora circulación', 'Descarga postural', 'Rango de movimiento'],
+        description: 'La actividad principal de los 8 sets nuevos. En lugar de dar un set completo a cada persona, se separan por implemento y se arman 5 estaciones de 8 lugares, con lo que el circuito atiende hasta 40 participantes a la vez. Cubre el segmento de automasaje, que hasta ahora era el más vacío del programa. Reglas de seguridad no negociables: nunca rodar sobre columna lumbar, cuello ni articulaciones; no pasar de 60 a 90 segundos por zona; y si algo duele de forma aguda, se suspende y se pasa a la siguiente estación.'
+    },
+    {
+        activityId: 'AM-02',
+        categoria: 'Relax',
+        name: 'Set Completo por Equipo',
+        objetivo: 'Recorrer los cinco implementos en grupos pequeños, con un set por equipo.',
+        duration: 12,
+        materials: '8 sets 6 en 1 completos, uno por equipo. Cronómetro.',
+        instrucciones: [
+            'Forma hasta 8 equipos de 2 o 3 personas. Cada equipo recibe un set completo en su bolsa.',
+            'Secuencia guiada de 90 s por implemento, todos al mismo tiempo: rodillo, palo, bola de fascia, bola de pinchos y cinturón.',
+            'Dentro del equipo se turnan: mientras uno trabaja, el compañero cuida la técnica y cuenta el tiempo.',
+            'Cierre: cada equipo guarda su set completo en la bolsa y verifica que estén las cinco piezas.'
+        ],
+        emoji: '🎒', type: 'indoor', intensity: 'baja',
+        benefitType: ['Físico', 'Social'],
+        specificBenefits: ['Libera tensión miofascial', 'Autocuidado guiado', 'Trabajo en parejas'],
+        description: 'Variante del circuito para espacios chicos o grupos de hasta 24 personas. Al mantener el set íntegro por equipo se pierde capacidad de atención simultánea, pero se gana en cuidado de la técnica: siempre hay un compañero observando. Es también el formato que mejor enseña a usar el set, porque cada persona toca los cinco implementos en una sola sesión. Sirve como sesión de estreno antes de correr AM-01.'
+    },
+    {
+        activityId: 'AM-03',
+        categoria: 'Relax',
+        name: 'Rodillo: Descarga de Espalda',
+        objetivo: 'Aliviar la tensión de espalda alta acumulada por la postura de pantalla.',
+        duration: 6,
+        materials: 'Rodillo de espuma (uno por persona, hasta 8). Tapete opcional.',
+        instrucciones: [
+            'Rodillo perpendicular al cuerpo, apoyado a la altura de los omóplatos, cadera en el piso o suspendida según tolerancia.',
+            '8 pasadas lentas de omóplatos a costillas bajas, exhalando en cada bajada.',
+            'Detenerse 20 s en el punto más tenso, sin aguantar la respiración.',
+            'Apertura torácica: rodillo a lo largo de la columna, brazos abiertos en cruz, 45 s respirando.',
+            'REGLA: el rodillo nunca pasa por la zona lumbar ni por el cuello.'
+        ],
+        emoji: '🧻', type: 'indoor', intensity: 'baja',
+        benefitType: ['Físico'],
+        specificBenefits: ['Alivia espalda alta', 'Mejora circulación', 'Apertura torácica'],
+        description: 'Pausa corta centrada en el rodillo de espuma, para las semanas en que no hay tiempo del circuito completo. Está dirigida a la espalda alta, que es donde se concentra la queja del personal que pasa la jornada frente al monitor. La restricción de no rodar la zona lumbar es importante: sin el soporte de las costillas, la presión del rodillo ahí puede forzar la columna en lugar de descargarla.'
+    },
+    {
+        activityId: 'AM-04',
+        categoria: 'Relax',
+        name: 'Palo de Masaje: Piernas Cansadas',
+        objetivo: 'Descargar cuádriceps y pantorrillas en personal que pasa la jornada de pie.',
+        duration: 6,
+        materials: 'Palo de masaje o palo de yoga (uno por persona, hasta 8). Silla.',
+        instrucciones: [
+            'Sentado en la silla, palo sobre el cuádriceps: presión firme de rodilla hacia cadera, 6 pasadas por pierna.',
+            'Pierna cruzada sobre la rodilla contraria, palo sobre la pantorrilla: 6 pasadas de tobillo hacia rodilla.',
+            'Tibial anterior: 4 pasadas cortas a un costado del hueso de la espinilla, nunca sobre el hueso.',
+            'La presión la controla cada quien con sus manos: debe sentirse molesta pero tolerable, nunca punzante.',
+            'Cierre de pie: 30 s de elevación de talones para reactivar el retorno venoso.'
+        ],
+        emoji: '🦵', type: 'indoor', intensity: 'baja',
+        benefitType: ['Físico'],
+        specificBenefits: ['Descarga piernas', 'Mejora retorno venoso', 'Alivia pantorrilla'],
+        description: 'Pensada para intendencia, vigilancia y personal de mostrador, que pasan la jornada de pie y casi nunca son el público de una pausa activa de escritorio. El palo permite graduar la presión con las propias manos, lo que la hace más segura que el rodillo para quien nunca ha hecho automasaje. Debe evitarse por completo en personas con várices marcadas, trombosis o problemas de circulación diagnosticados: en esos casos la persona hace solo la elevación de talones del cierre.'
+    },
+    {
+        activityId: 'AM-05',
+        categoria: 'Relax',
+        name: 'Bola de Fascia: Cuello y Hombro',
+        objetivo: 'Liberar los puntos de tensión del trapecio y el hombro de pantalla.',
+        duration: 5,
+        materials: 'Bola de fascia (una por persona, hasta 8). Pared libre.',
+        instrucciones: [
+            'De pie, bola entre la pared y el trapecio, a un costado de la columna. Nunca sobre la columna misma.',
+            'Buscar el punto tenso moviéndose milímetros; al encontrarlo, sostener 30 s respirando lento.',
+            'Con la bola sostenida, subir y bajar el brazo despacio 5 veces para que el músculo se deslice bajo la presión.',
+            'Repetir del otro lado.',
+            'Cierre: 5 círculos de hombro hacia atrás, amplios y lentos.'
+        ],
+        emoji: '⚫', type: 'indoor', intensity: 'baja',
+        benefitType: ['Físico'],
+        specificBenefits: ['Alivia trapecio', 'Reduce tensión cervical', 'Movilidad de hombro'],
+        description: 'La más directa contra la queja número uno del personal administrativo: el dolor de cuello y hombro. Solo necesita una pared, así que se puede aplicar en cualquier pasillo sin mover mobiliario. El movimiento del brazo bajo la presión sostenida es la parte que la hace distinta de un masaje pasivo, porque suma deslizamiento del tejido al efecto de la presión. Si aparece hormigueo o adormecimiento del brazo, se suspende de inmediato.'
+    },
+    {
+        activityId: 'AM-06',
+        categoria: 'Relax',
+        name: 'Bola de Pinchos: Pies y Manos',
+        objetivo: 'Reactivar la planta del pie y descargar la mano y el antebrazo de teclado.',
+        duration: 5,
+        materials: 'Bola de pinchos (una por persona, hasta 8). Silla.',
+        instrucciones: [
+            'Sentado, pie descalzo o con calcetín sobre la bola: rodar del talón a los dedos, 45 s por pie.',
+            'Detenerse 15 s en el arco del pie, que es donde suele estar el punto más sensible.',
+            'Antebrazo sobre la mesa, bola debajo: rodar de muñeca a codo por la cara interna, 30 s por brazo.',
+            'Palma de la mano sobre la bola contra la mesa: presión y círculos, 20 s por mano.',
+            'Cierre: abrir y cerrar las manos 10 veces, estirando bien los dedos.'
+        ],
+        emoji: '🦶', type: 'indoor', intensity: 'baja',
+        benefitType: ['Físico'],
+        specificBenefits: ['Alivia planta del pie', 'Descarga antebrazo', 'Previene molestia de teclado'],
+        description: 'La única del set que se puede hacer sin levantarse de la silla ni cambiarse de ropa, lo que la vuelve la mejor candidata para oficinas donde cuesta trabajo que la gente se ponga de pie. Atiende dos zonas que ninguna otra actividad del catálogo toca: la planta del pie y el antebrazo de quien pasa el día en teclado y mouse. Los pinchos hacen la presión más intensa de lo que la gente espera, así que conviene avisar que se empieza con poco peso encima.'
+    },
+    {
+        activityId: 'AM-07',
+        categoria: 'Relax',
+        name: 'Cinturón Elástico: Estiramiento Profundo',
+        objetivo: 'Ganar rango de movimiento después del masaje, cuando el tejido está más receptivo.',
+        duration: 7,
+        materials: 'Cinturón elástico del set (uno por persona, hasta 8). Tapete o piso limpio.',
+        instrucciones: [
+            'Isquiotibiales: tumbado boca arriba, cinturón en la planta del pie, pierna estirada hacia el techo. 30 s por pierna.',
+            'Cadera: desde la misma posición, llevar la pierna hacia afuera sujetando el cinturón. 30 s por lado.',
+            'Hombro: cinturón sujeto con ambas manos por delante, subir los brazos estirados por encima de la cabeza y llevarlos atrás lo que permita el hombro. 5 repeticiones lentas.',
+            'Pectoral: cinturón detrás de la espalda, manos separadas, abrir el pecho 30 s.',
+            'REGLA: estiramiento sostenido y sin rebotes. Debe jalar, no doler.'
+        ],
+        emoji: '➰', type: 'indoor', intensity: 'baja',
+        benefitType: ['Físico'],
+        specificBenefits: ['Rango de movimiento', 'Flexibilidad', 'Apertura de hombro y pecho'],
+        description: 'Va después del masaje, no antes: el tejido responde mejor al estiramiento cuando ya se trabajó con rodillo o bola. El cinturón permite llegar a posiciones que sin apoyo requieren flexibilidad que el personal administrativo no suele tener, así que baja la barrera de entrada de un estiramiento profundo. Es también la actividad de cierre natural del circuito AM-01.'
+    },
+    {
+        activityId: 'AM-08',
+        categoria: 'Relax',
+        name: 'Reset de Escritorio (5 min)',
+        objetivo: 'Micropausa de automasaje sin moverse del lugar de trabajo.',
+        duration: 5,
+        materials: 'Una bola de fascia o de pinchos por persona. Nada más.',
+        instrucciones: [
+            'Todos se quedan en su lugar. Se reparte una bola por persona.',
+            '1 min — planta del pie: rodar la bola bajo el pie, alternando.',
+            '1 min — antebrazo sobre el escritorio con la bola debajo.',
+            '1 min — bola entre el respaldo de la silla y el omóplato, buscando el punto tenso.',
+            '1 min — palma y dedos sobre la bola contra el escritorio.',
+            '1 min — respiración: 4 s inhalar, 6 s exhalar, hombros sueltos.'
+        ],
+        emoji: '⏱️', type: 'indoor', intensity: 'baja',
+        benefitType: ['Físico', 'Psicológico'],
+        specificBenefits: ['Micropausa', 'Alivia tensión localizada', 'Baja activación mental'],
+        description: 'La versión mínima del automasaje, para departamentos en periodo de cierre o auditoría donde no se puede sacar a la gente de su escritorio. Cabe en cinco minutos, no requiere espacio ni cambio de ropa y usa una sola pieza del set, así que con los 8 sets se puede atender a 16 personas repartiendo las dos bolas de cada uno. Es la carta que conviene tener a la mano cuando un área cancela la pausa por carga de trabajo.'
+    },
+
+    // ==========================================
+    // SECCIÓN FG (ampliación): CORNHOLE Y VÓLEY GIGANTE (5)
+    // ==========================================
+    {
+        activityId: 'FG-16',
+        categoria: 'Físicos/Grupal',
+        name: 'Cornhole Clásico',
+        objetivo: 'Precisión de lanzamiento y competencia tranquila entre parejas.',
+        duration: 10,
+        materials: 'Tableros de cornhole y costales. Gis o cinta para marcar la línea de tiro.',
+        instrucciones: [
+            'Dos tableros enfrentados a la distancia que permita el espacio; si es reducido, acortar y avisar que la distancia es la misma para todos.',
+            'Se juega en parejas, cada jugador lanza sus 4 costales por turno.',
+            'Puntuación: 3 puntos si el costal entra al hoyo, 1 punto si se queda sobre el tablero, 0 si cae fuera.',
+            'Gana la primera pareja en llegar a 21 puntos, o la que vaya arriba cuando se acabe el tiempo.',
+            'Rotar parejas cada ronda para que la gente juegue con compañeros de otras áreas.'
+        ],
+        emoji: '🎯', type: 'outdoor', intensity: 'baja',
+        benefitType: ['Físico', 'Social'],
+        specificBenefits: ['Precisión', 'Coordinación óculo-manual', 'Convivencia entre áreas'],
+        description: 'El material nuevo que mejor funcionó en la práctica. Su ventaja es la barrera de entrada casi nula: no exige condición física, ni ropa deportiva, ni saber jugar nada previo, así que entra gente que normalmente no participa. Al ser de baja intensidad, sirve para semanas de descarga o para grupos con personal de mayor edad, y la rotación de parejas es lo que convierte un juego de puntería en una actividad de convivencia entre departamentos.'
+    },
+    {
+        activityId: 'FG-17',
+        categoria: 'Físicos/Grupal',
+        name: 'Torneo Relámpago de Costales',
+        objetivo: 'Pico de participación con competencia entre áreas y marcador público.',
+        duration: 15,
+        materials: 'Tableros de cornhole y costales. Pizarrón portátil para el marcador.',
+        instrucciones: [
+            'Cada área inscribe una pareja. Se arma un cuadro de eliminatorias cortas.',
+            'Rondas rápidas: primera pareja en llegar a 11 puntos pasa a la siguiente ronda.',
+            'El marcador va en el pizarrón, a la vista de todos, con el nombre del área y no el de las personas.',
+            'Quien pierde no se va: se queda como público del siguiente duelo y cuenta los puntos.',
+            'Cierre: reconocimiento al área ganadora, sin castigo ni mención al último lugar.'
+        ],
+        emoji: '🏆', type: 'outdoor', intensity: 'baja',
+        benefitType: ['Físico', 'Social'],
+        specificBenefits: ['Identidad de área', 'Competencia sana', 'Alta participación'],
+        description: 'La versión de evento del cornhole, para usarse como pico del periodo. Está armada según lo que muestra la literatura de gamificación laboral: la competencia entre equipos combinada con cooperación dentro del equipo mueve más participación que competir de forma individual. Que el marcador lleve el nombre del área y no el de la persona es deliberado, igual que no mencionar al último lugar: el objetivo es que el área siguiente quiera inscribirse, no que alguien quede exhibido.'
+    },
+    {
+        activityId: 'FG-18',
+        categoria: 'Físicos/Grupal',
+        name: 'Costales a Ciegas',
+        objetivo: 'Comunicación clara bajo presión, con marcador colectivo y sin eliminación.',
+        duration: 10,
+        materials: 'Tableros de cornhole y costales. Paliacates o antifaces (opcional: basta con cerrar los ojos).',
+        instrucciones: [
+            'Se juega en parejas: uno lanza con los ojos cerrados, el otro solo puede guiarlo con la voz.',
+            'El guía no puede tocar al lanzador ni acomodarle el brazo. Solo palabras.',
+            'Cada pareja tiene 4 lanzamientos y luego se invierten los papeles.',
+            'El marcador es del grupo entero, no de cada pareja: se suman todos los puntos y se compara contra el resultado de la sesión anterior.',
+            'Cierre en círculo: qué instrucción sirvió y cuál confundió.'
+        ],
+        emoji: '🤝', type: 'outdoor', intensity: 'baja',
+        benefitType: ['Social', 'Psicológico'],
+        specificBenefits: ['Comunicación verbal', 'Confianza', 'Cohesión de equipo'],
+        description: 'Convierte el mismo material del cornhole en un juego cooperativo puro: nadie es eliminado y el marcador es del grupo completo contra su propia marca anterior, no de unos contra otros. Sirve para áreas con fricción interna o para integrar personal nuevo, porque obliga a que dos personas se pongan de acuerdo en un lenguaje común en menos de un minuto. El cierre en círculo es la parte que la vuelve útil como actividad de equipo y no solo como juego.'
+    },
+    {
+        activityId: 'FG-19',
+        categoria: 'Físicos/Grupal',
+        name: 'Vóley Gigante en Círculo',
+        objetivo: 'Sostener la pelota en el aire entre todos, con marcador colectivo.',
+        duration: 10,
+        materials: 'Pelota gigante de voleibol de playa. Espacio abierto sin techo bajo.',
+        instrucciones: [
+            'Todo el grupo en círculo amplio, brazos sueltos.',
+            'Objetivo único: que la pelota no toque el piso. Se cuenta en voz alta cada toque del grupo.',
+            'Regla que lo vuelve cooperativo: nadie puede dar dos toques seguidos, así que todos terminan participando.',
+            'Si cae, no pasa nada: se reinicia la cuenta y se intenta superar la marca.',
+            'Progresión si sale fácil: agregar que hay que decir el nombre de a quién se le pasa.'
+        ],
+        emoji: '🏐', type: 'outdoor', intensity: 'moderada',
+        benefitType: ['Físico', 'Social'],
+        specificBenefits: ['Coordinación', 'Cohesión de grupo', 'Activación de hombro'],
+        description: 'Aprovecha el tamaño de la pelota de playa, que baja lento y perdona los errores de cálculo, para que participe gente sin nada de experiencia en voleibol. La regla de no dar dos toques seguidos es lo que impide que dos o tres personas hábiles acaparen el juego, que es el modo más común en que estas dinámicas dejan fuera a la mayoría. El marcador colectivo contra la propia marca elimina la comparación entre personas.'
+    },
+    {
+        activityId: 'FG-20',
+        categoria: 'Físicos/Grupal',
+        name: 'Vóley Playa Adaptado',
+        objetivo: 'Activación cardiovascular con el gesto del voleibol en espacio reducido.',
+        duration: 12,
+        materials: 'Pelota gigante de voleibol de playa. Cuerda, cinta o red improvisada.',
+        instrucciones: [
+            'Red improvisada a la altura que permita el espacio; dos equipos de 4 a 6 personas por lado.',
+            'Se permite un bote en el piso antes de devolver, lo que alarga las jugadas y baja la frustración.',
+            'Máximo 3 toques por lado, y no se puede rematar hacia abajo: solo pases y envíos altos.',
+            'Marcador corto: sets a 11 puntos para que alcance a jugarse más de uno.',
+            'Rotación obligatoria de posiciones en cada punto ganado.'
+        ],
+        emoji: '🌴', type: 'outdoor', intensity: 'moderada',
+        benefitType: ['Físico', 'Social'],
+        specificBenefits: ['Cardio', 'Coordinación', 'Trabajo en equipo'],
+        description: 'La versión pre-deportiva de la pelota gigante: conserva el gesto y la lógica del voleibol pero con reglas adaptadas que evitan que se decida por la habilidad de una o dos personas. El bote permitido y la prohibición de rematar son las dos adaptaciones que más sostienen la participación, porque alargan los puntos y quitan el miedo a recibir un golpe fuerte. Requiere calzado con el que se pueda desplazar, así que conviene anunciarla con anticipación.'
+    },
+
+    // ==========================================
+    // SECCIÓN VD (ampliación): JUEGOS DE NETFLIX (5)
+    // ==========================================
+    {
+        activityId: 'VD-05',
+        categoria: 'Digital',
+        name: 'Boggle Party',
+        objetivo: 'Agilidad verbal y atención en formato de juego rápido por equipos.',
+        duration: 12,
+        materials: 'Pantalla o proyector con Netflix. Celular de cada participante como control.',
+        instrucciones: [
+            'Se proyecta el tablero en la pantalla grande; cada quien usa su celular para participar.',
+            'Rondas cortas: formar la mayor cantidad de palabras posibles con las letras en pantalla.',
+            'Jugar por equipos de área y sumar los puntos individuales del equipo.',
+            'Micropausa entre rondas: 20 s de círculos de hombro y estiramiento de cuello, obligatoria.',
+            'Cierre con la palabra más larga de la sesión anotada en el pizarrón.'
+        ],
+        emoji: '🔤', type: 'indoor', intensity: 'baja',
+        benefitType: ['Psicológico', 'Social'],
+        specificBenefits: ['Agilidad mental', 'Atención', 'Convivencia'],
+        description: 'Entra al segmento de juegos virtuales con una ventaja práctica sobre las consolas: no hace falta más hardware que la pantalla y los celulares que la gente ya trae. Al no exigir destreza motriz, no deja fuera a quien no juega videojuegos, que es el riesgo habitual de este segmento. La micropausa de movimiento entre rondas está puesta a propósito, porque de otro modo la actividad sería completamente sedentaria y dejaría de ser una pausa activa.'
+    },
+    {
+        activityId: 'VD-06',
+        categoria: 'Digital',
+        name: 'Pictionary Digital',
+        objetivo: 'Comunicación creativa y desinhibición en grupo.',
+        duration: 12,
+        materials: 'Pantalla o proyector con Netflix. Celular de cada participante como control.',
+        instrucciones: [
+            'Equipos mixtos, mezclando áreas para que no se junten siempre los mismos.',
+            'Por turnos, una persona dibuja en su celular y su equipo adivina contra reloj.',
+            'Quien adivina primero suma para su equipo; el dibujante rota en cada ronda para que todos pasen.',
+            'Regla de la casa: quien no quiera dibujar puede adivinar, la participación nunca es forzada.',
+            'Micropausa de 20 s de pie entre rondas.'
+        ],
+        emoji: '🎨', type: 'indoor', intensity: 'baja',
+        benefitType: ['Psicológico', 'Social'],
+        specificBenefits: ['Creatividad', 'Desinhibición', 'Vínculo entre áreas'],
+        description: 'El más social de los juegos digitales del catálogo, porque el que dibuja queda expuesto de forma amable y eso rompe el hielo entre departamentos que no se tratan. La regla de que nadie está obligado a dibujar no es un detalle menor: la literatura de diversión en el trabajo advierte que la actividad lúdica impuesta puede aumentar el desgaste en quien no la disfruta, así que conviene dejar siempre una forma digna de participar sin pasar al frente.'
+    },
+    {
+        activityId: 'VD-07',
+        categoria: 'Digital',
+        name: 'Noche de Juegos',
+        objetivo: 'Sesión de variedad para cerrar periodo o celebrar una meta del área.',
+        duration: 20,
+        materials: 'Pantalla o proyector con Netflix. Celulares como control. Sillas en semicírculo.',
+        instrucciones: [
+            'Formato de variedad: tres minijuegos cortos elegidos por votación del grupo al inicio.',
+            'Equipos fijos durante toda la sesión, con nombre elegido por ellos.',
+            'Entre juego y juego, 1 min de movimiento de pie dirigido por un integrante distinto cada vez.',
+            'Marcador acumulado en el pizarrón.',
+            'Cierre: reconocimiento al equipo ganador y foto de grupo.'
+        ],
+        emoji: '🌙', type: 'indoor', intensity: 'baja',
+        benefitType: ['Psicológico', 'Social'],
+        specificBenefits: ['Convivencia', 'Cierre de periodo', 'Identidad de equipo'],
+        description: 'Sesión larga pensada como evento y no como pausa de rutina: cierre de periodo, celebración de una meta o última sesión antes de vacaciones. Los minutos de movimiento entre juegos son lo que la mantiene dentro del programa de pausas activas y no la convierten en una simple reunión social. Al ser de 20 minutos requiere permiso previo del jefe del área, así que conviene agendarla con anticipación y no improvisarla.'
+    },
+    {
+        activityId: 'VD-08',
+        categoria: 'Digital',
+        name: 'Overcooked por Equipos',
+        objetivo: 'Coordinación y comunicación bajo presión de tiempo, sin ganador individual.',
+        duration: 15,
+        materials: 'Pantalla o proyector con Netflix y controles disponibles. Sillas.',
+        instrucciones: [
+            'Grupos de 2 a 4 personas por partida; el resto observa y puede dar indicaciones en voz alta.',
+            'El juego es cooperativo: el equipo entero gana o pierde junto, no hay marcador individual.',
+            'Se juegan 2 o 3 niveles cortos y se rota el grupo que tiene los controles.',
+            'Regla de la casa: se puede gritar instrucciones, no reclamos. Si alguien se frustra, se pausa.',
+            'Cierre en círculo: qué falló en la organización del equipo y cómo se arregló.'
+        ],
+        emoji: '🍳', type: 'indoor', intensity: 'baja',
+        benefitType: ['Psicológico', 'Social'],
+        specificBenefits: ['Coordinación de equipo', 'Comunicación bajo presión', 'Tolerancia al error'],
+        description: 'Es el único juego digital del catálogo que es cooperativo puro, por eso está clasificado en juegos cooperativos y no en virtuales: el equipo gana o pierde junto y no existe marcador individual. Lo interesante para bienestar laboral es que reproduce en pequeño el problema real de un área saturada, coordinarse cuando sobran tareas y falta tiempo, y el cierre en círculo permite hablar de eso sin señalar a nadie. Conviene vigilar el tono, porque la presión del juego puede sacar reclamos reales.'
+    },
+    {
+        activityId: 'VD-09',
+        categoria: 'Digital',
+        name: 'Tetris Relámpago',
+        objetivo: 'Enfoque y desconexión mental breve de la tarea laboral.',
+        duration: 8,
+        materials: 'Pantalla o proyector con Netflix y controles disponibles.',
+        instrucciones: [
+            'Partidas cortas de 2 min por persona, con el grupo observando.',
+            'Se lleva la marca más alta de la sesión en el pizarrón, con el nombre del área.',
+            'Quien no quiera pasar al frente puede jugar desde su lugar o solo observar.',
+            'Al terminar cada partida, quien jugó dirige 20 s de estiramiento de manos y cuello.',
+            'Cierre: 1 min de respiración lenta antes de volver al trabajo.'
+        ],
+        emoji: '🟦', type: 'indoor', intensity: 'baja',
+        benefitType: ['Psicológico'],
+        specificBenefits: ['Desconexión mental', 'Enfoque', 'Micropausa cognitiva'],
+        description: 'La actividad más corta del segmento digital, útil como micropausa cognitiva en días de carga alta. Su función principal no es mover el cuerpo sino cortar la rumiación de la tarea pendiente, que es el mecanismo por el que una pausa breve recupera vigor aunque no haya esfuerzo físico. El estiramiento de manos y cuello que dirige quien acaba de jugar es lo que le agrega el componente corporal y evita que sea puro tiempo de pantalla.'
+    }
 ];

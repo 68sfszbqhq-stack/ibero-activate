@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curaduría de Actividades - IBERO ACTÍVATE</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="../css/curaduria.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+    <div class="admin-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <i class="fa-solid fa-heart-pulse"></i>
+            <h2>IBERO ACTÍVATE</h2>
+        </div>
+
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="dashboard.html" class="nav-link">
+                    <i class="fa-solid fa-chart-line"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="program-overview.html" class="nav-link">
+                    <i class="fa-solid fa-calendar-star"></i> Programación por Periodo
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="calendar.html" class="nav-link">
+                    <i class="fa-solid fa-calendar-days"></i> Calendario
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="ai-reports.html" class="nav-link">
+                    <i class="fa-solid fa-sparkles"></i> Reportes IA
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="activities.html" class="nav-link">
+                    <i class="fa-solid fa-dumbbell"></i> Actividades
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="curaduria.html" class="nav-link active">
+                    <i class="fa-solid fa-heart-circle-check"></i> Curaduría
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="inventory.html" class="nav-link">
+                    <i class="fa-solid fa-boxes-stacked"></i> Inventario
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="attendance.html" class="nav-link">
+                    <i class="fa-solid fa-clipboard-check"></i> Pase de Lista
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="attendance-late.html" class="nav-link">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Pase Extemporáneo
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="employees.html" class="nav-link">
+                    <i class="fa-solid fa-user-plus"></i> Empleados
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="reports.html" class="nav-link">
+                    <i class="fa-solid fa-file-pdf"></i> Reportes
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class=" nav-link">
+                    <i class="fa-solid fa-trophy"></i> Gamificación
+                </a>
+            </li>
+
+            <!-- Separador Módulo Caminatas -->
+            <li style="margin: 1.5rem 0 0.5rem 1rem; color: #9ca3af; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; list-style-type: none;">
+                Módulo Caminatas
+            </li>
+            <li class="nav-item">
+                <a href="walking-v2.html" class="nav-link">
+                    <i class="fa-solid fa-person-walking" style="color: #c41230;"></i> Admin Caminatas V2
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="walking-dashboard.html" class="nav-link">
+                    <i class="fa-solid fa-person-hiking" style="color: #10b981;"></i> Dashboard Caminatas
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="walking-attendance.html" class="nav-link">
+                    <i class="fa-solid fa-clipboard-check" style="color: #10b981;"></i> Pase Caminatas V1
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="walking-reports.html" class="nav-link">
+                    <i class="fa-solid fa-file-invoice" style="color: #10b981;"></i> Reportes Caminatas
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="walking-calendar.html" class="nav-link">
+                    <i class="fa-solid fa-calendar-days" style="color: #10b981;"></i> Calendario Caminatas
+                </a>
+            </li>
+        </ul>
+
+        <button onclick="logout()" class="nav-link logout-btn">
+            <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+        </button>
+    </aside>
+
+        <main class="main-content" style="padding: 0; background: #f9fafb;">
+            <div class="cur-wrap">
+
+                <!-- Encabezado -->
+                <div class="cur-head">
+                    <div>
+                        <h1>Curaduría de actividades</h1>
+                        <p>Revisa el catálogo una actividad a la vez. Deslízala a la derecha si la conservas,
+                           a la izquierda si la descartas, y déjale tu calificación y tu reflexión.</p>
+                    </div>
+                    <div class="cur-tabs" role="tablist">
+                        <button id="tab-revisar" class="cur-tab active" role="tab">Revisar</button>
+                        <button id="tab-resultados" class="cur-tab" role="tab">Resultados</button>
+                    </div>
+                </div>
+
+                <div id="cur-offline" class="cur-offline">
+                    ⚠️ Sin conexión con Firestore. Tus decisiones se están guardando en este navegador
+                    y se subirán la próxima vez que abras la página con internet.
+                </div>
+
+                <!-- Progreso -->
+                <div class="cur-progress">
+                    <div class="cur-progress-top">
+                        <div id="cur-count" class="cur-progress-count">0 <span>de 0 revisadas</span></div>
+                        <div class="cur-progress-stats">
+                            <span id="cur-keep" class="cur-stat-keep">✅ 0 conservadas</span>
+                            <span id="cur-drop" class="cur-stat-drop">🗑️ 0 descartadas</span>
+                            <span id="cur-left" class="cur-stat-left">⏳ 0 por revisar</span>
+                        </div>
+                    </div>
+                    <div class="cur-bar"><div id="cur-bar-fill" class="cur-bar-fill"></div></div>
+                </div>
+
+                <!-- Filtro por segmento -->
+                <div id="cur-filters" class="cur-filters"></div>
+
+                <!-- VISTA: MAZO -->
+                <div id="view-deck" class="cur-deck-view">
+                    <div class="cur-deck-area">
+                        <div>
+                            <div id="cur-deck" class="cur-deck"></div>
+
+                            <div class="cur-actions">
+                                <button id="btn-undo" class="cur-btn cur-btn-undo" title="Deshacer la última decisión"
+                                        aria-label="Deshacer la última decisión">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                                <button id="btn-drop" class="cur-btn cur-btn-round cur-btn-drop"
+                                        title="Descartar" aria-label="Descartar actividad">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                                <button id="btn-keep" class="cur-btn cur-btn-round cur-btn-keep"
+                                        title="Conservar" aria-label="Conservar actividad">
+                                    <i class="fa-solid fa-heart"></i>
+                                </button>
+                            </div>
+
+                            <p class="cur-hint">
+                                Arrastra la tarjeta o usa <kbd>←</kbd> descartar &nbsp;·&nbsp;
+                                <kbd>→</kbd> conservar &nbsp;·&nbsp; <kbd>1</kbd>–<kbd>5</kbd> calificar
+                                &nbsp;·&nbsp; <kbd>Esc</kbd> cerrar
+                            </p>
+                        </div>
+
+                        <aside class="cur-side">
+                            <h3>Cobertura por segmento</h3>
+                            <div id="cur-coverage"></div>
+                            <p style="margin:.9rem 0 0;font-size:.75rem;color:#9CA3AF;line-height:1.5">
+                                Conservadas / total de actividades asignadas a cada segmento.
+                                Un segmento con pocas actividades es un hueco en tu programa.
+                            </p>
+                        </aside>
+                    </div>
+                </div>
+
+                <!-- VISTA: RESULTADOS -->
+                <div id="view-resultados" class="cur-results">
+                    <div class="cur-results-bar">
+                        <input id="cur-search" class="cur-search" type="search"
+                               placeholder="Buscar por nombre, clave o reflexión…">
+                        <select id="cur-filter-decision" class="cur-seg-select" style="max-width:220px">
+                            <option value="todas">Todas</option>
+                            <option value="conservar">Solo conservadas</option>
+                            <option value="descartar">Solo descartadas</option>
+                            <option value="pendiente">Solo pendientes</option>
+                            <option value="con-reflexion">Con reflexión escrita</option>
+                        </select>
+                        <button id="btn-export" class="cur-btn cur-btn-ghost">
+                            <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                        </button>
+                    </div>
+
+                    <div class="cur-table-wrap">
+                        <table class="cur-table">
+                            <thead>
+                                <tr>
+                                    <th>Actividad</th>
+                                    <th>Segmento</th>
+                                    <th>Decisión</th>
+                                    <th>Calificación</th>
+                                    <th>Reflexión</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="cur-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div id="cur-results-empty" class="cur-empty" style="display:none;margin-top:1rem">
+                        <span class="cur-empty-emoji">🗂️</span>
+                        <h3>Nada que mostrar</h3>
+                        <p>Cambia el filtro o revisa algunas actividades en la pestaña Revisar.</p>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Hoja de calificación y reflexión -->
+    <div id="cur-sheet-backdrop" class="cur-sheet-backdrop" role="dialog" aria-modal="true"
+         aria-labelledby="sheet-title">
+        <div class="cur-sheet">
+            <span id="sheet-verdict" class="cur-sheet-verdict keep">✅ La conservas</span>
+            <h2 id="sheet-title">Actividad</h2>
+            <p id="sheet-sub" class="cur-sheet-sub"></p>
+
+            <div class="cur-field">
+                <span class="cur-field-label">¿Qué calificación le das?</span>
+                <div id="sheet-stars" class="cur-stars">
+                    <button type="button" class="cur-star" data-valor="1" aria-label="1 estrella">★</button>
+                    <button type="button" class="cur-star" data-valor="2" aria-label="2 estrellas">★</button>
+                    <button type="button" class="cur-star" data-valor="3" aria-label="3 estrellas">★</button>
+                    <button type="button" class="cur-star" data-valor="4" aria-label="4 estrellas">★</button>
+                    <button type="button" class="cur-star" data-valor="5" aria-label="5 estrellas">★</button>
+                    <span id="sheet-star-text" class="cur-star-text">Sin calificar</span>
+                </div>
+            </div>
+
+            <div class="cur-field">
+                <label class="cur-field-label" for="sheet-reflexion">Tu reflexión</label>
+                <textarea id="sheet-reflexion" class="cur-textarea"
+                          placeholder="¿Por qué la conservas o la descartas? ¿Qué pasó cuando la aplicaste?"></textarea>
+                <div id="sheet-prompts" class="cur-prompts"></div>
+            </div>
+
+            <div class="cur-sheet-actions">
+                <button id="btn-sheet-skip" class="cur-btn cur-btn-ghost">Ahora no</button>
+                <button id="btn-sheet-save" class="cur-btn cur-btn-solid">
+                    <i class="fa-solid fa-check"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/roles.js"></script>
+    <script src="../js/toast.js"></script>
+    <script src="../js/catalog-data.js"></script>
+    <script src="../js/segments-data.js"></script>
+    <script src="../js/curaduria.js"></script>
+</body>
+
+</html>
