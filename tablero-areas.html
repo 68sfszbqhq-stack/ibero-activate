@@ -1,0 +1,1349 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablero de áreas · Ibero Actívate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --rojo:#EE3A43; --rojo-texto:#C91239; --tinta:#101014;
+  --gris:#6B7280; --linea:#E5E7EB; --fondo:#F6F7F9; --papel:#FFFFFF;
+  --si:#16A34A; --masomenos:#2563EB; --no:#DC2626;
+  --celda-w:44px; --celda-h:38px; --col1-w:322px; --cab-h:196px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);
+  font-family:'Poppins',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  font-size:14px;-webkit-font-smoothing:antialiased}
+
+/* ---------- Barra superior ---------- */
+header{position:sticky;top:0;z-index:60;background:var(--papel);
+  border-bottom:1px solid var(--linea);box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.barra{display:flex;align-items:center;gap:16px;padding:10px 18px;flex-wrap:wrap}
+.marca{display:flex;align-items:baseline;gap:10px;margin-right:auto}
+.marca b{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.marca span{font-size:12px;color:var(--gris)}
+.tabs{display:flex;gap:4px;background:var(--fondo);padding:3px;border-radius:9px}
+.tabs button{border:0;background:none;padding:7px 16px;border-radius:7px;cursor:pointer;
+  font:inherit;font-size:13px;font-weight:600;color:var(--gris)}
+.tabs button[aria-selected=true]{background:var(--papel);color:var(--tinta);
+  box-shadow:0 1px 3px rgba(0,0,0,.10)}
+.acciones{display:flex;gap:6px}
+.btn{border:1px solid var(--linea);background:var(--papel);padding:7px 13px;border-radius:7px;
+  cursor:pointer;font:inherit;font-size:12.5px;font-weight:500;color:var(--tinta);white-space:nowrap}
+.btn:hover{background:var(--fondo)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.peligro:hover{background:#FEF2F2;border-color:#FECACA;color:var(--no)}
+
+.aviso{background:#FEF2F2;border-bottom:1px solid #FECACA;color:#991B1B;
+  padding:10px 18px;font-size:12.5px;line-height:1.5}
+.aviso b{font-weight:600}
+.sello{font-size:11.5px;color:var(--gris);white-space:nowrap;min-width:72px;text-align:right}
+.sello.ok{color:var(--si)}
+
+/* ---------- Herramientas ---------- */
+.herramientas{display:flex;align-items:center;gap:14px;padding:0 18px 11px;flex-wrap:wrap}
+.buscar{position:relative}
+.buscar input{border:1px solid var(--linea);border-radius:7px;padding:7px 11px 7px 30px;
+  font:inherit;font-size:13px;width:210px;background:var(--papel)}
+.buscar input:focus{outline:2px solid var(--rojo);outline-offset:-1px;border-color:transparent}
+.buscar::before{content:'⌕';position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  color:var(--gris);font-size:16px;pointer-events:none}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--linea);background:var(--papel);border-radius:99px;padding:6px 13px;
+  cursor:pointer;font:inherit;font-size:12.5px;font-weight:500;display:flex;align-items:center;gap:7px}
+.chip .punto{width:8px;height:8px;border-radius:50%;flex:none}
+.chip b{font-weight:600;font-variant-numeric:tabular-nums}
+.chip[aria-pressed=true]{border-color:var(--tinta);background:var(--tinta);color:#fff}
+.leyenda{display:flex;gap:13px;margin-left:auto;align-items:center;font-size:12px;color:var(--gris)}
+.leyenda i{width:13px;height:13px;border-radius:4px;display:inline-block;vertical-align:-2px;margin-right:5px}
+.avance{font-size:12px;color:var(--gris);font-variant-numeric:tabular-nums}
+.avance b{color:var(--tinta);font-weight:600}
+dialog .opVal{display:flex;align-items:center;gap:10px}
+dialog .opVal .cuadro{width:15px;height:15px;border-radius:4px;flex:none}
+.contador{font-size:12px;color:var(--gris);font-variant-numeric:tabular-nums}
+.contador b{color:var(--tinta);font-weight:600}
+
+/* ---------- Tablero ---------- */
+.envoltura{overflow:auto;max-height:calc(100vh - 132px);background:var(--papel);
+  border-top:1px solid var(--linea)}
+table{border-collapse:separate;border-spacing:0}
+th,td{padding:0;margin:0}
+
+#tabla thead th{position:sticky;top:0;z-index:20;background:var(--papel);
+  height:var(--cab-h);vertical-align:bottom;border-bottom:2px solid var(--linea)}
+#tabla th.esquina{left:0;z-index:40;width:var(--col1-w);min-width:var(--col1-w);
+  border-right:2px solid var(--linea);text-align:left;vertical-align:bottom;padding:0 0 10px 16px}
+#tabla th.esquina small{display:block;font-size:11px;color:var(--gris);font-weight:500;line-height:1.5}
+#tabla th.area{width:var(--celda-w);min-width:var(--celda-w);cursor:pointer;
+  border-left:1px solid #F1F2F4;position:relative}
+#tabla th.area .giro{writing-mode:vertical-rl;transform:rotate(180deg);
+  height:calc(var(--cab-h) - 34px);display:flex;align-items:flex-end;justify-content:flex-start;
+  font-size:11px;font-weight:500;line-height:1.15;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;margin:0 auto;color:var(--tinta)}
+#tabla th.area .conteo{height:22px;line-height:22px;font-size:10px;font-weight:600;
+  color:var(--gris);font-variant-numeric:tabular-nums}
+#tabla th.area:hover{background:#FAFAFB}
+#tabla th.area.enfoque{background:#FFF1F2}
+#tabla th.area.enfoque .giro{color:var(--rojo-texto);font-weight:700}
+
+/* Banda de aspecto: separa los tres bloques del documento del Consejo */
+tr.banda th, tr.banda td{background:var(--bandaFondo);border-top:1px solid var(--linea);
+  border-bottom:1px solid var(--linea);height:38px}
+tr.banda th{position:sticky;left:0;z-index:12;width:var(--col1-w);min-width:var(--col1-w);
+  border-right:2px solid var(--linea);text-align:left;padding:0 12px 0 15px}
+tr.banda .rotulo{display:flex;align-items:center;gap:9px}
+tr.banda .marcaAsp{width:4px;height:19px;border-radius:2px;background:var(--bandaColor);flex:none}
+tr.banda .titAsp{font-size:12.5px;font-weight:700;color:var(--bandaColor);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+tr.banda .numAsp{font-size:11px;color:var(--gris);font-weight:600;
+  font-variant-numeric:tabular-nums;flex:none;margin-left:auto}
+tr.banda th{height:46px}
+tr.banda .lema{font-size:10px;color:var(--gris);display:block;padding-left:13px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+
+/* Celda de bloque: califica de golpe todas las actividades del grupo
+   para un área. Se ve como una barra, para no confundirla con una celda. */
+td.bloque{width:var(--celda-w);min-width:var(--celda-w);cursor:pointer;position:relative;
+  border-left:1px solid #F1F2F4;background-clip:padding-box}
+td.bloque::after{content:'';position:absolute;left:6px;right:6px;top:50%;
+  transform:translateY(-50%);height:11px;border-radius:3px;background:#E9EAEC;transition:background .08s}
+td.bloque:hover::after{background:#D6D8DC}
+td.bloque[data-v=si]::after{background:var(--si)}
+td.bloque[data-v=mas]::after{background:var(--masomenos)}
+td.bloque[data-v=no]::after{background:var(--no)}
+/* A medias: unas sí y otras no. Se raya para que se note que falta parejo. */
+td.bloque[data-mezcla=si]::after{background:repeating-linear-gradient(115deg,
+  var(--mezclaColor) 0 4px, rgba(255,255,255,.72) 4px 7px)}
+
+/* Sub-banda: los segmentos que el documento pone dentro de cada aspecto */
+tr.subbanda th, tr.subbanda td{background:var(--papel);border-bottom:1px solid #F1F2F4;height:31px}
+tr.subbanda th{position:sticky;left:0;z-index:11;width:var(--col1-w);min-width:var(--col1-w);
+  border-right:2px solid var(--linea);text-align:left;padding:0 12px 0 27px}
+tr.subbanda .rotSub{display:flex;align-items:center;gap:8px;min-width:0}
+tr.subbanda .titSub{font-size:11.5px;font-weight:600;color:var(--tinta);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+tr.subbanda .numSub{font-size:10.5px;color:var(--gris);font-weight:600;margin-left:auto;flex:none}
+tr.subbanda.vacia .titSub{color:var(--gris);font-weight:500}
+tr.subbanda .nota{font-size:11px;color:#B45309;padding-left:14px}
+
+#tabla tbody th.act{position:sticky;left:0;z-index:10;background:var(--papel);width:var(--col1-w);
+  min-width:var(--col1-w);border-right:2px solid var(--linea);border-bottom:1px solid #F1F2F4;
+  text-align:left;padding:0 8px 0 38px;height:var(--celda-h)}
+tbody tr:hover th.act, tbody tr:hover td{background:#FCFCFD}
+#tabla tbody th.act .fila{display:flex;align-items:center;gap:8px;min-width:0}
+#tabla tbody th.act .em{font-size:14px;flex:none;width:18px;text-align:center}
+#tabla tbody th.act .nom{font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;flex:1;min-width:0;cursor:pointer}
+#tabla tbody th.act .min{font-size:10.5px;color:var(--gris);flex:none;font-variant-numeric:tabular-nums}
+#tabla tbody th.act .mover{flex:none;border:1px solid var(--linea);background:var(--papel);
+  width:26px;height:22px;border-radius:6px;cursor:pointer;color:var(--gris);
+  font:inherit;font-size:12px;line-height:1;padding:0}
+#tabla tbody th.act .mover:hover{background:var(--fondo);color:var(--tinta)}
+#tabla tbody th.act .mover.pendiente{border-color:#FBBF24;background:#FFFBEB;color:#B45309;font-weight:700}
+tbody tr.enfoque th.act .nom{font-weight:700;color:var(--rojo-texto)}
+
+td.celda{width:var(--celda-w);min-width:var(--celda-w);height:var(--celda-h);
+  border-left:1px solid #F1F2F4;border-bottom:1px solid #F1F2F4;cursor:pointer;
+  position:relative;background-clip:padding-box}
+td.celda::after{content:'';position:absolute;inset:6px;border-radius:5px;
+  background:#F3F4F6;transition:background .08s}
+td.celda:hover::after{background:#E5E7EB}
+td.celda[data-v=si]::after{background:var(--si)}
+td.celda[data-v=mas]::after{background:var(--masomenos)}
+td.celda[data-v=no]::after{background:var(--no)}
+
+/* Al enfocar una columna se apagan las demás columnas, nunca los
+   nombres de las actividades: son la referencia para leer la fila. */
+#tabla.foco-col td.celda::after{opacity:.15}
+#tabla.foco-col td.celda.enfoque-col::after{opacity:1}
+#tabla.foco-col thead th.area:not(.enfoque) .giro,
+#tabla.foco-col thead th.area:not(.enfoque) .conteo{opacity:.32}
+
+/* Al enfocar una fila se apagan las demás filas. */
+#tabla.foco-fila tbody tr:not(.enfoque):not(.banda) td.celda::after{opacity:.15}
+#tabla.foco-fila tbody tr:not(.enfoque):not(.banda) th.act{opacity:.4}
+
+/* ---------- Semana ---------- */
+.panel{padding:20px 18px 60px;max-width:1180px}
+/* Vista por sectores: una parada del horario por tarjeta. */
+.parada{border:1px solid var(--linea);border-radius:10px;background:var(--papel);
+  padding:14px 15px;margin:0 0 12px}
+.parada.lista{opacity:.62}
+.parada .cabParada{display:flex;align-items:baseline;justify-content:space-between;
+  gap:12px;margin:0 0 3px;flex-wrap:wrap}
+.parada .cuando{font-size:11.5px;color:var(--gris);font-variant-numeric:tabular-nums;flex:none}
+.parada .quienes{font-size:14.5px;font-weight:600;line-height:1.35}
+.parada .juntas{font-size:11.5px;color:var(--gris);margin:2px 0 12px}
+/* En columnas cuando la pantalla da: son 32 paradas y así se recorren sin
+   tanto scroll. En celular cae solo a una columna. */
+#sectores-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));
+  gap:12px;align-items:start}
+/* El ancho se limita a propósito: con la tarjeta a 1144 px el nombre del
+   segmento quedaba a un extremo y sus botones al otro, y para 352 votos ese
+   viaje de ojo es justo lo que cansa. */
+.parada .segs{display:grid;grid-template-columns:1fr auto;gap:5px 12px;
+  align-items:center;max-width:620px}
+.parada .segNombre{font-size:13px;line-height:1.3}
+.parada .segNombre small{display:block;color:var(--gris);font-size:11px}
+.parada .voto{display:flex;gap:4px;flex:none}
+.parada .voto button{width:34px;height:30px;border:1px solid var(--linea);background:var(--papel);
+  border-radius:6px;cursor:pointer;font-size:14px;line-height:1;color:var(--gris)}
+.parada .voto button[aria-pressed=true]{color:#fff;border-color:transparent}
+.parada .voto button[data-v=si][aria-pressed=true]{background:var(--si)}
+.parada .voto button[data-v=mas][aria-pressed=true]{background:var(--masomenos)}
+.parada .voto button[data-v=no][aria-pressed=true]{background:var(--no)}
+.parada .yaHabia{font-size:11px;color:var(--gris);margin-top:10px}
+.panel h2{font-size:15px;font-weight:600;margin:0 0 4px}
+.panel p.pie{font-size:12.5px;color:var(--gris);margin:0 0 18px}
+.semana{width:100%;border-collapse:separate;border-spacing:0;background:var(--papel);
+  border:1px solid var(--linea);border-radius:10px;overflow:hidden}
+.semana th{background:var(--fondo);font-size:12px;font-weight:600;padding:9px 8px;
+  border-bottom:1px solid var(--linea);text-align:center}
+.semana th.hora{width:96px}
+.semana td{border:1px solid #F1F2F4;padding:0;height:46px}
+.semana td:has(.juntas){background:#FFF8F8}
+.semana td.hora{background:var(--fondo);font-size:11px;color:var(--gris);text-align:right;
+  padding:7px 12px 0 0;font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}
+.ranura{width:100%;height:100%;min-height:46px;border:0;background:none;cursor:pointer;font:inherit;
+  font-size:11.5px;padding:6px 8px;text-align:left;line-height:1.25;color:var(--tinta);
+  display:flex;flex-direction:column;gap:3px;justify-content:center}
+.ranura .un{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.ranura.juntas{font-size:10.5px}
+.ranura.juntas .un{padding-left:8px;position:relative}
+.ranura.juntas .un::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:3px;height:3px;border-radius:50%;background:var(--rojo-texto)}
+.ranura:hover{background:#FAFAFB}
+.ranura.lleno{background:#FFF1F2;font-weight:600;color:var(--rojo-texto)}
+.ranura.lleno:hover{background:#FFE4E6}
+.ranura .vacio{color:#C6C9CE;font-size:15px}
+.ranura .vez{display:inline-block;margin-left:5px;font-size:9.5px;font-weight:700;
+  background:var(--rojo-texto);color:#fff;border-radius:99px;padding:1px 5px;vertical-align:1px}
+.reacomodo{background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;border-radius:10px;
+  padding:13px 16px;margin:0 0 16px;font-size:12.5px;line-height:1.55;
+  display:flex;gap:14px;align-items:flex-start}
+.reacomodo b{font-weight:600}
+.reacomodo .btn{flex:none;margin-left:auto}
+.resumen{display:flex;gap:22px;flex-wrap:wrap;margin-top:14px;font-size:12.5px;color:var(--gris)}
+.resumen b{color:var(--tinta);font-weight:600;font-variant-numeric:tabular-nums}
+.pendientes h2{margin-top:20px}
+.pendientes li .gente{color:var(--gris);font-size:11px;margin-left:5px}
+.pendientes li.falta{border-color:#FECACA;background:#FEF2F2;color:#991B1B}
+dialog .lista button .meta{color:var(--gris);font-size:11px;margin-left:6px}
+dialog .lista button .yaCon{color:var(--rojo-texto);font-weight:600}
+.pendientes{margin-top:22px}
+.pendientes ul{list-style:none;padding:0;margin:10px 0 0;display:flex;flex-wrap:wrap;gap:6px}
+.pendientes li{background:var(--papel);border:1px solid var(--linea);border-radius:99px;
+  padding:5px 12px;font-size:12px}
+.pendientes li.ok{border-color:#BBF7D0;background:#F0FDF4;color:#15803D}
+.holgura{font-size:12.5px;color:var(--gris);margin-top:14px}
+.holgura b{color:var(--tinta);font-weight:600}
+
+/* ---------- Diálogos ---------- */
+dialog{border:0;border-radius:14px;padding:0;max-width:440px;width:92vw;
+  box-shadow:0 20px 50px rgba(0,0,0,.22)}
+dialog::backdrop{background:rgba(16,16,20,.42)}
+dialog .cab{padding:18px 20px 13px;border-bottom:1px solid var(--linea)}
+dialog .cab b{font-size:14px;font-weight:600}
+dialog .cab small{display:block;color:var(--gris);font-size:12px;margin-top:3px;line-height:1.45}
+dialog .lista{max-height:52vh;overflow:auto;padding:8px}
+dialog .lista button{display:block;width:100%;text-align:left;border:0;background:none;
+  padding:9px 12px;border-radius:7px;cursor:pointer;font:inherit;font-size:13px}
+dialog .lista button:hover{background:var(--fondo)}
+dialog .lista button.opcion{display:flex;align-items:baseline;gap:9px}
+dialog .lista button.opcion .tic{flex:none;width:14px;color:var(--si);font-weight:700}
+dialog .lista button.opcion .nom{flex:none}
+dialog .lista button.opcion .meta{margin-left:auto;flex:none;text-align:right}
+dialog .lista button.elegida{background:#F0FDF4;outline:1px solid #BBF7D0}
+dialog .lista button.elegida .nom{font-weight:600}
+dialog .lista button[disabled]{opacity:.38;cursor:default}
+dialog .lista button[disabled]:hover{background:none}
+dialog .opAsp{display:flex;align-items:center;gap:10px}
+dialog .opAsp .punto{width:9px;height:9px;border-radius:50%;flex:none}
+dialog .opAsp .txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+dialog .opAsp .txt b{font-size:13px;font-weight:600}
+dialog .opAsp .txt small{font-size:11px;color:var(--gris);line-height:1.4;white-space:normal}
+dialog .lista button[aria-current=true]{background:var(--fondo);outline:1px solid var(--linea)}
+dialog .grupoAsp{display:flex;align-items:center;gap:8px;padding:11px 12px 5px;
+  font-size:11px;font-weight:700;color:var(--c);letter-spacing:.3px;text-transform:uppercase}
+dialog .grupoAsp::before{content:'';width:4px;height:12px;border-radius:2px;background:var(--c)}
+dialog .lista button .txt small{white-space:normal}
+dialog .pieDlg{padding:12px 20px;border-top:1px solid var(--linea);display:flex;gap:8px;justify-content:flex-end}
+
+.oculto{display:none!important}
+@media print{ header,.herramientas,.acciones{display:none} .envoltura{max-height:none;overflow:visible} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="aviso oculto" id="aviso">
+    <b>Cuidado: este navegador no está guardando tus decisiones.</b>
+    Suele pasar al abrir el archivo con doble clic. Descarga el
+    <b>Respaldo</b> antes de cerrar, o abre el tablero desde el servidor local
+    (<code>npm run dev</code> y luego <code>localhost:8080/tablero-areas.html</code>).
+  </div>
+  <div class="barra">
+    <div class="marca"><b>Tablero de áreas</b><span>Movimiento con Sentido Ignaciano</span></div>
+    <div class="tabs" role="tablist">
+      <button id="tab-tablero" role="tab" aria-selected="true">Tablero</button>
+      <button id="tab-semana" role="tab" aria-selected="false">Semana</button>
+      <button id="tab-sectores" role="tab" aria-selected="false">Por sectores</button>
+    </div>
+    <span class="sello" id="sello"></span>
+    <div class="acciones">
+      <button class="btn" id="btn-deshacer" disabled>Deshacer</button>
+      <button class="btn" id="btn-rellenar">Rellenar vacías</button>
+      <button class="btn" id="btn-csv">Excel</button>
+      <button class="btn" id="btn-guardar">Respaldo</button>
+      <button class="btn" id="btn-cargar">Cargar</button>
+      <button class="btn peligro" id="btn-limpiar">Limpiar</button>
+    </div>
+  </div>
+
+  <div class="herramientas" id="herramientas">
+    <div class="buscar"><input id="buscar" type="search" placeholder="Buscar actividad" autocomplete="off"></div>
+    <div class="chips" id="chips"></div>
+    <div class="leyenda">
+      <span><i style="background:var(--si)"></i>Le gusta</span>
+      <span><i style="background:var(--masomenos)"></i>Más o menos</span>
+      <span><i style="background:var(--no)"></i>No le gusta</span>
+      <span class="contador" id="contador"></span>
+      <span class="avance" id="avance"></span>
+    </div>
+  </div>
+</header>
+
+<div class="envoltura" id="vista-tablero"><table id="tabla"></table></div>
+
+<div class="panel oculto" id="vista-sectores">
+  <h2>Clasificar por sectores</h2>
+  <p class="pie" id="pie-sectores"></p>
+  <div id="sectores-lista"></div>
+</div>
+
+<div class="panel oculto" id="vista-semana">
+  <h2>Semana de visitas</h2>
+  <p class="pie" id="pie-semana"></p>
+  <div class="reacomodo oculto" id="reacomodo">
+    <span id="reacomodo-texto"></span>
+    <button class="btn" id="reacomodo-ok">Entendido</button>
+  </div>
+  <table class="semana" id="tabla-semana"></table>
+  <p class="holgura" id="holgura"></p>
+  <div class="pendientes" id="bloque-pendientes"></div>
+</div>
+
+<dialog id="dlg">
+  <div class="cab"><b id="dlg-titulo"></b><small id="dlg-sub"></small></div>
+  <div class="lista" id="dlg-lista"></div>
+  <div class="pieDlg">
+    <button class="btn" id="dlg-quitar">Dejar libre</button>
+    <button class="btn" id="dlg-cerrar">Listo</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-rellenar">
+  <div class="cab"><b>Rellenar las vacías</b><small id="rell-sub"></small></div>
+  <div class="lista" id="rell-lista"></div>
+  <div class="pieDlg"><button class="btn" id="rell-cerrar">Cancelar</button></div>
+</dialog>
+
+<dialog id="dlg-asp">
+  <div class="cab"><b id="asp-titulo"></b><small id="asp-sub"></small></div>
+  <div class="lista" id="asp-lista"></div>
+  <div class="pieDlg"><button class="btn" id="asp-cerrar">Cerrar</button></div>
+</dialog>
+
+<input type="file" id="archivo" accept="application/json" class="oculto">
+
+<script>
+/* ============================================================
+   DATOS — generados desde Firestore por scripts/build-tablero.js
+   ============================================================ */
+const DATOS = {"generado":"2026-09-03T16:07:30.340Z","aspectos":{"cura":{"nombre":"Cura Personalis","lema":"Cuidado integral de la persona: salud física, emocional, social y espiritual.","color":"#7C3AED","fondo":"#F5F3FF"},"comunidad":{"nombre":"Comunidad para el Bien Común","lema":"Colaboración y apoyo mutuo. Fortalece la identidad universitaria.","color":"#EA580C","fondo":"#FFF7ED"},"magis":{"nombre":"Magis y Servicio","lema":"Dar lo mejor de sí al servicio de los demás: solidaridad y corresponsabilidad.","color":"#0891B2","fondo":"#ECFEFF"},"por-clasificar":{"nombre":"Por clasificar","lema":"Caben en dos segmentos a la vez. Falta que José decida en cuál entran.","color":"#9CA3AF","fondo":"#F9FAFB"}},"segmentos":{"activaciones":{"aspecto":"cura","nombre":"Activaciones físicas saludables"},"respiracion":{"aspecto":"cura","nombre":"Ejercicios de respiración consciente"},"estiramiento-reflexion":{"aspecto":"cura","nombre":"Pausas de estiramiento con reflexión"},"estres":{"aspecto":"cura","nombre":"Estrategias de manejo del estrés"},"cooperativos":{"aspecto":"comunidad","nombre":"Juegos cooperativos"},"retos-grupales":{"aspecto":"comunidad","nombre":"Retos grupales"},"confianza":{"aspecto":"comunidad","nombre":"Dinámicas de confianza"},"inter-areas":{"aspecto":"comunidad","nombre":"Actividades de integración inter áreas"},"retos-colaborativos":{"aspecto":"magis","nombre":"Retos colaborativos"},"liderazgo":{"aspecto":"magis","nombre":"Actividades de liderazgo compartido"},"reflexion-servicio":{"aspecto":"magis","nombre":"Reflexiones breves sobre servicio"},"ayuda-mutua":{"aspecto":"magis","nombre":"Dinámicas de ayuda mutua"},"por-clasificar":{"aspecto":"por-clasificar","nombre":"Por clasificar"}},"orden":["activaciones","respiracion","estiramiento-reflexion","estres","cooperativos","retos-grupales","confianza","inter-areas","retos-colaborativos","liderazgo","reflexion-servicio","ayuda-mutua","por-clasificar"],"ordenAspecto":["cura","comunidad","magis","por-clasificar"],"actividades":[{"id":"RC-04","nombre":"Automasaje con Pelota","segmento":"activaciones","aspecto":"cura","duda":"","emoji":"🎾","duracion":10,"estrellas":5},{"id":"5ere6btC1KXkF121mekb","nombre":"Energía Express","segmento":"activaciones","aspecto":"cura","duda":"","emoji":"⚡","duracion":5,"estrellas":4},{"id":"AF-01","nombre":"Energía Express","segmento":"activaciones","aspecto":"cura","duda":"","emoji":"⚡","duracion":5,"estrellas":4},{"id":"AF-12","nombre":"Escuela de Postura","segmento":"activaciones","aspecto":"cura","duda":"","emoji":"🪑","duracion":10,"estrellas":5},{"id":"7ATkZqmbmyJ9ZfgTBTqx","nombre":"Estiramiento Integral","segmento":"activaciones","aspecto":"cura","duda":"","emoji":"🤸","duracion":10,"estrellas":5},{"id":"RC-03","nombre":"Estiramientos Funcionales","segmento":"activaciones","aspecto":"cura","duda":"","emoji":"🙆","duracion":10,"estrellas":5},{"id":"AF-11","nombre":"Fuerza con Liga","segmento":"activaciones","aspecto":"cura","duda":"","emoji":"🎗️","duracion":8,"estrellas":5},{"id":"qLZHQeJ2euAqejrwXowr","nombre":"Movilidad Express","segmento":"activaciones","aspecto":"cura","duda":"","emoji":"🤸","duracion":5,"estrellas":5},{"id":"RC-08","nombre":"Punto Gatillo","segmento":"activaciones","aspecto":"cura","duda":"","emoji":"🎯","duracion":10,"estrellas":5},{"id":"AF-03","nombre":"Ritmo Cardiaco","segmento":"activaciones","aspecto":"cura","duda":"","emoji":"❤️","duracion":5,"estrellas":3},{"id":"RC-07","nombre":"Rodillo Miofascial","segmento":"activaciones","aspecto":"cura","duda":"","emoji":"🧻","duracion":10,"estrellas":5},{"id":"CR-02","nombre":"Diario de Gratitud","segmento":"respiracion","aspecto":"cura","duda":"","emoji":"📓","duracion":10,"estrellas":5},{"id":"RC-02","nombre":"Meditación Guiada","segmento":"respiracion","aspecto":"cura","duda":"","emoji":"🧘","duracion":10,"estrellas":5},{"id":"KPl3vgc8esCk8lbkHXHL","nombre":"Relax y Enfoque","segmento":"respiracion","aspecto":"cura","duda":"","emoji":"🧘","duracion":5,"estrellas":5},{"id":"DP-05","nombre":"Respiración 4-7-8","segmento":"respiracion","aspecto":"cura","duda":"","emoji":"🌬️","duracion":6,"estrellas":5},{"id":"DP-02","nombre":"Tres Gratitudes","segmento":"respiracion","aspecto":"cura","duda":"","emoji":"🙏","duracion":8,"estrellas":4},{"id":"eMIKzFaf82bYXWqTqvUs","nombre":"Pausa de Escritorio","segmento":"estiramiento-reflexion","aspecto":"cura","duda":"","emoji":"💻","duracion":3,"estrellas":5},{"id":"RC-06","nombre":"Yoga en Silla","segmento":"estiramiento-reflexion","aspecto":"cura","duda":"","emoji":"🪑","duracion":10,"estrellas":5},{"id":"DP-08","nombre":"Mapa de Emociones","segmento":"estres","aspecto":"cura","duda":"","emoji":"🧭","duracion":8,"estrellas":5},{"id":"DP-01","nombre":"Rueda de la Vida Express","segmento":"estres","aspecto":"cura","duda":"","emoji":"🎯","duracion":15,"estrellas":5},{"id":"JM-10","nombre":"Bananagrams","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🍌","duracion":10,"estrellas":5},{"id":"FG-05","nombre":"Círculo de Toques","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"⭕","duracion":10,"estrellas":5},{"id":"JM-11","nombre":"Crazy Tower","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🗼","duracion":15,"estrellas":5},{"id":"TB-04","nombre":"Cuento en Cadena","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"📖","duracion":10,"estrellas":5},{"id":"TB-07","nombre":"Dibujo a Ciegas","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"✏️","duracion":12,"estrellas":5},{"id":"JM-18","nombre":"Dominó Tren Mexicano","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🚂","duracion":20,"estrellas":5},{"id":"FG-06","nombre":"El Globo Loco","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🎈","duracion":10,"estrellas":5},{"id":"JM-22","nombre":"Exploding Kittens","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🐱","duracion":15,"estrellas":5},{"id":"JM-21","nombre":"Fantasma Blitz","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"👻","duracion":10,"estrellas":5},{"id":"JM-01","nombre":"Hockey de Mesa","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🏒","duracion":10,"estrellas":5},{"id":"iuyGtpzc7MEx3J2Lq8YQ","nombre":"Hockey de Mesa","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🏒","duracion":10,"estrellas":5},{"id":"FG-07","nombre":"Hockey de Suelo","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🏒","duracion":15,"estrellas":5},{"id":"NT28SjlrSc9j5xIjA9zH","nombre":"Juego de Mesa UNO","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🃏","duracion":15,"estrellas":5},{"id":"JM-02","nombre":"Lotería","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🃏","duracion":15,"estrellas":5},{"id":"Esx5rOYBdqowCQw6DDkF","nombre":"Lotería Mexicana","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🎲","duracion":20,"estrellas":5},{"id":"FG-03","nombre":"Mini Bádminton","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🏸","duracion":15,"estrellas":3},{"id":"FG-12","nombre":"Mini Voleibol","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🏐","duracion":15,"estrellas":5},{"id":"JM-14","nombre":"Polilla Tramposa","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🦋","duracion":15,"estrellas":5},{"id":"FG-01","nombre":"Spaghetti-Vóley","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🎈","duracion":15,"estrellas":5},{"id":"JM-09","nombre":"Spot It (Dobble)","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"👀","duracion":5,"estrellas":5},{"id":"JM-20","nombre":"Taco Gato Cabra...","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🌮","duracion":10,"estrellas":5},{"id":"JM-21b","nombre":"That's Not a Hat","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🎁","duracion":15,"estrellas":5},{"id":"JM-07","nombre":"The Mind","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"😶","duracion":15,"estrellas":5},{"id":"JM-04","nombre":"UNO Clásico","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"🎴","duracion":20,"estrellas":5},{"id":"JM-12","nombre":"UNO No Mercy","segmento":"cooperativos","aspecto":"comunidad","duda":"","emoji":"👿","duracion":20,"estrellas":5},{"id":"JM-08","nombre":"Torre Jenga","segmento":"retos-grupales","aspecto":"comunidad","duda":"","emoji":"🧱","duracion":15,"estrellas":5},{"id":"CR-03","nombre":"Cartas al Universo","segmento":"confianza","aspecto":"comunidad","duda":"","emoji":"✉️","duracion":10,"estrellas":5},{"id":"CR-04","nombre":"Tarjetas 'Somos'","segmento":"confianza","aspecto":"comunidad","duda":"","emoji":"🃏","duracion":10,"estrellas":5},{"id":"JM-05","nombre":"Adivina la Palabra","segmento":"retos-colaborativos","aspecto":"magis","duda":"","emoji":"🤔","duracion":10,"estrellas":5},{"id":"AWhR2LhnHlaN95onMZIJ","nombre":"EVERYBODY 1 2 SWITCH","segmento":"retos-colaborativos","aspecto":"magis","duda":"","emoji":"💻","duracion":15,"estrellas":5},{"id":"VD-02","nombre":"Jeopardy / Switch 1-2","segmento":"retos-colaborativos","aspecto":"magis","duda":"","emoji":"🎮","duracion":15,"estrellas":5},{"id":"VD-01","nombre":"Mario Party","segmento":"retos-colaborativos","aspecto":"magis","duda":"","emoji":"🍄","duracion":20,"estrellas":5},{"id":"JM-06","nombre":"Ping Pong con Tablas","segmento":"retos-colaborativos","aspecto":"magis","duda":"","emoji":"🏓","duracion":15,"estrellas":0},{"id":"FG-02","nombre":"Precisión-Pong","segmento":"retos-colaborativos","aspecto":"magis","duda":"","emoji":"🎯","duracion":10,"estrellas":5},{"id":"FG-16","nombre":"Tiro de Costalitos","segmento":"retos-colaborativos","aspecto":"magis","duda":"","emoji":"🎪","duracion":15,"estrellas":5},{"id":"CR-01","nombre":"Caminata Consciente","segmento":"liderazgo","aspecto":"magis","duda":"","emoji":"🚶","duracion":15,"estrellas":5},{"id":"RC-01","nombre":"Círculo Agradecimiento","segmento":"ayuda-mutua","aspecto":"magis","duda":"","emoji":"🙏","duracion":10,"estrellas":5},{"id":"DP-07","nombre":"Círculo de Reconocimiento","segmento":"ayuda-mutua","aspecto":"magis","duda":"","emoji":"🌟","duracion":10,"estrellas":5},{"id":"JM-03","nombre":"Basta","segmento":"por-clasificar","aspecto":"por-clasificar","duda":"Es juego de mesa (Juegos cooperativos), pero el documento mandó \"adivina la palabra\" a Retos colaborativos.","emoji":"📝","duracion":10,"estrellas":5},{"id":"d67YbTCapEL2gjmbZz41","nombre":"Basta","segmento":"por-clasificar","aspecto":"por-clasificar","duda":"Es juego de mesa (Juegos cooperativos), pero el documento mandó \"adivina la palabra\" a Retos colaborativos.","emoji":"✍️","duracion":15,"estrellas":5},{"id":"VD-03","nombre":"Basta Digital","segmento":"por-clasificar","aspecto":"por-clasificar","duda":"Mismo caso que Basta, y además es de pantalla, como el Nintendo de Retos colaborativos.","emoji":"💻","duracion":10,"estrellas":5},{"id":"VD-05","nombre":"Boggle Party","segmento":"por-clasificar","aspecto":"por-clasificar","duda":"Juego de palabras en pantalla: cabe en Juegos cooperativos y en Retos colaborativos.","emoji":"","duracion":null,"estrellas":5},{"id":"FG-10","nombre":"Estación de Habilidades","segmento":"por-clasificar","aspecto":"por-clasificar","duda":"Retos grupales (Bien Común) o Retos colaborativos (Magis): los dos segmentos casi se tocan.","emoji":"🎪","duracion":15,"estrellas":3},{"id":"DP-03","nombre":"Fortaleza Escondida","segmento":"por-clasificar","aspecto":"por-clasificar","duda":"Trabajo de fortalezas propias (Manejo del estrés) o dinámica que se comparte (Dinámicas de confianza).","emoji":"💎","duracion":12,"estrellas":5},{"id":"VD-07","nombre":"Noche de Juegos","segmento":"por-clasificar","aspecto":"por-clasificar","duda":"Es una sesión, no una actividad suelta. Depende de qué se juegue esa noche.","emoji":"","duracion":null,"estrellas":5},{"id":"VD-08","nombre":"Overcooked por Equipos","segmento":"por-clasificar","aspecto":"por-clasificar","duda":"Cooperar para lograrlo (Juegos cooperativos) o reto de Nintendo (Retos colaborativos).","emoji":"","duracion":null,"estrellas":5},{"id":"FG-09b","nombre":"Pelotas a la Pared","segmento":"por-clasificar","aspecto":"por-clasificar","duda":"Mismo empate: Retos grupales o Retos colaborativos.","emoji":"🧱","duracion":10,"estrellas":5},{"id":"VD-04","nombre":"Pictionary Air","segmento":"por-clasificar","aspecto":"por-clasificar","duda":"Juego de dibujo en pantalla. Cabe en Juegos cooperativos y en Retos colaborativos.","emoji":"✏️","duracion":15,"estrellas":5},{"id":"VD-06","nombre":"Pictionary Digital","segmento":"por-clasificar","aspecto":"por-clasificar","duda":"Mismo caso que Pictionary Air.","emoji":"","duracion":null,"estrellas":5},{"id":"FG-04","nombre":"Rebote-Reto","segmento":"por-clasificar","aspecto":"por-clasificar","duda":"Mismo empate: Retos grupales o Retos colaborativos.","emoji":"🎾","duracion":10,"estrellas":5},{"id":"VD-09","nombre":"Tetris Relámpago","segmento":"por-clasificar","aspecto":"por-clasificar","duda":"Reto individual de velocidad (Retos colaborativos) o juego de pantalla compartido (Juegos cooperativos).","emoji":"","duracion":null,"estrellas":5}],"areas":[{"id":"FXE4q6axdeJrzF1b1FwS","nombre":"Admisiones","corto":"Admisiones","personas":11},{"id":"Q5i3FX719DGSzIERxNgU","nombre":"AIDEL","corto":"AIDEL","personas":6},{"id":"EO4i5qc6ei8RNZXyBcv6","nombre":"Centro de Participación y Difusión Universitaria","corto":"Participación y Difusión","personas":3},{"id":"SRkYpvo3RST7oecu8HgE","nombre":"Ciencias Sociales","corto":"Ciencias Sociales","personas":15},{"id":"xEFRceYEBfdwcLxZqKCg","nombre":"Clinica de Nutrición","corto":"Clínica de Nutrición","personas":3},{"id":"xSfXcNRJ6nhhlqoEvLJM","nombre":"Compras","corto":"Compras","personas":9},{"id":"cI9MCvnTUuc5Xjyua6lD","nombre":"DADA","corto":"DADA","personas":3},{"id":"EIRAaoyKPuRZhVLhWE82","nombre":"Defensoria de los Derechos Universitarios","corto":"Defensoría Derechos","personas":5},{"id":"PJ6RIcX1BfQyGlwbBz16","nombre":"Departamento Ciencias de la Salud","corto":"Ciencias de la Salud","personas":10},{"id":"n4nW2mrYhVECKhkfPsDE","nombre":"Departamento de Ciencias e Ingenierías","corto":"Ciencias e Ingenierías","personas":1},{"id":"uELhrRBIDGfqYmuHKgOK","nombre":"Direccion de Comunicacion Institucional","corto":"Comunicación Institucional","personas":10},{"id":"FMZHgr1I0dLdBXXLj99I","nombre":"Direccion de Personal","corto":"Dirección de Personal","personas":10},{"id":"KlM7TUxkUkEusv7LAG40","nombre":"Direcciones Generales","corto":"Direcciones Generales","personas":6},{"id":"YqrJtc3VTcIHMX2z2PMU","nombre":"Dirección de Innovación e Internacionalización Educativa","corto":"Innovación e Internacionalización","personas":1},{"id":"QsF2m8egyE90CVjpIR0g","nombre":"Educacion Vir","corto":"Educación Virtual","personas":2},{"id":"cBffk6GRmJgGhhsT9hoz","nombre":"Educación Continua","corto":"Educación Continua","personas":6},{"id":"e8kjcRZXd5m3SllREfHY","nombre":"Egresados","corto":"Egresados","personas":10},{"id":"AC14eB2pegfVwwWSW9LE","nombre":"Humanidades","corto":"Humanidades","personas":2},{"id":"S7H58aQhYGI9S5xJER8M","nombre":"IDIT","corto":"IDIT","personas":14},{"id":"9lFiKCD13qjd1PdennL9","nombre":"Instituto de Investigaciones en Medio Ambiente","corto":"Medio Ambiente","personas":1},{"id":"xm2Q8z92WcgLBEZ2aX2T","nombre":"IBERO Activate","corto":"IBERO Actívate","personas":7},{"id":"gNcbKAM5nfwjbfX1EQhN","nombre":"LAINES","corto":"LAINES","personas":3},{"id":"j4xd23HCTO9GwIS9ZcdW","nombre":"Marketing","corto":"Marketing","personas":9},{"id":"DaCdSCODrF4lMljcTGnP","nombre":"Medios Universitarios","corto":"Medios Universitarios","personas":2},{"id":"65AepIdmRltvmP4IGScv","nombre":"Negocios","corto":"Negocios","personas":2},{"id":"cf1JpmNLoC6LiVNezu51","nombre":"Oficina de Aten Tecnologica","corto":"Atención Tecnológica","personas":5},{"id":"64Y5Lu2Awg1NW5C3nKSw","nombre":"Planeación y Evaluación","corto":"Planeación y Evaluación","personas":1},{"id":"yHonYWQvJdgXfmSBWqRh","nombre":"Planta Física","corto":"Planta Física","personas":8},{"id":"ymt6ECXGeLqrC83fFWeG","nombre":"Preparatoria IBERO","corto":"Prepa IBERO","personas":6},{"id":"ERC3HYSFDJp4x6UfnnAQ","nombre":"Protección Universitaria","corto":"Protección Universitaria","personas":12},{"id":"kZmU1FREQL8vqyI8kw0v","nombre":"Reflexión Universitaria","corto":"Reflexión Universitaria","personas":2},{"id":"80aFHwJExpZdTRYsBt5h","nombre":"Servicio Social","corto":"Servicio Social","personas":5},{"id":"V238dx3lj1U1p2kjdtqv","nombre":"Servicios Escolares","corto":"Servicios Escolares","personas":13},{"id":"lSie9E7Kr8QNvUlGFBPy","nombre":"Tesoreria","corto":"Tesorería","personas":7},{"id":"9xqoYSY4nEh4Trliioj9","nombre":"Villas IBERO","corto":"Villas IBERO","personas":10}]};
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+const CLAVE = 'ibero_tablero_areas_v1';
+const CICLO = ['', 'si', 'mas', 'no'];
+const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+
+// La jornada de pausas activas va de 10:00 a 13:00. PASO es la duración
+// de cada pausa; las ranuras se calculan solas a partir de él.
+const INICIO = 10 * 60, TERMINO = 13 * 60, PASO = 25;
+const reloj = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+const minutos = (h) => { const [a, b] = h.split(':').map(Number); return a * 60 + b; };
+const RANURAS = [];
+for (let m = INICIO; m + PASO <= TERMINO; m += PASO) RANURAS.push(reloj(m));
+
+// Cuántas áreas caben en una misma pausa cuando se juntan.
+const TOPE_POR_RANURA = 4;
+const finDe = (h) => reloj(minutos(h) + PASO);
+
+let estado = { celdas: {}, semana: {}, aspectos: {}, sectores: {}, actualizado: null };
+let historial = [];
+let filtroAsp = null;
+let textoBusca = '';
+let filaEnfoque = null;
+let colEnfoque = null;
+let ranuraAbierta = null;
+let actividadAbierta = null;
+
+const $ = (id) => document.getElementById(id);
+const defAsp = (k) => DATOS.aspectos[k] || DATOS.aspectos['por-clasificar'];
+const defSeg = (k) => DATOS.segmentos[k] || DATOS.segmentos['por-clasificar'];
+// La clasificación que trae el archivo es la propuesta; lo que José cambie manda.
+const segmentoDe = (a) => estado.aspectos[a.id] || a.segmento;
+const aspectoDe = (a) => defSeg(segmentoDe(a)).aspecto;
+const segsDe = (asp) => DATOS.orden.filter((k) => defSeg(k).aspecto === asp);
+
+/* ============================================================
+   PERSISTENCIA
+   ============================================================ */
+let sePuedeGuardar = true;
+
+function probarAlmacen() {
+  try {
+    localStorage.setItem(CLAVE + '__prueba', '1');
+    localStorage.removeItem(CLAVE + '__prueba');
+    return true;
+  } catch (e) { return false; }
+}
+
+function cargar() {
+  sePuedeGuardar = probarAlmacen();
+  $('aviso').classList.toggle('oculto', sePuedeGuardar);
+  if (!sePuedeGuardar) return;
+  try {
+    const crudo = localStorage.getItem(CLAVE);
+    if (crudo) estado = Object.assign(estado, JSON.parse(crudo));
+  } catch (e) { console.warn('No se pudo leer lo guardado:', e); }
+  estado.aspectos = estado.aspectos || {};
+  estado.sectores = estado.sectores || {};
+
+  // Si había que convertir, se guarda de una vez: así lo almacenado queda
+  // en el formato nuevo aunque José cierre sin tocar nada.
+  if (normalizarSemana()) guardar();
+}
+
+// La semana guardaba un área por ranura; ahora guarda una lista, porque hay
+// áreas que se juntan. Lo viejo se convierte solo, sin perder nada.
+function normalizarSemana() {
+  let cambio = false;
+
+  // 1. De un área por ranura a una lista.
+  Object.keys(estado.semana).forEach((k) => {
+    const v = estado.semana[k];
+    if (Array.isArray(v) && v.length && v.length <= TOPE_POR_RANURA && v.every(Boolean)) return;
+    const lista = (Array.isArray(v) ? v : [v]).filter(Boolean).slice(0, TOPE_POR_RANURA);
+    if (lista.length) estado.semana[k] = lista; else delete estado.semana[k];
+    cambio = true;
+  });
+
+  // 2. Si cambió la duración de la pausa, las horas guardadas ya no existen.
+  //    En vez de borrarlas, se reacomodan por posición dentro de cada día:
+  //    la 1ª pausa del lunes sigue siendo la 1ª pausa del lunes. Lo que ya no
+  //    cabe se aparta y se avisa, nunca se tira en silencio.
+  const horasGuardadas = [...new Set(Object.keys(estado.semana).map((k) => k.split('|')[1]))];
+  const desconocidas = horasGuardadas.filter((h) => !RANURAS.includes(h));
+
+  if (desconocidas.length) {
+    const antes = estado.semana;
+    const nueva = {};
+    const desplazadas = [];
+
+    DIAS.forEach((d) => {
+      const delDia = Object.keys(antes)
+        .filter((k) => k.split('|')[0] === d)
+        .sort((a, b) => minutos(a.split('|')[1]) - minutos(b.split('|')[1]));
+
+      delDia.forEach((k, i) => {
+        if (i < RANURAS.length) nueva[d + '|' + RANURAS[i]] = antes[k];
+        else desplazadas.push(...antes[k]);
+      });
+    });
+
+    estado.semana = nueva;
+    estado.desacomodadas = desplazadas;
+    cambio = true;
+  }
+
+  return cambio;
+}
+
+// Aviso de reacomodo: qué áreas se quedaron sin lugar al acortar la semana.
+function pintarReacomodo() {
+  const ids = estado.desacomodadas || [];
+  const caja = $('reacomodo');
+  if (!ids.length) { caja.classList.add('oculto'); return; }
+
+  const nombres = ids
+    .map((id) => (DATOS.areas.find((a) => a.id === id) || {}).corto)
+    .filter(Boolean);
+
+  caja.classList.remove('oculto');
+  $('reacomodo-texto').innerHTML =
+    `Al pasar a pausas de ${PASO} minutos la semana quedó con ` +
+    `<b>${RANURAS.length * DIAS.length}</b> ranuras en vez de las que tenías, y ` +
+    `<b>${nombres.length}</b> ${nombres.length === 1 ? 'área se quedó' : 'áreas se quedaron'} ` +
+    `sin lugar: <b>${nombres.join(', ')}</b>. El resto se recorrió respetando su orden. ` +
+    `Vuelve a colocarlas donde quieras.`;
+}
+
+function guardar() {
+  estado.actualizado = new Date().toISOString();
+  if (!sePuedeGuardar) { marcarSello(false); return; }
+  try {
+    localStorage.setItem(CLAVE, JSON.stringify(estado));
+    marcarSello(true);
+  } catch (e) {
+    sePuedeGuardar = false;
+    $('aviso').classList.remove('oculto');
+    marcarSello(false);
+    console.warn('No se pudo guardar:', e);
+  }
+}
+
+let relojSello = null;
+function marcarSello(ok) {
+  const el = $('sello');
+  if (!ok) { el.textContent = 'sin guardar'; el.classList.remove('ok'); return; }
+  const d = new Date(), p = (n) => String(n).padStart(2, '0');
+  el.textContent = `guardado ${p(d.getHours())}:${p(d.getMinutes())}`;
+  el.classList.add('ok');
+  clearTimeout(relojSello);
+  relojSello = setTimeout(() => el.classList.remove('ok'), 1600);
+}
+
+/* ============================================================
+   TABLERO
+   ============================================================ */
+function actividadesVisibles() {
+  const q = textoBusca.trim().toLowerCase();
+  return DATOS.actividades.filter((a) => {
+    if (filtroAsp && aspectoDe(a) !== filtroAsp && segmentoDe(a) !== filtroAsp) return false;
+    if (q && !a.nombre.toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function cuentaPorAspecto() {
+  const c = {};
+  DATOS.actividades.forEach((a) => { const k = aspectoDe(a); c[k] = (c[k] || 0) + 1; });
+  return c;
+}
+
+function cuentaPorSegmento() {
+  const c = {};
+  DATOS.actividades.forEach((a) => { const k = segmentoDe(a); c[k] = (c[k] || 0) + 1; });
+  return c;
+}
+
+function pintarChips() {
+  const c = cuentaPorAspecto();
+  $('chips').innerHTML = DATOS.ordenAspecto.filter((k) => c[k]).map((k) => {
+    const d = defAsp(k);
+    return `<button class="chip" data-asp="${k}" aria-pressed="${filtroAsp === k}" title="${d.lema}">
+        <span class="punto" style="background:${d.color}"></span>${d.nombre} <b>${c[k]}</b>
+      </button>`;
+  }).join('');
+  $('chips').querySelectorAll('.chip').forEach((b) => {
+    b.onclick = () => {
+      filtroAsp = (filtroAsp === b.dataset.asp) ? null : b.dataset.asp;
+      filaEnfoque = null;
+      pintarChips(); pintarTabla();
+    };
+  });
+}
+
+// Cómo está un grupo de actividades para un área: parejo, a medias o vacío.
+function resumenBloque(ids, areaId) {
+  const c = { si: 0, mas: 0, no: 0 };
+  let vacias = 0;
+  ids.forEach((id) => {
+    const v = estado.celdas[id + '|' + areaId];
+    if (c[v] !== undefined) c[v]++; else vacias++;
+  });
+  const total = ids.length;
+  if (!total || vacias === total) return { como: 'vacio', v: '' };
+  const parejo = ['si', 'mas', 'no'].find((k) => c[k] === total);
+  if (parejo) return { como: 'parejo', v: parejo };
+  const mayoria = ['si', 'mas', 'no'].sort((a, b) => c[b] - c[a])[0];
+  return { como: 'mezcla', v: mayoria };
+}
+
+// Califica de golpe todas las actividades de un grupo para un área.
+function calificarBloque(ids, areaId, valor) {
+  const antes = {};
+  ids.forEach((id) => {
+    const k = id + '|' + areaId;
+    antes[k] = estado.celdas[k] || '';
+    if (valor) estado.celdas[k] = valor; else delete estado.celdas[k];
+  });
+  historial.push({ tipo: 'bloque', antes });
+  if (historial.length > 200) historial.shift();
+  guardar();
+  pintarTabla();
+  $('btn-deshacer').disabled = false;
+}
+
+// Un clic en la banda avanza al siguiente color. Si el grupo está a medias,
+// lo primero es dejarlo parejo, no seguir el ciclo desde cero.
+function siguienteDeBloque(r) {
+  if (r.como === 'mezcla') return 'si';
+  return CICLO[(CICLO.indexOf(r.v) + 1) % CICLO.length];
+}
+
+function verdesPorArea(areaId) {
+  let n = 0;
+  DATOS.actividades.forEach((a) => { if (estado.celdas[a.id + '|' + areaId] === 'si') n++; });
+  return n;
+}
+
+function pintarTabla() {
+  const acts = actividadesVisibles();
+  const nAreas = DATOS.areas.length;
+
+  const cab = DATOS.areas.map((ar) => {
+    const v = verdesPorArea(ar.id);
+    return `<th class="area${colEnfoque === ar.id ? ' enfoque' : ''}" data-area="${ar.id}" title="${ar.nombre}">
+        <div class="giro">${ar.corto}</div>
+        <div class="conteo">${v || ''}</div>
+      </th>`;
+  }).join('');
+
+  // Dos niveles, como el documento: el aspecto y, dentro, sus segmentos.
+  const hayFiltro = !!(filtroAsp || textoBusca.trim());
+  const filaDe = (a) => {
+    const celdas = DATOS.areas.map((ar) => {
+      const v = estado.celdas[a.id + '|' + ar.id] || '';
+      const foco = colEnfoque === ar.id ? ' enfoque-col' : '';
+      return `<td class="celda${foco}" data-act="${a.id}" data-area="${ar.id}"${v ? ` data-v="${v}"` : ''}
+        title="${a.nombre} · ${ar.nombre}"></td>`;
+    }).join('');
+    const pend = segmentoDe(a) === 'por-clasificar';
+    return `<tr${filaEnfoque === a.id ? ' class="enfoque"' : ''} data-fila="${a.id}">
+        <th class="act">
+          <div class="fila">
+            <span class="em">${a.emoji || '·'}</span>
+            <span class="nom" title="${a.nombre}">${a.nombre}</span>
+            <span class="min">${a.duracion ? a.duracion + "'" : ''}</span>
+            <button class="mover${pend ? ' pendiente' : ''}" data-mover="${a.id}"
+              title="Cambiar de segmento">${pend ? '?' : '⋯'}</button>
+          </div>
+        </th>${celdas}
+      </tr>`;
+  };
+
+  const COLOR_V = { si: 'var(--si)', mas: 'var(--masomenos)', no: 'var(--no)' };
+  const celdasDeBloque = (ids, rotulo) => DATOS.areas.map((ar) => {
+    const r = resumenBloque(ids, ar.id);
+    const foco = colEnfoque === ar.id ? ' enfoque-col' : '';
+    const attr = r.como === 'parejo' ? ` data-v="${r.v}"`
+      : (r.como === 'mezcla' ? ` data-mezcla="si" style="--mezclaColor:${COLOR_V[r.v]}"` : '');
+    const dice = r.como === 'vacio' ? 'sin calificar'
+      : (r.como === 'parejo' ? 'todas igual' : 'a medias');
+    return `<td class="bloque${foco}"${attr} data-ids="${ids.join(',')}" data-area="${ar.id}"
+      title="${rotulo} · ${ar.nombre} — ${dice}. Un toque califica las ${ids.length}."></td>`;
+  }).join('');
+
+  let cuerpo = '';
+  DATOS.ordenAspecto.forEach((ak) => {
+    const delAspecto = acts.filter((a) => aspectoDe(a) === ak);
+    // Sin filtro se muestran también los aspectos vacíos, para que se vean
+    // los segmentos que el documento pide y todavía no tienen actividad.
+    if (!delAspecto.length && (hayFiltro || ak === 'por-clasificar')) return;
+
+    const d = defAsp(ak);
+    const idsAsp = delAspecto.map((a) => a.id);
+    cuerpo += `<tr class="banda" style="--bandaFondo:${d.fondo};--bandaColor:${d.color}">
+        <th title="${d.lema}"><div class="rotulo">
+          <span class="marcaAsp"></span>
+          <span class="titAsp">${d.nombre}</span>
+          <span class="numAsp">${delAspecto.length}</span>
+        </div><span class="lema">${d.lema}</span></th>
+        ${celdasDeBloque(idsAsp, d.nombre)}
+      </tr>`;
+
+    // "Por clasificar" es un solo bloque: su sub-banda repetiría el rótulo.
+    if (ak === 'por-clasificar') {
+      cuerpo += delAspecto.map(filaDe).join('');
+      return;
+    }
+
+    segsDe(ak).forEach((sk) => {
+      const filas = delAspecto.filter((a) => segmentoDe(a) === sk);
+      if (!filas.length && hayFiltro) return;
+      const vacia = !filas.length;
+      cuerpo += `<tr class="subbanda${vacia ? ' vacia' : ''}">
+          <th><div class="rotSub">
+            <span class="titSub">${defSeg(sk).nombre}</span>
+            <span class="numSub">${filas.length || ''}</span>
+          </div></th>
+          ${vacia
+            ? `<td colspan="${nAreas}"><span class="nota">El documento pide este segmento y todavía no hay ninguna actividad.</span></td>`
+            : celdasDeBloque(filas.map((a) => a.id), defSeg(sk).nombre)}
+        </tr>`;
+      cuerpo += filas.map(filaDe).join('');
+    });
+  });
+
+  $('tabla').innerHTML =
+    `<thead><tr><th class="esquina">${acts.length} actividades<small>${nAreas} áreas · toca para calificar</small></th>${cab}</tr></thead>` +
+    `<tbody>${cuerpo}</tbody>`;
+
+  $('tabla').classList.toggle('foco-col', !!colEnfoque);
+  $('tabla').classList.toggle('foco-fila', !!filaEnfoque);
+  conectarTabla();
+  pintarContador();
+}
+
+function conectarTabla() {
+  $('tabla').querySelectorAll('td.celda').forEach((td) => { td.onclick = () => cambiarCelda(td); });
+  $('tabla').querySelectorAll('th.area').forEach((th) => {
+    th.onclick = () => {
+      colEnfoque = (colEnfoque === th.dataset.area) ? null : th.dataset.area;
+      filaEnfoque = null;
+      pintarTabla();
+    };
+  });
+  $('tabla').querySelectorAll('th.act .nom').forEach((el) => {
+    el.onclick = () => {
+      const id = el.closest('tr').dataset.fila;
+      filaEnfoque = (filaEnfoque === id) ? null : id;
+      colEnfoque = null;
+      pintarTabla();
+    };
+  });
+  $('tabla').querySelectorAll('td.bloque').forEach((td) => {
+    td.onclick = () => {
+      const ids = td.dataset.ids.split(',');
+      calificarBloque(ids, td.dataset.area, siguienteDeBloque(resumenBloque(ids, td.dataset.area)));
+    };
+  });
+  $('tabla').querySelectorAll('button[data-mover]').forEach((b) => {
+    b.onclick = (ev) => { ev.stopPropagation(); abrirAspecto(b.dataset.mover); };
+  });
+}
+
+function cambiarCelda(td) {
+  const clave = td.dataset.act + '|' + td.dataset.area;
+  const antes = estado.celdas[clave] || '';
+  const nuevo = CICLO[(CICLO.indexOf(antes) + 1) % CICLO.length];
+
+  historial.push({ tipo: 'celda', clave, antes });
+  if (historial.length > 200) historial.shift();
+
+  if (nuevo) { estado.celdas[clave] = nuevo; td.dataset.v = nuevo; }
+  else { delete estado.celdas[clave]; delete td.dataset.v; }
+
+  const th = $('tabla').querySelector(`th.area[data-area="${td.dataset.area}"] .conteo`);
+  if (th) { const n = verdesPorArea(td.dataset.area); th.textContent = n || ''; }
+
+  guardar();
+  pintarContador();
+  $('btn-deshacer').disabled = false;
+}
+
+function deshacer() {
+  const paso = historial.pop();
+  if (!paso) return;
+  const quitar = (obj, k, antes) => { if (antes) obj[k] = antes; else delete obj[k]; };
+  if (paso.tipo === 'celda') quitar(estado.celdas, paso.clave, paso.antes);
+  else if (paso.tipo === 'semana') { quitar(estado.semana, paso.clave, paso.antes); pintarSemana(); }
+  else if (paso.tipo === 'aspecto') { quitar(estado.aspectos, paso.clave, paso.antes); pintarChips(); }
+  else if (paso.tipo === 'bloque') {
+    Object.entries(paso.antes).forEach(([k, v]) => quitar(estado.celdas, k, v));
+    // Un voto por sectores deja rastro en dos lados: las celdas y el voto
+    // mismo. Si solo se deshicieran las celdas, el boton se quedaria pintado
+    // diciendo que votaste algo que ya no esta.
+    if (paso.sector) quitar(estado.sectores, paso.sector.clave, paso.sector.antes);
+  }
+  guardar();
+  pintarTabla();
+  $('btn-deshacer').disabled = historial.length === 0;
+}
+
+function pintarContador() {
+  const c = { si: 0, mas: 0, no: 0 };
+  Object.values(estado.celdas).forEach((x) => { if (c[x] !== undefined) c[x]++; });
+  const sinClasificar = cuentaPorSegmento()['por-clasificar'] || 0;
+  $('contador').innerHTML =
+    `<b>${c.si}</b> sí · <b>${c.mas}</b> más o menos · <b>${c.no}</b> no` +
+    (sinClasificar ? ` &nbsp;·&nbsp; <b>${sinClasificar}</b> sin clasificar` : '');
+
+  const total = DATOS.actividades.length * DATOS.areas.length;
+  const llenas = c.si + c.mas + c.no;
+  $('avance').innerHTML = llenas >= total
+    ? '<b>completo</b>'
+    : `<b>${llenas.toLocaleString('es-MX')}</b> de ${total.toLocaleString('es-MX')} · faltan <b>${(total - llenas).toLocaleString('es-MX')}</b>`;
+}
+
+/* ============================================================
+   ASPECTO DE UNA ACTIVIDAD
+   ============================================================ */
+function abrirAspecto(actId) {
+  const a = DATOS.actividades.find((x) => x.id === actId);
+  if (!a) return;
+  actividadAbierta = actId;
+  const actual = segmentoDe(a);
+
+  $('asp-titulo').textContent = a.nombre;
+  $('asp-sub').textContent = (a.duda && actual === 'por-clasificar')
+    ? a.duda
+    : '¿En qué segmento del documento entra?';
+
+  // Los segmentos van agrupados bajo su aspecto, igual que en el documento.
+  $('asp-lista').innerHTML = DATOS.ordenAspecto.map((ak) => {
+    const da = defAsp(ak);
+    const opciones = segsDe(ak).map((sk) => `
+      <button data-seg="${sk}" aria-current="${sk === actual}">
+        <span class="opAsp">
+          <span class="punto" style="background:${da.color}"></span>
+          <span class="txt"><b>${defSeg(sk).nombre}</b></span>
+        </span>
+      </button>`).join('');
+    return `<div class="grupoAsp" style="--c:${da.color}">${da.nombre}</div>${opciones}`;
+  }).join('');
+
+  $('asp-lista').querySelectorAll('button').forEach((b) => {
+    b.onclick = () => { fijarSegmento(actId, b.dataset.seg); $('dlg-asp').close(); };
+  });
+  $('dlg-asp').showModal();
+}
+
+function fijarSegmento(actId, segmento) {
+  const a = DATOS.actividades.find((x) => x.id === actId);
+  historial.push({ tipo: 'aspecto', clave: actId, antes: estado.aspectos[actId] || null });
+  // Si vuelve a la clasificación de origen no hace falta guardar una excepción.
+  if (a && segmento === a.segmento) delete estado.aspectos[actId];
+  else estado.aspectos[actId] = segmento;
+  guardar();
+  pintarChips();
+  pintarTabla();
+  $('btn-deshacer').disabled = false;
+}
+
+/* ============================================================
+   RELLENAR DE GOLPE
+   ============================================================ */
+const NOMBRE_VALOR = { si: 'Le gusta', mas: 'Más o menos', no: 'No le gusta' };
+
+function celdasVacias() {
+  const faltan = [];
+  DATOS.actividades.forEach((a) => {
+    DATOS.areas.forEach((ar) => {
+      const k = a.id + '|' + ar.id;
+      if (!estado.celdas[k]) faltan.push(k);
+    });
+  });
+  return faltan;
+}
+
+function abrirRellenar() {
+  const faltan = celdasVacias();
+  if (!faltan.length) { alert('Ya no hay cuadritos vacíos.'); return; }
+
+  $('rell-sub').innerHTML =
+    `Quedan <b>${faltan.length.toLocaleString('es-MX')}</b> sin calificar. ` +
+    'Se llenan todas con lo que elijas; lo que ya calificaste no se toca.';
+
+  const COLOR = { si: 'var(--si)', mas: 'var(--masomenos)', no: 'var(--no)' };
+  $('rell-lista').innerHTML = ['si', 'mas', 'no'].map((v) =>
+    `<button data-v="${v}"><span class="opVal">
+      <span class="cuadro" style="background:${COLOR[v]}"></span>
+      <span>${NOMBRE_VALOR[v]}</span>
+    </span></button>`).join('');
+
+  $('rell-lista').querySelectorAll('button').forEach((b) => {
+    b.onclick = () => {
+      const v = b.dataset.v;
+      if (!confirm(`Se van a marcar ${faltan.length.toLocaleString('es-MX')} cuadritos como "${NOMBRE_VALOR[v]}".\n\n` +
+                   'Se puede deshacer con el botón Deshacer.')) return;
+      const antes = {};
+      faltan.forEach((k) => { antes[k] = ''; estado.celdas[k] = v; });
+      historial.push({ tipo: 'bloque', antes });
+      guardar();
+      pintarTabla();
+      $('btn-deshacer').disabled = false;
+      $('dlg-rellenar').close();
+    };
+  });
+  $('dlg-rellenar').showModal();
+}
+
+/* ============================================================
+   SEMANA
+   ============================================================ */
+// Las áreas que se visitan en una ranura. Siempre una lista, aunque sea de una.
+const enRanura = (clave) => estado.semana[clave] || [];
+
+// Cuántas visitas lleva cada área en la semana.
+function visitasPorArea() {
+  const c = {};
+  Object.values(estado.semana).forEach((lista) => {
+    (lista || []).forEach((id) => { c[id] = (c[id] || 0) + 1; });
+  });
+  return c;
+}
+
+// Si un área se visita más de una vez, cuál de sus visitas es ésta.
+// Se recorre la semana en orden, para que la 1ª sea siempre la más temprana.
+function ordinalDeVisita(clave, areaId) {
+  let n = 0;
+  for (const d of DIAS) {
+    for (const h of RANURAS) {
+      const k = d + '|' + h;
+      if (enRanura(k).includes(areaId)) { n++; if (k === clave) return n; }
+    }
+  }
+  return n;
+}
+
+function pintarSemana() {
+  $('pie-semana').textContent =
+    `Lunes a viernes, ${reloj(INICIO)} a ${reloj(TERMINO)}, en pausas de ${PASO} minutos. ` +
+    `${RANURAS.length} al día. Toca una ranura para asignarle áreas.`;
+
+  const cab = `<tr><th class="hora"></th>${DIAS.map((d) => `<th>${d}</th>`).join('')}</tr>`;
+  const filas = RANURAS.map((h) => {
+    const celdas = DIAS.map((d) => {
+      const clave = d + '|' + h;
+      const ids = enRanura(clave);
+      const areas = ids.map((id) => DATOS.areas.find((a) => a.id === id)).filter(Boolean);
+      const cuerpo = areas.length
+        ? areas.map((a) => {
+            const vez = ordinalDeVisita(clave, a.id);
+            return `<span class="un">${a.corto}${vez > 1 ? `<span class="vez">${vez}ª</span>` : ''}</span>`;
+          }).join('')
+        : '<span class="vacio">+</span>';
+      const titulo = areas.length ? areas.map((a) => a.nombre).join(' + ') : 'Ranura libre';
+      return `<td><button class="ranura${areas.length ? ' lleno' : ''}${areas.length > 1 ? ' juntas' : ''}"
+        data-ranura="${clave}" title="${titulo}">${cuerpo}</button></td>`;
+    }).join('');
+    return `<tr><td class="hora">${h}–${finDe(h)}</td>${celdas}</tr>`;
+  }).join('');
+
+  $('tabla-semana').innerHTML = `<thead>${cab}</thead><tbody>${filas}</tbody>`;
+  $('tabla-semana').querySelectorAll('.ranura').forEach((b) => {
+    b.onclick = () => abrirDialogo(b.dataset.ranura);
+  });
+
+  const total = RANURAS.length * DIAS.length;
+  const ocupadas = Object.keys(estado.semana).filter((k) => enRanura(k).length).length;
+  const libres = total - ocupadas;
+  const juntas = Object.keys(estado.semana).filter((k) => enRanura(k).length > 1).length;
+  const v = visitasPorArea();
+  const sin = DATOS.areas.filter((a) => !v[a.id]);
+  const una = DATOS.areas.filter((a) => v[a.id] === 1);
+  const dosOmas = DATOS.areas.filter((a) => (v[a.id] || 0) >= 2);
+
+  $('holgura').innerHTML = `
+    <span class="resumen">
+      <span><b>${total}</b> ranuras de ${PASO} min</span>
+      <span><b>${ocupadas}</b> ocupadas</span>
+      <span><b>${libres}</b> libres</span>
+      ${juntas ? `<span><b>${juntas}</b> con áreas juntas</span>` : ''}
+      <span><b>${sin.length}</b> áreas sin visita</span>
+      <span><b>${una.length}</b> con una</span>
+      <span><b>${dosOmas.length}</b> con dos o más</span>
+    </span>`;
+
+  // Primero lo que falta; luego las candidatas a la segunda pausa, ordenadas
+  // por número de personas: donde hay más gente, la segunda rinde más.
+  let html = '';
+  if (sin.length) {
+    html += `<h2>Sin visita programada · ${sin.length}</h2><ul>` +
+      sin.map((a) => `<li class="falta">${a.corto}<span class="gente">${a.personas}</span></li>`).join('') +
+      '</ul>';
+  }
+  if (una.length) {
+    html += `<h2>Candidatas a una segunda pausa · ${una.length}</h2>
+      <p class="pie" style="margin:6px 0 0">De mayor a menor número de personas.
+      Puedes darles ranura propia o juntarlas con otra área.</p><ul>` +
+      una.slice().sort((a, b) => b.personas - a.personas)
+        .map((a) => `<li>${a.corto}<span class="gente">${a.personas}</span></li>`).join('') +
+      '</ul>';
+  }
+  if (dosOmas.length) {
+    html += `<h2>Ya con dos o más · ${dosOmas.length}</h2><ul>` +
+      dosOmas.slice().sort((a, b) => (v[b.id] - v[a.id]) || (b.personas - a.personas))
+        .map((a) => `<li class="ok">${a.corto}<span class="gente">${v[a.id]} visitas · ${a.personas} personas</span></li>`).join('') +
+      '</ul>';
+  }
+  if (!html) html = '<h2>Semana vacía</h2><ul><li>Toca una ranura para empezar</li></ul>';
+  $('bloque-pendientes').innerHTML = html;
+}
+
+/* ------------------------------------------------------------
+   Elegir las áreas de una ranura. Caben hasta TOPE_POR_RANURA,
+   porque hay áreas que se juntan en la misma pausa.
+   ------------------------------------------------------------ */
+function abrirDialogo(clave) {
+  ranuraAbierta = clave;
+  pintarDialogo();
+  $('dlg').showModal();
+}
+
+function pintarDialogo() {
+  const clave = ranuraAbierta;
+  const [dia, hora] = clave.split('|');
+  const v = visitasPorArea();
+  const aqui = enRanura(clave);
+  const lleno = aqui.length >= TOPE_POR_RANURA;
+
+  const lista = DATOS.areas.slice().sort((a, b) => {
+    const ea = aqui.includes(a.id), eb = aqui.includes(b.id);
+    if (ea !== eb) return ea ? -1 : 1;   // lo ya elegido, arriba
+    const va = v[a.id] || 0, vb = v[b.id] || 0;
+    if (va !== vb) return va - vb;       // luego las que menos visitas llevan
+    return b.personas - a.personas;      // y entre ésas, las de más gente
+  });
+
+  $('dlg-titulo').textContent = `${dia}, ${hora}–${finDe(hora)}`;
+  $('dlg-sub').innerHTML = `Puedes juntar hasta ${TOPE_POR_RANURA} áreas en la misma pausa. ` +
+    `<b>${aqui.length} de ${TOPE_POR_RANURA}</b> elegidas.`;
+
+  $('dlg-lista').innerHTML = lista.map((a) => {
+    const n = v[a.id] || 0;
+    const puesta = aqui.includes(a.id);
+    const marca = n === 0 ? 'sin visita' : (n === 1 ? '1 visita' : `${n} visitas`);
+    return `<button data-area="${a.id}" class="opcion${puesta ? ' elegida' : ''}"
+      ${!puesta && lleno ? 'disabled' : ''} aria-pressed="${puesta}">
+      <span class="tic">${puesta ? '✓' : ''}</span>
+      <span class="nom">${a.nombre}</span>
+      <span class="meta">${a.personas} personas · <span class="${n ? 'yaCon' : ''}">${marca}</span></span>
+    </button>`;
+  }).join('');
+
+  $('dlg-lista').querySelectorAll('button').forEach((b) => {
+    b.onclick = () => alternarArea(clave, b.dataset.area);
+  });
+  $('dlg-quitar').disabled = !aqui.length;
+}
+
+function alternarArea(clave, areaId) {
+  const antes = enRanura(clave).slice();
+  const nueva = antes.includes(areaId)
+    ? antes.filter((x) => x !== areaId)
+    : antes.concat(areaId);
+  if (nueva.length > TOPE_POR_RANURA) return;
+
+  historial.push({ tipo: 'semana', clave, antes: antes.length ? antes : null });
+  if (nueva.length) estado.semana[clave] = nueva; else delete estado.semana[clave];
+
+  guardar();
+  pintarSemana();
+  pintarDialogo();
+  $('btn-deshacer').disabled = false;
+}
+
+function vaciarRanura(clave) {
+  const antes = enRanura(clave).slice();
+  if (!antes.length) return;
+  historial.push({ tipo: 'semana', clave, antes });
+  delete estado.semana[clave];
+  guardar();
+  pintarSemana();
+  $('btn-deshacer').disabled = false;
+}
+
+/* ============================================================
+   ENTRADA Y SALIDA
+   ============================================================ */
+function bajarArchivo(nombre, contenido, tipo) {
+  const url = URL.createObjectURL(new Blob([contenido], { type: tipo }));
+  const a = document.createElement('a');
+  a.href = url; a.download = nombre;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function sello() {
+  const d = new Date(), p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+}
+
+function exportarCsv() {
+  const ETIQ = { si: 'Le gusta', mas: 'Mas o menos', no: 'No le gusta' };
+  const esc = (t) => `"${String(t == null ? '' : t).replace(/"/g, '""')}"`;
+  const lin = [['Actividad', 'Aspecto ignaciano', 'Segmento', 'Minutos',
+    ...DATOS.areas.map((a) => a.nombre)].map(esc).join(',')];
+
+  DATOS.orden.forEach((k) => {
+    const asp = defSeg(k).aspecto;
+    DATOS.actividades.filter((a) => segmentoDe(a) === k).forEach((a) => {
+      lin.push([a.nombre, defAsp(asp).nombre, defSeg(k).nombre, a.duracion || '',
+        ...DATOS.areas.map((ar) => ETIQ[estado.celdas[a.id + '|' + ar.id]] || '')
+      ].map(esc).join(','));
+    });
+  });
+
+  lin.push('');
+  lin.push(['Semana de visitas'].map(esc).join(','));
+  lin.push(['Horario', ...DIAS].map(esc).join(','));
+  RANURAS.forEach((h) => {
+    lin.push([`${h}-${finDe(h)}`, ...DIAS.map((d) => enRanura(d + '|' + h)
+      .map((id) => (DATOS.areas.find((x) => x.id === id) || {}).nombre || '')
+      .filter(Boolean).join(' + ')
+    )].map(esc).join(','));
+  });
+
+  // El BOM hace que Excel lea bien los acentos
+  bajarArchivo(`tablero-areas-${sello()}.csv`, '﻿' + lin.join('\r\n'), 'text/csv;charset=utf-8');
+}
+
+function importar(texto) {
+  let d;
+  try { d = JSON.parse(texto); }
+  catch (e) { alert('Ese archivo no se pudo leer. ¿Es el respaldo que descargaste?'); return; }
+  if (!d || typeof d.celdas !== 'object') { alert('El archivo no trae decisiones guardadas.'); return; }
+  estado.celdas = d.celdas || {};
+  estado.semana = d.semana || {};
+  estado.aspectos = d.aspectos || {};
+  normalizarSemana();   // un respaldo viejo trae un área por ranura
+  historial = [];
+  $('btn-deshacer').disabled = true;
+  guardar(); pintarChips(); pintarTabla(); pintarSemana();
+}
+
+/* ============================================================
+   POR SECTORES — la ronda rápida
+   ============================================================
+   El tablero completo son 71 actividades x 35 areas: 2,485 celdas que hay que
+   tocar una por una. Esta vista hace el mismo trabajo en una fraccion de los
+   toques, apoyandose en dos cosas que ya sabemos:
+
+     1. LAS AREAS NO SE VISITAN EN ORDEN ALFABETICO, sino en el orden de la
+        semana. Y varias comparten pausa: si el lunes a las 10:00 caen juntas
+        Humanidades, Salud y Medio Ambiente, preguntar tres veces lo mismo es
+        trabajo de mas. Se pregunta UNA vez por parada.
+     2. LAS ACTIVIDADES SE PARECEN ENTRE SI DENTRO DE SU SEGMENTO. Votar
+        "Juegos cooperativos" de un golpe vale por las 25 actividades que
+        contiene.
+
+   Un area repetida (segunda pausa en la semana) aparece SOLO la primera vez:
+   ya quedo clasificada, preguntarlo otra vez no aporta nada.
+
+   LO QUE YA CLASIFICASTE A MANO NO SE PISA. El voto del segmento solo rellena
+   las celdas vacias y las que puso el propio voto anterior; cualquier celda que
+   hayas tocado a mano en el tablero se respeta, y la tarjeta te dice cuantas.
+   ============================================================ */
+
+/** Las paradas de la ronda, en el orden en que las visitas durante la semana. */
+function paradasDeSectores() {
+  const vistas = new Set();
+  const paradas = [];
+
+  for (const d of DIAS) {
+    for (const h of RANURAS) {
+      const lista = estado.semana[d + '|' + h];
+      if (!Array.isArray(lista) || !lista.length) continue;
+      const nuevas = lista.filter((id) => !vistas.has(id));
+      if (!nuevas.length) continue; // toda la ranura es segunda pausa
+      nuevas.forEach((id) => vistas.add(id));
+      paradas.push({ dia: d, hora: h, areas: nuevas, repetidas: lista.length - nuevas.length });
+    }
+  }
+
+  // Las que todavia no tienen lugar en la semana van al final, cada una por su
+  // cuenta: sin horario no hay con quien agruparlas, pero tampoco se pueden
+  // quedar fuera de la clasificacion.
+  DATOS.areas.forEach((a) => {
+    if (!vistas.has(a.id)) paradas.push({ dia: null, hora: null, areas: [a.id], repetidas: 0 });
+  });
+
+  return paradas;
+}
+
+/** Nombre estable de una parada, sin importar el orden en que se guardaron. */
+const claveParada = (p) => p.areas.slice().sort().join('+');
+
+const nombreArea = (id) => {
+  const a = DATOS.areas.find((x) => x.id === id);
+  return a ? (a.corto || a.nombre) : id;
+};
+
+/** Cuantas celdas de este segmento y estas areas ya tienen algo puesto. */
+function yaClasificadas(parada, segId) {
+  const acts = DATOS.actividades.filter((a) => segmentoDe(a) === segId);
+  let n = 0;
+  acts.forEach((a) => parada.areas.forEach((ar) => {
+    if (estado.celdas[a.id + '|' + ar]) n++;
+  }));
+  return { puestas: n, total: acts.length * parada.areas.length };
+}
+
+/**
+ * Vota un segmento completo para todas las areas de la parada.
+ *
+ * Que celda se toca y cual no:
+ *   · vacia                        -> se llena
+ *   · la puso este mismo voto antes -> se actualiza (asi se puede corregir)
+ *   · la pusiste tu a mano          -> se respeta y se te avisa
+ *
+ * Sin la regla del medio, cambiar de "si" a "mas" no haria nada: las celdas ya
+ * no estarian vacias y se respetarian a si mismas.
+ */
+function votarSegmento(parada, segId, valor) {
+  const clave = claveParada(parada) + '|' + segId;
+  const previo = estado.sectores[clave] || '';
+  const acts = DATOS.actividades.filter((a) => segmentoDe(a) === segId);
+
+  const antes = {};
+  let tocadas = 0, respetadas = 0;
+
+  acts.forEach((a) => parada.areas.forEach((ar) => {
+    const k = a.id + '|' + ar;
+    const actual = estado.celdas[k] || '';
+    const esNuestra = !actual || (previo && actual === previo);
+    if (!esNuestra) { respetadas++; return; }
+    antes[k] = actual;
+    if (valor) estado.celdas[k] = valor; else delete estado.celdas[k];
+    tocadas++;
+  }));
+
+  historial.push({ tipo: 'bloque', antes, sector: { clave, antes: previo } });
+  if (historial.length > 200) historial.shift();
+
+  if (valor) estado.sectores[clave] = valor; else delete estado.sectores[clave];
+
+  guardar();
+  pintarSectores();
+  pintarTabla();
+  pintarContador();
+  $('btn-deshacer').disabled = false;
+  return { tocadas, respetadas };
+}
+
+function pintarSectores() {
+  const paradas = paradasDeSectores();
+  const cont = $('sectores-lista');
+  const conHorario = paradas.filter((p) => p.dia).length;
+
+  const totalVotos = paradas.length * DATOS.orden.length;
+  const dados = paradas.reduce((s, p) =>
+    s + DATOS.orden.filter((k) => estado.sectores[claveParada(p) + '|' + k]).length, 0);
+
+  $('pie-sectores').innerHTML =
+    `<b>${paradas.length}</b> paradas · <b>${dados}</b> de <b>${totalVotos}</b> votos dados. ` +
+    (conHorario
+      ? `Van en el orden de tu semana; las areas que comparten pausa se preguntan juntas una sola vez.`
+      : `Todavia no has armado la semana, asi que salen sueltas. Arma la pestana <b>Semana</b> y aqui se acomodan solas.`);
+
+  cont.innerHTML = paradas.map((p, i) => {
+    const clave = claveParada(p);
+    const votados = DATOS.orden.filter((k) => estado.sectores[clave + '|' + k]).length;
+    const completa = votados === DATOS.orden.length;
+
+    const filas = DATOS.orden.map((segId) => {
+      const seg = DATOS.segmentos[segId];
+      const cuantas = DATOS.actividades.filter((a) => segmentoDe(a) === segId).length;
+      if (!cuantas) return '';
+      const puesto = estado.sectores[clave + '|' + segId] || '';
+      const ya = yaClasificadas(p, segId);
+      return `
+        <div class="segNombre">${seg.nombre}
+          <small>${cuantas} actividad${cuantas === 1 ? '' : 'es'}${
+            ya.puestas ? ` · ${ya.puestas} de ${ya.total} celdas ya tenian algo` : ''}</small>
+        </div>
+        <div class="voto" data-parada="${i}" data-seg="${segId}">
+          ${['si', 'mas', 'no'].map((v) => `
+            <button type="button" data-v="${v}" aria-pressed="${puesto === v}"
+                    title="${v === 'si' ? 'Le gusta' : v === 'mas' ? 'Mas o menos' : 'No le gusta'}"
+              >${v === 'si' ? '✓' : v === 'mas' ? '~' : '✕'}</button>`).join('')}
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="parada${completa ? ' lista' : ''}">
+        <div class="cabParada">
+          <div class="quienes">${p.areas.map(nombreArea).join(' + ')}</div>
+          <div class="cuando">${p.dia ? `${p.dia} ${p.hora}` : 'sin horario'}</div>
+        </div>
+        ${p.areas.length > 1
+          ? `<div class="juntas">Estas ${p.areas.length} areas caen en la misma pausa, asi que se clasifican juntas.</div>`
+          : ''}
+        ${p.repetidas
+          ? `<div class="juntas">${p.repetidas} area(s) de esta pausa ya se clasificaron antes y no se repiten.</div>`
+          : ''}
+        <div class="segs">${filas}</div>
+        <div class="yaHabia">Votar un segmento no pisa lo que ya clasificaste a mano en el tablero.</div>
+      </div>`;
+  }).join('');
+
+  cont.querySelectorAll('.voto button').forEach((b) => {
+    b.onclick = () => {
+      const caja = b.parentElement;
+      const parada = paradasDeSectores()[Number(caja.dataset.parada)];
+      const segId = caja.dataset.seg;
+      const clave = claveParada(parada) + '|' + segId;
+      // Volver a tocar el mismo voto lo quita, igual que en el tablero.
+      const valor = estado.sectores[clave] === b.dataset.v ? '' : b.dataset.v;
+      votarSegmento(parada, segId, valor);
+    };
+  });
+}
+
+/* ============================================================
+   ARRANQUE
+   ============================================================ */
+function verTab(cual) {
+  $('tab-tablero').setAttribute('aria-selected', cual === 'tablero');
+  $('tab-semana').setAttribute('aria-selected', cual === 'semana');
+  $('tab-sectores').setAttribute('aria-selected', cual === 'sectores');
+  $('vista-tablero').classList.toggle('oculto', cual !== 'tablero');
+  $('herramientas').classList.toggle('oculto', cual !== 'tablero');
+  $('vista-semana').classList.toggle('oculto', cual !== 'semana');
+  $('vista-sectores').classList.toggle('oculto', cual !== 'sectores');
+  if (cual === 'sectores') pintarSectores();
+}
+
+cargar();
+pintarReacomodo();
+pintarChips();
+pintarTabla();
+pintarSemana();
+
+$('tab-tablero').onclick = () => verTab('tablero');
+$('tab-semana').onclick = () => verTab('semana');
+$('tab-sectores').onclick = () => verTab('sectores');
+$('buscar').oninput = (e) => { textoBusca = e.target.value; filaEnfoque = null; pintarTabla(); };
+$('btn-deshacer').onclick = deshacer;
+$('btn-rellenar').onclick = abrirRellenar;
+$('rell-cerrar').onclick = () => $('dlg-rellenar').close();
+$('btn-csv').onclick = exportarCsv;
+$('btn-guardar').onclick = () => bajarArchivo(
+  `tablero-areas-${sello()}.json`, JSON.stringify(estado, null, 1), 'application/json');
+$('btn-cargar').onclick = () => $('archivo').click();
+$('archivo').onchange = (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const l = new FileReader();
+  l.onload = () => importar(l.result);
+  l.readAsText(f);
+  e.target.value = '';
+};
+$('btn-limpiar').onclick = () => {
+  const n = Object.keys(estado.celdas).length + Object.keys(estado.semana).length;
+  if (!n) return;
+  if (!confirm(`Se borran ${n} decisiones. Esto no se puede deshacer.\n\n¿Descargaste el respaldo?`)) return;
+  estado.celdas = {}; estado.semana = {}; historial = [];
+  $('btn-deshacer').disabled = true;
+  guardar(); pintarTabla(); pintarSemana();
+};
+$('dlg-cerrar').onclick = () => $('dlg').close();
+$('dlg-quitar').onclick = () => { vaciarRanura(ranuraAbierta); $('dlg').close(); };
+$('asp-cerrar').onclick = () => $('dlg-asp').close();
+$('reacomodo-ok').onclick = () => {
+  delete estado.desacomodadas;
+  guardar();
+  pintarReacomodo();
+};
+</script>
+</body>
+</html>
