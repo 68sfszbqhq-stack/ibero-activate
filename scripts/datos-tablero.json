@@ -1,0 +1,1525 @@
+{
+ "generado": "2026-09-07T15:56:55.557Z",
+ "precarga": {
+  "RC-04": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "5ere6btC1KXkF121mekb": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "AF-01": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "AF-12": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "7ATkZqmbmyJ9ZfgTBTqx": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "RC-03": "gggggggmgmmgmmmggggmgmgmmgggmmggggg",
+  "AF-11": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "qLZHQeJ2euAqejrwXowr": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "RC-08": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "AF-03": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "RC-07": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "CR-02": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "RC-02": "gggggggmgmmgmmmggggmgmgmmgggmmggggg",
+  "KPl3vgc8esCk8lbkHXHL": "gggggggmgmmgmmmggggmgmgmmgggmmggggg",
+  "DP-05": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "DP-02": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "eMIKzFaf82bYXWqTqvUs": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "RC-06": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "DP-08": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "DP-01": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "JM-10": "mmmmmmmnmnnmnnnmmmmnmnmnnmmmnnmmmmm",
+  "FG-05": "gggggggmgmmgmmmggggmgmgmmgggmmggggg",
+  "JM-11": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "TB-04": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "TB-07": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "JM-18": "mmmmmmmnmnnmnnnmmmmnmnmnnmmmnnmmmmm",
+  "FG-06": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "JM-22": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "JM-21": "mmmmmmmnmnnmnnnmmmmnmnmnnmmmnnmmmmm",
+  "JM-01": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "iuyGtpzc7MEx3J2Lq8YQ": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "FG-07": "gggggggmgmmgmmmggggmgmgmmgggmmggggg",
+  "NT28SjlrSc9j5xIjA9zH": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "JM-02": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "Esx5rOYBdqowCQw6DDkF": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "FG-03": "gggggggmgmmgmmmggggmgmgmmgggmmggggg",
+  "FG-12": "mmmmmmmnmnnmnnnmmmmnmnmnnmmmnnmmmmm",
+  "JM-14": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "FG-01": "mmmmmmmnmnnmnnnmmmmnmnmnnmmmnnmmmmm",
+  "JM-09": "gggggggmgmmgmmmggggmgmgmmgggmmggggg",
+  "JM-20": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "JM-21b": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "JM-07": "mmmmmmmnmnnmnnnmmmmnmnmnnmmmnnmmmmm",
+  "JM-04": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "JM-12": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "JM-08": "gggggggmgmmgmmmggggmgmgmmgggmmggggg",
+  "CR-03": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "CR-04": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "JM-05": "gggggggmgmmgmmmggggmgmgmmgggmmggggg",
+  "AWhR2LhnHlaN95onMZIJ": "mmmmmmmnmnnmnnnmmmmnmnmnnmmmnnmmmmm",
+  "VD-02": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "VD-01": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "JM-06": "gggggggmgmmgmmmggggmgmgmmgggmmggggg",
+  "FG-02": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "FG-16": "mmmmmmmnmnnmnnnmmmmnmnmnnmmmnnmmmmm",
+  "CR-01": "gggggggmgmmgmmmggggmgmgmmgggmmggggg",
+  "RC-01": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "DP-07": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "JM-03": "mmmmmmmnmnnmnnnmmmmnmnmnnmmmnnmmmmm",
+  "d67YbTCapEL2gjmbZz41": "mmmmmmmnmnnmnnnmmmmnmnmnnmmmnnmmmmm",
+  "VD-03": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "VD-05": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "FG-10": "gggggggmgmmgmmmggggmgmgmmgggmmggggg",
+  "DP-03": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "VD-07": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "VD-08": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "FG-09b": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "VD-04": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "VD-06": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm",
+  "FG-04": "gggggggmgmmgmmmggggmgmgmmgggmmggggg",
+  "VD-09": "ggmmggmmgmmgmmmggmmmmmmmmmmgmmmmggm"
+ },
+ "horario": {
+  "Lunes|10:00": [
+   "yHonYWQvJdgXfmSBWqRh"
+  ],
+  "Martes|10:00": [
+   "KlM7TUxkUkEusv7LAG40"
+  ],
+  "Miércoles|10:00": [
+   "yHonYWQvJdgXfmSBWqRh"
+  ],
+  "Jueves|10:00": [
+   "Q5i3FX719DGSzIERxNgU",
+   "80aFHwJExpZdTRYsBt5h",
+   "cI9MCvnTUuc5Xjyua6lD",
+   "kZmU1FREQL8vqyI8kw0v"
+  ],
+  "Viernes|10:00": [
+   "xm2Q8z92WcgLBEZ2aX2T"
+  ],
+  "Lunes|10:25": [
+   "FXE4q6axdeJrzF1b1FwS"
+  ],
+  "Martes|10:25": [
+   "65AepIdmRltvmP4IGScv",
+   "SRkYpvo3RST7oecu8HgE"
+  ],
+  "Miércoles|10:25": [
+   "FXE4q6axdeJrzF1b1FwS"
+  ],
+  "Jueves|10:25": [
+   "65AepIdmRltvmP4IGScv",
+   "SRkYpvo3RST7oecu8HgE",
+   "AC14eB2pegfVwwWSW9LE"
+  ],
+  "Viernes|10:25": [
+   "9xqoYSY4nEh4Trliioj9"
+  ],
+  "Lunes|10:50": [
+   "FMZHgr1I0dLdBXXLj99I"
+  ],
+  "Martes|10:50": [
+   "S7H58aQhYGI9S5xJER8M"
+  ],
+  "Miércoles|10:50": [
+   "YqrJtc3VTcIHMX2z2PMU"
+  ],
+  "Jueves|10:50": [
+   "S7H58aQhYGI9S5xJER8M"
+  ],
+  "Viernes|10:50": [
+   "ymt6ECXGeLqrC83fFWeG"
+  ],
+  "Lunes|11:15": [
+   "lSie9E7Kr8QNvUlGFBPy"
+  ],
+  "Martes|11:15": [
+   "ERC3HYSFDJp4x6UfnnAQ"
+  ],
+  "Miércoles|11:15": [
+   "xEFRceYEBfdwcLxZqKCg"
+  ],
+  "Jueves|11:15": [
+   "ERC3HYSFDJp4x6UfnnAQ"
+  ],
+  "Viernes|11:15": [
+   "j4xd23HCTO9GwIS9ZcdW"
+  ],
+  "Lunes|11:40": [
+   "xSfXcNRJ6nhhlqoEvLJM"
+  ],
+  "Martes|11:40": [
+   "cI9MCvnTUuc5Xjyua6lD",
+   "Q5i3FX719DGSzIERxNgU",
+   "80aFHwJExpZdTRYsBt5h",
+   "kZmU1FREQL8vqyI8kw0v"
+  ],
+  "Miércoles|11:40": [
+   "n4nW2mrYhVECKhkfPsDE"
+  ],
+  "Jueves|11:40": [
+   "V238dx3lj1U1p2kjdtqv"
+  ],
+  "Viernes|11:40": [
+   "gNcbKAM5nfwjbfX1EQhN"
+  ],
+  "Lunes|12:05": [
+   "cBffk6GRmJgGhhsT9hoz"
+  ],
+  "Martes|12:05": [
+   "V238dx3lj1U1p2kjdtqv"
+  ],
+  "Miércoles|12:05": [
+   "FMZHgr1I0dLdBXXLj99I"
+  ],
+  "Jueves|12:05": [
+   "EO4i5qc6ei8RNZXyBcv6",
+   "64Y5Lu2Awg1NW5C3nKSw",
+   "QsF2m8egyE90CVjpIR0g",
+   "DaCdSCODrF4lMljcTGnP"
+  ],
+  "Viernes|12:05": [
+   "e8kjcRZXd5m3SllREfHY"
+  ],
+  "Lunes|12:30": [
+   "AC14eB2pegfVwwWSW9LE",
+   "PJ6RIcX1BfQyGlwbBz16",
+   "9lFiKCD13qjd1PdennL9"
+  ],
+  "Martes|12:30": [
+   "64Y5Lu2Awg1NW5C3nKSw",
+   "QsF2m8egyE90CVjpIR0g",
+   "DaCdSCODrF4lMljcTGnP"
+  ],
+  "Miércoles|12:30": [
+   "xSfXcNRJ6nhhlqoEvLJM"
+  ],
+  "Jueves|12:30": [
+   "uELhrRBIDGfqYmuHKgOK"
+  ],
+  "Viernes|12:30": [
+   "EIRAaoyKPuRZhVLhWE82",
+   "cf1JpmNLoC6LiVNezu51"
+  ]
+ },
+ "aspectos": {
+  "cura": {
+   "nombre": "Cura Personalis",
+   "lema": "Cuidado integral de la persona: salud física, emocional, social y espiritual.",
+   "color": "#7C3AED",
+   "fondo": "#F5F3FF"
+  },
+  "comunidad": {
+   "nombre": "Comunidad para el Bien Común",
+   "lema": "Colaboración y apoyo mutuo. Fortalece la identidad universitaria.",
+   "color": "#EA580C",
+   "fondo": "#FFF7ED"
+  },
+  "magis": {
+   "nombre": "Magis y Servicio",
+   "lema": "Dar lo mejor de sí al servicio de los demás: solidaridad y corresponsabilidad.",
+   "color": "#0891B2",
+   "fondo": "#ECFEFF"
+  },
+  "por-clasificar": {
+   "nombre": "Por clasificar",
+   "lema": "Caben en dos segmentos a la vez. Falta que José decida en cuál entran.",
+   "color": "#9CA3AF",
+   "fondo": "#F9FAFB"
+  }
+ },
+ "segmentos": {
+  "activaciones": {
+   "aspecto": "cura",
+   "nombre": "Activaciones físicas saludables"
+  },
+  "respiracion": {
+   "aspecto": "cura",
+   "nombre": "Ejercicios de respiración consciente"
+  },
+  "estiramiento-reflexion": {
+   "aspecto": "cura",
+   "nombre": "Pausas de estiramiento con reflexión"
+  },
+  "estres": {
+   "aspecto": "cura",
+   "nombre": "Estrategias de manejo del estrés"
+  },
+  "cooperativos": {
+   "aspecto": "comunidad",
+   "nombre": "Juegos cooperativos"
+  },
+  "retos-grupales": {
+   "aspecto": "comunidad",
+   "nombre": "Retos grupales"
+  },
+  "confianza": {
+   "aspecto": "comunidad",
+   "nombre": "Dinámicas de confianza"
+  },
+  "inter-areas": {
+   "aspecto": "comunidad",
+   "nombre": "Actividades de integración inter áreas"
+  },
+  "retos-colaborativos": {
+   "aspecto": "magis",
+   "nombre": "Retos colaborativos"
+  },
+  "liderazgo": {
+   "aspecto": "magis",
+   "nombre": "Actividades de liderazgo compartido"
+  },
+  "reflexion-servicio": {
+   "aspecto": "magis",
+   "nombre": "Reflexiones breves sobre servicio"
+  },
+  "ayuda-mutua": {
+   "aspecto": "magis",
+   "nombre": "Dinámicas de ayuda mutua"
+  },
+  "por-clasificar": {
+   "aspecto": "por-clasificar",
+   "nombre": "Por clasificar"
+  }
+ },
+ "orden": [
+  "activaciones",
+  "respiracion",
+  "estiramiento-reflexion",
+  "estres",
+  "cooperativos",
+  "retos-grupales",
+  "confianza",
+  "inter-areas",
+  "retos-colaborativos",
+  "liderazgo",
+  "reflexion-servicio",
+  "ayuda-mutua",
+  "por-clasificar"
+ ],
+ "ordenAspecto": [
+  "cura",
+  "comunidad",
+  "magis",
+  "por-clasificar"
+ ],
+ "actividades": [
+  {
+   "id": "RC-04",
+   "nombre": "Automasaje con Pelota",
+   "segmento": "activaciones",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "🎾",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 20.7,
+    "personas": 206,
+    "sesiones": 10
+   }
+  },
+  {
+   "id": "5ere6btC1KXkF121mekb",
+   "nombre": "Energía Express",
+   "segmento": "activaciones",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "⚡",
+   "duracion": 5,
+   "estrellas": 4,
+   "popularidad": null
+  },
+  {
+   "id": "AF-01",
+   "nombre": "Energía Express",
+   "segmento": "activaciones",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "⚡",
+   "duracion": 5,
+   "estrellas": 4,
+   "popularidad": null
+  },
+  {
+   "id": "AF-12",
+   "nombre": "Escuela de Postura",
+   "segmento": "activaciones",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "🪑",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "7ATkZqmbmyJ9ZfgTBTqx",
+   "nombre": "Estiramiento Integral",
+   "segmento": "activaciones",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "🤸",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 19.4,
+    "personas": 267,
+    "sesiones": 14
+   }
+  },
+  {
+   "id": "RC-03",
+   "nombre": "Estiramientos Funcionales",
+   "segmento": "activaciones",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "🙆",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 31,
+    "personas": 112,
+    "sesiones": 3
+   }
+  },
+  {
+   "id": "AF-11",
+   "nombre": "Fuerza con Liga",
+   "segmento": "activaciones",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "🎗️",
+   "duracion": 8,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "qLZHQeJ2euAqejrwXowr",
+   "nombre": "Movilidad Express",
+   "segmento": "activaciones",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "🤸",
+   "duracion": 5,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "RC-08",
+   "nombre": "Punto Gatillo",
+   "segmento": "activaciones",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "🎯",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "AF-03",
+   "nombre": "Ritmo Cardiaco",
+   "segmento": "activaciones",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "❤️",
+   "duracion": 5,
+   "estrellas": 3,
+   "popularidad": null
+  },
+  {
+   "id": "RC-07",
+   "nombre": "Rodillo Miofascial",
+   "segmento": "activaciones",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "🧻",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "CR-02",
+   "nombre": "Diario de Gratitud",
+   "segmento": "respiracion",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "📓",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 19,
+    "personas": 52,
+    "sesiones": 3
+   }
+  },
+  {
+   "id": "RC-02",
+   "nombre": "Meditación Guiada",
+   "segmento": "respiracion",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "🧘",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 24.2,
+    "personas": 54,
+    "sesiones": 2
+   }
+  },
+  {
+   "id": "KPl3vgc8esCk8lbkHXHL",
+   "nombre": "Relax y Enfoque",
+   "segmento": "respiracion",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "🧘",
+   "duracion": 5,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 24.7,
+    "personas": 56,
+    "sesiones": 2
+   }
+  },
+  {
+   "id": "DP-05",
+   "nombre": "Respiración 4-7-8",
+   "segmento": "respiracion",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "🌬️",
+   "duracion": 6,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "DP-02",
+   "nombre": "Tres Gratitudes",
+   "segmento": "respiracion",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "🙏",
+   "duracion": 8,
+   "estrellas": 4,
+   "popularidad": null
+  },
+  {
+   "id": "eMIKzFaf82bYXWqTqvUs",
+   "nombre": "Pausa de Escritorio",
+   "segmento": "estiramiento-reflexion",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "💻",
+   "duracion": 3,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "RC-06",
+   "nombre": "Yoga en Silla",
+   "segmento": "estiramiento-reflexion",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "🪑",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 19.3,
+    "personas": 15,
+    "sesiones": 1
+   }
+  },
+  {
+   "id": "DP-08",
+   "nombre": "Mapa de Emociones",
+   "segmento": "estres",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "🧭",
+   "duracion": 8,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "DP-01",
+   "nombre": "Rueda de la Vida Express",
+   "segmento": "estres",
+   "aspecto": "cura",
+   "duda": "",
+   "emoji": "🎯",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "JM-10",
+   "nombre": "Bananagrams",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🍌",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 18.2,
+    "personas": 30,
+    "sesiones": 2
+   }
+  },
+  {
+   "id": "FG-05",
+   "nombre": "Círculo de Toques",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "⭕",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 26,
+    "personas": 87,
+    "sesiones": 3
+   }
+  },
+  {
+   "id": "JM-11",
+   "nombre": "Crazy Tower",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🗼",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "TB-04",
+   "nombre": "Cuento en Cadena",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "📖",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "TB-07",
+   "nombre": "Dibujo a Ciegas",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "✏️",
+   "duracion": 12,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "JM-18",
+   "nombre": "Dominó Tren Mexicano",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🚂",
+   "duracion": 20,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 18.7,
+    "personas": 32,
+    "sesiones": 2
+   }
+  },
+  {
+   "id": "FG-06",
+   "nombre": "El Globo Loco",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🎈",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "JM-22",
+   "nombre": "Exploding Kittens",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🐱",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "JM-21",
+   "nombre": "Fantasma Blitz",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "👻",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 10.2,
+    "personas": 8,
+    "sesiones": 3
+   }
+  },
+  {
+   "id": "JM-01",
+   "nombre": "Hockey de Mesa",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🏒",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "iuyGtpzc7MEx3J2Lq8YQ",
+   "nombre": "Hockey de Mesa",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🏒",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "FG-07",
+   "nombre": "Hockey de Suelo",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🏒",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 20.9,
+    "personas": 41,
+    "sesiones": 2
+   }
+  },
+  {
+   "id": "NT28SjlrSc9j5xIjA9zH",
+   "nombre": "Juego de Mesa UNO",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🃏",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 20.2,
+    "personas": 38,
+    "sesiones": 2
+   }
+  },
+  {
+   "id": "JM-02",
+   "nombre": "Lotería",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🃏",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "Esx5rOYBdqowCQw6DDkF",
+   "nombre": "Lotería Mexicana",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🎲",
+   "duracion": 20,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "FG-03",
+   "nombre": "Mini Bádminton",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🏸",
+   "duracion": 15,
+   "estrellas": 3,
+   "popularidad": {
+    "porSesion": 29.9,
+    "personas": 47,
+    "sesiones": 1
+   }
+  },
+  {
+   "id": "FG-12",
+   "nombre": "Mini Voleibol",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🏐",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 14.8,
+    "personas": 31,
+    "sesiones": 3
+   }
+  },
+  {
+   "id": "JM-14",
+   "nombre": "Polilla Tramposa",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🦋",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "FG-01",
+   "nombre": "Spaghetti-Vóley",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🎈",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 17.6,
+    "personas": 10,
+    "sesiones": 1
+   }
+  },
+  {
+   "id": "JM-09",
+   "nombre": "Spot It (Dobble)",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "👀",
+   "duracion": 5,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 20.9,
+    "personas": 41,
+    "sesiones": 2
+   }
+  },
+  {
+   "id": "JM-20",
+   "nombre": "Taco Gato Cabra...",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🌮",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "JM-21b",
+   "nombre": "That's Not a Hat",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🎁",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "JM-07",
+   "nombre": "The Mind",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "😶",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 18.8,
+    "personas": 51,
+    "sesiones": 3
+   }
+  },
+  {
+   "id": "JM-04",
+   "nombre": "UNO Clásico",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🎴",
+   "duracion": 20,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 20.6,
+    "personas": 19,
+    "sesiones": 1
+   }
+  },
+  {
+   "id": "JM-12",
+   "nombre": "UNO No Mercy",
+   "segmento": "cooperativos",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "👿",
+   "duracion": 20,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "JM-08",
+   "nombre": "Torre Jenga",
+   "segmento": "retos-grupales",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🧱",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 22.7,
+    "personas": 48,
+    "sesiones": 2
+   }
+  },
+  {
+   "id": "CR-03",
+   "nombre": "Cartas al Universo",
+   "segmento": "confianza",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "✉️",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "CR-04",
+   "nombre": "Tarjetas 'Somos'",
+   "segmento": "confianza",
+   "aspecto": "comunidad",
+   "duda": "",
+   "emoji": "🃏",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 19.7,
+    "personas": 115,
+    "sesiones": 6
+   }
+  },
+  {
+   "id": "JM-05",
+   "nombre": "Adivina la Palabra",
+   "segmento": "retos-colaborativos",
+   "aspecto": "magis",
+   "duda": "",
+   "emoji": "🤔",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 20.9,
+    "personas": 41,
+    "sesiones": 2
+   }
+  },
+  {
+   "id": "AWhR2LhnHlaN95onMZIJ",
+   "nombre": "EVERYBODY 1 2 SWITCH",
+   "segmento": "retos-colaborativos",
+   "aspecto": "magis",
+   "duda": "",
+   "emoji": "💻",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 15.6,
+    "personas": 98,
+    "sesiones": 7
+   }
+  },
+  {
+   "id": "VD-02",
+   "nombre": "Jeopardy / Switch 1-2",
+   "segmento": "retos-colaborativos",
+   "aspecto": "magis",
+   "duda": "",
+   "emoji": "🎮",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "VD-01",
+   "nombre": "Mario Party",
+   "segmento": "retos-colaborativos",
+   "aspecto": "magis",
+   "duda": "",
+   "emoji": "🍄",
+   "duracion": 20,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 19.8,
+    "personas": 56,
+    "sesiones": 3
+   }
+  },
+  {
+   "id": "JM-06",
+   "nombre": "Ping Pong con Tablas",
+   "segmento": "retos-colaborativos",
+   "aspecto": "magis",
+   "duda": "",
+   "emoji": "🏓",
+   "duracion": 15,
+   "estrellas": 0,
+   "popularidad": {
+    "porSesion": 28.5,
+    "personas": 157,
+    "sesiones": 5
+   }
+  },
+  {
+   "id": "FG-02",
+   "nombre": "Precisión-Pong",
+   "segmento": "retos-colaborativos",
+   "aspecto": "magis",
+   "duda": "",
+   "emoji": "🎯",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "FG-16",
+   "nombre": "Tiro de Costalitos",
+   "segmento": "retos-colaborativos",
+   "aspecto": "magis",
+   "duda": "",
+   "emoji": "🎪",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 16.3,
+    "personas": 6,
+    "sesiones": 1
+   }
+  },
+  {
+   "id": "CR-01",
+   "nombre": "Caminata Consciente",
+   "segmento": "liderazgo",
+   "aspecto": "magis",
+   "duda": "",
+   "emoji": "🚶",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 25.6,
+    "personas": 111,
+    "sesiones": 4
+   }
+  },
+  {
+   "id": "RC-01",
+   "nombre": "Círculo Agradecimiento",
+   "segmento": "ayuda-mutua",
+   "aspecto": "magis",
+   "duda": "",
+   "emoji": "🙏",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "DP-07",
+   "nombre": "Círculo de Reconocimiento",
+   "segmento": "ayuda-mutua",
+   "aspecto": "magis",
+   "duda": "",
+   "emoji": "🌟",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "JM-03",
+   "nombre": "Basta",
+   "segmento": "por-clasificar",
+   "aspecto": "por-clasificar",
+   "duda": "Es juego de mesa (Juegos cooperativos), pero el documento mandó \"adivina la palabra\" a Retos colaborativos.",
+   "emoji": "📝",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 16,
+    "personas": 37,
+    "sesiones": 3
+   }
+  },
+  {
+   "id": "d67YbTCapEL2gjmbZz41",
+   "nombre": "Basta",
+   "segmento": "por-clasificar",
+   "aspecto": "por-clasificar",
+   "duda": "Es juego de mesa (Juegos cooperativos), pero el documento mandó \"adivina la palabra\" a Retos colaborativos.",
+   "emoji": "✍️",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 16,
+    "personas": 37,
+    "sesiones": 3
+   }
+  },
+  {
+   "id": "VD-03",
+   "nombre": "Basta Digital",
+   "segmento": "por-clasificar",
+   "aspecto": "por-clasificar",
+   "duda": "Mismo caso que Basta, y además es de pantalla, como el Nintendo de Retos colaborativos.",
+   "emoji": "💻",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "VD-05",
+   "nombre": "Boggle Party",
+   "segmento": "por-clasificar",
+   "aspecto": "por-clasificar",
+   "duda": "Juego de palabras en pantalla: cabe en Juegos cooperativos y en Retos colaborativos.",
+   "emoji": "",
+   "duracion": null,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "FG-10",
+   "nombre": "Estación de Habilidades",
+   "segmento": "por-clasificar",
+   "aspecto": "por-clasificar",
+   "duda": "Retos grupales (Bien Común) o Retos colaborativos (Magis): los dos segmentos casi se tocan.",
+   "emoji": "🎪",
+   "duracion": 15,
+   "estrellas": 3,
+   "popularidad": {
+    "porSesion": 21.2,
+    "personas": 63,
+    "sesiones": 3
+   }
+  },
+  {
+   "id": "DP-03",
+   "nombre": "Fortaleza Escondida",
+   "segmento": "por-clasificar",
+   "aspecto": "por-clasificar",
+   "duda": "Trabajo de fortalezas propias (Manejo del estrés) o dinámica que se comparte (Dinámicas de confianza).",
+   "emoji": "💎",
+   "duracion": 12,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "VD-07",
+   "nombre": "Noche de Juegos",
+   "segmento": "por-clasificar",
+   "aspecto": "por-clasificar",
+   "duda": "Es una sesión, no una actividad suelta. Depende de qué se juegue esa noche.",
+   "emoji": "",
+   "duracion": null,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "VD-08",
+   "nombre": "Overcooked por Equipos",
+   "segmento": "por-clasificar",
+   "aspecto": "por-clasificar",
+   "duda": "Cooperar para lograrlo (Juegos cooperativos) o reto de Nintendo (Retos colaborativos).",
+   "emoji": "",
+   "duracion": null,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "FG-09b",
+   "nombre": "Pelotas a la Pared",
+   "segmento": "por-clasificar",
+   "aspecto": "por-clasificar",
+   "duda": "Mismo empate: Retos grupales o Retos colaborativos.",
+   "emoji": "🧱",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "VD-04",
+   "nombre": "Pictionary Air",
+   "segmento": "por-clasificar",
+   "aspecto": "por-clasificar",
+   "duda": "Juego de dibujo en pantalla. Cabe en Juegos cooperativos y en Retos colaborativos.",
+   "emoji": "✏️",
+   "duracion": 15,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "VD-06",
+   "nombre": "Pictionary Digital",
+   "segmento": "por-clasificar",
+   "aspecto": "por-clasificar",
+   "duda": "Mismo caso que Pictionary Air.",
+   "emoji": "",
+   "duracion": null,
+   "estrellas": 5,
+   "popularidad": null
+  },
+  {
+   "id": "FG-04",
+   "nombre": "Rebote-Reto",
+   "segmento": "por-clasificar",
+   "aspecto": "por-clasificar",
+   "duda": "Mismo empate: Retos grupales o Retos colaborativos.",
+   "emoji": "🎾",
+   "duracion": 10,
+   "estrellas": 5,
+   "popularidad": {
+    "porSesion": 24.4,
+    "personas": 55,
+    "sesiones": 2
+   }
+  },
+  {
+   "id": "VD-09",
+   "nombre": "Tetris Relámpago",
+   "segmento": "por-clasificar",
+   "aspecto": "por-clasificar",
+   "duda": "Reto individual de velocidad (Retos colaborativos) o juego de pantalla compartido (Juegos cooperativos).",
+   "emoji": "",
+   "duracion": null,
+   "estrellas": 5,
+   "popularidad": null
+  }
+ ],
+ "areas": [
+  {
+   "id": "FXE4q6axdeJrzF1b1FwS",
+   "nombre": "Admisiones",
+   "corto": "Admisiones",
+   "personas": 11,
+   "asistencias": 194,
+   "porPersona": 17.6,
+   "banda": "alta"
+  },
+  {
+   "id": "Q5i3FX719DGSzIERxNgU",
+   "nombre": "AIDEL",
+   "corto": "AIDEL",
+   "personas": 6,
+   "asistencias": 86,
+   "porPersona": 14.3,
+   "banda": "alta"
+  },
+  {
+   "id": "EO4i5qc6ei8RNZXyBcv6",
+   "nombre": "Centro de Participación y Difusión Universitaria",
+   "corto": "Participación y Difusión",
+   "personas": 3,
+   "asistencias": 21,
+   "porPersona": 7,
+   "banda": "media"
+  },
+  {
+   "id": "SRkYpvo3RST7oecu8HgE",
+   "nombre": "Ciencias Sociales",
+   "corto": "Ciencias Sociales",
+   "personas": 15,
+   "asistencias": 95,
+   "porPersona": 6.3,
+   "banda": "media"
+  },
+  {
+   "id": "xEFRceYEBfdwcLxZqKCg",
+   "nombre": "Clinica de Nutrición",
+   "corto": "Clínica de Nutrición",
+   "personas": 3,
+   "asistencias": 33,
+   "porPersona": 11,
+   "banda": "alta"
+  },
+  {
+   "id": "xSfXcNRJ6nhhlqoEvLJM",
+   "nombre": "Compras",
+   "corto": "Compras",
+   "personas": 9,
+   "asistencias": 131,
+   "porPersona": 14.6,
+   "banda": "alta"
+  },
+  {
+   "id": "cI9MCvnTUuc5Xjyua6lD",
+   "nombre": "DADA",
+   "corto": "DADA",
+   "personas": 3,
+   "asistencias": 25,
+   "porPersona": 8.3,
+   "banda": "media"
+  },
+  {
+   "id": "EIRAaoyKPuRZhVLhWE82",
+   "nombre": "Defensoria de los Derechos Universitarios",
+   "corto": "Defensoría Derechos",
+   "personas": 5,
+   "asistencias": 27,
+   "porPersona": 5.4,
+   "banda": "baja"
+  },
+  {
+   "id": "PJ6RIcX1BfQyGlwbBz16",
+   "nombre": "Departamento Ciencias de la Salud",
+   "corto": "Ciencias de la Salud",
+   "personas": 10,
+   "asistencias": 115,
+   "porPersona": 11.5,
+   "banda": "alta"
+  },
+  {
+   "id": "n4nW2mrYhVECKhkfPsDE",
+   "nombre": "Departamento de Ciencias e Ingenierías",
+   "corto": "Ciencias e Ingenierías",
+   "personas": 1,
+   "asistencias": 3,
+   "porPersona": 3,
+   "banda": "baja"
+  },
+  {
+   "id": "uELhrRBIDGfqYmuHKgOK",
+   "nombre": "Direccion de Comunicacion Institucional",
+   "corto": "Comunicación Institucional",
+   "personas": 10,
+   "asistencias": 53,
+   "porPersona": 5.3,
+   "banda": "baja"
+  },
+  {
+   "id": "FMZHgr1I0dLdBXXLj99I",
+   "nombre": "Direccion de Personal",
+   "corto": "Dirección de Personal",
+   "personas": 10,
+   "asistencias": 169,
+   "porPersona": 16.9,
+   "banda": "alta"
+  },
+  {
+   "id": "KlM7TUxkUkEusv7LAG40",
+   "nombre": "Direcciones Generales",
+   "corto": "Direcciones Generales",
+   "personas": 6,
+   "asistencias": 36,
+   "porPersona": 6,
+   "banda": "baja"
+  },
+  {
+   "id": "YqrJtc3VTcIHMX2z2PMU",
+   "nombre": "Dirección de Innovación e Internacionalización Educativa",
+   "corto": "Innovación e Internacionalización",
+   "personas": 1,
+   "asistencias": 3,
+   "porPersona": 3,
+   "banda": "baja"
+  },
+  {
+   "id": "QsF2m8egyE90CVjpIR0g",
+   "nombre": "Educacion Vir",
+   "corto": "Educación Virtual",
+   "personas": 2,
+   "asistencias": 9,
+   "porPersona": 4.5,
+   "banda": "baja"
+  },
+  {
+   "id": "cBffk6GRmJgGhhsT9hoz",
+   "nombre": "Educación Continua",
+   "corto": "Educación Continua",
+   "personas": 6,
+   "asistencias": 89,
+   "porPersona": 14.8,
+   "banda": "alta"
+  },
+  {
+   "id": "e8kjcRZXd5m3SllREfHY",
+   "nombre": "Egresados",
+   "corto": "Egresados",
+   "personas": 10,
+   "asistencias": 113,
+   "porPersona": 11.3,
+   "banda": "alta"
+  },
+  {
+   "id": "AC14eB2pegfVwwWSW9LE",
+   "nombre": "Humanidades",
+   "corto": "Humanidades",
+   "personas": 2,
+   "asistencias": 21,
+   "porPersona": 10.5,
+   "banda": "media"
+  },
+  {
+   "id": "S7H58aQhYGI9S5xJER8M",
+   "nombre": "IDIT",
+   "corto": "IDIT",
+   "personas": 14,
+   "asistencias": 130,
+   "porPersona": 9.3,
+   "banda": "media"
+  },
+  {
+   "id": "9lFiKCD13qjd1PdennL9",
+   "nombre": "Instituto de Investigaciones en Medio Ambiente",
+   "corto": "Medio Ambiente",
+   "personas": 1,
+   "asistencias": 6,
+   "porPersona": 6,
+   "banda": "baja"
+  },
+  {
+   "id": "xm2Q8z92WcgLBEZ2aX2T",
+   "nombre": "IBERO Activate",
+   "corto": "IBERO Actívate",
+   "personas": 7,
+   "asistencias": 44,
+   "porPersona": 6.3,
+   "banda": "media"
+  },
+  {
+   "id": "gNcbKAM5nfwjbfX1EQhN",
+   "nombre": "LAINES",
+   "corto": "LAINES",
+   "personas": 3,
+   "asistencias": 18,
+   "porPersona": 6,
+   "banda": "baja"
+  },
+  {
+   "id": "j4xd23HCTO9GwIS9ZcdW",
+   "nombre": "Marketing",
+   "corto": "Marketing",
+   "personas": 9,
+   "asistencias": 76,
+   "porPersona": 8.4,
+   "banda": "media"
+  },
+  {
+   "id": "DaCdSCODrF4lMljcTGnP",
+   "nombre": "Medios Universitarios",
+   "corto": "Medios Universitarios",
+   "personas": 2,
+   "asistencias": 10,
+   "porPersona": 5,
+   "banda": "baja"
+  },
+  {
+   "id": "65AepIdmRltvmP4IGScv",
+   "nombre": "Negocios",
+   "corto": "Negocios",
+   "personas": 2,
+   "asistencias": 7,
+   "porPersona": 3.5,
+   "banda": "baja"
+  },
+  {
+   "id": "cf1JpmNLoC6LiVNezu51",
+   "nombre": "Oficina de Aten Tecnologica",
+   "corto": "Atención Tecnológica",
+   "personas": 5,
+   "asistencias": 40,
+   "porPersona": 8,
+   "banda": "media"
+  },
+  {
+   "id": "64Y5Lu2Awg1NW5C3nKSw",
+   "nombre": "Planeación y Evaluación",
+   "corto": "Planeación y Evaluación",
+   "personas": 1,
+   "asistencias": 6,
+   "porPersona": 6,
+   "banda": "media"
+  },
+  {
+   "id": "yHonYWQvJdgXfmSBWqRh",
+   "nombre": "Planta Física",
+   "corto": "Planta Física",
+   "personas": 8,
+   "asistencias": 102,
+   "porPersona": 12.8,
+   "banda": "alta"
+  },
+  {
+   "id": "ymt6ECXGeLqrC83fFWeG",
+   "nombre": "Preparatoria IBERO",
+   "corto": "Prepa IBERO",
+   "personas": 6,
+   "asistencias": 35,
+   "porPersona": 5.8,
+   "banda": "baja"
+  },
+  {
+   "id": "ERC3HYSFDJp4x6UfnnAQ",
+   "nombre": "Protección Universitaria",
+   "corto": "Protección Universitaria",
+   "personas": 12,
+   "asistencias": 55,
+   "porPersona": 4.6,
+   "banda": "baja"
+  },
+  {
+   "id": "kZmU1FREQL8vqyI8kw0v",
+   "nombre": "Reflexión Universitaria",
+   "corto": "Reflexión Universitaria",
+   "personas": 2,
+   "asistencias": 15,
+   "porPersona": 7.5,
+   "banda": "media"
+  },
+  {
+   "id": "80aFHwJExpZdTRYsBt5h",
+   "nombre": "Servicio Social",
+   "corto": "Servicio Social",
+   "personas": 5,
+   "asistencias": 32,
+   "porPersona": 6.4,
+   "banda": "media"
+  },
+  {
+   "id": "V238dx3lj1U1p2kjdtqv",
+   "nombre": "Servicios Escolares",
+   "corto": "Servicios Escolares",
+   "personas": 13,
+   "asistencias": 184,
+   "porPersona": 14.2,
+   "banda": "alta"
+  },
+  {
+   "id": "lSie9E7Kr8QNvUlGFBPy",
+   "nombre": "Tesoreria",
+   "corto": "Tesorería",
+   "personas": 7,
+   "asistencias": 143,
+   "porPersona": 20.4,
+   "banda": "alta"
+  },
+  {
+   "id": "9xqoYSY4nEh4Trliioj9",
+   "nombre": "Villas IBERO",
+   "corto": "Villas IBERO",
+   "personas": 10,
+   "asistencias": 63,
+   "porPersona": 6.3,
+   "banda": "media"
+  }
+ ]
+}

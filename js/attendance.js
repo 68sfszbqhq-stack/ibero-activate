@@ -211,11 +211,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return Math.floor((today - d) / 86400000);
     }
 
-    // Color del semáforo: verde (al día), amarillo (unos días), rojo (una semana+).
+    // Color del semáforo. Con tres escalones casi todas las áreas salían
+    // rojas y el tablero dejaba de decir nada: hay que distinguir la que
+    // se atrasó unos días de la que lleva un mes sin visita.
+    //   verde     al día
+    //   amarillo  esta semana
+    //   naranja   ya se pasó una semana
+    //   rojo      dos semanas o más
+    //   morado    ninguna visita en los últimos 30 días
     function trafficLight(days) {
         if (days <= 3) return { color: '#10b981', label: 'Al día' };
-        if (days <= 6) return { color: '#f59e0b', label: 'Pronto toca' };
-        return { color: '#ef4444', label: 'Atrasada' };
+        if (days <= 7) return { color: '#f59e0b', label: 'Pronto toca' };
+        if (days <= 14) return { color: '#f97316', label: 'Se atrasó' };
+        if (days <= 30) return { color: '#ef4444', label: 'Atrasada' };
+        return { color: '#7c3aed', label: 'Sin visita en 30 días' };
     }
 
     function selectArea(areaIdOrIds, btnElement) {

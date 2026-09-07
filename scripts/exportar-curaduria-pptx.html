@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exportar la curaduría a PowerPoint</title>
+
+<!--
+  EXPORTAR LA CURADURÍA A POWERPOINT
+  ==================================
+  Página local. Se abre directo desde el disco:
+      open scripts/exportar-curaduria-pptx.html
+
+  Genera un .pptx NATIVO: las tablas, los títulos y las formas son objetos
+  editables de PowerPoint, no imágenes. Se abre igual en Keynote.
+
+  La identidad (rojo EE3A43, tinta 101014, Poppins) es la misma del mazo
+  "Memoria Pausas Activas" para que los dos se vean del mismo programa.
+
+  Los datos son los 98 registros de la colección activity_ratings de
+  Firestore, leídos el 2 de septiembre de 2026.
+-->
+
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@4.0.1/dist/pptxgen.bundle.js"></script>
+<style>
+  :root{
+    --rojo:#EE3A43;
+    --rojo-texto:#C91239;
+    --tinta:#101014;
+    --cuerpo:#3A3A42;
+    --tenue:#7A7A85;
+    --linea:#E2E2E6;
+    --hueso:#F7F7F8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--hueso);color:var(--tinta);
+    font-family:Poppins,"Helvetica Neue",Arial,sans-serif;
+    line-height:1.5;
+  }
+  .hoja{max-width:760px;margin:0 auto;padding:56px 28px 80px;}
+
+  .eyebrow{
+    font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--rojo-texto);font-weight:600;margin:0 0 10px;
+  }
+  h1{font-size:34px;line-height:1.1;letter-spacing:-.02em;margin:0 0 14px;font-weight:600;}
+  .lead{font-size:16px;color:var(--cuerpo);margin:0 0 32px;max-width:60ch;}
+
+  .accion{
+    background:#fff;border:1px solid var(--linea);border-radius:4px;
+    padding:24px;margin-bottom:34px;
+  }
+  button{
+    font:600 16px/1 Poppins,Arial,sans-serif;
+    background:var(--rojo);color:#fff;border:0;border-radius:3px;
+    padding:16px 30px;cursor:pointer;transition:background .15s;
+  }
+  button:hover:not(:disabled){background:var(--rojo-texto);}
+  button:disabled{background:var(--tenue);cursor:progress;}
+  button:focus-visible{outline:3px solid var(--tinta);outline-offset:2px;}
+
+  .opcion{display:flex;gap:10px;align-items:flex-start;margin-top:20px;font-size:14px;}
+  .opcion input{margin-top:3px;width:17px;height:17px;accent-color:var(--rojo);flex:none;}
+  .opcion label{color:var(--cuerpo);}
+  .opcion b{color:var(--tinta);font-weight:600;}
+
+  #estado{margin-top:16px;font-size:14px;color:var(--tenue);min-height:1.4em;}
+  #estado.ok{color:var(--rojo-texto);font-weight:600;}
+  #estado.err{color:#B00020;font-weight:600;}
+
+  h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--tenue);
+     font-weight:600;margin:0 0 12px;}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:34px;}
+  th,td{text-align:left;padding:9px 10px 9px 0;border-bottom:1px solid var(--linea);
+        vertical-align:top;}
+  th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--tenue);font-weight:600;}
+  td.n{font-variant-numeric:tabular-nums;color:var(--tenue);width:46px;}
+  td.c{font-variant-numeric:tabular-nums;text-align:right;width:64px;}
+
+  .nota{
+    border-left:3px solid var(--rojo);padding:2px 0 2px 16px;
+    font-size:14px;color:var(--cuerpo);margin-bottom:16px;max-width:62ch;
+  }
+  .nota b{color:var(--tinta);font-weight:600;}
+  code{
+    font-family:"SFMono-Regular",Menlo,monospace;font-size:.88em;
+    background:#EDEDF0;padding:2px 5px;border-radius:2px;
+  }
+</style>
+</head>
+<body>
+<div class="hoja">
+
+  <p class="eyebrow">IBERO Puebla · Ibero Actívate</p>
+  <h1>Exportar la curaduría a PowerPoint</h1>
+  <p class="lead">
+    Genera un archivo <code>.pptx</code> con una lámina por segmento. Las tablas salen
+    como tablas de PowerPoint: puedes editar el texto, mover las columnas y cambiar
+    los colores. Se abre igual en Keynote.
+  </p>
+
+  <div class="accion">
+    <button id="btn" type="button">Descargar el .pptx</button>
+
+    <div class="opcion">
+      <input type="checkbox" id="limpiar">
+      <label for="limpiar">
+        <b>Dejar fuera los 21 registros duplicados de la app.</b>
+        Quita la lámina «Sin clasificar» y deja el catálogo real en 77 actividades.
+      </label>
+    </div>
+
+    <p id="estado"></p>
+  </div>
+
+  <h2>Lo que trae el archivo</h2>
+  <table id="indice">
+    <thead>
+      <tr><th>Lámina</th><th>Contenido</th><th style="text-align:right">Actividades</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <h2>Antes de presentarlo</h2>
+  <p class="nota">
+    La tipografía es <b>Poppins</b>, la del sitio institucional. Ya la tienes instalada en
+    <code>~/Library/Fonts/</code>. En una computadora que no la tenga, PowerPoint la
+    sustituye y el texto se recorre un poco.
+  </p>
+  <p class="nota">
+    Los datos salieron de la colección <code>activity_ratings</code> de Firestore el
+    <b>2 de septiembre de 2026</b>. Si sigues curando después de esa fecha, hay que
+    volver a generarlo.
+  </p>
+  <p class="nota">
+    Seis fichas de gratitud y reflexión —Rueda de la Vida, Mapa de Emociones, Tres
+    Gratitudes, Círculo de Reconocimiento, Fortaleza Escondida y Respiración 4-7-8—
+    están guardadas como <b>Recuperación postural</b> cuando por definición van en
+    <b>Recuperación mental</b>. Aparecen donde están hoy, no donde deberían.
+  </p>
+
+</div>
+
+<script>
+/* ── Identidad institucional (misma que el mazo "Memoria Pausas Activas") ── */
+const C = {
+  rojo:      'EE3A43',
+  rojoTexto: 'C91239',
+  tinta:     '101014',
+  cuerpo:    '3A3A42',
+  tenue:     '7A7A85',
+  linea:     'E2E2E6',
+  tarjeta:   'F4F4F6',
+  blanco:    'FFFFFF'
+};
+const FACE = 'Poppins';
+const W = 13.333, H = 7.5;
+const MX = 0.7;                       // margen lateral
+const ANCHO = W - MX * 2;             // 11.933
+
+/* ── Los segmentos, con la definición que vive en js/segments-data.js ── */
+const SEGMENTOS = [
+  { id:'recreativos', nombre:'Juegos recreativos', eje:'Eje A · Activación',
+    def:'Reglas simples, sin objetivo deportivo. El foco es el disfrute y que participen todos.' },
+  { id:'predeportivos', nombre:'Juegos pre-deportivos', eje:'Eje A · Activación',
+    def:'Gesto o regla de un deporte formal, con espacio reducido y reglas adaptadas.' },
+  { id:'retos', nombre:'Retos físicos', eje:'Eje A · Activación',
+    def:'Meta medible individual o por equipo, con marcador y plazo. Aquí vive la gamificación.' },
+  { id:'automasaje', nombre:'Sesiones de automasaje', eje:'Eje B · Recuperación musculoesquelética',
+    def:'Liberación miofascial aplicada por la propia persona: trapecio, cuello, antebrazo, mano.' },
+  { id:'postural', nombre:'Recuperación postural', eje:'Eje B · Recuperación musculoesquelética',
+    def:'Ejercicio correctivo contra cabeza adelantada y hombros redondeados.' },
+  { id:'mesa', nombre:'Juegos de mesa', eje:'Eje C · Mente y vínculo',
+    def:'Estrategia, atención y conversación alrededor de una mesa.' },
+  { id:'virtuales', nombre:'Juegos virtuales', eje:'Eje C · Mente y vínculo',
+    def:'Consola, app, pantalla compartida o realidad virtual. Incluye los cinco juegos de Netflix. Sirve también para personal remoto.' },
+  { id:'cooperativos', nombre:'Juegos cooperativos', eje:'Eje C · Mente y vínculo',
+    def:'El grupo gana o pierde junto: sin eliminación ni ganador individual.' },
+  { id:'recuperacion-mental', nombre:'Recuperación mental', eje:'Eje C · Mente y vínculo',
+    def:'Atención plena, gratitud, escritura reflexiva y vínculo. Recupera recursos psicológicos, no físicos.' },
+  { id:'sin-clasificar', nombre:'Sin clasificar', eje:'Pendiente de asignar',
+    def:'Registros creados desde la app, fuera del catálogo. Varios duplican una ficha que ya existe.' }
+];
+
+/* ── [nombre, estrellas (0 = sin calificar)] ── */
+const DATOS = {
+'recreativos':{c:[['El Globo Loco',5],['Pelotas a la Pared',5],['Rebote-Reto',5]],
+  d:[['Relevo de Equilibrio',1]]},
+'predeportivos':{c:[['Hockey de Suelo',5],['Mini Voleibol',5],['Precisión-Pong',5],['Spaghetti-Vóley',5],['Tiro de Costalitos',5],['Estación de Habilidades',3],['Mini Bádminton',3]],
+  d:[['Búsqueda Express',1],['El Lazarillo',1],['La Isla que se Encoge',1],['Nudo Humano',1],['Transporta sin Manos',1]]},
+'retos':{c:[['Escuela de Postura',5],['Fuerza con Liga',5],['Energía Express',4],['Ritmo Cardiaco',3]],
+  d:[['Foco y Fuerza',3],['Cadena de Ritmo',1],['Cardio Ligero',1],['Copa Pausas Activas',1],['Despertar Corporal',1],['Mente y Movimiento',1],['Circuito Total',0],['Reactivación Final',0]]},
+'automasaje':{c:[['Automasaje con Pelota',5]],d:[]},
+'postural':{c:[['Círculo de Reconocimiento',5],['Estiramientos Funcionales',5],['Fortaleza Escondida',5],['Mapa de Emociones',5],['Punto Gatillo',5],['Respiración 4-7-8',5],['Rodillo Miofascial',5],['Rueda de la Vida Express',5],['Yoga en Silla',5],['Tres Gratitudes',4]],
+  d:[['Carta a mi Yo Futuro',1],['Flexibilidad Funcional',1],['Meta de la Semana',1],['Postura y Poder',1]]},
+'mesa':{c:[['Adivina la Palabra',5],['Bananagrams',5],['Basta',5],['Crazy Tower',5],['Cuento en Cadena',5],['Dibujo a Ciegas',5],['Dominó Tren Mexicano',5],['Exploding Kittens',5],['Fantasma Blitz',5],['Hockey de Mesa',5],['Lotería',5],['Polilla Tramposa',5],['Spot It (Dobble)',5],['Taco Gato Cabra Queso Pizza',5],["That's Not a Hat",5],['Torre Jenga',5],['UNO Clásico',5],['UNO No Mercy',5],['Ping Pong con Tablas',0]],
+  d:[['Puente de Papel',1],['Stacko Activo',1],['Torre de Malvaviscos',1]]},
+'virtuales':{c:[['Basta Digital',5],['Boggle Party',5],['Jeopardy / Switch 1-2',5],['Mario Party',5],['Noche de Juegos',5],['Overcooked por Equipos',5],['Pictionary Air',5],['Pictionary Digital',5],['Tetris Relámpago',5]],d:[]},
+'cooperativos':{c:[['Círculo de Toques',5],['The Mind',5]],d:[]},
+'recuperacion-mental':{c:[['Caminata Consciente',5],['Cartas al Universo',5],['Círculo de Agradecimiento',5],['Diario de Gratitud',5],['Meditación Guiada',5],["Tarjetas 'Somos'",5]],d:[]},
+'sin-clasificar':{c:[['Basta',5],['EVERYBODY 1 2 SWITCH',5],['Estiramiento Integral',5],['Hockey de Mesa',5],['Juego de Mesa UNO',5],['Lotería Mexicana',5],['Movilidad Express',5],['Pausa de Escritorio',5],['Relax y Enfoque',5],['Energía Express',4]],
+  d:[['Cardio Creativo',3],['Baile Libre Express',1],['Coordinación y Ritmo',1],['Coreografía Instantánea',1],['EVALUACION',1],['Fuerza Fun',1],['Juegos de Equipo',1],['Música y Movimiento',1],['Postura y Poder',1],['Ritmo en Círculo',1],['Ritmo y Palmas',1]]}
+};
+
+const estrellas = n => n ? '★'.repeat(n) : '—';
+const segmentosActivos = () =>
+  document.getElementById('limpiar').checked
+    ? SEGMENTOS.filter(s => s.id !== 'sin-clasificar')
+    : SEGMENTOS;
+
+/* ── Índice de la página ─────────────────────────────────── */
+function pintarIndice(){
+  const segs = segmentosActivos();
+  const tb = document.querySelector('#indice tbody');
+  const filas = [['01','Portada · totales del catálogo','']];
+  segs.forEach((s,i) => {
+    const d = DATOS[s.id];
+    filas.push([String(i+2).padStart(2,'0'), s.nombre, d.c.length + ' + ' + d.d.length]);
+  });
+  filas.push([String(segs.length+2).padStart(2,'0'),'Los pendientes del catálogo','']);
+  tb.innerHTML = filas.map(f =>
+    '<tr><td class="n">'+f[0]+'</td><td>'+f[1]+'</td><td class="c">'+f[2]+'</td></tr>'
+  ).join('');
+}
+
+/* ── Tabla nativa de PowerPoint ──────────────────────────── */
+function tabla(s, titulo, items, x, y, w, alto, fs){
+  const colNom = w - 0.95;
+  const filas = [[
+    { text: titulo, options:{ bold:true, color:C.blanco, fill:{color:C.tinta},
+        fontSize: fs - 1, align:'left' } },
+    { text: String(items.length), options:{ bold:true, color:C.blanco, fill:{color:C.tinta},
+        fontSize: fs - 1, align:'right' } }
+  ]];
+  items.forEach(function(it){
+    filas.push([
+      { text: it[0], options:{ color:C.cuerpo, align:'left' } },
+      { text: estrellas(it[1]), options:{ color: it[1] ? C.rojo : C.tenue, align:'right' } }
+    ]);
+  });
+  s.addTable(filas, {
+    x: x, y: y, w: w, colW: [colNom, 0.95],
+    rowH: alto / filas.length,
+    fontFace: FACE, fontSize: fs, valign: 'middle',
+    margin: [2, 5, 2, 5],
+    border: [
+      { type:'none' },
+      { type:'none' },
+      { type:'solid', color:C.linea, pt:0.5 },
+      { type:'none' }
+    ]
+  });
+}
+
+/* ── Encabezado común de lámina ──────────────────────────── */
+function encabezado(s, eje, titulo, def){
+  s.addText(eje.toUpperCase(), {
+    x:MX, y:0.5, w:ANCHO, h:0.26, fontFace:FACE, fontSize:10, bold:true,
+    color:C.rojoTexto, charSpacing:1.6, valign:'middle'
+  });
+  s.addText(titulo, {
+    x:MX, y:0.8, w:ANCHO, h:0.72, fontFace:FACE, fontSize:32, bold:true,
+    color:C.tinta, valign:'middle', margin:0
+  });
+  if (def) s.addText(def, {
+    x:MX, y:1.56, w:8.8, h:0.5, fontFace:FACE, fontSize:12.5,
+    color:C.cuerpo, valign:'top', margin:0, lineSpacingMultiple:1.15
+  });
+}
+
+function reglaRoja(s, y){
+  s.addShape('rect', { x:MX, y:y, w:ANCHO, h:0.035, fill:{color:C.rojo}, line:{type:'none'} });
+}
+
+/* ── Construir el mazo ───────────────────────────────────── */
+function construir(){
+  const segs = segmentosActivos();
+  const pres = new PptxGenJS();
+  pres.defineLayout({ name:'W16x9', width:W, height:H });
+  pres.layout = 'W16x9';
+  pres.author  = 'José Roberto Mendoza Mendoza';
+  pres.company = 'IBERO Puebla · Ibero Actívate';
+  pres.title   = 'Curaduría del catálogo de pausas activas';
+  pres.subject = 'Programa de Pausas Activas · IBERO Puebla';
+
+  const totC = segs.reduce((a,s) => a + DATOS[s.id].c.length, 0);
+  const totD = segs.reduce((a,s) => a + DATOS[s.id].d.length, 0);
+
+  /* ── 01 · Portada, sobre tinta ── */
+  const p = pres.addSlide();
+  p.background = { color: C.tinta };
+  p.addNotes('El catálogo se revisó actividad por actividad contra la experiencia de campo. '
+    + 'Cada una se conserva o se descarta, y queda asignada a un segmento.');
+  p.addText('IBERO PUEBLA · IBERO ACTÍVATE', {
+    x:MX, y:0.75, w:ANCHO, h:0.3, fontFace:FACE, fontSize:11, bold:true,
+    color:'FF6B72', charSpacing:2, valign:'middle'
+  });
+  p.addText('Curaduría del catálogo\nde pausas activas', {
+    x:MX, y:1.25, w:10.5, h:2.1, fontFace:FACE, fontSize:44, bold:true,
+    color:C.blanco, valign:'top', margin:0, lineSpacingMultiple:1.05
+  });
+  p.addShape('rect', { x:MX, y:3.65, w:2.2, h:0.05, fill:{color:C.rojo}, line:{type:'none'} });
+  p.addText('Cada actividad se revisó una por una contra la experiencia real de campo: '
+    + 'se conserva o se descarta, y se le asigna el segmento al que pertenece.', {
+    x:MX, y:3.95, w:7.6, h:0.9, fontFace:FACE, fontSize:14,
+    color:'C9C9D2', valign:'top', margin:0, lineSpacingMultiple:1.3
+  });
+
+  const cifras = [
+    [String(totC + totD), 'decisiones', C.blanco],
+    [String(totC),        'conservadas', C.blanco],
+    [String(totD),        'descartadas', '85858F'],
+    [String(segs.length), 'segmentos',   C.blanco]
+  ];
+  cifras.forEach(function(c, i){
+    const x = MX + i * 2.55;
+    p.addText(c[0], { x:x, y:5.35, w:2.3, h:0.85, fontFace:FACE, fontSize:44, bold:true,
+      color:c[2], valign:'bottom', margin:0 });
+    p.addText(c[1].toUpperCase(), { x:x, y:6.25, w:2.3, h:0.3, fontFace:FACE, fontSize:10,
+      bold:true, color:'85858F', charSpacing:1.4, valign:'top', margin:0 });
+  });
+
+  /* ── Una lámina por segmento ── */
+  segs.forEach(function(seg){
+    const d = DATOS[seg.id];
+    const tot = d.c.length + d.d.length;
+    const pct = Math.round(d.c.length / tot * 100);
+    const s = pres.addSlide();
+    s.background = { color: C.blanco };
+    s.addNotes(seg.nombre + ': ' + d.c.length + ' conservadas de ' + tot
+      + ' revisadas (' + pct + '%). ' + seg.def);
+
+    encabezado(s, seg.eje, seg.nombre, seg.def);
+
+    s.addText([
+      { text:String(d.c.length), options:{ fontSize:26, bold:true, color:C.tinta } },
+      { text:'  CONSERVADAS      ', options:{ fontSize:10, bold:true, color:C.tenue, charSpacing:1.2 } },
+      { text:String(d.d.length), options:{ fontSize:26, bold:true, color:C.tenue } },
+      { text:'  DESCARTADAS      ', options:{ fontSize:10, bold:true, color:C.tenue, charSpacing:1.2 } },
+      { text:pct + '%', options:{ fontSize:26, bold:true, color:C.rojoTexto } },
+      { text:'  DEL SEGMENTO SOBREVIVE', options:{ fontSize:10, bold:true, color:C.tenue, charSpacing:1.2 } }
+    ], { x:MX, y:2.16, w:ANCHO, h:0.5, fontFace:FACE, valign:'bottom', margin:0 });
+
+    reglaRoja(s, 2.78);
+
+    const yTab = 3.02, altoTab = 3.9;
+
+    if (d.c.length > 12){
+      // Se parte en dos tablas a lo ancho; las descartadas van como línea al pie.
+      const wc = (ANCHO - 0.33) / 2;
+      const mitad = Math.ceil(d.c.length / 2);
+      const fs = 10.5;
+      tabla(s, 'CONSERVADAS', d.c.slice(0, mitad), MX, yTab, wc, altoTab - 0.55, fs);
+      tabla(s, 'CONSERVADAS · SIGUE', d.c.slice(mitad), MX + wc + 0.33, yTab, wc, altoTab - 0.55, fs);
+      s.addText([
+        { text:'DESCARTADAS   ', options:{ fontSize:10, bold:true, color:C.tenue, charSpacing:1.2 } },
+        { text: d.d.map(function(x){ return x[0]; }).join('   ·   '),
+          options:{ fontSize:11, color:C.cuerpo } }
+      ], { x:MX, y:6.62, w:ANCHO, h:0.42, fontFace:FACE, valign:'middle', margin:0 });
+    } else {
+      const wc = 7.3, wd = ANCHO - wc - 0.33;
+      const filas = Math.max(d.c.length, d.d.length);
+      const fs = filas <= 8 ? 12 : 10.5;
+      tabla(s, 'CONSERVADAS', d.c, MX, yTab, wc, altoTab, fs);
+      if (d.d.length){
+        tabla(s, 'DESCARTADAS', d.d, MX + wc + 0.33, yTab, wd, altoTab, fs);
+      } else {
+        s.addShape('rect', { x:MX + wc + 0.33, y:yTab, w:wd, h:1.1,
+          fill:{color:C.tarjeta}, line:{type:'none'} });
+        s.addText('Ninguna descartada.\nEste segmento pasó completo.', {
+          x:MX + wc + 0.55, y:yTab + 0.14, w:wd - 0.44, h:0.82, fontFace:FACE,
+          fontSize:12, color:C.cuerpo, valign:'middle', margin:0, lineSpacingMultiple:1.2
+        });
+      }
+    }
+  });
+
+  /* ── Última lámina · los pendientes ── */
+  const f = pres.addSlide();
+  f.background = { color: C.blanco };
+  f.addNotes('Estos tres puntos hay que resolverlos antes de dar el catálogo por cerrado.');
+  encabezado(f, 'Lo que falta resolver', 'Tres pendientes del catálogo', '');
+  reglaRoja(f, 2.1);
+
+  const notas = [
+    ['21 REGISTROS',
+     'Veintiún registros no vienen del catálogo: se crearon desde la app y por eso quedaron '
+     + 'sin segmento. Seis duplican una ficha que ya existe —Energía Express, Postura y Poder, '
+     + 'Hockey de Mesa, Lotería, Basta y UNO— y una llamada «EVALUACION» parece una prueba, '
+     + 'no una actividad. Al depurarlos, el catálogo curado queda en 82 actividades, no 103.'],
+    ['12 SIN CURAR',
+     'Del catálogo siguen sin pasar por curaduría los ocho ejercicios del set de automasaje '
+     + '(AM-01 a AM-08) y las cuatro de costales y vóley gigante (FG-17 a FG-20).'],
+    ['REVISAR',
+     'Seis fichas de reflexión y gratitud —Rueda de la Vida, Mapa de Emociones, Tres Gratitudes, '
+     + 'Círculo de Reconocimiento, Fortaleza Escondida y Respiración 4-7-8— están clasificadas '
+     + 'como Recuperación postural cuando su lugar es Recuperación mental.']
+  ];
+  notas.forEach(function(n, i){
+    const y = 2.7 + i * 1.45;
+    f.addShape('rect', { x:MX, y:y, w:1.75, h:0.34, fill:{color:C.tinta}, line:{type:'none'} });
+    f.addText(n[0], { x:MX, y:y, w:1.75, h:0.34, fontFace:FACE, fontSize:9.5, bold:true,
+      color:C.blanco, align:'center', valign:'middle', charSpacing:1, margin:0 });
+    f.addText(n[1], { x:MX + 2.1, y:y - 0.06, w:ANCHO - 2.1, h:1.15, fontFace:FACE,
+      fontSize:13.5, color:C.cuerpo, valign:'top', margin:0, lineSpacingMultiple:1.3 });
+  });
+
+  return pres;
+}
+
+/* ── Interacción ─────────────────────────────────────────── */
+const btn = document.getElementById('btn');
+const estado = document.getElementById('estado');
+const limpiar = document.getElementById('limpiar');
+
+limpiar.addEventListener('change', function(){
+  pintarIndice();
+  estado.className = '';
+  estado.textContent = '';
+});
+
+btn.addEventListener('click', function(){
+  if (typeof PptxGenJS === 'undefined'){
+    estado.className = 'err';
+    estado.textContent = 'No se cargó la librería. Necesitas internet la primera vez que abres esta página.';
+    return;
+  }
+  btn.disabled = true;
+  estado.className = '';
+  estado.textContent = 'Armando las láminas…';
+
+  // Se deja respirar al navegador para que pinte el estado antes de generar.
+  setTimeout(function(){
+    try {
+      const pres = construir();
+      const nombre = limpiar.checked
+        ? 'Curaduria del catalogo - 77 actividades.pptx'
+        : 'Curaduria del catalogo - IBERO Activate.pptx';
+      pres.writeFile({ fileName: nombre }).then(function(){
+        estado.className = 'ok';
+        estado.textContent = 'Listo: ' + nombre + ' está en tu carpeta de descargas.';
+        btn.disabled = false;
+      }).catch(function(e){
+        estado.className = 'err';
+        estado.textContent = 'No se pudo guardar: ' + e.message;
+        btn.disabled = false;
+      });
+    } catch (e){
+      estado.className = 'err';
+      estado.textContent = 'Error al armar el archivo: ' + e.message;
+      btn.disabled = false;
+    }
+  }, 60);
+});
+
+pintarIndice();
+</script>
+</body>
+</html>

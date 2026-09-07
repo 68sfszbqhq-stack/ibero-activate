@@ -202,13 +202,112 @@ const DUDAS = {
   'Fortaleza Escondida': 'Trabajo de fortalezas propias (Manejo del estrés) o dinámica que se comparte (Dinámicas de confianza).',
 };
 
+// El horario de visitas que trae el documento del Consejo, tal cual: cinco
+// días × las siete pausas de 25 minutos entre 10:00 y 12:55, que son las
+// mismas ranuras de la rejilla del tablero. Las celdas con varias áreas son
+// las que se juntan en una sola pausa.
+//
+// Los nombres son los del documento; abajo se empatan con las áreas reales.
+// Si el Consejo mueve el horario, se edita aquí y se vuelve a generar.
+const HORARIO = {
+  '10:00': {
+    Lunes: ['Planta Física'],
+    Martes: ['Direcciones Generales'],
+    Miércoles: ['Planta Física'],
+    Jueves: ['AIDEL', 'Servicio Social', 'DADA', 'Reflexión Universitaria'],
+    Viernes: ['IBERO Actívate'],
+  },
+  '10:25': {
+    Lunes: ['Admisiones', 'Bibliotecas'],
+    Martes: ['Negocios', 'Ciencias Sociales'],
+    Miércoles: ['Admisiones', 'Bibliotecas'],
+    Jueves: ['Negocios', 'Ciencias Sociales', 'Humanidades'],
+    Viernes: ['Villas IBERO'],
+  },
+  '10:50': {
+    Lunes: ['Dirección de Personal'],
+    Martes: ['IDIT'],
+    Miércoles: ['Innovación e Internacionalización'],
+    Jueves: ['IDIT'],
+    Viernes: ['Prepa IBERO'],
+  },
+  '11:15': {
+    Lunes: ['Tesorería'],
+    Martes: ['Protección Universitaria'],
+    Miércoles: ['Clínica de Nutrición'],
+    Jueves: ['Protección Universitaria'],
+    Viernes: ['Marketing'],
+  },
+  '11:40': {
+    Lunes: ['Compras'],
+    Martes: ['DADA', 'AIDEL', 'Servicio Social', 'Reflexión Universitaria'],
+    Miércoles: ['Ciencias e Ingenierías'],
+    Jueves: ['Servicios Escolares'],
+    Viernes: ['LAINES'],
+  },
+  '12:05': {
+    Lunes: ['Educación Continua'],
+    Martes: ['Servicios Escolares'],
+    Miércoles: ['Dirección de Personal'],
+    Jueves: ['Participación y Difusión', 'Planeación y Evaluación', 'Educación Virtual', 'Medios Universitarios'],
+    Viernes: ['Egresados'],
+  },
+  '12:30': {
+    Lunes: ['Humanidades', 'Ciencias de la Salud', 'Medio Ambiente'],
+    Martes: ['Planeación y Evaluación', 'Educación Virtual', 'Medios Universitarios'],
+    Miércoles: ['Compras'],
+    Jueves: ['Comunicación Institucional'],
+    Viernes: ['Defensoría Derechos Universitarios', 'Atención Tecnológica'],
+  },
+};
+
+// El documento nombra varias áreas distinto a como están dadas de alta.
+// Aquí se empatan; lo que no aparezca en ninguna de las dos listas se
+// reporta al generar, nunca se descarta en silencio.
+const AREA_DEL_HORARIO = {
+  'Ciencias de la Salud': 'Departamento Ciencias de la Salud',
+  'Ciencias e Ingenierías': 'Departamento de Ciencias e Ingenierías',
+  'Comunicación Institucional': 'Direccion de Comunicacion Institucional',
+  'Defensoría Derechos Universitarios': 'Defensoria de los Derechos Universitarios',
+  'Educación Virtual': 'Educacion Vir',
+  'Innovación e Internacionalización': 'Dirección de Innovación e Internacionalización Educativa',
+  'Medio Ambiente': 'Instituto de Investigaciones en Medio Ambiente',
+  'Participación y Difusión': 'Centro de Participación y Difusión Universitaria',
+  'Prepa IBERO': 'Preparatoria IBERO',
+  'Atención Tecnológica': 'Oficina de Aten Tecnologica',
+  'IBERO Actívate': 'IBERO Activate',
+  'Clínica de Nutrición': 'Clinica de Nutrición',
+  'Dirección de Personal': 'Direccion de Personal',
+  'Tesorería': 'Tesoreria',
+};
+
 // Índice inverso: nombre de actividad -> segmento.
 const SEGMENTO_DE = {};
 Object.entries(CLASIFICACION).forEach(([seg, nombres]) => {
   nombres.forEach((n) => { SEGMENTO_DE[n] = seg; });
 });
 
+// Rearma el HTML desde el JSON ya guardado, sin tocar Firestore. Sirve cuando
+// solo cambió la plantilla, y cuando la cuota de lectura del día se agotó.
+function soloPlantilla() {
+  if (!fs.existsSync(SALIDA_JSON)) {
+    console.error('✗ No hay scripts/datos-tablero.json en caché. Hay que correrlo con red.');
+    process.exit(1);
+  }
+  const datos = JSON.parse(fs.readFileSync(SALIDA_JSON, 'utf8'));
+  const plantilla = fs.readFileSync(PLANTILLA, 'utf8');
+  if (!plantilla.includes('/*__DATOS__*/')) {
+    console.error('✗ La plantilla ya no tiene la marca /*__DATOS__*/.');
+    process.exit(1);
+  }
+  fs.writeFileSync(SALIDA, plantilla.replace('/*__DATOS__*/', JSON.stringify(datos)));
+  console.log(`✓ ${datos.actividades.length} actividades × ${datos.areas.length} áreas ` +
+    `→ ${path.basename(SALIDA)}  (desde caché del ${datos.generado.slice(0, 10)})`);
+}
+
 async function main() {
+  if (process.argv.includes('--cache')) return soloPlantilla();
+
   const llave = path.join(RAIZ, 'firebase-service-account.json');
   if (!fs.existsSync(llave)) {
     console.error('✗ Falta firebase-service-account.json en la raíz del proyecto.');
@@ -407,8 +506,81 @@ async function main() {
     a.banda = i < corte ? 'baja' : (i < corte * 2 ? 'media' : 'alta');
   });
 
+  // ── LLENADO DE FÁBRICA ──────────────────────────────────────────────────
+  //
+  // El tablero se entrega ya calificado, para no dejarle 2,485 cuadritos en
+  // blanco a José. No es aleatorio: cruza dos señales que ya están medidas.
+  //
+  //   del área      → asistencias por persona (qué tan enganchada está)
+  //   de la actividad → personas por sesión cuando se ha aplicado
+  //
+  // Regla dura: un área de participación baja NUNCA sale "le gusta".
+  //
+  // Se guarda comprimido: una cadena por actividad, un carácter por área en el
+  // orden de `areas` (g = le gusta, m = más o menos, n = no le gusta). Así son
+  // ~4 KB en vez de los ~120 KB que ocuparían 2,485 claves sueltas.
+  const TABLA_LLENADO = {
+    alta:  { alta: 'g', media: 'g', baja: 'm' },
+    media: { alta: 'g', media: 'm', baja: 'm' },
+    baja:  { alta: 'm', media: 'm', baja: 'n' },
+  };
+
+  const conPop = actividades.filter((a) => a.popularidad).map((a) => a.popularidad.porSesion).sort((x, y) => x - y);
+  const cortePop = (f) => conPop[Math.floor(conPop.length * f)];
+  const popBajo = cortePop(1 / 3), popAlto = cortePop(2 / 3);
+
+  const nivelDe = (a) => {
+    if (!a.popularidad) return 'media';   // sin historial no se inventa nada
+    const v = a.popularidad.porSesion;
+    return v >= popAlto ? 'alta' : (v < popBajo ? 'baja' : 'media');
+  };
+
+  const precarga = {};
+  const reparto = { g: 0, m: 0, n: 0 };
+  actividades.forEach((a) => {
+    const nivel = nivelDe(a);
+    precarga[a.id] = areas.map((ar) => {
+      const c = TABLA_LLENADO[ar.banda || 'media'][nivel];
+      reparto[c]++;
+      return c;
+    }).join('');
+  });
+
+  console.log(`\n   Llenado de fábrica: ${reparto.g} le gusta · ` +
+    `${reparto.m} más o menos · ${reparto.n} no le gusta ` +
+    `(${reparto.g + reparto.m + reparto.n} de ${actividades.length * areas.length})`);
+
+  // El horario del Consejo, traducido a ids de área y a las claves que usa
+  // la semana del tablero ("Lunes|10:00"). Lo que no empate se reporta.
+  const normArea = (s) => (s || '').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ').trim();
+  const idPorNombre = {};
+  areas.forEach((ar) => { idPorNombre[normArea(ar.nombre)] = ar.id; });
+
+  const horario = {};
+  const sinArea = [];
+  Object.entries(HORARIO).forEach(([hora, dias]) => {
+    Object.entries(dias).forEach(([dia, nombres]) => {
+      const ids = [];
+      nombres.forEach((n) => {
+        const id = idPorNombre[normArea(AREA_DEL_HORARIO[n] || n)];
+        if (id) ids.push(id); else sinArea.push(`${n} (${dia} ${hora})`);
+      });
+      if (ids.length) horario[`${dia}|${hora}`] = ids;
+    });
+  });
+
+  const visitas = Object.values(horario).reduce((n, l) => n + l.length, 0);
+  console.log(`\n   Horario del Consejo: ${visitas} visitas en ${Object.keys(horario).length} ranuras`);
+  if (sinArea.length) {
+    console.log(`   ⚠ Sin área que empate (no entran al tablero): ${sinArea.join(', ')}`);
+  }
+
   const datos = {
     generado: new Date().toISOString(),
+    precarga,
+    horario,
     aspectos: ASPECTOS,
     segmentos: SEGMENTOS,
     orden: ORDEN_SEGMENTO,

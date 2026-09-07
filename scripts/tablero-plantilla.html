@@ -448,7 +448,47 @@ function cargar() {
 
   // Si había que convertir, se guarda de una vez: así lo almacenado queda
   // en el formato nuevo aunque José cierre sin tocar nada.
-  if (normalizarSemana()) guardar();
+  const puso = aplicarPrecarga();
+  const pusoSemana = aplicarHorario();
+  if (normalizarSemana() || puso || pusoSemana) guardar();
+}
+
+// El tablero viene calificado de fábrica para que nadie tenga que llenar
+// 2,485 cuadritos a mano. Solo se aplica la primera vez: si José ya calificó
+// algo, o ya lo aplicó antes, no se toca nada.
+const LETRA_VALOR = { g: 'si', m: 'mas', n: 'no' };
+
+function aplicarPrecarga() {
+  if (!DATOS.precarga) return false;
+  if (estado.precargaAplicada) return false;
+  if (Object.keys(estado.celdas).length) { estado.precargaAplicada = true; return true; }
+
+  DATOS.actividades.forEach((a) => {
+    const fila = DATOS.precarga[a.id];
+    if (!fila) return;
+    DATOS.areas.forEach((ar, i) => {
+      const v = LETRA_VALOR[fila[i]];
+      if (v) estado.celdas[a.id + '|' + ar.id] = v;
+    });
+  });
+  estado.precargaAplicada = true;
+  return true;
+}
+
+// La semana de visitas también viene puesta de fábrica, con el horario que
+// trae el documento del Consejo. Misma regla que la precarga: solo la primera
+// vez. Si José ya acomodó una sola ranura, no se le mueve nada.
+function aplicarHorario() {
+  if (!DATOS.horario) return false;
+  if (estado.horarioAplicado) return false;
+  if (Object.keys(estado.semana).length) { estado.horarioAplicado = true; return true; }
+
+  Object.entries(DATOS.horario).forEach(([clave, ids]) => {
+    const lista = ids.slice(0, TOPE_POR_RANURA);
+    if (lista.length) estado.semana[clave] = lista;
+  });
+  estado.horarioAplicado = true;
+  return true;
 }
 
 // La semana guardaba un área por ranura; ahora guarda una lista, porque hay
@@ -1589,6 +1629,8 @@ $('btn-limpiar').onclick = () => {
   if (!n) return;
   if (!confirm(`Se borran ${n} decisiones. Esto no se puede deshacer.\n\n¿Descargaste el respaldo?`)) return;
   estado.celdas = {}; estado.semana = {}; historial = [];
+  estado.precargaAplicada = true;   // vaciar es una decisión: no se rellena solo
+  estado.horarioAplicado = true;    // ni se vuelve a poner el horario del Consejo
   $('btn-deshacer').disabled = true;
   guardar(); pintarTabla(); pintarSemana();
 };
