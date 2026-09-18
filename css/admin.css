@@ -910,39 +910,38 @@ html {
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-/* Colores por día para botones de área */
-.area-btn.day-mon-wed {
-    background: linear-gradient(135deg, #3b82f6, #2563eb); /* Azul */
-    color: white;
-    border-color: #1d4ed8;
-}
-
-.area-btn.day-tue-thu {
-    background: linear-gradient(135deg, #10b981, #059669); /* Verde */
+/* Semáforo de áreas: días sin pase de lista (ver trafficLight en js/attendance.js) */
+.area-btn.tl-verde {
+    background: linear-gradient(135deg, #10b981, #059669); /* ≤7 días */
     color: white;
     border-color: #047857;
 }
 
-.area-btn.day-fri {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed); /* Morado */
-    color: white;
-    border-color: #6d28d9;
+.area-btn.tl-amarillo {
+    background: linear-gradient(135deg, #fcd34d, #f59e0b); /* 8–14 días */
+    color: #422006;
+    border-color: #d97706;
 }
 
-/* Hover effects for colored buttons */
-.area-btn.day-mon-wed:hover,
-.area-btn.day-tue-thu:hover,
-.area-btn.day-fri:hover {
-    filter: brightness(1.1);
+.area-btn.tl-rojo {
+    background: linear-gradient(135deg, #ef4444, #dc2626); /* 15+ días */
+    color: white;
+    border-color: #b91c1c;
+}
+
+.area-btn.tl-verde:hover,
+.area-btn.tl-amarillo:hover,
+.area-btn.tl-rojo:hover {
+    filter: brightness(1.08);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-/* Active state for colored buttons (adds a ring) */
-.area-btn.day-mon-wed.active,
-.area-btn.day-tue-thu.active,
-.area-btn.day-fri.active {
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.5), 0 4px 12px rgba(0,0,0,0.3); 
+/* El área seleccionada conserva su color y se marca con un anillo */
+.area-btn.tl-verde.active,
+.area-btn.tl-amarillo.active,
+.area-btn.tl-rojo.active {
+    box-shadow: 0 0 0 3px white, 0 0 0 6px #4f46e5, 0 4px 12px rgba(0,0,0,0.3);
     border-color: white;
 }
 

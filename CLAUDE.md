@@ -221,23 +221,28 @@ marcadas con `origen: 'Documento del Consejo de Directores'`.
 
 ## Semáforo de áreas en el pase de lista
 
-En `admin/attendance.html` cada área trae un punto de color con lo que lleva
-sin pase de lista. Tenía tres escalones (verde ≤3, amarillo ≤6, rojo el resto)
-y con la realidad del programa **33 de 35 áreas salían rojas**: el semáforo ya
-no distinguía nada. `trafficLight()` en `js/attendance.js` tiene ahora cinco:
+En `admin/attendance.html` **cada botón de área se pinta entero** con lo que
+lleva sin pase de lista, tanto las áreas de la ruta del día (arriba, con su
+horario) como las demás. Tres colores, los que pidió José:
 
-| Color | Rango |
-|---|---|
-| 🟢 verde `#10b981` | al día, ≤3 días |
-| 🟡 amarillo `#f59e0b` | esta semana, 4–7 días |
-| 🟠 naranja `#f97316` | ya se pasó una semana, 8–14 días |
-| 🔴 rojo `#ef4444` | dos semanas o más, 15–30 días |
-| 🟣 morado `#7c3aed` | ninguna visita en los últimos 30 días |
+| Color | Rango | Clase |
+|---|---|---|
+| 🟢 verde | pase de lista en la semana, ≤7 días | `tl-verde` |
+| 🟡 amarillo | más de una semana, 8–14 días | `tl-amarillo` |
+| 🔴 rojo | más de dos semanas, 15+ días | `tl-rojo` |
 
-El morado no es "más rojo": es **sin dato**. `getAreaRecency()` consulta solo
-30 días a propósito (una lectura acotada), así que todo lo anterior a ese corte
-es indistinguible y se reporta como tal en vez de fingir un número.
+`trafficLight()` en `js/attendance.js` decide la clase y `css/admin.css` pone
+el color. `getAreaRecency()` consulta solo 30 días a propósito (una lectura
+acotada); lo que no tiene nada en ese lapso sale rojo y el globito del botón
+dice "Sin pase de lista en los últimos 30 días".
 
-La leyenda de la barra de filtros en `admin/attendance.html` lista los cinco;
+**Por qué antes no se veía:** el archivo tenía dos funciones `loadAreas()`. El
+semáforo vivía en la primera, pero la segunda (la de la ruta del día) la
+tapaba, así que nunca corría. Se quitó la vieja: si vuelves a tocar la lista de
+áreas, hay una sola `loadAreas()` y los botones salen de `createAreaButton()`.
+Los colores por día (azul lun/mié, verde mar/jue, morado vie) se quitaron
+porque chocaban con el verde del semáforo.
+
+La leyenda de la barra de filtros en `admin/attendance.html` lista los tres;
 si se toca un rango hay que moverla también. El semáforo vive **solo** en la
 copia raíz: `www/` e `ios/App/App/public/` no lo tienen, no hay que sincronizar.

@@ -96,91 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
         datePicker.value = currentDate.toLocaleDateString('en-CA');
     }
 
-    async function loadAreas() {
-        const container = document.getElementById('area-buttons-container');
-        if (!container) return;
-
-        try {
-            const snapshot = await db.collection('areas').get();
-            container.innerHTML = ''; // Limpiar mensaje de carga
-
-            // Deduplicar por nombre normalizado, agrupando todos los IDs
-            const normalize = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-            const grouped = new Map(); // normName -> { id, name, allIds[], ...data }
-
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const normName = normalize(data.name);
-                if (grouped.has(normName)) {
-                    grouped.get(normName).allIds.push(doc.id);
-                } else {
-                    grouped.set(normName, { id: doc.id, ...data, allIds: [doc.id] });
-                }
-            });
-
-            let areas = [...grouped.values()];
-
-            // ORDENAR SEGÚN RECORRIDO POR DÍAS
-            areas = sortAreasByRoute(areas);
-
-            if (areas.length === 0) {
-                container.innerHTML = '<div style="color: #999; width: 100%; text-align: center;">No hay áreas registradas</div>';
-                return;
-            }
-
-            // Semáforo: última asistencia por área (para marcar en rojo las áreas
-            // que llevan una semana o más sin pase de lista).
-            const recency = await getAreaRecency();
-
-            areas.forEach(area => {
-                const btn = document.createElement('button');
-                btn.className = 'area-btn';
-                btn.dataset.id = area.id;
-                btn.dataset.allIds = area.allIds.join(',');
-
-                // Icono por defecto
-                const iconContent = '<i class="fa-solid fa-building"></i>';
-
-                const safeName = window.SecurityUtils
-                    ? window.SecurityUtils.escapeHTML(area.name)
-                    : area.name;
-
-                // Fecha más reciente entre todos los IDs del área
-                let lastDate = null;
-                area.allIds.forEach(id => {
-                    const d = recency[id];
-                    if (d && (!lastDate || d > lastDate)) lastDate = d;
-                });
-                const days = daysSinceDate(lastDate);
-                const tl = trafficLight(days);
-
-                btn.style.borderLeft = `5px solid ${tl.color}`;
-                btn.title = lastDate
-                    ? `Última asistencia: hace ${days} día(s) — ${tl.label}`
-                    : 'Sin asistencias en los últimos 30 días — ¡reactívala!';
-
-                const dot = `<span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${tl.color}; margin-right:6px; box-shadow:0 0 0 2px ${tl.color}33; vertical-align:middle;"></span>`;
-                btn.innerHTML = `${dot}${iconContent} ${safeName}`;
-
-                btn.addEventListener('click', () => {
-                    selectArea(area.allIds.join(','), btn);
-                });
-
-                container.appendChild(btn);
-            });
-
-        } catch (error) {
-            console.error('Error cargando áreas:', error);
-            container.innerHTML = '<div style="color: #ef4444;">Error al cargar áreas</div>';
-        }
-    }
-
-    function sortAreasByRoute(areas) {
-        // Aquí implementaremos la lógica del recorrido
-        // Por ahora, orden alfabético
-        return areas.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
     // --- SEMÁFORO DE ÁREAS ---
     // Devuelve un mapa areaId -> fecha (YYYY-MM-DD) de la última asistencia
     // en los últimos 30 días. Una sola consulta acotada por fecha.
@@ -211,20 +126,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return Math.floor((today - d) / 86400000);
     }
 
-    // Color del semáforo. Con tres escalones casi todas las áreas salían
-    // rojas y el tablero dejaba de decir nada: hay que distinguir la que
-    // se atrasó unos días de la que lleva un mes sin visita.
-    //   verde     al día
-    //   amarillo  esta semana
-    //   naranja   ya se pasó una semana
-    //   rojo      dos semanas o más
-    //   morado    ninguna visita en los últimos 30 días
+    // Semáforo del botón de cada área, por días sin pase de lista:
+    //   verde     dentro de la semana (≤7 días)
+    //   amarillo  ya pasó una semana (8–14 días)
+    //   rojo      más de dos semanas (15 o más, o nada en los últimos 30)
     function trafficLight(days) {
-        if (days <= 3) return { color: '#10b981', label: 'Al día' };
-        if (days <= 7) return { color: '#f59e0b', label: 'Pronto toca' };
-        if (days <= 14) return { color: '#f97316', label: 'Se atrasó' };
-        if (days <= 30) return { color: '#ef4444', label: 'Atrasada' };
-        return { color: '#7c3aed', label: 'Sin visita en 30 días' };
+        if (days <= 7) return { cls: 'tl-verde', label: 'Al día' };
+        if (days <= 14) return { cls: 'tl-amarillo', label: 'Más de una semana' };
+        return { cls: 'tl-rojo', label: 'Más de dos semanas' };
+    }
+
+    function trafficLightTitle(lastDate) {
+        const days = daysSinceDate(lastDate);
+        if (!lastDate) return 'Sin pase de lista en los últimos 30 días';
+        const hace = days === 0 ? 'hoy' : days === 1 ? 'ayer' : `hace ${days} días`;
+        return `Último pase de lista: ${hace} — ${trafficLight(days).label}`;
     }
 
     function selectArea(areaIdOrIds, btnElement) {
@@ -1136,14 +1052,12 @@ document.addEventListener('DOMContentLoaded', () => {
             let areas = [...grouped.values()];
 
             // 1. Identificar Día Actual
-            // FORCE CHANGE FOR TESTING: const today = 2; 
+            // FORCE CHANGE FOR TESTING: const today = 2;
             const today = new Date().getDay();
 
-            // ... (rest of logic: colors, sorting) ...
-            let colorClass = '';
-            if (today === 1 || today === 3) colorClass = 'day-mon-wed';
-            else if (today === 2 || today === 4) colorClass = 'day-tue-thu';
-            else if (today === 5) colorClass = 'day-fri';
+            // Semáforo: último pase de lista de cada área. Colorea todos los
+            // botones, los de la ruta del día y los demás por igual.
+            const recency = await getAreaRecency();
 
             const todaysRoute = WEEKLY_ROUTE[today] || [];
             const routeMap = new Map();
@@ -1221,12 +1135,12 @@ document.addEventListener('DOMContentLoaded', () => {
             otherAreas.sort((a, b) => a.name.localeCompare(b.name));
 
             // Render - ALWAYS show both groups
-            // 1. First render today's route areas (with color and time)
+            // 1. First render today's route areas (with time)
             if (inRouteAreas.length > 0) {
                 inRouteAreas.forEach((area, index) => {
                     // Pass explicit arguments to new getTimeSlot
                     const timeSlot = getTimeSlot(index, today, area.name, null);
-                    createAreaButton(area, container, colorClass, timeSlot);
+                    createAreaButton(area, container, recency, timeSlot);
                 });
             }
 
@@ -1237,10 +1151,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.appendChild(separator);
             }
 
-            // 3. Finally render other areas (without special color)
+            // 3. Finally render other areas
             if (otherAreas.length > 0) {
                 otherAreas.forEach(area => {
-                    createAreaButton(area, container, ''); // Sin clase extra (blanco/gris)
+                    createAreaButton(area, container, recency);
                 });
             }
 
@@ -1254,11 +1168,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function createAreaButton(area, container, extraClass, timeSlot = null) {
+    function createAreaButton(area, container, recency, timeSlot = null) {
+        const allIds = area.allIds || [area.id];
+
+        // Fecha más reciente entre todos los IDs del área (hay áreas duplicadas)
+        let lastDate = null;
+        allIds.forEach(id => {
+            const d = recency[id];
+            if (d && (!lastDate || d > lastDate)) lastDate = d;
+        });
+
         const btn = document.createElement('button');
-        btn.className = `area-btn ${extraClass}`;
+        btn.className = `area-btn ${trafficLight(daysSinceDate(lastDate)).cls}`;
+        btn.title = trafficLightTitle(lastDate);
         btn.dataset.id = area.id;
-        btn.dataset.allIds = area.allIds ? area.allIds.join(',') : area.id;
+        btn.dataset.allIds = allIds.join(',');
 
         // Icono por defecto
         const iconContent = '<i class="fa-solid fa-building"></i>';
