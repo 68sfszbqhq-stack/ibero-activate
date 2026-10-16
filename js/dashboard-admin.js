@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Data global para modales
     let globalData = {};
+    // Empleados por id (para el leaderboard sin consultas extra)
+    let employeeCache = {};
 
     // Instancias de Chart.js (para destruirlas antes de re-renderizar).
     const chartInstances = {};
@@ -99,15 +101,32 @@ document.addEventListener('DOMContentLoaded', () => {
         // de ésta (p. ej. el leaderboard) se abortan para no entrecruzarse.
         const myGen = ++loadGeneration;
         try {
-            // 0. Cargar Mapa de Áreas (ID → Nombre)
+            // Periodo (temporada) seleccionado: el dashboard muestra SOLO sus
+            // datos para que las temporadas no se entrecrucen. '__all__' = todos.
+            const dashPeriod = (dashSelectedPeriodId && dashSelectedPeriodId !== '__all__')
+                ? (dashPeriods.find(p => p.id === dashSelectedPeriodId) || null)
+                : null;
+            const periodIdFilter = dashPeriod ? dashPeriod.id : null;
+
+            // VELOCIDAD: todas las consultas a la vez, no una tras otra.
+            let attQuery = db.collection('attendances');
+            if (periodIdFilter) attQuery = attQuery.where('periodId', '==', periodIdFilter);
+            const [areasSnapshot, employeesSnapshot, attSnapshot, fbSnapshot, activitiesCount] = await Promise.all([
+                db.collection('areas').get(),
+                db.collection('employees').get(),
+                attQuery.get(),
+                db.collectionGroup('feedback').get(),
+                db.collection('activities').get().then(snap => snap.size).catch(() => null)
+            ]);
+            if (myGen !== loadGeneration) return; // llegó una recarga más nueva
+
+            // 0. Mapa de Áreas (ID → Nombre)
             const areasMap = {};
-            const areasSnapshot = await db.collection('areas').get();
             areasSnapshot.forEach(doc => {
                 areasMap[doc.id] = doc.data().name;
             });
-
-            // 1. Cargar todos los empleados para iterar sus subcollections
-            const employeesSnapshot = await db.collection('employees').get();
+            employeeCache = {};
+            employeesSnapshot.forEach(d => { employeeCache[d.id] = d.data(); });
 
             // Conteo de empleados por área (denominador para la tasa por área).
             const areaEmployeeCounts = {};
@@ -123,12 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const allAttendances = [];
             const allFeedbacks = [];
 
-            // Periodo (temporada) seleccionado: el dashboard muestra SOLO sus
-            // datos para que las temporadas no se entrecrucen. '__all__' = todos.
-            const dashPeriod = (dashSelectedPeriodId && dashSelectedPeriodId !== '__all__')
-                ? (dashPeriods.find(p => p.id === dashSelectedPeriodId) || null)
-                : null;
-            const periodIdFilter = dashPeriod ? dashPeriod.id : null;
             const periodStart = dashPeriod ? dashPeriod.startDate : null;
             const periodEnd = dashPeriod ? dashPeriod.endDate : null;
             renderDashboardPeriodBadge(dashPeriod);
@@ -157,13 +170,6 @@ document.addEventListener('DOMContentLoaded', () => {
             //   2) Todo el feedback vía collectionGroup('feedback') en una sola
             //      consulta. Escala sin importar el número de empleados.
             // ============================================================
-            let attQuery = db.collection('attendances');
-            if (periodIdFilter) attQuery = attQuery.where('periodId', '==', periodIdFilter);
-
-            const [attSnapshot, fbSnapshot] = await Promise.all([
-                attQuery.get(),
-                db.collectionGroup('feedback').get()
-            ]);
 
             // 1) Asistencias
             attSnapshot.forEach(doc => {
@@ -248,10 +254,9 @@ document.addEventListener('DOMContentLoaded', () => {
             generateLeaderboard(allAttendances, allFeedbacks, areasMap, myGen);
 
             // 6. Cargar conteo de actividades
-            const activitiesSnapshot = await db.collection('activities').get();
             const activitiesCountEl = document.getElementById('total-activities-count');
-            if (activitiesCountEl) {
-                activitiesCountEl.textContent = activitiesSnapshot.size;
+            if (activitiesCountEl && activitiesCount !== null) {
+                activitiesCountEl.textContent = activitiesCount;
             }
 
         } catch (error) {
@@ -267,13 +272,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupRealtimeListeners() {
         console.log('🔄 Configurando listeners en tiempo real...');
 
-        db.collection('attendances').onSnapshot(() => {
+        // VELOCIDAD: antes se escuchaba TODA la colección de asistencias y
+        // TODO el feedback, lo que volvía a descargar el historial completo al
+        // abrir. Basta con escuchar las asistencias de hoy en adelante; la
+        // primera respuesta se ignora porque la carga inicial ya la cubre.
+        const todayStr = new Date().toLocaleDateString('en-CA');
+        let firstSnapshot = true;
+        db.collection('attendances').where('date', '>=', todayStr).onSnapshot(() => {
+            if (firstSnapshot) { firstSnapshot = false; return; }
             scheduleReload();
         }, error => console.error('Error en listener de asistencias:', error));
-
-        db.collectionGroup('feedback').onSnapshot(() => {
-            scheduleReload();
-        }, error => console.error('Error en listener de feedback:', error));
     }
 
     function calculateAndDisplayChanges(attendances, feedbacks, totalAtt, avgRating, activeAreas, feedbackRate) {
@@ -1302,10 +1310,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         for (const [index, stat] of sortedEmployees.entries()) {
             try {
-                const empDoc = await db.collection('employees').doc(stat.id).get();
-                // Si una recarga más nueva tomó el control, deja de agregar filas.
-                if (gen !== undefined && gen !== loadGeneration) return;
-                const empData = empDoc.data() || { fullName: 'Desconocido', areaId: 'N/A' };
+                // Ya se tienen todos los empleados en memoria: sin consultas extra
+                const empData = employeeCache[stat.id] || { fullName: 'Desconocido', areaId: 'N/A' };
 
                 // Resolver nombre del área
                 const areaName = areasMap[empData.areaId] || 'Área Desconocida';
