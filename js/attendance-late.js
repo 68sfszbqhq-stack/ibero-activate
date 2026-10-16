@@ -130,27 +130,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             employees.sort((a, b) => a.fullName.localeCompare(b.fullName));
 
-            // 2. Verificar quiénes ya tienen asistencia en la FECHA SELECCIONADA
+            // 2. Asistencia de cada empleado en la FECHA SELECCIONADA
+            //    (consultas en paralelo, antes iban una por una)
             const selectedDate = currentDate.toISOString().split('T')[0];
-
-            // Obtener asistencias de todos los empleados del área para esta fecha
-            const attendedEmployeeIds = new Set();
-            for (const emp of employees) {
-                const attSnapshot = await db.collection('employees')
-                    .doc(emp.id)
-                    .collection('attendance')
-                    .where('date', '==', selectedDate)
-                    .get();
-                if (!attSnapshot.empty) {
-                    attendedEmployeeIds.add(emp.id);
-                }
-            }
+            const statuses = await Promise.all(employees.map(emp =>
+                db.collection('employees').doc(emp.id).collection('attendance')
+                    .where('date', '==', selectedDate).get()
+                    .then(snap => snap.empty ? null : snap.docs[0].data().status || 'active')
+            ));
 
             // 3. Renderizar tarjetas
-            employees.forEach(emp => {
-                const isPresent = attendedEmployeeIds.has(emp.id);
-                createEmployeeCard(emp.id, emp, isPresent);
-            });
+            employees.forEach((emp, i) => createEmployeeCard(emp.id, emp, statuses[i]));
 
         } catch (error) {
             console.error('Error cargando empleados:', error);
@@ -158,21 +148,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function createEmployeeCard(id, emp, isPresent) {
+    function createEmployeeCard(id, emp, status) {
         const card = document.createElement('div');
-        card.className = `employee-card ${isPresent ? 'selected' : ''}`;
+        card.className = 'employee-card';
         card.dataset.id = id;
 
-        // Estilo visual para indicar estado
-        const statusIcon = isPresent ? '<i class="fa-solid fa-check-circle"></i>' : '<i class="fa-regular fa-circle"></i>';
-
         card.innerHTML = `
-            <div class="card-icon">${statusIcon}</div>
+            <div class="card-icon"></div>
             <div class="card-info">
-                <h3>${emp.fullName}</h3>
-                <p>#${emp.accountNumber}</p>
+                <h3></h3>
+                <p></p>
             </div>
         `;
+        card.querySelector('h3').textContent = emp.fullName;
+        card.querySelector('p').textContent = `#${emp.accountNumber}`;
+        paintCard(card, status);
 
         // Click Event: Toggle Asistencia
         card.addEventListener('click', () => toggleAttendance(card, id, emp));
@@ -180,113 +170,114 @@ document.addEventListener('DOMContentLoaded', () => {
         employeeList.appendChild(card);
     }
 
-    async function toggleAttendance(card, employeeId, employeeData) {
-        // Prevenir doble clic rápido
-        if (card.classList.contains('processing')) return;
-        card.classList.add('processing');
+    // Igual que el pase de lista: dos palomitas = completa; una = registro viejo
+    function paintCard(card, status) {
+        card.dataset.status = status || 'absent';
+        card.classList.toggle('selected', !!status);
+        const icon = status === 'completed'
+            ? '<i class="fa-solid fa-check-double"></i>'
+            : status ? '<i class="fa-solid fa-check"></i>'
+            : '<i class="fa-regular fa-circle"></i>';
+        card.querySelector('.card-icon').innerHTML = icon;
+    }
 
-        const isSelected = card.classList.contains('selected');
+    // Un toque = asistencia completa (dos palomitas, +20 pts), como en el pase
+    // de lista. Tocar a alguien que ya tiene dos la quita y resta los puntos.
+    async function toggleAttendance(card, employeeId, employeeData) {
+        if (card.classList.contains('processing')) return;
+
+        const currentStatus = card.dataset.status;
         const selectedDate = currentDate.toISOString().split('T')[0];
         const areaValue = areaDropdown.value;
+        const areaId = employeeData.areaId || areaValue.split(',')[0];
+        const empRef = db.collection('employees').doc(employeeId);
 
-        // Resolver el ID de área específico
-        let areaId = employeeData.areaId || (areaValue.includes(',') ? areaValue.split(',')[0] : areaValue);
+        if (currentStatus === 'completed') {
+            const ok = confirm(`⚠️ ¿Quitar la asistencia del ${selectedDate} de ${employeeData.fullName}?\n\nSe le restan los 20 puntos que ganó.`);
+            if (!ok) return;
+        }
+
+        card.classList.add('processing');
+        paintCard(card, currentStatus === 'completed' ? null : 'completed'); // al instante
 
         try {
-            if (!isSelected) {
-                // 1. VERIFICACIÓN DOBLE (Server-side check)
-                const checkSnapshot = await db.collection('employees')
-                    .doc(employeeId)
-                    .collection('attendance')
-                    .where('date', '==', selectedDate)
-                    .get();
+            // Registros de ese día (subcolección, top-level y feedback)
+            const [subSnap, topSnap, fbSnap] = await Promise.all([
+                empRef.collection('attendance').where('date', '==', selectedDate).get(),
+                db.collection('attendances').where('employeeId', '==', employeeId).where('date', '==', selectedDate).get(),
+                empRef.collection('feedback').where('date', '==', selectedDate).get()
+            ]);
+            const batch = db.batch();
 
-                if (!checkSnapshot.empty) {
-                    showToast('⚠️ Este empleado ya tiene asistencia en esta fecha.');
-                    card.classList.add('selected'); // Sincronizar UI
-                    card.querySelector('.card-icon').innerHTML = '<i class="fa-solid fa-check-circle"></i>';
-                    card.classList.remove('processing');
-                    return;
+            if (currentStatus === 'completed') {
+                // QUITAR
+                let pointsToDeduct = 0;
+                subSnap.forEach(doc => {
+                    if (doc.data().status === 'completed') pointsToDeduct += 20;
+                    batch.delete(doc.ref);
+                    batch.delete(db.collection('attendances').doc(doc.id));
+                });
+                topSnap.forEach(doc => batch.delete(doc.ref));
+                fbSnap.forEach(doc => batch.delete(doc.ref));
+                if (pointsToDeduct > 0) {
+                    batch.update(empRef, { points: firebase.firestore.FieldValue.increment(-pointsToDeduct) });
                 }
+                await batch.commit();
+                showToast(`❌ Asistencia eliminada: ${employeeData.fullName}`);
+                return;
+            }
 
-                // 1.5 VERIFICACIÓN EXTRA: Revisar collection top-level también (Evitar desincronización)
-                // Esto previene que se cree una "late" si ya existe una "normal" que falló en sincronizarse
-                const topLevelCheck = await db.collection('attendances')
-                    .where('employeeId', '==', employeeId)
-                    .where('date', '==', selectedDate)
-                    .get();
-
-                if (!topLevelCheck.empty) {
-                    showToast('⚠️ Ya existe asistencia registrada (Top-Level Check).');
-                    card.classList.add('selected');
-                    card.querySelector('.card-icon').innerHTML = '<i class="fa-solid fa-check-circle"></i>';
-                    card.classList.remove('processing');
-                    return;
-                }
-
-                // Resolver el periodo (temporada) según la FECHA de la asistencia,
-                // ya que el pase extemporáneo puede corresponder a un periodo pasado.
+            // MARCAR (sin palomita, o completar una sola de antes)
+            let attendanceId;
+            if (!subSnap.empty) {
+                const existing = subSnap.docs[0];
+                attendanceId = existing.id;
+                batch.update(existing.ref, { status: 'completed' });
+                topSnap.forEach(doc => batch.update(doc.ref, { status: 'completed' }));
+            } else {
+                // El periodo sale de la FECHA (puede ser de un periodo pasado)
                 const periodId = window.Periods
                     ? await window.Periods.getPeriodIdForDate(selectedDate)
                     : null;
-
-                // 2. MARCAR ASISTENCIA (Crear documento en subcollection)
-                const docRef = await db.collection('employees')
-                    .doc(employeeId)
-                    .collection('attendance')
-                    .add({
-                        employeeName: employeeData.fullName,
-                        areaId: areaId,
-                        date: selectedDate,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                        status: 'active',
-                        weekNumber: getWeekNumber(currentDate),
-                        year: currentDate.getFullYear(),
-                        periodId: periodId,
-                        isLate: true // Marcar como asistencia extemporánea
-                    });
-
-                // Write to top-level as well for consistency
-                await db.collection('attendances').doc(docRef.id).set({
+                const subRef = empRef.collection('attendance').doc();
+                attendanceId = subRef.id;
+                const attendanceData = {
                     employeeId: employeeId,
                     employeeName: employeeData.fullName,
                     areaId: areaId,
                     date: selectedDate,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    status: 'active',
+                    status: 'completed',
                     weekNumber: getWeekNumber(currentDate),
                     year: currentDate.getFullYear(),
                     periodId: periodId,
-                    isLate: true
-                });
-
-                card.classList.add('selected');
-                card.querySelector('.card-icon').innerHTML = '<i class="fa-solid fa-check-circle"></i>';
-
-                // Feedback visual rápido
-                showToast(`✅ Asistencia extemporánea marcada: ${employeeData.fullName}`);
-
-            } else {
-                // DESMARCAR (Borrar documento de subcollection)
-                const snapshot = await db.collection('employees')
-                    .doc(employeeId)
-                    .collection('attendance')
-                    .where('date', '==', selectedDate)
-                    .get();
-
-                const batch = db.batch();
-                snapshot.docs.forEach(doc => {
-                    batch.delete(doc.ref);
-                });
-                await batch.commit();
-
-                card.classList.remove('selected');
-                card.querySelector('.card-icon').innerHTML = '<i class="fa-regular fa-circle"></i>';
-                showToast(`❌ Asistencia eliminada: ${employeeData.fullName}`);
+                    isLate: true // Marcar como asistencia extemporánea
+                };
+                batch.set(subRef, attendanceData);
+                batch.set(db.collection('attendances').doc(attendanceId), attendanceData);
             }
+
+            batch.update(empRef, {
+                points: firebase.firestore.FieldValue.increment(20),
+                lastAttendance: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            batch.set(empRef.collection('feedback').doc(), {
+                attendanceId: attendanceId,
+                rating: 5,
+                reaction: '⚡',
+                comment: 'Feedback omitido por admin (Auto +20 pts)',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                date: selectedDate,
+                autoGenerated: true
+            });
+
+            await batch.commit();
+            showToast(`✅ Asistencia completa (+20 pts): ${employeeData.fullName}`);
+
         } catch (error) {
             console.error('Error actualizando asistencia:', error);
-            showToast('❌ Error de conexión. Intenta de nuevo.');
+            paintCard(card, currentStatus === 'absent' ? null : currentStatus); // regresar
+            showToast('❌ No se guardó. Revisa tu conexión e intenta de nuevo.');
         } finally {
             card.classList.remove('processing');
         }
