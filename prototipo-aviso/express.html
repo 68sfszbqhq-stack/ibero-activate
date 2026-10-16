@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pausa express</title>
+<link rel="stylesheet" href="../css/design-system.css">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center;
+    padding: var(--spacing-xl);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(165deg, #2F3A8F 0%, #4F5AC7 55%, #6470D6 100%);
+    color: #fff;
+  }
+  .caja { width: 100%; max-width: 460px; text-align: center; }
+
+  .encabezado { font-size: 11.5px; text-transform: uppercase; letter-spacing: .12em;
+    color: rgba(255,255,255,.62); margin: 0 0 var(--spacing-lg); }
+
+  /* ---- Progreso por bloques ---- */
+  .segmentos { display: flex; gap: 4px; margin-bottom: var(--spacing-xl); }
+  .seg { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.22); overflow: hidden; }
+  .seg span { display: block; height: 100%; width: 0; background: #fff; border-radius: 2px; }
+
+  /* ---- Ilustración ---- */
+  .lienzo {
+    background: rgba(255,255,255,.08); border-radius: var(--radius-xl);
+    padding: var(--spacing-lg) var(--spacing-lg) 34px; margin-bottom: var(--spacing-xl);
+    position: relative;
+  }
+  .lienzo svg { width: 100%; max-width: 210px; height: 230px; display: block; margin: 0 auto; }
+  .fig { fill: none; stroke: #fff; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+  .cab { fill: #fff; stroke: none; }
+  .mano { fill: #fff; stroke: none; }
+  .acento { fill: none; stroke: #FFD36B; stroke-width: 4.5; stroke-linecap: round; stroke-dasharray: 7 7; }
+  .piso { stroke: rgba(255,255,255,.3); stroke-width: 3; stroke-linecap: round; }
+
+  /* Globo de respiración */
+  .globo {
+    position: absolute; top: 133px; left: 50%; width: 190px; height: 190px;
+    margin: -95px 0 0 -95px; border-radius: 50%;
+    border: 2px solid rgba(255,211,107,.55); background: rgba(255,211,107,.09);
+    display: none; pointer-events: none;
+  }
+  .globo.on { display: block; animation: respirar 10s ease-in-out infinite; }
+  @keyframes respirar {
+    0%   { transform: scale(.55); opacity: .35; }
+    40%  { transform: scale(1);   opacity: .75; }
+    100% { transform: scale(.55); opacity: .35; }
+  }
+  .ritmo {
+    position: absolute; left: 0; right: 0; bottom: 11px;
+    font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: #FFD36B; display: none;
+  }
+  .ritmo.on { display: block; }
+
+  /* ---- Texto del ejercicio ---- */
+  .cuenta { font-size: 40px; font-weight: 200; font-variant-numeric: tabular-nums; line-height: 1; margin-bottom: 4px; }
+  .de { font-size: 11.5px; color: rgba(255,255,255,.55); text-transform: uppercase; letter-spacing: .1em; margin-bottom: var(--spacing-lg); }
+  .nombre { font-size: 21px; font-weight: 600; margin: 0 0 6px; }
+  .detalle { font-size: 14px; color: rgba(255,255,255,.82); margin: 0 0 var(--spacing-2xl); min-height: 42px; }
+
+  .botones { display: flex; gap: 10px; }
+  button {
+    flex: 1; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    padding: 13px; border-radius: var(--radius-lg); border: none;
+    transition: background var(--transition-base);
+  }
+  .b-claro { background: #fff; color: #2F3A8F; }
+  .b-claro:hover { background: rgba(255,255,255,.88); }
+  .b-linea { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.4); }
+  .b-linea:hover { background: rgba(255,255,255,.14); }
+
+  /* ---- Final ---- */
+  .final { display: none; }
+  .final.visible { display: block; }
+  .curso.oculto { display: none; }
+  .palomita { font-size: 58px; margin-bottom: var(--spacing-md); }
+  .final h1 { font-size: 25px; margin: 0 0 8px; }
+  .final p { font-size: 14.5px; color: rgba(255,255,255,.82); margin: 0 0 var(--spacing-lg); }
+  .sello {
+    display: inline-block; font-size: 12.5px; font-weight: 600;
+    background: rgba(255,255,255,.16); border-radius: var(--radius-full);
+    padding: 7px 15px; margin-bottom: var(--spacing-2xl);
+  }
+</style>
+</head>
+<body>
+<div class="caja">
+
+  <!-- ================= En curso ================= -->
+  <div class="curso" id="curso">
+    <p class="encabezado" id="encabezado">Pausa express · por tu cuenta</p>
+
+    <div class="segmentos" id="segmentos"></div>
+
+    <div class="lienzo">
+      <div class="globo" id="globo"></div>
+      <div id="dibujo"></div>
+      <p class="ritmo" id="ritmo">Inhala</p>
+    </div>
+
+    <div class="cuenta" id="cuenta">0:45</div>
+    <p class="de" id="de">Ejercicio 1 de 6 · quedan 5:00</p>
+    <p class="nombre" id="nombre">Ponte de pie y crece</p>
+    <p class="detalle" id="detalle">Levántate de la silla.</p>
+
+    <div class="botones">
+      <button class="b-linea" id="btnPausa">Pausar</button>
+      <button class="b-linea" id="btnSalir">Terminar</button>
+    </div>
+  </div>
+
+  <!-- ================= Terminado ================= -->
+  <div class="final" id="final">
+    <div class="palomita">✓</div>
+    <h1 id="finTitulo">Listo</h1>
+    <p id="finTexto">Te levantaste de la silla y moviste lo que llevaba horas quieto.</p>
+    <div class="sello">Registrada como pausa autónoma</div>
+    <div class="botones">
+      <button class="b-claro" onclick="window.close()">Volver al trabajo</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   Sesión express de 5 minutos — autónoma, sin coach.
+   Objetivo: sacar a la persona de la silla, movilizar lo que
+   lleva horas quieto y bajar la tensión con respiración.
+   ============================================================ */
+
+const PISO = '<path class="piso" d="M40 232 H160"/>';
+
+const SESION = [
+  {
+    dur: 45,
+    nombre: 'Ponte de pie y crece',
+    detalle: 'Levántate. Sube los brazos y estírate hacia el techo como si te jalaran de las manos. Inhala al subir.',
+    respirar: true,
+    svg: `
+      <circle class="cab" cx="100" cy="38" r="15"/>
+      <path class="fig" d="M100 53 V142"/>
+      <path class="fig" d="M78 70 H122"/>
+      <path class="fig" d="M78 70 L64 22"/>
+      <path class="fig" d="M122 70 L136 22"/>
+      <circle class="mano" cx="64" cy="22" r="5"/>
+      <circle class="mano" cx="136" cy="22" r="5"/>
+      <path class="fig" d="M100 142 L86 226"/>
+      <path class="fig" d="M100 142 L114 226"/>
+      <path class="fig" d="M86 226 H74"/>
+      <path class="fig" d="M114 226 H126"/>
+      ${PISO}`
+  },
+  {
+    dur: 50,
+    nombre: 'Oreja al hombro',
+    detalle: 'Lleva la oreja derecha al hombro derecho y déjala caer con su propio peso. Aguanta 20 s y cambia de lado.',
+    respirar: false,
+    svg: `
+      <circle class="cab" cx="120" cy="46" r="15"/>
+      <path class="fig" d="M109 59 L100 74"/>
+      <path class="fig" d="M76 76 H124"/>
+      <path class="fig" d="M100 74 V144"/>
+      <path class="fig" d="M76 76 L60 132"/>
+      <path class="fig" d="M124 76 L140 132"/>
+      <circle class="mano" cx="59" cy="134" r="5"/>
+      <circle class="mano" cx="141" cy="134" r="5"/>
+      <path class="fig" d="M100 142 L88 226"/>
+      <path class="fig" d="M100 142 L112 226"/>
+      <path class="fig" d="M88 226 H76"/>
+      <path class="fig" d="M112 226 H124"/>
+      <path class="acento" d="M99 56 Q88 66 86 80"/>
+      ${PISO}`
+  },
+  {
+    dur: 50,
+    nombre: 'Abre el pecho',
+    detalle: 'Entrelaza las manos atrás de la espalda, baja los hombros y saca el pecho. Es el antídoto de la postura de teclado.',
+    respirar: false,
+    svg: `
+      <circle class="cab" cx="92" cy="38" r="15"/>
+      <path class="fig" d="M96 53 Q90 100 100 144"/>
+      <path class="fig" d="M94 72 L130 116"/>
+      <circle class="mano" cx="132" cy="118" r="5"/>
+      <path class="fig" d="M100 144 L94 226"/>
+      <path class="fig" d="M100 144 L110 226"/>
+      <path class="fig" d="M94 226 H80"/>
+      <path class="fig" d="M110 226 H124"/>
+      <path class="acento" d="M78 74 Q68 92 76 110"/>
+      ${PISO}`
+  },
+  {
+    dur: 55,
+    nombre: 'Cuélgate hacia adelante',
+    detalle: 'Rodillas apenas flexionadas. Baja el tronco y deja colgar los brazos y la cabeza. No rebotes: suelta el peso.',
+    respirar: false,
+    svg: `
+      <path class="fig" d="M98 148 L92 226"/>
+      <path class="fig" d="M98 148 L108 226"/>
+      <path class="fig" d="M92 226 H78"/>
+      <path class="fig" d="M108 226 H122"/>
+      <path class="fig" d="M98 148 Q104 112 130 104"/>
+      <circle class="cab" cx="142" cy="124" r="15"/>
+      <path class="fig" d="M130 104 L136 178"/>
+      <circle class="mano" cx="137" cy="181" r="5"/>
+      <path class="acento" d="M88 154 Q78 184 84 212"/>
+      ${PISO}`
+  },
+  {
+    dur: 55,
+    nombre: 'Zancada larga',
+    detalle: 'Un pie bien adelante, el otro atrás con la pierna estirada. Sentirás el estirón atrás del muslo y en la ingle. Cambia de pierna a la mitad.',
+    respirar: false,
+    svg: `
+      <circle class="cab" cx="102" cy="42" r="15"/>
+      <path class="fig" d="M102 57 V130"/>
+      <path class="fig" d="M90 70 H114"/>
+      <path class="fig" d="M102 74 L86 120"/>
+      <circle class="mano" cx="85" cy="123" r="5"/>
+      <path class="fig" d="M102 130 L146 164 L150 222"/>
+      <path class="fig" d="M150 222 H166"/>
+      <path class="fig" d="M102 130 L46 212"/>
+      <path class="fig" d="M46 212 L34 224"/>
+      <path class="acento" d="M78 166 Q66 186 56 200"/>
+      ${PISO}`
+  },
+  {
+    dur: 45,
+    nombre: 'Respira y cierra',
+    detalle: 'Manos en el abdomen. Inhala 4 tiempos por la nariz, exhala 6 por la boca. Que el aire mueva la panza, no los hombros.',
+    respirar: true,
+    svg: `
+      <circle class="cab" cx="92" cy="38" r="15"/>
+      <path class="fig" d="M98 53 V144"/>
+      <path class="fig" d="M90 70 H108"/>
+      <path class="fig" d="M98 74 L122 102 L106 124"/>
+      <circle class="mano" cx="104" cy="126" r="5"/>
+      <path class="fig" d="M98 144 L92 226"/>
+      <path class="fig" d="M98 144 L106 226"/>
+      <path class="fig" d="M92 226 H78"/>
+      <path class="fig" d="M106 226 H120"/>
+      ${PISO}`
+  }
+];
+
+const TOTAL = SESION.reduce((a, b) => a + b.dur, 0);
+
+/* ===== Utilidades ===== */
+const $ = (id) => document.getElementById(id);
+const reloj = (s) => Math.floor(Math.max(0, s) / 60) + ':' + String(Math.max(0, Math.round(s)) % 60).padStart(2, '0');
+
+/* ===== Barra segmentada ===== */
+const barras = SESION.map(() => {
+  const d = document.createElement('div'); d.className = 'seg';
+  const s = document.createElement('span'); d.appendChild(s);
+  $('segmentos').appendChild(d);
+  return s;
+});
+
+/* ===== Estado ===== */
+let transcurrido = 0;
+let corriendo = true;
+let tick = null;
+let idxPintado = -1;
+
+function bloqueActual(t) {
+  let corte = 0;
+  for (let i = 0; i < SESION.length; i++) {
+    corte += SESION[i].dur;
+    if (t < corte) return { i, restaBloque: corte - t, inicio: corte - SESION[i].dur };
+  }
+  const u = SESION.length - 1;
+  return { i: u, restaBloque: 0, inicio: TOTAL - SESION[u].dur };
+}
+
+function pintar() {
+  const { i, restaBloque, inicio } = bloqueActual(transcurrido);
+  const b = SESION[i];
+
+  $('cuenta').textContent = reloj(restaBloque);
+  $('de').textContent = `Ejercicio ${i + 1} de ${SESION.length} · quedan ${reloj(TOTAL - transcurrido)}`;
+
+  barras.forEach((s, k) => {
+    s.style.width = k < i ? '100%' : (k === i ? Math.min(100, ((transcurrido - inicio) / b.dur) * 100) + '%' : '0');
+  });
+
+  if (i !== idxPintado) {
+    idxPintado = i;
+    $('nombre').textContent = b.nombre;
+    $('detalle').textContent = b.detalle;
+    $('dibujo').innerHTML = `<svg viewBox="0 0 200 250" role="img" aria-label="${b.nombre}">${b.svg}</svg>`;
+    $('globo').classList.toggle('on', !!b.respirar);
+    $('ritmo').classList.toggle('on', !!b.respirar);
+  }
+
+  if (b.respirar) {
+    // Ciclo 4-6: cuatro segundos inhalando, seis exhalando
+    $('ritmo').textContent = ((transcurrido - inicio) % 10) < 4 ? 'Inhala' : 'Exhala';
+  }
+}
+
+function avanzar() {
+  if (!corriendo) return;
+  transcurrido++;
+  if (transcurrido >= TOTAL) { transcurrido = TOTAL; pintar(); terminar(true); return; }
+  pintar();
+}
+
+function terminar(completo) {
+  clearInterval(tick);
+  $('curso').classList.add('oculto');
+  $('final').classList.add('visible');
+  if (!completo) {
+    $('finTitulo').textContent = 'Bien hecho';
+    $('finTexto').textContent = 'Lo que hiciste cuenta. Cada minuto fuera de la silla suma.';
+  }
+}
+
+$('btnPausa').addEventListener('click', (e) => {
+  corriendo = !corriendo;
+  e.target.textContent = corriendo ? 'Pausar' : 'Seguir';
+  $('globo').style.animationPlayState = corriendo ? 'running' : 'paused';
+});
+
+$('btnSalir').addEventListener('click', () => terminar(false));
+
+pintar();
+tick = setInterval(avanzar, 1000);
+</script>
+</body>
+</html>

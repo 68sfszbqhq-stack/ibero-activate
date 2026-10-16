@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pausa activa en curso</title>
+<link rel="stylesheet" href="../css/design-system.css">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center;
+    padding: var(--spacing-xl);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(160deg, #C1272D 0%, #8e1b20 100%);
+    color: #fff;
+  }
+  .caja { width: 100%; max-width: 440px; text-align: center; }
+
+  .area { font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em;
+    color: rgba(255,255,255,.6); margin: 0 0 6px; }
+  .titulo { font-size: 20px; font-weight: 700; margin: 0 0 var(--spacing-2xl); }
+  .titulo .emoji { margin-right: 6px; }
+
+  .reloj { position: relative; width: 220px; height: 220px; margin: 0 auto var(--spacing-xl); }
+  .reloj svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+  .pista  { fill: none; stroke: rgba(255,255,255,.18); stroke-width: 8; }
+  .avance { fill: none; stroke: #fff; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+  .centro { position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; }
+  .tiempo { font-size: 48px; font-weight: 200; font-variant-numeric: tabular-nums; line-height: 1; }
+  .restante { font-size: 11.5px; color: rgba(255,255,255,.6); margin-top: 6px;
+    text-transform: uppercase; letter-spacing: .08em; }
+
+  .segmentos { display: flex; gap: 4px; margin-bottom: var(--spacing-xl); }
+  .seg { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.22); overflow: hidden; }
+  .seg span { display: block; height: 100%; width: 0; background: #fff; border-radius: 2px; }
+
+  .bloque { min-height: 86px; margin-bottom: var(--spacing-xl); }
+  .paso { font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    color: rgba(255,255,255,.6); margin: 0 0 7px; }
+  .texto { font-size: 17px; font-weight: 500; margin: 0; line-height: 1.42; }
+
+  .siguiente { font-size: 12.5px; color: rgba(255,255,255,.55); margin: 0 0 var(--spacing-xl); min-height: 18px; }
+
+  .botones { display: flex; gap: 10px; }
+  button {
+    flex: 1; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    padding: 13px; border-radius: var(--radius-lg); border: none;
+    transition: background var(--transition-base);
+  }
+  .b-claro { background: #fff; color: var(--color-brand); }
+  .b-claro:hover { background: rgba(255,255,255,.88); }
+  .b-linea { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.4); }
+  .b-linea:hover { background: rgba(255,255,255,.12); }
+
+  .final { display: none; }
+  .final.visible { display: block; }
+  .curso.oculto { display: none; }
+  .palomita { font-size: 58px; margin-bottom: var(--spacing-md); }
+  .final h1 { font-size: 25px; margin: 0 0 8px; }
+  .final p { font-size: 14.5px; color: rgba(255,255,255,.82); margin: 0 0 var(--spacing-lg); }
+  .sello {
+    display: inline-block; font-size: 12.5px; font-weight: 600;
+    background: rgba(255,255,255,.16); border-radius: var(--radius-full);
+    padding: 7px 15px; margin-bottom: var(--spacing-2xl);
+  }
+</style>
+</head>
+<body>
+<div class="caja">
+
+  <div class="curso" id="curso">
+    <p class="area" id="area">Pausa activa</p>
+    <p class="titulo" id="titulo"><span class="emoji">🤸</span><span id="tituloTexto">Sesión</span></p>
+
+    <div class="segmentos" id="segmentos"></div>
+
+    <div class="reloj">
+      <svg viewBox="0 0 100 100">
+        <circle class="pista"  cx="50" cy="50" r="44"></circle>
+        <circle class="avance" cx="50" cy="50" r="44" id="avance"></circle>
+      </svg>
+      <div class="centro">
+        <div class="tiempo" id="tiempo">0:00</div>
+        <div class="restante" id="restante">del bloque</div>
+      </div>
+    </div>
+
+    <div class="bloque">
+      <p class="paso" id="paso">Bloque 1 de 3</p>
+      <p class="texto" id="texto">…</p>
+    </div>
+    <p class="siguiente" id="siguiente"></p>
+
+    <div class="botones">
+      <button class="b-linea" id="btnPausa">Pausar</button>
+      <button class="b-linea" id="btnSalir">Terminar</button>
+    </div>
+  </div>
+
+  <div class="final" id="final">
+    <div class="palomita">✓</div>
+    <h1 id="finTitulo">Listo</h1>
+    <p id="finTexto">Tu participación quedó registrada.</p>
+    <div class="sello" id="finSello">Registrada como pausa guiada</div>
+    <div class="botones">
+      <button class="b-claro" onclick="window.close()">Volver al trabajo</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="../js/catalog-data.js"></script>
+<script src="sesion.js"></script>
+<script>
+/* ============================================================
+   Sesión GUIADA — la da el coach en vivo.
+   La pantalla acompaña: qué actividad es, en qué bloque van
+   y cuánto falta. Los bloques salen del catálogo real.
+   ============================================================ */
+
+const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+
+const area = params.get('area') || '';
+const minutos = Math.min(Math.max(parseInt(params.get('min'), 10) || 15, 1), 60);
+const actividad = obtenerActividad(params.get('act') || '');
+
+const TOTAL = minutos * 60;
+const BLOQUES = armarBloques(actividad, minutos);
+
+/* ===== Encabezado ===== */
+$('area').textContent = area ? `Pausa activa · ${area}` : 'Pausa activa';
+if (actividad) {
+  $('titulo').querySelector('.emoji').textContent = actividad.emoji || '🤸';
+  $('tituloTexto').textContent = actividad.name;
+} else {
+  $('titulo').querySelector('.emoji').textContent = '🤸';
+  $('tituloTexto').textContent = 'Sesión de pausa activa';
+}
+
+/* ===== Barra segmentada ===== */
+const barras = BLOQUES.map(() => {
+  const d = document.createElement('div'); d.className = 'seg';
+  const s = document.createElement('span'); d.appendChild(s);
+  $('segmentos').appendChild(d);
+  return s;
+});
+
+/* ===== Anillo ===== */
+const RADIO = 44, VUELTA = 2 * Math.PI * RADIO;
+const anillo = $('avance');
+anillo.style.strokeDasharray = VUELTA;
+
+let transcurrido = 0, corriendo = true, tick = null, idxPintado = -1;
+
+function bloqueActual(t) {
+  let corte = 0;
+  for (let i = 0; i < BLOQUES.length; i++) {
+    corte += BLOQUES[i].dur;
+    if (t < corte) return { i, resta: corte - t, inicio: corte - BLOQUES[i].dur };
+  }
+  const u = BLOQUES.length - 1;
+  return { i: u, resta: 0, inicio: TOTAL - BLOQUES[u].dur };
+}
+
+function pintar() {
+  const { i, resta, inicio } = bloqueActual(transcurrido);
+  const b = BLOQUES[i];
+
+  $('tiempo').textContent = formatoReloj(resta);
+  $('restante').textContent = `del bloque · quedan ${formatoReloj(TOTAL - transcurrido)}`;
+  anillo.style.strokeDashoffset = VUELTA * (1 - transcurrido / TOTAL);
+
+  barras.forEach((s, k) => {
+    s.style.width = k < i ? '100%' : (k === i ? Math.min(100, ((transcurrido - inicio) / b.dur) * 100) + '%' : '0');
+  });
+
+  if (i !== idxPintado) {
+    idxPintado = i;
+    $('paso').textContent = `Bloque ${i + 1} de ${BLOQUES.length} · ${formatoBloque(b.dur)}`;
+    $('texto').textContent = b.texto;
+    const sig = BLOQUES[i + 1];
+    $('siguiente').textContent = sig ? `Sigue: ${sig.texto}` : 'Último bloque';
+  }
+}
+
+function avanzar() {
+  if (!corriendo) return;
+  transcurrido++;
+  if (transcurrido >= TOTAL) { transcurrido = TOTAL; pintar(); terminar(true); return; }
+  pintar();
+}
+
+function terminar(completo) {
+  clearInterval(tick);
+  $('curso').classList.add('oculto');
+  $('final').classList.add('visible');
+  if (!completo) {
+    $('finTitulo').textContent = 'Bien hecho';
+    $('finTexto').textContent = 'Lo que hiciste cuenta. Cada minuto suma.';
+  }
+}
+
+$('btnPausa').addEventListener('click', (e) => {
+  corriendo = !corriendo;
+  e.target.textContent = corriendo ? 'Pausar' : 'Seguir';
+});
+$('btnSalir').addEventListener('click', () => terminar(false));
+
+pintar();
+tick = setInterval(avanzar, 1000);
+</script>
+</body>
+</html>

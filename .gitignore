@@ -173,3 +173,7 @@ coverage/
 # - Usar variables de entorno para configuración
 # - Rotar credenciales regularmente
 # - Revisar el output de `git status` antes de cada commit
+
+# Documentos internos (Consejo / tablero): no publicar
+*.docx
+Tablero de áreas*

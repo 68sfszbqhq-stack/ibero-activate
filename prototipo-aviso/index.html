@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prototipo — Aviso de pausa activa</title>
+<link rel="stylesheet" href="../css/design-system.css">
+<style>
+  * { box-sizing: border-box; }
+  html { overflow-x: hidden; }
+  body {
+    margin: 0; padding: var(--spacing-2xl);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--color-bg); color: var(--color-text); line-height: 1.5;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+
+  header h1 { margin: 0 0 4px; font-size: 24px; }
+  header p  { margin: 0; color: var(--color-text-muted); font-size: 14px; }
+
+  .aviso-local {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--color-warning-light); color: var(--color-warning-dark);
+    border-radius: var(--radius-lg); padding: 12px 14px;
+    font-size: 13px; margin: var(--spacing-xl) 0;
+  }
+
+  .grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--spacing-xl); align-items: start; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--color-bg-card); border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl); padding: var(--spacing-xl);
+    box-shadow: var(--shadow-sm); margin-bottom: var(--spacing-xl);
+  }
+  .card h2 {
+    margin: 0 0 4px; font-size: 15px; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--color-text-muted);
+  }
+  .card .sub { margin: 0 0 var(--spacing-lg); font-size: 13px; color: var(--color-text-light); }
+
+  label { display: block; font-size: 13px; font-weight: 600; margin: var(--spacing-md) 0 4px; }
+  select, input[type=text] {
+    width: 100%; padding: 9px 11px; font-size: 14px; font-family: inherit;
+    border: 1px solid var(--color-border-dark); border-radius: var(--radius-md);
+    background: var(--color-bg-card); color: var(--color-text);
+  }
+  .fila { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md); }
+
+  button {
+    font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    border: none; border-radius: var(--radius-md); padding: 11px 16px;
+    transition: background var(--transition-base);
+  }
+  .btn-primary   { background: var(--color-brand); color: #fff; width: 100%; }
+  .btn-primary:hover:not(:disabled) { background: var(--color-brand-hover); }
+  .btn-primary:disabled { background: var(--color-border-dark); cursor: not-allowed; }
+  .btn-ghost {
+    background: transparent; color: var(--color-text-muted);
+    border: 1px solid var(--color-border-dark); padding: 7px 12px; font-size: 12.5px;
+  }
+  .btn-ghost:hover { background: var(--color-bg-secondary); }
+  .btn-mini {
+    display: none; background: var(--color-brand); color: #fff;
+    font-size: 12px; font-weight: 600; padding: 5px 11px;
+    border-radius: var(--radius-full); margin-left: auto; flex-shrink: 0;
+  }
+  .btn-mini.visible { display: inline-block; }
+  .btn-mini:hover { background: var(--color-brand-hover); }
+
+  .estado { display: flex; align-items: center; gap: 8px; font-size: 13.5px; margin-top: var(--spacing-md); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; background: var(--color-text-light); }
+  .dot.ok { background: var(--color-success); }
+  .dot.mal { background: var(--color-danger); }
+  .dot.pend { background: var(--color-warning); }
+
+  /* ---- Ficha de la sesión programada ---- */
+  .ficha {
+    background: var(--color-primary-light); border-radius: var(--radius-lg);
+    padding: var(--spacing-lg); margin-top: var(--spacing-lg);
+  }
+  .ficha-top { display: flex; gap: 12px; align-items: flex-start; }
+  .ficha-emoji { font-size: 30px; line-height: 1; flex-shrink: 0; }
+  .ficha-nombre { font-size: 16px; font-weight: 700; margin: 0 0 2px; }
+  .ficha-obj { font-size: 13px; color: var(--color-text-muted); margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--spacing-md); }
+  .chip {
+    font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-full);
+    background: rgba(255,255,255,.75); color: var(--color-primary-hover);
+  }
+  .pasos { list-style: none; padding: 0; margin: var(--spacing-md) 0 0; }
+  .pasos li {
+    display: flex; gap: 10px; font-size: 12.5px; padding: 5px 0;
+    border-top: 1px solid rgba(255,255,255,.7);
+  }
+  .pasos .t {
+    font-weight: 700; color: var(--color-primary-hover); flex-shrink: 0;
+    min-width: 46px; text-align: right; font-variant-numeric: tabular-nums;
+  }
+  .nota-tiempo {
+    font-size: 12px; color: var(--color-warning-dark); background: var(--color-warning-light);
+    border-radius: var(--radius-md); padding: 8px 10px; margin-top: var(--spacing-md);
+  }
+
+  /* ---- Vista previa Windows 11 ---- */
+  .escritorio {
+    background: linear-gradient(140deg, #1e3a5f 0%, #2d5a8c 55%, #4a7ba7 100%);
+    border-radius: var(--radius-xl); padding: 18px;
+    min-height: 250px; display: flex; align-items: flex-end; justify-content: flex-end;
+    position: relative; overflow: hidden;
+  }
+  .escritorio::after {
+    content: 'escritorio Windows'; position: absolute; top: 12px; left: 16px;
+    font-size: 11px; color: rgba(255,255,255,.5); letter-spacing: .06em; text-transform: uppercase;
+  }
+  .toast {
+    width: min(330px, 100%); background: #2b2b2b; color: #fff;
+    border: 1px solid rgba(255,255,255,.09); border-radius: 8px;
+    box-shadow: 0 12px 34px rgba(0,0,0,.45); padding: 14px; position: relative;
+    transform: translateX(0); opacity: 1;
+    transition: transform 320ms cubic-bezier(.2,.9,.3,1), opacity 320ms ease;
+  }
+  .toast.oculto { transform: translateX(calc(100% + 40px)); opacity: 0; pointer-events: none; }
+  .toast-top { display: flex; gap: 11px; align-items: flex-start; }
+  .toast-x {
+    position: absolute; top: 8px; right: 9px; width: 22px; height: 22px;
+    background: transparent; color: #9a9a9a; font-size: 15px; line-height: 1;
+    padding: 0; border-radius: 4px; font-weight: 400;
+  }
+  .toast-x:hover { background: #3d3d3d; color: #fff; }
+  .toast-icon {
+    width: 40px; height: 40px; border-radius: 6px; flex-shrink: 0;
+    background: var(--color-brand); display: grid; place-items: center; font-size: 19px;
+  }
+  .toast-app { font-size: 11px; color: #a8a8a8; margin: 0 0 3px; }
+  .toast-titulo { font-size: 14px; font-weight: 600; margin: 0 0 2px; }
+  .toast-cuerpo { font-size: 13px; color: #d4d4d4; margin: 0; }
+  .toast-btns { display: flex; gap: 8px; margin-top: 12px; }
+  .toast-btns button {
+    flex: 1; padding: 8px; font-size: 12.5px; font-weight: 500;
+    background: #3d3d3d; color: #fff; border-radius: 4px;
+  }
+  .toast-btns button:hover { background: #4a4a4a; }
+  .toast-btns button.si { background: var(--color-brand); }
+  .toast-btns button.si:hover { background: var(--color-brand-hover); }
+  .toast-btns button.solo { background: #3d5a80; }
+  .toast-btns button.solo:hover { background: #4a6b96; }
+  .toast-cierra { font-size: 11px; color: #8a8a8a; margin: 9px 0 0; text-align: right; }
+
+  .reglas { list-style: none; padding: 0; margin: 0; }
+  .reglas li {
+    display: flex; gap: 9px; align-items: flex-start;
+    font-size: 13px; padding: 7px 0; border-bottom: 1px solid var(--color-border);
+  }
+  .reglas li:last-child { border-bottom: none; }
+  .check { color: var(--color-success); font-weight: 700; flex-shrink: 0; }
+
+  #bitacora { list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto; }
+  #bitacora li {
+    display: flex; gap: 10px; align-items: baseline;
+    font-size: 13px; padding: 8px 0; border-bottom: 1px solid var(--color-border);
+  }
+  #bitacora li:last-child { border-bottom: none; }
+  .hora { font-size: 11.5px; color: var(--color-text-light); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .tag {
+    font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: var(--radius-full);
+    text-transform: uppercase; letter-spacing: .03em; flex-shrink: 0;
+  }
+  .tag.aceptar  { background: var(--color-success-light); color: var(--color-success-dark); }
+  .tag.declinar { background: var(--color-bg-secondary); color: var(--color-text-muted); }
+  .tag.ignorar  { background: var(--color-warning-light); color: var(--color-warning-dark); }
+  .tag.express  { background: var(--color-primary-light); color: var(--color-primary-hover); }
+  .tag.expiro   { background: var(--color-info-light); color: #1e40af; }
+  .tag.sistema  { background: var(--color-primary-light); color: var(--color-primary-hover); }
+  .vacio { font-size: 13px; color: var(--color-text-light); font-style: italic; }
+
+  .pie { font-size: 12px; color: var(--color-text-light); margin-top: var(--spacing-2xl); text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Prototipo — aviso de pausa activa</h1>
+    <p>Para ver y sentir cómo llega el aviso antes de ponerlo frente a nadie.</p>
+  </header>
+
+  <div class="aviso-local">
+    <span>⚠️</span>
+    <div>
+      <strong>Esto no toca nada real.</strong> No se conecta a Firebase, no guarda asistencia,
+      no le avisa a ningún empleado. Todo pasa dentro de esta computadora.
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- ============ IZQUIERDA ============ -->
+    <div>
+
+      <div class="card">
+        <h2>Paso 1 · Permiso</h2>
+        <p class="sub">Windows sólo deja avisar si la persona dijo que sí, una vez.</p>
+        <button class="btn-primary" id="btnPermiso">Activar los avisos</button>
+        <div class="estado"><span class="dot" id="dotPermiso"></span><span id="txtPermiso">Revisando…</span></div>
+      </div>
+
+      <div class="card">
+        <h2>Paso 2 · La sesión de hoy</h2>
+        <p class="sub">
+          Aquí escoges cuál toca. En la versión real esto lo lee solo del calendario
+          (<code>weekly_schedules</code>), sin que tengas que elegir nada.
+        </p>
+
+        <label for="actividad">Actividad programada</label>
+        <select id="actividad"></select>
+
+        <div class="fila">
+          <div>
+            <label for="minutos">Cuánto dura</label>
+            <select id="minutos">
+              <option value="7">7 minutos</option>
+              <option value="15" selected>15 minutos</option>
+              <option value="20">20 minutos</option>
+            </select>
+          </div>
+          <div>
+            <label for="area">A qué área llegas</label>
+            <select id="area">
+              <option>Admisiones</option>
+              <option>Recursos Humanos</option>
+              <option>Servicios Escolares</option>
+              <option>Tesorería</option>
+              <option>Biblioteca</option>
+              <option>Comunicación Institucional</option>
+              <option>Rectoría</option>
+              <option>Mantenimiento</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="coach">Quién la da</label>
+        <input type="text" id="coach" value="José" maxlength="24">
+
+        <div class="ficha" id="ficha"></div>
+
+        <div style="margin-top:var(--spacing-xl)">
+          <button class="btn-primary" id="btnEnviar" disabled>Estoy aquí — avisar al área</button>
+        </div>
+        <div class="estado">
+          <span class="dot" id="dotEnvio"></span>
+          <span id="txtEnvio">Falta activar los avisos.</span>
+          <button class="btn-mini" id="btnReset">Probar otra vez</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Reglas activas</h2>
+        <p class="sub">Esto es lo que lo separa de ser spam.</p>
+        <ul class="reglas">
+          <li><span class="check">✓</span><span><strong>Sin sonido.</strong> No suena, no parpadea, no abre ventanas encima de su trabajo.</span></li>
+          <li><span class="check">✓</span><span><strong>Se va solo a los 20 segundos</strong> si no responden. No hay que cerrarlo.</span></li>
+          <li><span class="check">✓</span><span><strong>Uno por persona por día.</strong> Tope duro, sin excepciones.</span></li>
+          <li><span class="check">✓</span><span><strong>"Ahora no" cierra el día.</strong> No se insiste ni se recuerda después.</span></li>
+          <li><span class="check">✓</span><span><strong>Declinar no cuesta nada.</strong> No resta puntos ni rompe la racha.</span></li>
+          <li><span class="check">✓</span><span><strong>Sólo quien se suscribió.</strong> Nadie lo recibe por estar en la nómina.</span></li>
+          <li><span class="check">✓</span><span><strong>Hay salida express.</strong> Quien no puede parar contigo hace 5 min por su cuenta y cuenta igual.</span></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- ============ DERECHA ============ -->
+    <div>
+
+      <div class="card">
+        <h2>Cómo se ve en Windows</h2>
+        <p class="sub">
+          Windows admite <strong>sólo dos botones</strong> por aviso, así que los dos son las dos
+          formas de participar. La ✕ es "ahora no", y no cuesta nada.
+        </p>
+        <div class="escritorio">
+          <div class="toast oculto" id="toast">
+            <div class="toast-top">
+              <div class="toast-icon" id="pvEmoji">🤸</div>
+              <div>
+                <p class="toast-app">IBERO ACTÍVATE</p>
+                <p class="toast-titulo" id="pvTitulo">José está en Admisiones</p>
+                <p class="toast-cuerpo" id="pvCuerpo">Energía Express · 15 min. ¿Te unes?</p>
+              </div>
+            </div>
+            <button class="toast-x" data-resp="declinar" title="Ahora no">✕</button>
+            <div class="toast-btns">
+              <button class="si" data-resp="aceptar">Va, me uno</button>
+              <button class="solo" data-resp="express">Solo, 5 min</button>
+            </div>
+            <p class="toast-cierra" id="pvCierra">se cierra solo en 20 s</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Qué pasó</h2>
+        <p class="sub">Lo que quedaría registrado. Nota que "ahora no" se ve igual de normal que "sí".</p>
+        <ul id="bitacora"></ul>
+        <p class="vacio" id="bitVacia">Todavía no pasa nada. Activa los avisos y toca "Estoy aquí".</p>
+      </div>
+
+    </div>
+  </div>
+
+  <p class="pie">Prototipo local · IBERO ACTÍVATE · no forma parte del sitio publicado</p>
+</div>
+
+<script src="../js/catalog-data.js"></script>
+<script src="sesion.js"></script>
+<script>
+const CLAVE_DIA = 'proto-aviso-dia';
+const SEG_VIDA  = 20;
+let registro = null, cuentaRegresiva = null, segundosRestantes = SEG_VIDA;
+const $ = (id) => document.getElementById(id);
+
+/* ================= Catálogo ================= */
+function llenarCatalogo() {
+  const sel = $('actividad');
+  if (!catalogoDisponible()) {
+    sel.innerHTML = '<option>No se pudo leer el catálogo</option>';
+    return;
+  }
+  const porCategoria = {};
+  CATALOGO_COMPLETO.forEach((a) => {
+    (porCategoria[a.categoria] = porCategoria[a.categoria] || []).push(a);
+  });
+  Object.keys(porCategoria).sort().forEach((cat) => {
+    const g = document.createElement('optgroup');
+    g.label = cat;
+    porCategoria[cat].forEach((a) => {
+      const o = document.createElement('option');
+      o.value = a.activityId;
+      o.textContent = `${a.emoji} ${a.name} · ${a.duration} min`;
+      g.appendChild(o);
+    });
+    sel.appendChild(g);
+  });
+  sel.value = 'AF-01';
+}
+
+function actividadElegida() { return obtenerActividad($('actividad').value); }
+function minutosElegidos()  { return parseInt($('minutos').value, 10); }
+
+function pintarFicha() {
+  const a = actividadElegida();
+  const min = minutosElegidos();
+  const f = $('ficha');
+  if (!a) { f.innerHTML = '<p class="ficha-obj">Sin actividad.</p>'; return; }
+
+  const bloques = armarBloques(a, min);
+  f.textContent = '';
+
+  const top = document.createElement('div'); top.className = 'ficha-top';
+  const em = document.createElement('div'); em.className = 'ficha-emoji'; em.textContent = a.emoji || '🤸';
+  const box = document.createElement('div');
+  const nom = document.createElement('p'); nom.className = 'ficha-nombre'; nom.textContent = a.name;
+  const obj = document.createElement('p'); obj.className = 'ficha-obj'; obj.textContent = a.objetivo || '';
+  box.append(nom, obj); top.append(em, box); f.append(top);
+
+  const chips = document.createElement('div'); chips.className = 'chips';
+  [`${min} min`, a.categoria, `intensidad ${a.intensity}`, a.materials || 'sin material']
+    .filter(Boolean)
+    .forEach((t) => { const c = document.createElement('span'); c.className = 'chip'; c.textContent = t; chips.append(c); });
+  f.append(chips);
+
+  const ul = document.createElement('ul'); ul.className = 'pasos';
+  bloques.forEach((b) => {
+    const li = document.createElement('li');
+    const t = document.createElement('span'); t.className = 't'; t.textContent = formatoBloque(b.dur);
+    const x = document.createElement('span'); x.textContent = b.texto;
+    li.append(t, x); ul.append(li);
+  });
+  f.append(ul);
+
+  if (a.duration && a.duration !== min) {
+    const n = document.createElement('p'); n.className = 'nota-tiempo';
+    n.textContent = `Ojo: la diseñaste para ${a.duration} min y la vas a correr en ${min}. `
+      + `Los tiempos de arriba mantienen la proporción original de cada bloque.`;
+    f.append(n);
+  }
+}
+
+/* ================= Service Worker ================= */
+async function iniciar() {
+  llenarCatalogo();
+  pintarFicha();
+  $('actividad').addEventListener('change', pintarFicha);
+  $('minutos').addEventListener('change', pintarFicha);
+
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+    marcarPermiso('mal', 'Este navegador no soporta avisos. Usa Chrome o Edge.');
+    return;
+  }
+  try {
+    registro = await navigator.serviceWorker.register('sw-aviso.js');
+    await navigator.serviceWorker.ready;
+  } catch (e) {
+    marcarPermiso('mal', 'No se pudo iniciar. Ábrelo con "npm run dev", no con doble clic.');
+    return;
+  }
+  navigator.serviceWorker.addEventListener('message', (ev) => {
+    const d = ev.data || {};
+    if (d.tipo === 'respuesta') manejarRespuesta(d.respuesta);
+  });
+  revisarPermiso();
+}
+
+function revisarPermiso() {
+  const p = Notification.permission;
+  if (p === 'granted') {
+    marcarPermiso('ok', 'Avisos activados en esta computadora.');
+    $('btnPermiso').textContent = 'Ya están activados';
+    $('btnPermiso').disabled = true;
+    habilitarEnvio();
+  } else if (p === 'denied') {
+    marcarPermiso('mal', 'Bloqueados. Hay que reactivarlos en el candado de la barra de direcciones.');
+    $('btnPermiso').disabled = true;
+  } else {
+    marcarPermiso('pend', 'Falta dar permiso.');
+  }
+}
+
+function marcarPermiso(clase, texto) {
+  $('dotPermiso').className = 'dot ' + clase;
+  $('txtPermiso').textContent = texto;
+}
+
+$('btnPermiso').addEventListener('click', async () => {
+  const r = await Notification.requestPermission();
+  revisarPermiso();
+  anotar('sistema', r === 'granted' ? 'La persona aceptó recibir avisos.' : 'La persona no dio permiso.');
+});
+
+/* ================= Regla: uno por día ================= */
+const hoy = () => new Date().toISOString().slice(0, 10);
+const yaLeTocoHoy = () => localStorage.getItem(CLAVE_DIA) === hoy();
+const marcarDia = () => localStorage.setItem(CLAVE_DIA, hoy());
+
+function habilitarEnvio() {
+  if (Notification.permission !== 'granted') return;
+  if (yaLeTocoHoy()) {
+    $('btnEnviar').disabled = true;
+    $('dotEnvio').className = 'dot pend';
+    $('txtEnvio').textContent = 'Ya recibió su aviso de hoy. No se le vuelve a molestar.';
+    $('btnReset').classList.add('visible');
+  } else {
+    $('btnEnviar').disabled = false;
+    $('dotEnvio').className = 'dot ok';
+    $('txtEnvio').textContent = 'Listo para avisar.';
+    $('btnReset').classList.remove('visible');
+  }
+}
+
+$('btnReset').addEventListener('click', () => {
+  localStorage.removeItem(CLAVE_DIA);
+  habilitarEnvio();
+  anotar('sistema', 'Día reiniciado (sólo para probar).');
+});
+
+/* ================= Disparar el aviso ================= */
+$('btnEnviar').addEventListener('click', () => {
+  if (yaLeTocoHoy()) { habilitarEnvio(); return; }   // regla dura, no sólo visual
+
+  const a = actividadElegida();
+  const datos = {
+    tipo: 'mostrar-aviso',
+    coach: ($('coach').value || 'El coach').trim(),
+    area: $('area').value,
+    minutos: minutosElegidos(),
+    actividad: a ? a.name : 'Pausa activa',
+    activityId: a ? a.activityId : '',
+    emoji: a ? a.emoji : '🤸'
+  };
+
+  $('pvEmoji').textContent = datos.emoji;
+  $('pvTitulo').textContent = `${datos.coach} está en ${datos.area}`;
+  $('pvCuerpo').textContent = `${datos.actividad} · ${datos.minutos} min. ¿Te unes?`;
+  const t = $('toast');
+  t.classList.remove('oculto');
+  t.dataset.minutos = datos.minutos;
+  t.dataset.area = datos.area;
+  t.dataset.act = datos.activityId;
+
+  const destino = navigator.serviceWorker.controller || (registro && registro.active);
+  if (destino) destino.postMessage(datos);
+
+  marcarDia();
+  habilitarEnvio();
+  anotar('sistema', `Aviso enviado a ${datos.area}: ${datos.actividad}, ${datos.minutos} min.`);
+  arrancarCuenta();
+});
+
+function arrancarCuenta() {
+  clearInterval(cuentaRegresiva);
+  segundosRestantes = SEG_VIDA;
+  $('pvCierra').textContent = `se cierra solo en ${segundosRestantes} s`;
+  cuentaRegresiva = setInterval(() => {
+    segundosRestantes--;
+    $('pvCierra').textContent = `se cierra solo en ${segundosRestantes} s`;
+    if (segundosRestantes <= 0) {
+      clearInterval(cuentaRegresiva);
+      const d = navigator.serviceWorker.controller || (registro && registro.active);
+      if (d) d.postMessage({ tipo: 'cerrar-aviso', motivo: 'expiro' });
+      manejarRespuesta('expiro');
+    }
+  }, 1000);
+}
+
+/* ================= Botones de la vista previa ================= */
+document.querySelectorAll('.toast-btns button, .toast-x').forEach((b) => {
+  b.addEventListener('click', () => {
+    const t = $('toast');
+    if (t.classList.contains('oculto')) return;   // el aviso ya se fue
+    const r = b.dataset.resp;
+    const d = navigator.serviceWorker.controller || (registro && registro.active);
+    if (d) d.postMessage({ tipo: 'cerrar-aviso', motivo: null });
+    manejarRespuesta(r);
+    if (r === 'aceptar') {
+      window.open(
+        `cronometro.html?area=${encodeURIComponent(t.dataset.area || '')}`
+        + `&min=${t.dataset.minutos || 15}&act=${encodeURIComponent(t.dataset.act || '')}`,
+        '_blank'
+      );
+    } else if (r === 'express') {
+      window.open('express.html', '_blank');
+    }
+  });
+});
+
+/* ================= Registrar la respuesta ================= */
+let ultimaRespuesta = 0;
+function manejarRespuesta(resp) {
+  const ahora = Date.now();
+  if (ahora - ultimaRespuesta < 400) return;   // evita doble registro (preview + notificación real)
+  ultimaRespuesta = ahora;
+
+  clearInterval(cuentaRegresiva);
+  $('toast').classList.add('oculto');
+
+  const textos = {
+    aceptar:  'Se une a la sesión contigo. Cuenta como asistencia guiada.',
+    express:  'Prefirió hacerla solo: 5 min de estiramientos. Cuenta como participación autónoma.',
+    declinar: 'Cerró el aviso: "ahora no". No resta puntos ni rompe racha.',
+    ignorar:  'Cerró el aviso sin responder. Se trata igual que "ahora no".',
+    expiro:   'Nadie respondió en 20 s. Se cerró solo, sin insistir.'
+  };
+  anotar(resp, textos[resp] || resp);
+}
+
+function anotar(tipo, texto) {
+  $('bitVacia').style.display = 'none';
+  const li = document.createElement('li');
+  const h = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const etiquetas = { aceptar:'Contigo', express:'Express solo', declinar:'Ahora no', ignorar:'Sin responder', expiro:'Expiró', sistema:'Sistema' };
+
+  const a = document.createElement('span'); a.className = 'hora'; a.textContent = h;
+  const b = document.createElement('span'); b.className = 'tag ' + tipo; b.textContent = etiquetas[tipo] || tipo;
+  const c = document.createElement('span'); c.textContent = texto;
+  li.append(a, b, c);
+  $('bitacora').prepend(li);
+}
+
+iniciar();
+</script>
+</body>
+</html>

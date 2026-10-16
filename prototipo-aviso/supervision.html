@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supervisión de altas — IBERO ACTÍVATE</title>
+<link rel="stylesheet" href="../css/design-system.css">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: var(--spacing-2xl);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--color-bg); color: var(--color-text); line-height: 1.5;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  header h1 { margin: 0 0 4px; font-size: 23px; }
+  header p { margin: 0 0 var(--spacing-2xl); color: var(--color-text-muted); font-size: 14px; }
+
+  .card {
+    background: var(--color-bg-card); border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl); padding: var(--spacing-xl);
+    box-shadow: var(--shadow-sm); margin-bottom: var(--spacing-xl);
+  }
+
+  /* --- Enlace para dictar en la sala --- */
+  .dictado { background: var(--color-primary-light); border: none; text-align: center; }
+  .dictado .rotulo { font-size: 11.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--color-primary-hover); margin: 0 0 8px; }
+  .dictado .liga { font-size: 21px; font-weight: 700; color: var(--color-primary-hover);
+    margin: 0; word-break: break-all; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  /* --- Marcador --- */
+  .marcador { display: flex; align-items: baseline; gap: 10px; margin-bottom: var(--spacing-lg); }
+  .grande { font-size: 42px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .de { font-size: 15px; color: var(--color-text-muted); }
+  .barra { height: 8px; border-radius: 4px; background: var(--color-bg-secondary); overflow: hidden; }
+  .barra span { display: block; height: 100%; width: 0; background: var(--color-success);
+    border-radius: 4px; transition: width 400ms ease; }
+
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; }
+  select {
+    width: 100%; padding: 10px 11px; font-size: 14px; font-family: inherit;
+    border: 1px solid var(--color-border-dark); border-radius: var(--radius-md);
+    background: var(--color-bg-card); color: var(--color-text);
+  }
+
+  ul.gente { list-style: none; padding: 0; margin: var(--spacing-lg) 0 0; }
+  ul.gente li {
+    display: flex; align-items: center; gap: 11px;
+    padding: 10px 0; border-bottom: 1px solid var(--color-border); font-size: 14px;
+  }
+  ul.gente li:last-child { border-bottom: none; }
+  .marca {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    display: grid; place-items: center; font-size: 12px; font-weight: 700;
+  }
+  .marca.si { background: var(--color-success-light); color: var(--color-success-dark); }
+  .marca.no { background: var(--color-bg-secondary); color: var(--color-text-light); }
+  .nombre { flex: 1; }
+  li.pendiente .nombre { color: var(--color-text-muted); }
+  .cuenta { font-size: 12px; color: var(--color-text-light); font-variant-numeric: tabular-nums; }
+
+  .nuevo { animation: entrar 1.4s ease; }
+  @keyframes entrar {
+    0%   { background: var(--color-success-light); }
+    100% { background: transparent; }
+  }
+
+  .herramientas { display: flex; gap: 8px; flex-wrap: wrap; margin-top: var(--spacing-lg); }
+  button {
+    font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    background: transparent; color: var(--color-text-muted);
+    border: 1px solid var(--color-border-dark); border-radius: var(--radius-md); padding: 8px 12px;
+  }
+  button:hover { background: var(--color-bg-secondary); }
+
+  .aviso-local {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--color-warning-light); color: var(--color-warning-dark);
+    border-radius: var(--radius-lg); padding: 12px 14px; font-size: 13px;
+    margin-bottom: var(--spacing-xl);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Quién ya activó sus avisos</h1>
+    <p>Ábrelo en tu celular mientras estás en el área. Se actualiza solo.</p>
+  </header>
+
+  <div class="aviso-local">
+    <span>⚠️</span>
+    <div><strong>Prototipo.</strong> Usa una nómina inventada y sólo ve las altas de este navegador.
+      En la versión real lee Firestore y ve las de todas las computadoras.</div>
+  </div>
+
+  <div class="card dictado">
+    <p class="rotulo">Diles que abran esto en su computadora</p>
+    <p class="liga" id="liga">…</p>
+  </div>
+
+  <div class="card">
+    <label for="area">Área</label>
+    <select id="area"></select>
+
+    <div style="margin-top:var(--spacing-xl)">
+      <div class="marcador">
+        <span class="grande" id="listos">0</span>
+        <span class="de" id="deTotal">de 0 ya activaron</span>
+      </div>
+      <div class="barra"><span id="barra"></span></div>
+    </div>
+
+    <ul class="gente" id="gente"></ul>
+
+    <div class="herramientas">
+      <button id="btnSimular">Simular que uno se da de alta</button>
+      <button id="btnLimpiar">Borrar todas las altas</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="nomina-ejemplo.js"></script>
+<script>
+/* ============================================================
+   PROTOTIPO — Supervisión en vivo
+   ============================================================
+   En la versión real esto es un onSnapshot de Firestore sobre
+   las suscripciones del área: se pinta solo, sin recargar.
+   Aquí lo simula el evento `storage` entre pestañas.
+   ============================================================ */
+
+const LISTA = 'proto-altas';
+const $ = (id) => document.getElementById(id);
+let vistos = new Set();
+
+$('liga').textContent = location.href.replace(/supervision\.html.*$/, 'alta.html');
+
+/* --- Áreas de la nómina --- */
+const AREAS = [...new Set(NOMINA_EJEMPLO.map((p) => p.areaId))].sort();
+AREAS.forEach((a) => {
+  const o = document.createElement('option');
+  o.value = a; o.textContent = a;
+  $('area').appendChild(o);
+});
+
+function leerLista() {
+  try { return JSON.parse(localStorage.getItem(LISTA) || '[]'); } catch (e) { return []; }
+}
+
+function pintar() {
+  const area = $('area').value;
+  const gente = NOMINA_EJEMPLO.filter((p) => p.areaId === area);
+  const altas = new Set(leerLista().map((x) => String(x.accountNumber)));
+
+  const listos = gente.filter((p) => altas.has(String(p.accountNumber))).length;
+  $('listos').textContent = listos;
+  $('deTotal').textContent = `de ${gente.length} ya activaron`;
+  $('barra').style.width = gente.length ? (listos / gente.length) * 100 + '%' : '0';
+
+  const ul = $('gente');
+  ul.textContent = '';
+  // Primero los que faltan: es la lista que a José le sirve mientras está ahí
+  const orden = [...gente].sort((a, b) => {
+    const A = altas.has(String(a.accountNumber)), B = altas.has(String(b.accountNumber));
+    return A === B ? a.fullName.localeCompare(b.fullName, 'es') : (A ? 1 : -1);
+  });
+
+  orden.forEach((p) => {
+    const activo = altas.has(String(p.accountNumber));
+    const li = document.createElement('li');
+    if (!activo) li.className = 'pendiente';
+    if (activo && !vistos.has(p.accountNumber)) li.classList.add('nuevo');
+
+    const m = document.createElement('span');
+    m.className = 'marca ' + (activo ? 'si' : 'no');
+    m.textContent = activo ? '✓' : '·';
+
+    const n = document.createElement('span');
+    n.className = 'nombre'; n.textContent = p.fullName;
+
+    const c = document.createElement('span');
+    c.className = 'cuenta'; c.textContent = p.accountNumber;
+
+    li.append(m, n, c);
+    ul.append(li);
+  });
+
+  vistos = new Set(gente.filter((p) => altas.has(String(p.accountNumber))).map((p) => p.accountNumber));
+}
+
+$('area').addEventListener('change', () => { vistos = new Set(); pintar(); });
+
+/* Se actualiza cuando otra pestaña da de alta a alguien */
+window.addEventListener('storage', (e) => { if (e.key === LISTA) pintar(); });
+
+/* --- Herramientas del prototipo --- */
+$('btnSimular').addEventListener('click', () => {
+  const area = $('area').value;
+  const altas = new Set(leerLista().map((x) => String(x.accountNumber)));
+  const falta = NOMINA_EJEMPLO.find((p) => p.areaId === area && !altas.has(String(p.accountNumber)));
+  if (!falta) return;
+  const l = leerLista();
+  l.push({ accountNumber: falta.accountNumber, areaId: falta.areaId, alta: new Date().toISOString() });
+  localStorage.setItem(LISTA, JSON.stringify(l));
+  pintar();
+});
+
+$('btnLimpiar').addEventListener('click', () => {
+  localStorage.removeItem(LISTA);
+  vistos = new Set();
+  pintar();
+});
+
+pintar();
+</script>
+</body>
+</html>
