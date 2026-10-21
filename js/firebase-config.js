@@ -41,4 +41,11 @@ firebase.initializeApp(firebaseConfig);
 
 const db = firebase.firestore();
 const auth = firebase.auth();
+
+// Copia de la base en el dispositivo (IndexedDB): con mala señal las
+// lecturas salen de lo ya descargado y los pases de lista se guardan aquí
+// y se suben solos cuando vuelve la conexión, aunque se recargue la página.
+// Si el navegador no lo permite (modo privado), sigue funcionando sin ella.
+db.enablePersistence({ synchronizeTabs: true })
+    .catch(err => console.warn('Sin copia local de Firestore:', err.code));
 const storage = typeof firebase.storage === 'function' ? firebase.storage() : null;
