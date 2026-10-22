@@ -1,0 +1,15 @@
+{
+  "rules": {
+    "laberinto": {
+      "$sala": {
+        ".read": "$sala.matches(/^[A-HJ-NP-Z]{4}$/)",
+        ".write": "$sala.matches(/^[A-HJ-NP-Z]{4}$/)",
+        "jugadores": {
+          "$jugador": {
+            "nombre": { ".validate": "newData.isString() && newData.val().length <= 14" }
+          }
+        }
+      }
+    }
+  }
+}

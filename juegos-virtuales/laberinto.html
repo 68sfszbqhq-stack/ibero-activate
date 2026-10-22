@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Laberinto a 8 Manos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+
+    <!-- Firebase: Realtime Database, no Firestore. Cada toque de botón es una
+         escritura; en Firestore eso agotaría la cuota diaria en pocos juegos. -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #0b1220;
+            --panel: #131c2e;
+            --line: #24324d;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --accent: #FFD700;
+            --piso: #1c2740;
+            --muro: #3b4b6b;
+            --muro-borde: #56698f;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        html, body { height: 100%; background: var(--bg); color: var(--text); overflow: hidden; }
+        button { font: inherit; cursor: pointer; }
+        .oculto { display: none !important; }
+
+        /* ---------- PANTALLA (host) ---------- */
+        #host { display: grid; grid-template-columns: 1fr 320px; height: 100vh; }
+        #zona-juego { position: relative; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        #lienzo { display: block; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+        #panel { background: var(--panel); border-left: 1px solid var(--line); padding: 18px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+        .sala-mini { display: flex; gap: 12px; align-items: center; }
+        .sala-mini .qr-chico { background: #fff; padding: 6px; border-radius: 8px; }
+        .codigo { font-size: 2rem; font-weight: 900; letter-spacing: 6px; color: var(--accent); }
+        .etiqueta { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .stat { background: var(--bg); border-radius: 10px; padding: 10px; text-align: center; }
+        .stat b { display: block; font-size: 1.5rem; font-weight: 900; }
+        .botones-host { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { background: var(--line); color: var(--text); border: none; padding: 10px 14px; border-radius: 10px; font-weight: 600; }
+        .btn:hover { filter: brightness(1.2); }
+        .btn-grande { background: var(--accent); color: #111; font-size: 1.6rem; font-weight: 900; padding: 18px 48px; border-radius: 16px; border: none; }
+        .btn-grande:disabled { opacity: .4; cursor: not-allowed; }
+
+        /* Rosa de los vientos: quién tiene cada dirección y si la está apretando */
+        .rosa { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .petalo { background: var(--bg); border: 2px solid transparent; border-radius: 12px; padding: 8px 4px; text-align: center; min-height: 74px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: transform .08s, box-shadow .08s; opacity: .55; }
+        .petalo .flecha { font-size: 1.7rem; line-height: 1; color: var(--c); }
+        .petalo .quien { font-size: .78rem; font-weight: 700; margin-top: 4px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .petalo.asignado { opacity: 1; border-color: var(--c); }
+        .petalo.on { background: var(--c); transform: scale(1.08); box-shadow: 0 0 24px var(--c); }
+        .petalo.on .flecha, .petalo.on .quien { color: #111; }
+        .centro-rosa { display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+        .rosa-grande .petalo { min-height: 110px; }
+        .rosa-grande .petalo .flecha { font-size: 2.6rem; }
+        .rosa-grande .petalo .quien { font-size: 1rem; }
+
+        /* Sala de espera y avisos sobre el tablero */
+        .capa { position: absolute; inset: 0; background: rgba(11,18,32,.94); display: flex; align-items: center; justify-content: center; z-index: 5; padding: 24px; }
+        .lobby { display: grid; grid-template-columns: auto 1fr; gap: 40px; align-items: center; max-width: 1100px; width: 100%; }
+        .lobby h1 { font-size: 3.2rem; font-weight: 900; color: var(--accent); line-height: 1.05; margin-bottom: 8px; }
+        .lobby .qr-grande { background: #fff; padding: 14px; border-radius: 16px; display: inline-block; }
+        .lobby .instr { color: var(--muted); font-size: 1.1rem; margin: 12px 0 20px; line-height: 1.5; }
+        .url-sala { font-size: .9rem; color: var(--muted); word-break: break-all; margin-top: 10px; max-width: 260px; }
+        .aviso-final { text-align: center; }
+        .aviso-final h2 { font-size: 4rem; font-weight: 900; color: var(--accent); }
+        .aviso-final p { font-size: 1.6rem; margin: 12px 0 28px; color: var(--text); }
+        .teclas { font-size: .85rem; color: var(--muted); margin-top: 14px; }
+        kbd { background: var(--line); border-radius: 4px; padding: 1px 6px; font-family: monospace; }
+        #error-conexion { position: fixed; top: 0; left: 0; right: 0; background: #b91c1c; color: #fff; padding: 10px; text-align: center; font-weight: 700; z-index: 99; }
+
+        /* ---------- CONTROL (celular) ---------- */
+        #control { height: 100vh; display: flex; flex-direction: column; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+        .cab-control { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); }
+        .cab-control b { font-size: 1.1rem; }
+        #estado-juego { font-size: .9rem; color: var(--muted); text-align: right; }
+        .formulario { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 24px 16px; gap: 14px; text-align: center; }
+        .formulario h1 { font-size: 2rem; font-weight: 900; color: var(--accent); }
+        .formulario input { font: inherit; font-size: 1.3rem; padding: 16px; border-radius: 12px; border: 2px solid var(--line); background: var(--panel); color: var(--text); text-align: center; }
+        .mensaje-espera { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; font-size: 1.3rem; color: var(--muted); line-height: 1.5; }
+        #botonera { flex: 1; display: grid; gap: 10px; padding: 10px; }
+        #botonera.uno { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+        #botonera.varios { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); }
+        .boton-dir { border: none; border-radius: 22px; background: var(--c); color: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 8px 0 rgba(0,0,0,.35); transition: transform .05s; touch-action: none; }
+        .boton-dir .flecha { font-size: 4rem; line-height: 1; font-weight: 900; }
+        .boton-dir .nombre-dir { font-size: 1rem; font-weight: 800; margin-top: 6px; }
+        #botonera.uno .boton-dir .flecha { font-size: 11rem; }
+        #botonera.uno .boton-dir .nombre-dir { font-size: 1.8rem; }
+        .boton-dir.on { transform: translateY(6px) scale(.97); box-shadow: 0 2px 0 rgba(0,0,0,.35); filter: brightness(1.25); }
+        .hueco { border-radius: 22px; background: var(--panel); opacity: .35; }
+    </style>
+</head>
+<body>
+
+<div id="error-conexion" class="oculto"></div>
+
+<!-- ================= PANTALLA (laptop / tele) ================= -->
+<div id="host" class="oculto">
+    <div id="zona-juego">
+        <canvas id="lienzo"></canvas>
+
+        <div id="capa-lobby" class="capa">
+            <div class="lobby">
+                <div style="text-align:center">
+                    <div class="qr-grande" id="qr-grande"></div>
+                    <div class="etiqueta" style="margin-top:14px">Código de sala</div>
+                    <div class="codigo" id="codigo-grande">····</div>
+                    <div class="url-sala" id="url-sala"></div>
+                </div>
+                <div>
+                    <h1>Laberinto<br>a 8 Manos</h1>
+                    <p class="instr">Escanea el QR con tu celular. A cada quien le toca <b>una sola dirección</b>.
+                        La pelota va hacia donde empujen todos juntos: si dos aprietan al revés, se anulan.
+                        <b>¡Pónganse de acuerdo en voz alta!</b></p>
+                    <div class="rosa rosa-grande" id="rosa-lobby"></div>
+                    <div style="margin-top:22px; display:flex; gap:16px; align-items:center; flex-wrap:wrap">
+                        <button class="btn-grande" id="btn-empezar">¡Empezar!</button>
+                        <span id="cuantos" style="color:var(--muted)"></span>
+                    </div>
+                    <p class="teclas">Probar sin celulares: <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd> <kbd>A</kbd><kbd>D</kbd> <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd> o las flechas.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="capa-aviso" class="capa oculto">
+            <div class="aviso-final">
+                <h2 id="aviso-titulo"></h2>
+                <p id="aviso-texto"></p>
+                <button class="btn-grande" id="aviso-boton"></button>
+            </div>
+        </div>
+    </div>
+
+    <aside id="panel">
+        <div class="sala-mini">
+            <div class="qr-chico" id="qr-chico"></div>
+            <div>
+                <div class="etiqueta">Sala</div>
+                <div class="codigo" id="codigo-chico">····</div>
+            </div>
+        </div>
+        <div>
+            <div class="etiqueta" id="nombre-nivel" style="margin-bottom:6px"></div>
+            <div class="stats">
+                <div class="stat"><span class="etiqueta">Nivel</span><b id="st-nivel">1</b></div>
+                <div class="stat"><span class="etiqueta">Tiempo</span><b id="st-tiempo">0:00</b></div>
+                <div class="stat"><span class="etiqueta">Caídas</span><b id="st-caidas">0</b></div>
+            </div>
+        </div>
+        <div>
+            <div class="etiqueta" style="margin-bottom:6px">Quién empuja</div>
+            <div class="rosa" id="rosa-panel"></div>
+        </div>
+        <div class="botones-host">
+            <button class="btn" id="btn-reiniciar">↺ Reiniciar nivel</button>
+            <button class="btn" id="btn-saltar">Saltar nivel ⏭</button>
+        </div>
+    </aside>
+</div>
+
+<!-- ================= CONTROL (celular) ================= -->
+<div id="control" class="oculto">
+    <div class="cab-control">
+        <b id="mi-nombre">Laberinto a 8 Manos</b>
+        <span id="estado-juego"></span>
+    </div>
+
+    <form class="formulario" id="form-nombre">
+        <h1>Laberinto<br>a 8 Manos</h1>
+        <p style="color:var(--muted)">Sala <b id="sala-control" style="color:var(--text)"></b></p>
+        <input id="input-nombre" maxlength="14" placeholder="Tu nombre" autocomplete="off" required>
+        <button class="btn-grande" type="submit">Entrar</button>
+    </form>
+
+    <div class="mensaje-espera oculto" id="espera"></div>
+    <div id="botonera" class="oculto"></div>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN
+// ============================================================
+// Misma app de Firebase que el resto del sistema (ver js/firebase-config.js),
+// más la URL de la Realtime Database. No se carga firebase-config.js porque
+// ese archivo arranca Firestore, que este juego no usa.
+firebase.initializeApp({
+    apiKey: "AIzaSyCqQq-bXpNRwVDTlVjj27JWHEenmEUZUp4",
+    authDomain: "pausas-activas-ibero-2026.firebaseapp.com",
+    databaseURL: "https://pausas-activas-ibero-2026-default-rtdb.firebaseio.com",
+    projectId: "pausas-activas-ibero-2026",
+    appId: "1:358840395060:web:470d2d4a79db1d8a4f7161"
+});
+const rtdb = firebase.database();
+const URL_PUBLICA = 'https://68sfszbqhq-stack.github.io/ibero-activate/juegos-virtuales/laberinto.html';
+
+// Las 8 direcciones. dx/dy en casillas; las diagonales ya van normalizadas.
+const D = 0.7071;
+const DIRS = {
+    N:  { flecha: '↑', nombre: 'Arriba',            dx: 0,  dy: -1, color: '#ef4444' },
+    NE: { flecha: '↗', nombre: 'Arriba-derecha',    dx: D,  dy: -D, color: '#f97316' },
+    E:  { flecha: '→', nombre: 'Derecha',           dx: 1,  dy: 0,  color: '#eab308' },
+    SE: { flecha: '↘', nombre: 'Abajo-derecha',     dx: D,  dy: D,  color: '#22c55e' },
+    S:  { flecha: '↓', nombre: 'Abajo',             dx: 0,  dy: 1,  color: '#06b6d4' },
+    SO: { flecha: '↙', nombre: 'Abajo-izquierda',   dx: -D, dy: D,  color: '#3b82f6' },
+    O:  { flecha: '←', nombre: 'Izquierda',         dx: -1, dy: 0,  color: '#a855f7' },
+    NO: { flecha: '↖', nombre: 'Arriba-izquierda',  dx: -D, dy: -D, color: '#ec4899' }
+};
+// Posición de cada dirección en una cuadrícula de 3×3 (null = centro)
+const CUADRICULA = ['NO', 'N', 'NE', 'O', null, 'E', 'SO', 'S', 'SE'];
+// Orden de reparto. Está pensado para que nadie pueda avanzar solo:
+// con 4 personas a cada quien le tocan dos opuestas (↑↓, →←, ↗↙, ↘↖);
+// con 2, cada quien tiene dos parejas de opuestas.
+const REPARTO = ['N', 'E', 'NE', 'SE', 'S', 'O', 'SO', 'NO'];
+
+// ============================================================
+// NIVELES
+// ============================================================
+// # muro · . piso · o hoyo (regresa al inicio o a la última bandera)
+// S salida · M meta · C bandera de control
+// Para agregar uno basta con copiar un bloque; todas las filas deben medir lo mismo.
+const NIVELES = [
+    { nombre: 'Calentamiento', velocidad: 2.6, mapa: [
+        "##################",
+        "#S......#........#",
+        "#.......#........#",
+        "#..###..#..####..#",
+        "#..#.......#.....#",
+        "#..#..######..####",
+        "#.....#..........#",
+        "####..#..#####...#",
+        "#.....#..#...#...#",
+        "#..####..#.M.#...#",
+        "#........#.......#",
+        "##################"] },
+    { nombre: 'Cuidado con los hoyos', velocidad: 2.4, mapa: [
+        "####################",
+        "#S.......o.........#",
+        "#........o...o.....#",
+        "#####....o...o.....#",
+        "#...o....o...o..o..#",
+        "#..........ooo..o..#",
+        "#..o..###.......o..#",
+        "#.....#M#..o....o..#",
+        "#..o..#.#..o.......#",
+        "#.....#....o..oooo.#",
+        "#..o.......o.......#",
+        "####################"] },
+    // Aquí solo se avanza bien en diagonal: con flechas rectas hay que ir en zigzag.
+    { nombre: 'La escalera', velocidad: 1.8, mapa: [
+        "########################",
+        "#S.o###############o.Mo#",
+        "#o..o#############o..o##",
+        "##o..o###########o..o###",
+        "###o..o#########o..o####",
+        "####o..o#######o..o#####",
+        "#####o..o#####o..o######",
+        "######o..o###o..o#######",
+        "#######o..o#o..o########",
+        "########o..o..o#########",
+        "#########o.C.o##########",
+        "########################"] },
+    { nombre: 'Caos total', velocidad: 2.2, mapa: [
+        "######################",
+        "#S...o.....o.....o...#",
+        "#....o..o..o..o..o...#",
+        "#.o..o..o.....o..o.o.#",
+        "#.o.....o..o..o....o.#",
+        "#.oooo..o..o..ooooo..#",
+        "#....C.....o.........#",
+        "#oooo..ooooo..ooo..o.#",
+        "#...o.....o.....o..o.#",
+        "#.o.o..o..o..o..o..o.#",
+        "#.o....o.....o.....o.#",
+        "#.ooooooooooooooooo.M#",
+        "######################"] }
+];
+
+const RADIO = 0.32;        // radio de la pelota, en casillas
+const RADIO_HOYO = 0.38;   // si el centro de la pelota entra aquí, cae
+
+// ============================================================
+// ARRANQUE
+// ============================================================
+const params = new URLSearchParams(location.search);
+const salaParam = (params.get('sala') || '').toUpperCase();
+if (salaParam) iniciarControl(salaParam); else iniciarHost();
+
+function guardar(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function leer(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+
+function vigilarConexion() {
+    const aviso = document.getElementById('error-conexion');
+    let yaConecto = false;
+    setTimeout(() => {
+        if (yaConecto) return;
+        aviso.textContent = 'No se pudo conectar con la base de datos del juego. Revisa el internet.';
+        aviso.classList.remove('oculto');
+    }, 10000);
+    rtdb.ref('.info/connected').on('value', s => {
+        if (s.val()) { yaConecto = true; aviso.classList.add('oculto'); }
+        else if (yaConecto) { aviso.textContent = 'Sin conexión… reintentando'; aviso.classList.remove('oculto'); }
+    });
+}
+
+function hacerRosa(cont) {
+    cont.innerHTML = '';
+    const petalos = {};
+    CUADRICULA.forEach(k => {
+        const el = document.createElement('div');
+        if (!k) { el.className = 'centro-rosa'; el.textContent = '⚪'; }
+        else {
+            el.className = 'petalo';
+            el.style.setProperty('--c', DIRS[k].color);
+            el.innerHTML = `<span class="flecha">${DIRS[k].flecha}</span><span class="quien">—</span>`;
+            petalos[k] = el;
+        }
+        cont.appendChild(el);
+    });
+    return petalos;
+}
+
+// ============================================================
+// PANTALLA (host): dibuja el laberinto y mueve la pelota
+// ============================================================
+function iniciarHost() {
+    document.getElementById('host').classList.remove('oculto');
+    vigilarConexion();
+
+    // Código de 4 letras sin I ni O para que no se confundan con 1 y 0.
+    // Se recuerda en la pestaña: si se recarga, los celulares se reconectan solos.
+    const LETRAS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    let sala = null;
+    try { sala = sessionStorage.getItem('laberinto_sala'); } catch (e) {}
+    if (!sala) {
+        sala = Array.from({ length: 4 }, () => LETRAS[Math.floor(Math.random() * LETRAS.length)]).join('');
+        try { sessionStorage.setItem('laberinto_sala', sala); } catch (e) {}
+    }
+    const salaRef = rtdb.ref('laberinto/' + sala);
+    salaRef.onDisconnect().remove();   // al cerrar la pestaña, la sala desaparece
+    salaRef.update({ creada: firebase.database.ServerValue.TIMESTAMP });
+
+    const base = location.protocol === 'file:' ? URL_PUBLICA : location.origin + location.pathname;
+    const urlJugador = base + '?sala=' + sala;
+    new QRCode(document.getElementById('qr-grande'), { text: urlJugador, width: 260, height: 260 });
+    new QRCode(document.getElementById('qr-chico'), { text: urlJugador, width: 84, height: 84 });
+    document.getElementById('codigo-grande').textContent = sala;
+    document.getElementById('codigo-chico').textContent = sala;
+    document.getElementById('url-sala').textContent = urlJugador;
+
+    const rosas = [hacerRosa(document.getElementById('rosa-lobby')), hacerRosa(document.getElementById('rosa-panel'))];
+
+    // --- Jugadores y reparto de direcciones ---
+    let jugadores = [];          // [{ id, nombre }] en orden de llegada
+    let dueño = {};              // dir -> id del jugador que la tiene
+    let asignacion = {};         // id -> [dirs]
+    let teclasRemotas = {};      // id -> { dir: true }
+    const teclasLocales = new Set();
+
+    salaRef.child('jugadores').on('value', snap => {
+        const v = snap.val() || {};
+        jugadores = Object.entries(v)
+            .filter(([, j]) => j && j.nombre)
+            .map(([id, j]) => ({ id, nombre: j.nombre, entro: j.entro || 0 }))
+            .sort((a, b) => a.entro - b.entro);
+        repartir();
+    });
+
+    function repartir() {
+        const nueva = {};
+        dueño = {};
+        if (jugadores.length) {
+            REPARTO.forEach((dir, i) => {
+                const j = jugadores[i % jugadores.length];
+                (nueva[j.id] = nueva[j.id] || []).push(dir);
+                dueño[dir] = j.id;
+            });
+        }
+        if (JSON.stringify(nueva) !== JSON.stringify(asignacion)) {
+            asignacion = nueva;
+            salaRef.child('asignacion').set(nueva);
+        }
+        const n = jugadores.length;
+        document.getElementById('cuantos').textContent =
+            n === 0 ? 'Esperando jugadores… (o prueba con el teclado)'
+            : n === 1 ? '1 jugador: le tocan las 8 direcciones'
+            : n < 8 ? `${n} jugadores: algunos tienen más de una dirección`
+            : `${n} jugadores` + (n > 8 ? ` (los últimos ${n - 8} esperan turno)` : '');
+        pintarRosas();
+    }
+
+    salaRef.child('teclas').on('value', snap => { teclasRemotas = snap.val() || {}; });
+
+    // Una dirección cuenta si la aprieta su dueño actual o el teclado.
+    function direccionesActivas() {
+        const activas = new Set(teclasLocales);
+        for (const [dir, id] of Object.entries(dueño)) {
+            if (teclasRemotas[id] && teclasRemotas[id][dir]) activas.add(dir);
+        }
+        return activas;
+    }
+
+    function pintarRosas() {
+        const activas = direccionesActivas();
+        const nombreDe = id => (jugadores.find(j => j.id === id) || {}).nombre || '—';
+        rosas.forEach(p => {
+            for (const k in p) {
+                p[k].classList.toggle('asignado', !!dueño[k]);
+                p[k].classList.toggle('on', activas.has(k));
+                p[k].querySelector('.quien').textContent = dueño[k] ? nombreDe(dueño[k]) : '—';
+            }
+        });
+    }
+
+    // --- Teclado (para probar sin celulares) ---
+    const TECLAS = {
+        q: 'NO', w: 'N', e: 'NE', a: 'O', d: 'E', z: 'SO', x: 'S', c: 'SE', s: 'S',
+        arrowup: 'N', arrowdown: 'S', arrowleft: 'O', arrowright: 'E'
+    };
+    addEventListener('keydown', ev => {
+        const dir = TECLAS[ev.key.toLowerCase()];
+        if (dir) { teclasLocales.add(dir); ev.preventDefault(); }
+        if (ev.key === 'Enter' && !document.getElementById('capa-aviso').classList.contains('oculto')) {
+            document.getElementById('aviso-boton').click();
+        }
+    });
+    addEventListener('keyup', ev => {
+        const dir = TECLAS[ev.key.toLowerCase()];
+        if (dir) teclasLocales.delete(dir);
+    });
+    addEventListener('blur', () => teclasLocales.clear());
+
+    // --- Estado del juego ---
+    const lienzo = document.getElementById('lienzo');
+    const ctx = lienzo.getContext('2d');
+    let fase = 'lobby';          // lobby · jugando · nivel · fin
+    let nivel = 0, mapa, ancho, alto, salida, meta, respawn;
+    let pelota = { x: 0, y: 0, vx: 0, vy: 0, cayendo: 0 };
+    let caidas = 0, caidasTotal = 0, inicioNivel = 0, tiempoTotal = 0, tiempoNivel = 0;
+    let estela = [];
+    let audio = null;
+
+    function ponerFase(f) {
+        fase = f;
+        salaRef.child('fase').set(f);
+    }
+    ponerFase('lobby');
+
+    function cargarNivel(i) {
+        nivel = i;
+        const n = NIVELES[i];
+        mapa = n.mapa.map(f => f.split(''));
+        alto = mapa.length; ancho = mapa[0].length;
+        mapa.forEach((fila, y) => fila.forEach((ch, x) => {
+            if (ch === 'S') salida = { x: x + .5, y: y + .5 };
+            if (ch === 'M') meta = { x: x + .5, y: y + .5 };
+        }));
+        respawn = { ...salida };
+        ponerPelota(respawn);
+        caidas = 0;
+        inicioNivel = performance.now();
+        tiempoNivel = 0;
+        salaRef.child('nivel').set(i + 1);
+        document.getElementById('st-nivel').textContent = `${i + 1}/${NIVELES.length}`;
+        document.getElementById('nombre-nivel').textContent = n.nombre;
+        document.getElementById('st-caidas').textContent = 0;
+        ajustarLienzo();
+    }
+
+    function ponerPelota(p) {
+        pelota = { x: p.x, y: p.y, vx: 0, vy: 0, cayendo: 0 };
+        estela = [];
+    }
+
+    function ajustarLienzo() {
+        const zona = document.getElementById('zona-juego');
+        const t = Math.floor(Math.min((zona.clientWidth - 32) / ancho, (zona.clientHeight - 32) / alto));
+        const dpr = window.devicePixelRatio || 1;
+        lienzo.style.width = t * ancho + 'px';
+        lienzo.style.height = t * alto + 'px';
+        lienzo.width = t * ancho * dpr;
+        lienzo.height = t * alto * dpr;
+        ctx.setTransform(t * dpr, 0, 0, t * dpr, 0, 0);   // desde aquí se dibuja en casillas
+    }
+    addEventListener('resize', () => mapa && ajustarLienzo());
+
+    const esMuro = (x, y) => { const f = mapa[Math.floor(y)]; return !f || f[Math.floor(x)] === undefined || f[Math.floor(x)] === '#'; };
+
+    // ¿La pelota (círculo) en (x, y) toca algún muro?
+    function choca(x, y) {
+        for (let ty = Math.floor(y - RADIO); ty <= Math.floor(y + RADIO); ty++) {
+            for (let tx = Math.floor(x - RADIO); tx <= Math.floor(x + RADIO); tx++) {
+                if (!esMuro(tx, ty)) continue;
+                const cx = Math.max(tx, Math.min(x, tx + 1));
+                const cy = Math.max(ty, Math.min(y, ty + 1));
+                if ((x - cx) ** 2 + (y - cy) ** 2 < RADIO * RADIO) return true;
+            }
+        }
+        return false;
+    }
+
+    function paso(dt) {
+        if (fase !== 'jugando') return;
+        tiempoNivel = (performance.now() - inicioNivel) / 1000;
+
+        if (pelota.cayendo) {
+            pelota.cayendo += dt;
+            if (pelota.cayendo > .7) ponerPelota(respawn);
+            return;
+        }
+
+        // La pelota va hacia la suma de todo lo que se esté apretando.
+        // Dos opuestas se anulan; varias en la misma dirección no la aceleran más.
+        let ax = 0, ay = 0;
+        direccionesActivas().forEach(k => { ax += DIRS[k].dx; ay += DIRS[k].dy; });
+        const m = Math.hypot(ax, ay);
+        if (m > 1) { ax /= m; ay /= m; }
+        const vel = NIVELES[nivel].velocidad;
+        const k = Math.min(1, dt * 7);   // un poco de inercia, para que se sienta como pelota
+        pelota.vx += (ax * vel - pelota.vx) * k;
+        pelota.vy += (ay * vel - pelota.vy) * k;
+
+        // Se mueve en sub-pasos y por eje, así resbala pegada al muro en vez de atorarse.
+        const n = Math.ceil(Math.max(Math.abs(pelota.vx), Math.abs(pelota.vy)) * dt / 0.05) || 1;
+        for (let i = 0; i < n; i++) {
+            const nx = pelota.x + pelota.vx * dt / n;
+            if (!choca(nx, pelota.y)) pelota.x = nx; else pelota.vx = 0;
+            const ny = pelota.y + pelota.vy * dt / n;
+            if (!choca(pelota.x, ny)) pelota.y = ny; else pelota.vy = 0;
+        }
+        if (Math.hypot(pelota.vx, pelota.vy) > .3) {
+            estela.push({ x: pelota.x, y: pelota.y });
+            if (estela.length > 14) estela.shift();
+        } else if (estela.length) estela.shift();
+
+        // Casilla en la que está el centro
+        const tx = Math.floor(pelota.x), ty = Math.floor(pelota.y);
+        for (let y = ty - 1; y <= ty + 1; y++) for (let x = tx - 1; x <= tx + 1; x++) {
+            const ch = mapa[y] && mapa[y][x];
+            const d = Math.hypot(pelota.x - (x + .5), pelota.y - (y + .5));
+            if (ch === 'o' && d < RADIO_HOYO) caer();
+            if (ch === 'C' && d < .5 && (respawn.x !== x + .5 || respawn.y !== y + .5)) {
+                respawn = { x: x + .5, y: y + .5 };
+                sonar('bandera');
+            }
+        }
+        if (Math.hypot(pelota.x - meta.x, pelota.y - meta.y) < .5) ganarNivel();
+
+        document.getElementById('st-tiempo').textContent = reloj(tiempoNivel);
+    }
+
+    function caer() {
+        if (pelota.cayendo) return;
+        pelota.cayendo = 0.001;
+        pelota.vx = pelota.vy = 0;
+        caidas++; caidasTotal++;
+        document.getElementById('st-caidas').textContent = caidas;
+        sonar('caida');
+    }
+
+    function ganarNivel() {
+        tiempoTotal += tiempoNivel;
+        sonar('meta');
+        const ultimo = nivel === NIVELES.length - 1;
+        ponerFase(ultimo ? 'fin' : 'nivel');
+        if (ultimo) {
+            mostrarAviso('¡Lo lograron! 🎉',
+                `${NIVELES.length} niveles en ${reloj(tiempoTotal)} con ${caidasTotal} caída${caidasTotal === 1 ? '' : 's'}`,
+                'Jugar otra vez', () => empezar());
+        } else {
+            mostrarAviso('¡Nivel superado!',
+                `${reloj(tiempoNivel)} · ${caidas} caída${caidas === 1 ? '' : 's'}`,
+                'Siguiente nivel →', () => { cargarNivel(nivel + 1); ponerFase('jugando'); });
+        }
+    }
+
+    function mostrarAviso(titulo, texto, boton, accion) {
+        document.getElementById('aviso-titulo').textContent = titulo;
+        document.getElementById('aviso-texto').textContent = texto;
+        const b = document.getElementById('aviso-boton');
+        b.textContent = boton;
+        b.onclick = () => { document.getElementById('capa-aviso').classList.add('oculto'); accion(); };
+        document.getElementById('capa-aviso').classList.remove('oculto');
+    }
+
+    const reloj = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+    function empezar() {
+        if (!audio) { try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+        document.getElementById('capa-lobby').classList.add('oculto');
+        caidasTotal = 0; tiempoTotal = 0;
+        cargarNivel(0);
+        ponerFase('jugando');
+    }
+    // Que ningún botón se quede seleccionado: si no, la barra espaciadora lo vuelve a apretar
+    document.querySelectorAll('#host button').forEach(b => b.addEventListener('click', () => b.blur()));
+    document.getElementById('btn-empezar').onclick = empezar;
+    document.getElementById('btn-reiniciar').onclick = () => {
+        if (fase !== 'jugando') return;
+        caidasTotal -= caidas;
+        cargarNivel(nivel);
+    };
+    document.getElementById('btn-saltar').onclick = () => {
+        if (fase !== 'jugando') return;
+        if (nivel < NIVELES.length - 1) cargarNivel(nivel + 1); else ganarNivel();
+    };
+
+    // Sonidos sintetizados: no hay archivos que cargar.
+    function sonar(tipo) {
+        if (!audio) return;
+        const t = audio.currentTime;
+        const notas = { caida: [[440, 0], [330, .1], [220, .2]], bandera: [[660, 0], [880, .08]], meta: [[523, 0], [659, .12], [784, .24], [1047, .36]] }[tipo];
+        notas.forEach(([f, d]) => {
+            const o = audio.createOscillator(), g = audio.createGain();
+            o.type = tipo === 'caida' ? 'sawtooth' : 'triangle';
+            o.frequency.value = f;
+            g.gain.setValueAtTime(.18, t + d);
+            g.gain.exponentialRampToValueAtTime(.001, t + d + .22);
+            o.connect(g).connect(audio.destination);
+            o.start(t + d); o.stop(t + d + .25);
+        });
+    }
+
+    // --- Dibujo ---
+    function dibujar(ahora) {
+        if (!mapa) return;
+        ctx.fillStyle = '#1c2740';
+        ctx.fillRect(0, 0, ancho, alto);
+
+        for (let y = 0; y < alto; y++) for (let x = 0; x < ancho; x++) {
+            const ch = mapa[y][x];
+            if (ch === '#') {
+                ctx.fillStyle = '#56698f'; ctx.fillRect(x, y, 1, 1);
+                ctx.fillStyle = '#3b4b6b'; ctx.fillRect(x, y + .82, 1, .18);   // canto, para que se vea con relieve
+            } else if (ch === 'o') {
+                const g = ctx.createRadialGradient(x + .5, y + .5, .05, x + .5, y + .5, .44);
+                g.addColorStop(0, '#000'); g.addColorStop(.75, '#05080f'); g.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x + .5, y + .5, .44, 0, 7); ctx.fill();
+            } else if (ch === 'C') {
+                const activa = respawn.x === x + .5 && respawn.y === y + .5;
+                ctx.globalAlpha = activa ? 1 : .55;
+                emoji('🚩', x + .5, y + .55, .7);
+                ctx.globalAlpha = 1;
+            } else if (ch === 'S') {
+                ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = .06;
+                ctx.beginPath(); ctx.arc(x + .5, y + .5, .38, 0, 7); ctx.stroke();
+            }
+        }
+
+        // Meta: brilla y late
+        const latido = .45 + Math.sin(ahora / 250) * .06;
+        const gm = ctx.createRadialGradient(meta.x, meta.y, .05, meta.x, meta.y, latido + .25);
+        gm.addColorStop(0, '#FFD700'); gm.addColorStop(.6, 'rgba(255,215,0,.5)'); gm.addColorStop(1, 'rgba(255,215,0,0)');
+        ctx.fillStyle = gm; ctx.beginPath(); ctx.arc(meta.x, meta.y, latido + .25, 0, 7); ctx.fill();
+        emoji('🏁', meta.x, meta.y + .03, .6);
+
+        // Estela
+        estela.forEach((p, i) => {
+            ctx.fillStyle = `rgba(255,255,255,${i / estela.length * .18})`;
+            ctx.beginPath(); ctx.arc(p.x, p.y, RADIO * i / estela.length, 0, 7); ctx.fill();
+        });
+
+        // Pelota (se encoge al caer)
+        const esc = pelota.cayendo ? Math.max(0, 1 - pelota.cayendo / .6) : 1;
+        if (esc > 0) {
+            const r = RADIO * esc;
+            ctx.fillStyle = 'rgba(0,0,0,.35)';
+            ctx.beginPath(); ctx.arc(pelota.x + .06, pelota.y + .08, r, 0, 7); ctx.fill();
+            const gp = ctx.createRadialGradient(pelota.x - r * .35, pelota.y - r * .35, r * .1, pelota.x, pelota.y, r);
+            gp.addColorStop(0, '#ffffff'); gp.addColorStop(.35, '#e2e8f0'); gp.addColorStop(1, '#64748b');
+            ctx.fillStyle = gp; ctx.beginPath(); ctx.arc(pelota.x, pelota.y, r, 0, 7); ctx.fill();
+        }
+
+        // Flechas alrededor de la pelota con el color de cada dirección apretada
+        if (fase === 'jugando' && !pelota.cayendo) {
+            direccionesActivas().forEach(k => {
+                const d = DIRS[k];
+                const px = pelota.x + d.dx * .62, py = pelota.y + d.dy * .62;
+                ctx.save();
+                ctx.translate(px, py); ctx.rotate(Math.atan2(d.dy, d.dx));
+                ctx.fillStyle = d.color;
+                ctx.beginPath(); ctx.moveTo(.2, 0); ctx.lineTo(-.08, -.14); ctx.lineTo(-.08, .14); ctx.closePath(); ctx.fill();
+                ctx.restore();
+            });
+        }
+    }
+
+    // Los navegadores no dibujan bien letras de menos de 1 px, y aquí 1 = una casilla:
+    // se dibuja a escala 100 y se reduce.
+    function emoji(txt, x, y, tam) {
+        ctx.save();
+        ctx.scale(.01, .01);
+        ctx.font = `${tam * 100}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(txt, x * 100, y * 100);
+        ctx.restore();
+    }
+
+    let anterior = performance.now();
+    function bucle(ahora) {
+        const dt = Math.min(.05, (ahora - anterior) / 1000);
+        anterior = ahora;
+        paso(dt);
+        dibujar(ahora);
+        pintarRosas();
+        requestAnimationFrame(bucle);
+    }
+    cargarNivel(0);   // se ve el primer nivel detrás de la sala de espera
+    requestAnimationFrame(bucle);
+}
+
+// ============================================================
+// CONTROL (celular): uno o varios botones de dirección
+// ============================================================
+function iniciarControl(sala) {
+    document.getElementById('control').classList.remove('oculto');
+    document.getElementById('sala-control').textContent = sala;
+    vigilarConexion();
+
+    if (!/^[A-HJ-NP-Z]{4}$/.test(sala)) {
+        document.getElementById('form-nombre').classList.add('oculto');
+        mostrarEspera('Ese código de sala no es válido.<br>Vuelve a escanear el QR de la pantalla.');
+        return;
+    }
+
+    // Un id por celular, para que al recargar siga siendo el mismo jugador
+    let miId = leer('laberinto_id');
+    if (!miId) { miId = Math.random().toString(36).slice(2, 12); guardar('laberinto_id', miId); }
+    const salaRef = rtdb.ref('laberinto/' + sala);
+    const yoRef = salaRef.child('jugadores/' + miId);
+    const misTeclasRef = salaRef.child('teclas/' + miId);
+    let miNombre = leer('laberinto_nombre') || '';
+    let misDirs = [];
+    let fase = null;
+    const apretadas = new Set();
+
+    const input = document.getElementById('input-nombre');
+    input.value = miNombre;
+
+    document.getElementById('form-nombre').onsubmit = ev => {
+        ev.preventDefault();
+        miNombre = input.value.trim().slice(0, 14);
+        if (!miNombre) return;
+        guardar('laberinto_nombre', miNombre);
+        document.getElementById('form-nombre').classList.add('oculto');
+        document.getElementById('mi-nombre').textContent = miNombre;
+        conectar();
+        pedirPantallaEncendida();
+    };
+
+    function mostrarEspera(html) {
+        const el = document.getElementById('espera');
+        el.innerHTML = html;
+        el.classList.remove('oculto');
+        document.getElementById('botonera').classList.add('oculto');
+    }
+
+    function registrarme() {
+        yoRef.onDisconnect().remove();
+        misTeclasRef.onDisconnect().remove();
+        yoRef.set({ nombre: miNombre, entro: firebase.database.ServerValue.TIMESTAMP });
+    }
+
+    function conectar() {
+        mostrarEspera('Conectando con la pantalla…');
+
+        // Si la pantalla se recarga, la sala se borra y vuelve a aparecer:
+        // en cuanto reaparece, este celular se vuelve a anotar solo.
+        salaRef.child('fase').on('value', s => {
+            const antes = fase;
+            fase = s.val();
+            const textos = { lobby: 'Esperando que empiece', jugando: '¡A jugar!', nivel: '¡Nivel superado!', fin: '¡Terminaron! 🎉' };
+            document.getElementById('estado-juego').textContent = textos[fase] || '';
+            if (!fase) { soltarTodo(); mostrarEspera('Esperando a la pantalla…<br><small>Si se cerró, vuelve a escanear el QR.</small>'); }
+            else if (!antes) registrarme();
+        });
+
+        salaRef.child('asignacion/' + miId).on('value', s => {
+            misDirs = s.val() || [];
+            soltarTodo();
+            pintarBotones();
+        });
+    }
+
+    function pintarBotones() {
+        const cont = document.getElementById('botonera');
+        if (!misDirs.length) {
+            if (fase) mostrarEspera('Ya estás dentro.<br>Esperando tu dirección…<br><small>(Si ya son más de 8, entras cuando alguien salga.)</small>');
+            return;
+        }
+        document.getElementById('espera').classList.add('oculto');
+        cont.classList.remove('oculto');
+        cont.innerHTML = '';
+        cont.className = misDirs.length === 1 ? 'uno' : 'varios';
+        const celdas = misDirs.length === 1 ? misDirs : CUADRICULA;
+        celdas.forEach(k => {
+            if (!k || !misDirs.includes(k)) {
+                const h = document.createElement('div'); h.className = 'hueco'; cont.appendChild(h); return;
+            }
+            const b = document.createElement('button');
+            b.className = 'boton-dir';
+            b.style.setProperty('--c', DIRS[k].color);
+            b.innerHTML = `<span class="flecha">${DIRS[k].flecha}</span><span class="nombre-dir">${DIRS[k].nombre}</span>`;
+            const soltar = () => apretar(k, false, b);
+            b.addEventListener('pointerdown', ev => { ev.preventDefault(); try { b.setPointerCapture(ev.pointerId); } catch (e) {} apretar(k, true, b); });
+            b.addEventListener('pointerup', soltar);
+            b.addEventListener('pointercancel', soltar);
+            b.addEventListener('lostpointercapture', soltar);
+            b.addEventListener('contextmenu', ev => ev.preventDefault());
+            cont.appendChild(b);
+        });
+        // El color del encabezado es el de la primera dirección, para que la gente se ubique
+        document.getElementById('mi-nombre').style.color = DIRS[misDirs[0]].color;
+    }
+
+    // Solo se escribe cuando cambia algo: un toque = una escritura al apretar y otra al soltar.
+    function apretar(k, on, boton) {
+        if (on === apretadas.has(k)) return;
+        if (on) { apretadas.add(k); if (navigator.vibrate) navigator.vibrate(15); }
+        else apretadas.delete(k);
+        if (boton) boton.classList.toggle('on', on);
+        if (on) misTeclasRef.child(k).set(true); else misTeclasRef.child(k).remove();
+    }
+
+    function soltarTodo() {
+        if (!apretadas.size) return;
+        apretadas.clear();
+        misTeclasRef.remove();
+        document.querySelectorAll('.boton-dir.on').forEach(b => b.classList.remove('on'));
+    }
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) soltarTodo();
+        else pedirPantallaEncendida();
+    });
+
+    // Que el celular no se apague a media partida (si el navegador lo permite)
+    async function pedirPantallaEncendida() {
+        try { if (navigator.wakeLock) await navigator.wakeLock.request('screen'); } catch (e) {}
+    }
+}
+</script>
+</body>
+</html>

@@ -266,3 +266,22 @@ tocar a un empleado lo deja de una vez con **dos palomitas** (`status:
 
 Probar en local **escribe en la base real**: marcar a alguien ahí le da puntos
 de verdad.
+
+## Laberinto a 8 Manos (`juegos-virtuales/laberinto.html`)
+
+Juego de pantalla compartida: la laptop/tele muestra un laberinto con una
+pelota y cada celular (entra por QR, sin login) controla **una dirección** de
+8. La pelota va hacia la suma de lo que se esté apretando: opuestas se anulan.
+Con menos de 8 personas se reparten varias por cabeza (`REPARTO`, pensado para
+que a nadie le toque avanzar solo). Niveles en ASCII en `NIVELES`
+(`#` muro · `o` hoyo · `S` salida · `M` meta · `C` bandera).
+
+- Usa **Realtime Database**, no Firestore: cada toque es una escritura y en
+  Firestore se acabaría la cuota diaria. Reglas en `database.rules.json`
+  (solo abre `laberinto/{sala}`); se despliegan con
+  `firebase deploy --only database`.
+- La pantalla es la que manda: calcula la física y reparte direcciones
+  (`asignacion`). Los celulares solo escriben `teclas/{id}/{dir}`.
+- Al cerrar la pestaña de la pantalla, la sala se borra sola (`onDisconnect`).
+- Se prueba sin celulares con el teclado: Q W E / A D / Z X C o flechas.
+- No toca puntos, asistencias ni nada de la gamificación.
