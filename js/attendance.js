@@ -1,10 +1,13 @@
-// Lógica de Pase de Lista en Tiempo Real
-// Ahora cada clic guarda inmediatamente en Firestore
+// Lógica de Pase de Lista en Tiempo Real (Offline-First para iPhone / Chrome / Safari)
+// Muestra áreas, rutas, semáforo y colaboradores en 0 ms incluso sin señal de Wi-Fi,
+// y encola los pases de lista sin quedarse colgado cuando la red está lenta ("lie-fi").
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Verificar autenticación
+    // Verificar autenticación (no redirigir en falso si aún está cargando o sin red)
+    let authChecked = false;
     auth.onAuthStateChanged(user => {
-        if (!user) {
+        authChecked = true;
+        if (!user && navigator.onLine) {
             window.location.href = 'login.html';
         }
     });
@@ -14,14 +17,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const datePicker = document.getElementById('date-picker');
     const areaDropdown = document.getElementById('area-dropdown');
     const employeeList = document.getElementById('employee-list');
-    const saveBtn = document.getElementById('save-attendance-btn'); // Ya no se usará igual, pero lo mantenemos oculto o para "cerrar sesión"
 
     // Variable para la fecha seleccionada (por defecto hoy)
     let currentDate = new Date();
 
-    // Periodo (temporada) activo. Se resuelve una sola vez al cargar la página
-    // y se estampa en cada asistencia para que los conteos NO se entrecrucen
-    // entre Primavera / Verano / Otoño. Ver js/period-utils.js
+    // Copias en el navegador de áreas, empleados, semáforo y asistencias del día
+    const CACHE_EMPLOYEES = 'ia_cache_employees_v2';
+    const CACHE_AREAS = 'ia_cache_areas_v2';
+    const CACHE_RECENCY = 'ia_cache_recency_v1';
+    const CACHE_DAILY_ATT_PREFIX = 'ia_cache_att_day_'; // + YYYY-MM-DD
+
+    function readCache(key) {
+        try {
+            const raw = localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+    function writeCache(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch (e) { /* sin espacio: ignorar */ }
+    }
+
+    // Semilla integrada en js/offline-seed.js como respaldo inmediato si localStorage está vacío
+    const seed = window.IA_OFFLINE_SEED || {};
+
+    // Periodo (temporada) activo
     let activePeriodId = null;
     let activePeriod = null;
     if (window.Periods) {
@@ -47,6 +70,44 @@ document.addEventListener('DOMContentLoaded', () => {
         badge.style.color = meta.color;
     }
 
+    // Banner / Indicador de estado de conexión y sincronización en vivo
+    let pendingSyncCount = 0;
+    function ensureConnectionBadge() {
+        let pill = document.getElementById('connection-status-pill');
+        if (!pill) {
+            const headerDiv = document.querySelector('.page-header > div:first-child');
+            if (!headerDiv) return null;
+            pill = document.createElement('span');
+            pill.id = 'connection-status-pill';
+            pill.style.cssText = 'display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.5rem; margin-left: 0.4rem; padding: 0.3rem 0.75rem; border-radius: 9999px; font-size: 0.78rem; font-weight: 700; transition: all 0.2s;';
+            headerDiv.appendChild(pill);
+        }
+        return pill;
+    }
+
+    function updateConnectionBadge(state) {
+        const pill = ensureConnectionBadge();
+        if (!pill) return;
+        const isOnline = navigator.onLine && state !== 'offline';
+        if (pendingSyncCount > 0) {
+            pill.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Guardado en iPhone (${pendingSyncCount} por subir)`;
+            pill.style.background = '#fef3c7';
+            pill.style.color = '#b45309';
+        } else if (!isOnline) {
+            pill.innerHTML = `<i class="fa-solid fa-wifi-slash"></i> Modo sin señal (Áreas y lista activas)`;
+            pill.style.background = '#fee2e2';
+            pill.style.color = '#b91c1c';
+        } else {
+            pill.innerHTML = `<i class="fa-solid fa-bolt"></i> Lista instantánea activa`;
+            pill.style.background = '#dcfce7';
+            pill.style.color = '#15803d';
+        }
+    }
+
+    window.addEventListener('online', () => updateConnectionBadge('online'));
+    window.addEventListener('offline', () => updateConnectionBadge('offline'));
+    updateConnectionBadge();
+
     // Inicializar fecha
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     updateDateDisplay();
@@ -60,45 +121,182 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${year}-${month}-${day}`;
     };
 
-    // Establecer fecha máxima (hoy) en el date picker
     const todayStr = getLocalDateString();
     datePicker.max = todayStr;
     datePicker.value = todayStr;
 
-    // Copias en el navegador de áreas y empleados (para que salgan al instante)
-    const CACHE_EMPLOYEES = 'ia_cache_employees_v1';
-    const CACHE_AREAS = 'ia_cache_areas_v1';
-    function readCache(key) {
-        try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; }
+    // Buscador rápido de empleados dentro del área o en todas las áreas
+    let searchQuery = '';
+    function injectQuickSearchBar() {
+        if (document.getElementById('quick-employee-search-wrap')) return;
+        const filtersBar = document.querySelector('.filters-bar');
+        if (!filtersBar) return;
+
+        const searchWrap = document.createElement('div');
+        searchWrap.id = 'quick-employee-search-wrap';
+        searchWrap.style.cssText = 'width: 100%; margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: center;';
+        searchWrap.innerHTML = `
+            <div style="position: relative; flex: 1;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af;"></i>
+                <input type="search" id="quick-employee-search" placeholder="Buscar trabajador por nombre o # de cuenta (en el área o en toda la IBERO)..."
+                    style="width: 100%; padding: 0.65rem 2.2rem 0.65rem 2.3rem; border: 1px solid #d1d5db; border-radius: 10px; font-size: 0.92rem; outline: none;">
+                <button type="button" id="clear-employee-search" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 1rem;">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </button>
+            </div>
+        `;
+        filtersBar.appendChild(searchWrap);
+
+        const input = document.getElementById('quick-employee-search');
+        const clearBtn = document.getElementById('clear-employee-search');
+
+        input.addEventListener('input', (e) => {
+            searchQuery = e.target.value.trim();
+            clearBtn.style.display = searchQuery ? 'block' : 'none';
+            renderedSignature = '';
+            loadEmployees();
+        });
+
+        clearBtn.addEventListener('click', () => {
+            input.value = '';
+            searchQuery = '';
+            clearBtn.style.display = 'none';
+            renderedSignature = '';
+            loadEmployees();
+        });
     }
-    function writeCache(key, value) {
-        try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* sin espacio: no pasa nada */ }
+    injectQuickSearchBar();
+
+    // Helper: correr una consulta de Firestore con timeout; si la red cuelga, cae a caché de IndexedDB
+    async function getCollectionResilient(collectionRef, timeoutMs = 2200) {
+        return new Promise((resolve, reject) => {
+            let done = false;
+            const timer = setTimeout(async () => {
+                if (done) return;
+                try {
+                    const cacheSnap = await collectionRef.get({ source: 'cache' });
+                    if (!done && !cacheSnap.empty) {
+                        done = true;
+                        resolve(cacheSnap);
+                    }
+                } catch (_) { /* ignore */ }
+            }, timeoutMs);
+
+            collectionRef.get().then(snap => {
+                clearTimeout(timer);
+                if (!done) {
+                    done = true;
+                    resolve(snap);
+                }
+            }).catch(async err => {
+                clearTimeout(timer);
+                if (done) return;
+                try {
+                    const cacheSnap = await collectionRef.get({ source: 'cache' });
+                    done = true;
+                    resolve(cacheSnap);
+                } catch (_) {
+                    done = true;
+                    reject(err);
+                }
+            });
+        });
     }
 
-    // Cargar Áreas
+    //Helper: ejecutar un batch de escritura sin bloquear la interfaz si el Wi-Fi está colgado ("lie-fi")
+    function commitBatchNonBlocking(batch, onSynced) {
+        pendingSyncCount++;
+        updateConnectionBadge();
+
+        return new Promise((resolve, reject) => {
+            let resolvedToUI = false;
+            // Si en 1.2 segundos el Wi-Fi no respondió, liberamos la UI porque Firestore
+            // ya guardó la operación en su cola persistente de IndexedDB y la subirá solo.
+            const uiTimer = setTimeout(() => {
+                if (!resolvedToUI) {
+                    resolvedToUI = true;
+                    resolve({ queuedOffline: true });
+                }
+            }, 1200);
+
+            batch.commit().then(() => {
+                clearTimeout(uiTimer);
+                pendingSyncCount = Math.max(0, pendingSyncCount - 1);
+                updateConnectionBadge('online');
+                if (typeof onSynced === 'function') onSynced();
+                if (!resolvedToUI) {
+                    resolvedToUI = true;
+                    resolve({ queuedOffline: false });
+                }
+            }).catch(err => {
+                clearTimeout(uiTimer);
+                pendingSyncCount = Math.max(0, pendingSyncCount - 1);
+                updateConnectionBadge();
+                if (!resolvedToUI) {
+                    resolvedToUI = true;
+                    reject(err);
+                }
+            });
+        });
+    }
+
+    // --- CARGA INSTANTÁNEA DE EMPLEADOS (0ms desde caché o semilla) ---
+    let allEmployees = readCache(CACHE_EMPLOYEES);
+    if (!allEmployees || !allEmployees.length) {
+        allEmployees = Array.isArray(seed.employees) && seed.employees.length ? seed.employees : null;
+    } else if (Array.isArray(seed.employees) && seed.employees.length > allEmployees.length) {
+        // Si la semilla trae dados de alta nuevos que no estaban en el caché viejo, unirlos por ID
+        const byId = new Map(allEmployees.map(e => [e.id, e]));
+        seed.employees.forEach(e => {
+            if (!byId.has(e.id)) byId.set(e.id, e);
+        });
+        allEmployees = [...byId.values()].sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+        writeCache(CACHE_EMPLOYEES, allEmployees);
+    }
+
+    let areaNameMap = new Map();
+    let renderedSignature = '';
+
+    // Cargar Áreas inmediatamente (usa caché o semilla en 0 ms, luego refresca en segundo plano)
     loadAreas();
 
-    // Event Listeners
-    // Safari iOS sometimes needs both 'change' and 'input' events
-    areaDropdown.addEventListener('change', loadEmployees);
-    areaDropdown.addEventListener('input', loadEmployees); // Safari iOS fallback
+    // Actualizar empleados desde Firestore sin bloquear la vista actual
+    getCollectionResilient(db.collection('employees'), 2200).then(snap => {
+        if (!snap || snap.empty) return;
+        const list = [];
+        snap.forEach(doc => {
+            const d = doc.data();
+            list.push({
+                id: doc.id,
+                fullName: d.fullName || d.name || '',
+                accountNumber: String(d.accountNumber || ''),
+                areaId: d.areaId || ''
+            });
+        });
+        list.sort((a, b) => a.fullName.localeCompare(b.fullName));
+        allEmployees = list;
+        writeCache(CACHE_EMPLOYEES, list);
+        loadEmployees();
+    }).catch(error => {
+        console.warn('Usando lista local de empleados (sin señal):', error);
+        updateConnectionBadge('offline');
+    });
 
-    // Additional touch event for Safari iOS
-    areaDropdown.addEventListener('touchend', function (e) {
-        console.log('Touchend event on area dropdown');
-        // Let the native picker handle it, then trigger change
+    // Event Listeners
+    areaDropdown.addEventListener('change', loadEmployees);
+    areaDropdown.addEventListener('input', loadEmployees);
+
+    areaDropdown.addEventListener('touchend', function () {
         setTimeout(() => {
-            if (this.value) {
-                console.log('Area selected via touch:', this.value);
-                loadEmployees();
-            }
+            if (this.value) loadEmployees();
         }, 300);
     });
 
     datePicker.addEventListener('change', (e) => {
-        currentDate = new Date(e.target.value + 'T12:00:00'); // Mediodía para evitar problemas de zona horaria
+        currentDate = new Date(e.target.value + 'T12:00:00');
         updateDateDisplay();
-        loadEmployees(); // Recargar empleados para la nueva fecha
+        renderedSignature = '';
+        loadEmployees();
     });
 
     function updateDateDisplay() {
@@ -107,27 +305,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- SEMÁFORO DE ÁREAS ---
-    // Devuelve un mapa areaId -> fecha (YYYY-MM-DD) de la última asistencia
-    // en los últimos 30 días. Una sola consulta acotada por fecha.
+    // Se pinta primero desde caché/semilla en 0ms y se actualiza de Firestore
+    // 1.2 segundos después para NO competir con la carga principal en Wi-Fi lento.
     async function getAreaRecency() {
         const map = {};
         try {
             const cutoff = new Date();
             cutoff.setDate(cutoff.getDate() - 30);
             const cutoffStr = cutoff.toLocaleDateString('en-CA');
-            const snap = await db.collection('attendances').where('date', '>=', cutoffStr).get();
+            const snap = await getCollectionResilient(
+                db.collection('attendances').where('date', '>=', cutoffStr),
+                3500
+            );
             snap.forEach(doc => {
                 const d = doc.data();
                 if (!d.areaId || !d.date) return;
                 if (!map[d.areaId] || d.date > map[d.areaId]) map[d.areaId] = d.date;
             });
+            if (Object.keys(map).length > 0) {
+                writeCache(CACHE_RECENCY, map);
+            }
         } catch (e) {
-            console.error('Error obteniendo recencia de áreas:', e);
+            console.warn('Usando semáforo en caché:', e);
         }
-        return map;
+        return Object.keys(map).length > 0 ? map : (readCache(CACHE_RECENCY) || seed.recency || {});
     }
 
-    // Días transcurridos desde una fecha 'YYYY-MM-DD' hasta hoy (Infinity si no hay).
     function daysSinceDate(dateStr) {
         if (!dateStr) return Infinity;
         const today = new Date();
@@ -136,10 +339,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return Math.floor((today - d) / 86400000);
     }
 
-    // Semáforo del botón de cada área, por días sin pase de lista:
-    //   verde     dentro de la semana (≤7 días)
-    //   amarillo  ya pasó una semana (8–14 días)
-    //   rojo      más de dos semanas (15 o más, o nada en los últimos 30)
     function trafficLight(days) {
         if (days <= 7) return { cls: 'tl-verde', label: 'Al día' };
         if (days <= 14) return { cls: 'tl-amarillo', label: 'Más de una semana' };
@@ -154,71 +353,55 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function selectArea(areaIdOrIds, btnElement) {
-        // Actualizar input oculto — puede contener múltiples IDs separados por coma
         const hiddenInput = document.getElementById('area-dropdown');
         if (hiddenInput) hiddenInput.value = areaIdOrIds;
 
-        // Actualizar visualmente
         document.querySelectorAll('.area-btn').forEach(b => b.classList.remove('active'));
         if (btnElement) btnElement.classList.add('active');
 
-        // Cargar empleados
         loadEmployees();
     }
-
-    // --- VELOCIDAD ---
-    // Antes, cada toque a un área volvía a pedir sus empleados al servidor.
-    // Ahora se descargan TODOS una sola vez al abrir la página (y se guardan
-    // en el navegador para que la siguiente vez aparezcan al instante), y las
-    // asistencias del día se escuchan con un solo listener por fecha.
-
-    let allEmployees = readCache(CACHE_EMPLOYEES); // [{id, fullName, accountNumber, areaId}]
-    let renderedSignature = '';
-
-    db.collection('employees').get().then(snap => {
-        const list = [];
-        snap.forEach(doc => {
-            const d = doc.data();
-            list.push({
-                id: doc.id,
-                fullName: d.fullName || '',
-                accountNumber: d.accountNumber || '',
-                areaId: d.areaId || ''
-            });
-        });
-        list.sort((a, b) => a.fullName.localeCompare(b.fullName));
-        allEmployees = list;
-        writeCache(CACHE_EMPLOYEES, list);
-        // Si la lista fresca trae cambios para el área abierta, repintar
-        loadEmployees();
-    }).catch(error => {
-        console.error('Error cargando empleados:', error);
-        if (!allEmployees) {
-            employeeList.innerHTML = '';
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error';
-            errorDiv.textContent = 'Error al cargar empleados. Revisa tu conexión y recarga.';
-            employeeList.appendChild(errorDiv);
-        }
-    });
 
     // Asistencias del día: empleadoId -> { status, docId, count }
     let attendanceByEmp = new Map();
     let attendanceUnsub = null;
     let listenedDate = null;
-    // Empleados con un guardado en curso (evita doble registro por doble toque)
     const pendingSaves = new Set();
+
+    function saveLocalDayAttendance(dateStr, map) {
+        const obj = {};
+        map.forEach((v, k) => { obj[k] = v; });
+        writeCache(CACHE_DAILY_ATT_PREFIX + dateStr, obj);
+    }
+
+    function loadLocalDayAttendance(dateStr) {
+        const cached = readCache(CACHE_DAILY_ATT_PREFIX + dateStr);
+        const map = new Map();
+        if (cached && typeof cached === 'object') {
+            Object.entries(cached).forEach(([k, v]) => map.set(k, v));
+        }
+        return map;
+    }
 
     function listenAttendances() {
         const selectedDate = currentDate.toLocaleDateString('en-CA');
         if (attendanceUnsub && listenedDate === selectedDate) return;
         if (attendanceUnsub) attendanceUnsub();
         listenedDate = selectedDate;
-        attendanceByEmp = new Map();
 
+        // 1. Pintar inmediatamente lo que ya esté guardado en este dispositivo para esa fecha
+        attendanceByEmp = loadLocalDayAttendance(selectedDate);
+        paintStatuses();
+
+        // 2. Escuchar cambios en vivo (incluyendo cambios pendientes locales con includeMetadataChanges)
         attendanceUnsub = db.collection('attendances')
             .where('date', '==', selectedDate)
-            .onSnapshot(snap => {
+            .onSnapshot({ includeMetadataChanges: true }, snap => {
+                // Si el snapshot viene vacío desde caché frío pero teníamos marcas locales recién hechas, conservarlas
+                if (snap.empty && snap.metadata.fromCache && attendanceByEmp.size > 0) {
+                    paintStatuses();
+                    return;
+                }
                 const map = new Map();
                 snap.forEach(doc => {
                     const d = doc.data();
@@ -226,25 +409,38 @@ document.addEventListener('DOMContentLoaded', () => {
                         map.set(d.employeeId, { status: d.status, docId: doc.id, count: d.chairStandsCount });
                     }
                 });
+                // Conservar los guardados optimistas que están en vuelo
+                pendingSaves.forEach(empId => {
+                    if (attendanceByEmp.has(empId) && !map.has(empId)) {
+                        map.set(empId, attendanceByEmp.get(empId));
+                    }
+                });
                 attendanceByEmp = map;
+                saveLocalDayAttendance(selectedDate, map);
                 paintStatuses();
-            }, error => console.error('Error en listener de asistencia:', error));
+            }, error => {
+                console.warn('Listener de asistencia en modo offline:', error);
+            });
     }
 
     function paintStatuses() {
         employeeList.querySelectorAll('.employee-card').forEach(card => {
             const id = card.dataset.id;
-            if (pendingSaves.has(id)) return; // ya se pintó al tocar
+            if (pendingSaves.has(id)) return;
             const att = attendanceByEmp.get(id);
             updateEmployeeCardStatus(id, att ? att.status : undefined, att ? att.count : undefined);
         });
+    }
+
+    function normalizeText(str) {
+        return (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
     }
 
     function loadEmployees() {
         const areaValue = areaDropdown.value;
         const emptyState = document.getElementById('empty-state');
 
-        if (!areaValue) {
+        if (!areaValue && !searchQuery) {
             employeeList.innerHTML = '';
             renderedSignature = '';
             emptyState.style.display = 'block';
@@ -255,18 +451,34 @@ document.addEventListener('DOMContentLoaded', () => {
         listenAttendances();
 
         if (!allEmployees) {
-            // Primera vez en este navegador: esperar la descarga
             employeeList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem;"></i><br><br>Cargando empleados...</div>';
             renderedSignature = '';
             return;
         }
 
-        // Soportar múltiples IDs separados por coma (áreas deduplicadas)
-        const areaIds = areaValue.split(',');
-        const employees = allEmployees.filter(e => areaIds.includes(e.areaId));
+        let employees = [];
+        const normQuery = normalizeText(searchQuery);
 
-        // Si ya está pintada la misma lista, solo actualizar palomitas
-        const signature = areaValue + '|' + listenedDate + '|' +
+        if (normQuery) {
+            // Si el usuario escribe en el buscador: si hay área seleccionada filtra primero en el área,
+            // y si no hay coincidencias (o no seleccionó área), busca en TODOS los colaboradores de la IBERO.
+            const areaIds = areaValue ? areaValue.split(',') : [];
+            const inArea = areaIds.length
+                ? allEmployees.filter(e => areaIds.includes(e.areaId) && (normalizeText(e.fullName).includes(normQuery) || normalizeText(e.accountNumber).includes(normQuery)))
+                : [];
+            if (inArea.length > 0) {
+                employees = inArea;
+            } else {
+                employees = allEmployees.filter(e =>
+                    normalizeText(e.fullName).includes(normQuery) || normalizeText(e.accountNumber).includes(normQuery)
+                );
+            }
+        } else {
+            const areaIds = areaValue.split(',');
+            employees = allEmployees.filter(e => areaIds.includes(e.areaId));
+        }
+
+        const signature = areaValue + '|' + normQuery + '|' + listenedDate + '|' +
             employees.map(e => e.id + ':' + e.fullName + ':' + e.accountNumber).join(',');
         if (signature === renderedSignature) {
             paintStatuses();
@@ -278,23 +490,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (employees.length === 0) {
             const noDataDiv = document.createElement('div');
             noDataDiv.className = 'no-data';
-            noDataDiv.textContent = 'No hay empleados en esta área';
+            noDataDiv.textContent = searchQuery
+                ? `No se encontró ningún colaborador con "${searchQuery}"`
+                : 'No hay empleados en esta área';
             employeeList.appendChild(noDataDiv);
             return;
         }
 
-        employees.forEach(emp => createEmployeeCard(emp.id, emp, null));
+        employees.forEach(emp => createEmployeeCard(emp.id, emp, null, !!normQuery));
         paintStatuses();
     }
 
-    function createEmployeeCard(id, emp, status) {
+    function createEmployeeCard(id, emp, status, showAreaName = false) {
         const card = document.createElement('div');
         card.className = 'employee-card';
         card.id = `card-${id}`;
         card.dataset.id = id;
         card.dataset.areaId = emp.areaId || '';
 
-        // SEGURIDAD XSS: Crear estructura de forma segura
         const iconDiv = document.createElement('div');
         iconDiv.className = 'card-icon';
         const icon = document.createElement('i');
@@ -305,17 +518,18 @@ document.addEventListener('DOMContentLoaded', () => {
         infoDiv.className = 'card-info';
 
         const h3 = document.createElement('h3');
-        // Sanitizar nombre del empleado
         h3.textContent = window.SecurityUtils
             ? window.SecurityUtils.escapeHTML(emp.fullName)
             : emp.fullName;
 
         const p = document.createElement('p');
-        // Sanitizar número de cuenta
         const safeAccountNumber = window.SecurityUtils
             ? window.SecurityUtils.validateAccountNumber(emp.accountNumber)
             : emp.accountNumber;
-        p.textContent = `#${safeAccountNumber || 'N/A'}`;
+        const areaLabel = showAreaName && areaNameMap.get(emp.areaId)
+            ? ` • ${areaNameMap.get(emp.areaId)}`
+            : '';
+        p.textContent = `#${safeAccountNumber || 'N/A'}${areaLabel}`;
 
         infoDiv.appendChild(h3);
         infoDiv.appendChild(p);
@@ -324,11 +538,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const testDiv = document.createElement('div');
         testDiv.className = 'chair-stands-container';
         testDiv.style.cssText = 'margin-top: 8px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #f3f4f6; padding-top: 8px; width: 100%;';
-        
+
         const testLabel = document.createElement('span');
         testLabel.style.cssText = 'font-size: 0.75rem; color: #4b5563; font-weight: 500; white-space: nowrap;';
         testLabel.textContent = 'Prueba Silla (30s):';
-        
+
         const testInput = document.createElement('input');
         testInput.type = 'number';
         testInput.className = 'chair-stands-input';
@@ -336,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
         testInput.max = '99';
         testInput.placeholder = '-';
         testInput.style.cssText = 'width: 55px; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-align: center; color: #111827; outline: none; transition: border-color 0.2s;';
-        
+
         testInput.addEventListener('focus', () => {
             testInput.style.borderColor = '#667eea';
         });
@@ -345,7 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         testInput.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevenir toggle de asistencia al hacer clic en el input
+            e.stopPropagation();
         });
 
         testInput.addEventListener('change', async (e) => {
@@ -361,7 +575,6 @@ document.addEventListener('DOMContentLoaded', () => {
         card.appendChild(infoDiv);
         card.appendChild(testDiv);
 
-        // Click Event: Toggle Asistencia
         card.addEventListener('click', () => toggleAttendance(card, id, emp));
 
         employeeList.appendChild(card);
@@ -372,147 +585,91 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!card) return;
 
         const iconContainer = card.querySelector('.card-icon');
-        // Limpiar botones previos de reset si existen
         const existingReset = card.querySelector('.reset-btn-overlay');
         if (existingReset) existingReset.remove();
 
-        // Limpiar clases de estado previo
         card.classList.remove('selected', 'completed');
 
-        // Actualizar el valor del input si el usuario no está enfocado en él
         const input = card.querySelector('.chair-stands-input');
         if (input && document.activeElement !== input) {
             input.value = (count !== undefined && count !== null) ? count : '';
         }
 
-        if (status === 'active') {
-            // ASISTENCIA MARCADA (Pendiente de feedback) - AHORA EN VERDE TAMBIÉN
+        if (status === 'active' || status === 'completed') {
             card.classList.add('selected');
-            // Check simple pero VERDE
-            iconContainer.innerHTML = '<i class="fa-solid fa-check" style="color: #4CAF50; font-size: 1.2rem;"></i>';
-            card.style.borderColor = '#4CAF50';
-            card.style.backgroundColor = '#e8f5e9'; // Verde clarito (Igual que completed)
-            // Añadir botón borrar también aquí por si se equivocan rápido
-            const existingReset = card.querySelector('.reset-btn-overlay');
-            if (!existingReset) {
-                const resetBtn = document.createElement('button');
-                resetBtn.className = 'reset-btn-overlay';
-                resetBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
-                resetBtn.title = 'Eliminar asistencia';
-                resetBtn.style.cssText = `
-                    position: absolute; top: 10px; right: 10px;
-                    background: #fee2e2; color: #ef4444; border: 1px solid #fecaca;
-                    border-radius: 50%; width: 28px; height: 28px;
-                    display: flex; align-items: center; justify-content: center;
-                    cursor: pointer; font-size: 12px; z-index: 10;
-                `;
-                resetBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    deleteAttendanceRecord(id);
-                });
-                card.style.position = 'relative';
-                card.appendChild(resetBtn);
-            }
+            if (status === 'completed') card.classList.add('completed');
 
-        } else if (status === 'completed') {
-            // FEEDBACK RECIBIDO (Ciclo completo)
-            card.classList.add('selected', 'completed');
-            // Doble Check
-            iconContainer.innerHTML = '<i class="fa-solid fa-check-double" style="color: #4CAF50; font-size: 1.2rem;"></i>';
+            iconContainer.innerHTML = status === 'completed'
+                ? '<i class="fa-solid fa-check-double" style="color: #4CAF50; font-size: 1.2rem;"></i>'
+                : '<i class="fa-solid fa-check" style="color: #4CAF50; font-size: 1.2rem;"></i>';
             card.style.borderColor = '#4CAF50';
             card.style.backgroundColor = '#e8f5e9';
 
-            // --- BOTÓN DE RESET/ELIMINAR ---
-            // (Ya estaba implementado, se mantiene igual por lógica de función, 
-            // pero aseguro que se renderice si entra aquí directo)
-            const existingReset = card.querySelector('.reset-btn-overlay');
-            if (!existingReset) {
-                const resetBtn = document.createElement('button');
-                resetBtn.className = 'reset-btn-overlay';
-                resetBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
-                resetBtn.title = 'Eliminar asistencia y feedback (Reset)';
-                resetBtn.style.cssText = `
-                    position: absolute; top: 10px; right: 10px;
-                    background: #fee2e2; color: #ef4444; border: 1px solid #fecaca;
-                    border-radius: 50%; width: 28px; height: 28px;
-                    display: flex; align-items: center; justify-content: center;
-                    cursor: pointer; font-size: 12px; z-index: 10;
-                `;
-                resetBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    deleteAttendanceRecord(id);
-                });
-                card.style.position = 'relative';
-                card.appendChild(resetBtn);
-            }
-
+            const resetBtn = document.createElement('button');
+            resetBtn.className = 'reset-btn-overlay';
+            resetBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+            resetBtn.title = 'Eliminar asistencia';
+            resetBtn.style.cssText = `
+                position: absolute; top: 10px; right: 10px;
+                background: #fee2e2; color: #ef4444; border: 1px solid #fecaca;
+                border-radius: 50%; width: 28px; height: 28px;
+                display: flex; align-items: center; justify-content: center;
+                cursor: pointer; font-size: 12px; z-index: 10;
+            `;
+            resetBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteAttendanceRecord(id);
+            });
+            card.style.position = 'relative';
+            card.appendChild(resetBtn);
         } else {
-            // AUSENTE
             iconContainer.innerHTML = '<i class="fa-regular fa-circle"></i>';
             card.style.borderColor = '#e1e4e8';
             card.style.backgroundColor = '#fff';
         }
 
-        // Guardar status actual
         card.dataset.status = status || 'absent';
     }
 
     async function saveChairStandsCount(employeeId, countValue) {
         const selectedDate = currentDate.toLocaleDateString('en-CA');
-        
-        try {
-            // Buscar si ya existe la asistencia para hoy
-            const snapshot = await db.collection('employees')
-                .doc(employeeId)
-                .collection('attendance')
-                .where('date', '==', selectedDate)
-                .get();
-                
-            const topLevelSnapshot = await db.collection('attendances')
-                .where('employeeId', '==', employeeId)
-                .where('date', '==', selectedDate)
-                .get();
+        const existingAtt = attendanceByEmp.get(employeeId);
 
+        try {
             const batch = db.batch();
-            
-            if (!snapshot.empty) {
-                // Actualizar documentos existentes
-                snapshot.docs.forEach(doc => {
-                    batch.update(doc.ref, { chairStandsCount: countValue });
-                });
-                topLevelSnapshot.docs.forEach(doc => {
-                    batch.update(doc.ref, { chairStandsCount: countValue });
-                });
-                await batch.commit();
-                
+
+            if (existingAtt && existingAtt.docId) {
+                const subRef = db.collection('employees').doc(employeeId).collection('attendance').doc(existingAtt.docId);
+                const topRef = db.collection('attendances').doc(existingAtt.docId);
+                batch.update(subRef, { chairStandsCount: countValue });
+                batch.update(topRef, { chairStandsCount: countValue });
+
+                attendanceByEmp.set(employeeId, { ...existingAtt, count: countValue });
+                saveLocalDayAttendance(selectedDate, attendanceByEmp);
+                await commitBatchNonBlocking(batch);
+
                 const card = document.getElementById(`card-${employeeId}`);
                 const name = card ? card.querySelector('h3').textContent : 'Empleado';
                 showToast(`✓ Repeticiones guardadas para ${name}`);
             } else {
-                // Si no existe, crear la asistencia primero con el count
-                // Ya no se usa el feedback: la asistencia nace completa (+20 pts)
-                const skipFeedback = true;
                 const status = 'completed';
-                
                 const card = document.getElementById(`card-${employeeId}`);
                 const empData = card ? { fullName: card.querySelector('h3').textContent } : { fullName: 'Empleado' };
-                
-                // Obtener ID del área
+
                 const hiddenInput = document.getElementById('area-dropdown');
                 let areaId = hiddenInput ? hiddenInput.value : '';
-                
-                // Si el área tiene múltiples IDs por deduplicación, buscar la del empleado o usar el primer ID
                 if (card && card.dataset.areaId) {
                     areaId = card.dataset.areaId;
                 } else if (areaId.includes(',')) {
                     areaId = areaId.split(',')[0];
                 }
-                
+
                 if (!areaId) {
                     alert('Error: Selecciona un área primero.');
                     return;
                 }
 
+                const subRef = db.collection('employees').doc(employeeId).collection('attendance').doc();
                 const attendanceData = {
                     employeeId: employeeId,
                     employeeName: empData.fullName,
@@ -525,33 +682,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     periodId: activePeriodId,
                     chairStandsCount: countValue
                 };
-                
-                const subRef = db.collection('employees').doc(employeeId).collection('attendance').doc();
+
                 batch.set(subRef, attendanceData);
-                
-                const topRef = db.collection('attendances').doc(subRef.id);
-                batch.set(topRef, attendanceData);
-                
-                if (skipFeedback) {
-                    const empRef = db.collection('employees').doc(employeeId);
-                    batch.update(empRef, {
-                        points: firebase.firestore.FieldValue.increment(20),
-                        lastAttendance: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    
-                    const feedRef = db.collection('employees').doc(employeeId).collection('feedback').doc();
-                    batch.set(feedRef, {
-                        attendanceId: subRef.id,
-                        rating: 5,
-                        reaction: '⚡',
-                        comment: 'Feedback omitido por admin (Auto +20 pts)',
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                        date: selectedDate,
-                        autoGenerated: true
-                    });
-                }
-                
-                await batch.commit();
+                batch.set(db.collection('attendances').doc(subRef.id), attendanceData);
+
+                const empRef = db.collection('employees').doc(employeeId);
+                batch.update(empRef, {
+                    points: firebase.firestore.FieldValue.increment(20),
+                    lastAttendance: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                const feedRef = empRef.collection('feedback').doc();
+                batch.set(feedRef, {
+                    attendanceId: subRef.id,
+                    rating: 5,
+                    reaction: '⚡',
+                    comment: 'Feedback omitido por admin (Auto +20 pts)',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    date: selectedDate,
+                    autoGenerated: true
+                });
+
+                attendanceByEmp.set(employeeId, { status: 'completed', docId: subRef.id, count: countValue });
+                saveLocalDayAttendance(selectedDate, attendanceByEmp);
+                updateEmployeeCardStatus(employeeId, 'completed', countValue);
+
+                await commitBatchNonBlocking(batch);
                 showToast(`✓ Asistencia y repeticiones guardadas para ${empData.fullName}`);
             }
         } catch (error) {
@@ -560,82 +716,51 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Nueva función para borrar explícitamente desde el botón
     async function deleteAttendanceRecord(employeeId) {
         const confirmDelete = confirm('⚠️ ¿Quitar la asistencia de hoy de este empleado?\n\nSi estaba completa se le restan los 20 puntos que ganó.');
         if (!confirmDelete) return;
 
-        const selectedDate = currentDate.toLocaleDateString('en-CA') || new Date().toLocaleDateString('en-CA'); // Fallback YYYY-MM-DD
+        const selectedDate = currentDate.toLocaleDateString('en-CA') || new Date().toLocaleDateString('en-CA');
+        const prevAtt = attendanceByEmp.get(employeeId);
+
+        updateEmployeeCardStatus(employeeId, null);
+        attendanceByEmp.delete(employeeId);
+        saveLocalDayAttendance(selectedDate, attendanceByEmp);
 
         try {
-            const batch = db.batch();
-
-            // 1. Buscar y Borrar de employees/{id}/attendance
-            const attSnapshot = await db.collection('employees').doc(employeeId).collection('attendance')
-                .where('date', '==', selectedDate).get();
-
-            // Restar los 20 pts de cada asistencia completa, igual que al desmarcar
-            // tocando la tarjeta (antes el bote borraba y dejaba los puntos).
-            let pointsToDeduct = 0;
-            attSnapshot.forEach(doc => {
-                if (doc.data().status === 'completed') pointsToDeduct += 20;
-                batch.delete(doc.ref);
-            });
-            if (pointsToDeduct > 0) {
-                batch.update(db.collection('employees').doc(employeeId), {
-                    points: firebase.firestore.FieldValue.increment(-pointsToDeduct)
-                });
-            }
-
-            // 2. Buscar y Borrar de attendances (top-level)
-            const topSnapshot = await db.collection('attendances')
-                .where('employeeId', '==', employeeId)
-                .where('date', '==', selectedDate).get();
-
-            topSnapshot.forEach(doc => batch.delete(doc.ref));
-
-            // 3. Buscar y Borrar Feedback
-            const feedSnapshot = await db.collection('employees').doc(employeeId).collection('feedback')
-                .where('date', '==', selectedDate).get();
-
-            feedSnapshot.forEach(doc => batch.delete(doc.ref));
-
-            await batch.commit();
+            await removeAttendance(employeeId, selectedDate, prevAtt && prevAtt.docId);
             showToast('🗑️ Registro eliminado correctamente');
-
-            // Forzar actualización visual inmediata (limpiar status)
-            updateEmployeeCardStatus(employeeId, null);
-
         } catch (error) {
             console.error('Error borrando registro:', error);
+            if (prevAtt) {
+                attendanceByEmp.set(employeeId, prevAtt);
+                saveLocalDayAttendance(selectedDate, attendanceByEmp);
+                updateEmployeeCardStatus(employeeId, prevAtt.status, prevAtt.count);
+            }
             alert('Error al eliminar: ' + error.message);
         }
     }
 
-    // Un toque = asistencia completa (dos palomitas, +20 pts). Ya no existe la
-    // palomita sola ni el feedback. Se pinta AL INSTANTE y se guarda por
-    // detrás; si el guardado falla, se regresa la tarjeta y se avisa.
+    // Un toque = asistencia completa (dos palomitas, +20 pts).
+    // Se pinta AL INSTANTE en 0 ms y se encola en Firestore sin bloquear aunque no haya Wi-Fi.
     async function toggleAttendance(card, employeeId, employeeData) {
-        // Doble toque mientras se guarda: ignorar (evita registros dobles)
         if (pendingSaves.has(employeeId)) return;
 
         const att = attendanceByEmp.get(employeeId);
         const currentStatus = att ? att.status : 'absent';
         const selectedDate = currentDate.toLocaleDateString('en-CA');
 
-        // Área del empleado (si el botón agrupa varias áreas, la suya propia)
         let areaId = (employeeData && employeeData.areaId) || '';
         if (!areaId) {
             const hiddenInput = document.getElementById('area-dropdown');
             areaId = hiddenInput ? hiddenInput.value.split(',')[0] : '';
         }
         if (!areaId) {
-            alert('Error: No se ha seleccionado un área válida. Por favor recarga la página.');
+            alert('Error: No se ha seleccionado un área válida. Por favor selecciona un área.');
             return;
         }
 
         if (currentStatus === 'completed') {
-            // QUITAR la asistencia (tocar a alguien que ya tiene dos palomitas)
             const confirmDelete = confirm(
                 `⚠️ ¿Quitar la asistencia de hoy de ${employeeData.fullName}?\n\n` +
                 `Se le restan los 20 puntos que ganó.`
@@ -643,14 +768,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!confirmDelete) return;
 
             pendingSaves.add(employeeId);
+            attendanceByEmp.delete(employeeId);
+            saveLocalDayAttendance(selectedDate, attendanceByEmp);
             updateEmployeeCardStatus(employeeId, null);
+
             try {
-                await removeAttendance(employeeId, selectedDate);
+                await removeAttendance(employeeId, selectedDate, att && att.docId);
                 showToast(`Asistencia eliminada: ${employeeData.fullName}`);
             } catch (error) {
                 console.error('Error quitando asistencia:', error);
+                if (att) attendanceByEmp.set(employeeId, att);
+                saveLocalDayAttendance(selectedDate, attendanceByEmp);
                 updateEmployeeCardStatus(employeeId, 'completed', att && att.count);
-                alert(`No se pudo quitar la asistencia de ${employeeData.fullName}. Revisa tu conexión e intenta de nuevo.`);
+                alert(`No se pudo quitar la asistencia de ${employeeData.fullName}.`);
             } finally {
                 pendingSaves.delete(employeeId);
                 paintStatuses();
@@ -658,18 +788,27 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // MARCAR: sin palomita o con una sola (registros viejos) -> dos palomitas
+        // MARCAR ASISTENCIA COMPLETA AL INSTANTE
         pendingSaves.add(employeeId);
+        const empRef = db.collection('employees').doc(employeeId);
+        let attendanceId = (att && att.docId) ? att.docId : empRef.collection('attendance').doc().id;
+
+        const newAttEntry = { status: 'completed', docId: attendanceId, count: att ? att.count : undefined };
+        attendanceByEmp.set(employeeId, newAttEntry);
+        saveLocalDayAttendance(selectedDate, attendanceByEmp);
         updateEmployeeCardStatus(employeeId, 'completed', att && att.count);
+
+        // Actualizar semáforo local del área a hoy (verde inmediato)
+        const container = document.getElementById('area-buttons-container');
+        const cachedRecency = readCache(CACHE_RECENCY) || seed.recency || {};
+        cachedRecency[areaId] = selectedDate;
+        writeCache(CACHE_RECENCY, cachedRecency);
+        if (container) applyRecency(container, cachedRecency);
 
         try {
             const batch = db.batch();
-            const empRef = db.collection('employees').doc(employeeId);
-            let attendanceId;
 
             if (att && att.docId) {
-                // Ya tenía una palomita: completarla
-                attendanceId = att.docId;
                 const updateData = {
                     status: 'completed',
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
@@ -677,9 +816,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 batch.update(empRef.collection('attendance').doc(attendanceId), updateData);
                 batch.update(db.collection('attendances').doc(attendanceId), updateData);
             } else {
-                // Nueva asistencia, nace completa
-                const subRef = empRef.collection('attendance').doc();
-                attendanceId = subRef.id;
+                const subRef = empRef.collection('attendance').doc(attendanceId);
                 const attendanceData = {
                     employeeId: employeeId,
                     employeeName: employeeData.fullName,
@@ -695,14 +832,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 batch.set(db.collection('attendances').doc(attendanceId), attendanceData);
             }
 
-            // +20 pts
             batch.update(empRef, {
                 points: firebase.firestore.FieldValue.increment(20),
                 lastAttendance: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            // Registro automático que mantiene las estadísticas históricas
-            // (el empleado ya no llena feedback)
             batch.set(empRef.collection('feedback').doc(), {
                 attendanceId: attendanceId,
                 rating: 5,
@@ -713,35 +847,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 autoGenerated: true
             });
 
-            // Con mala señal el guardado queda en el dispositivo y se sube
-            // solo al volver la conexión: avisar en vez de dejar en silencio.
-            const slowTimer = setTimeout(() => {
-                showToast(`📶 Sin señal: ${employeeData.fullName} quedó guardado en este dispositivo y se sube solo`);
-            }, 3000);
-            await batch.commit();
-            clearTimeout(slowTimer);
-            showToast(`Asistencia completa (+20 pts): ${employeeData.fullName}`);
+            const result = await commitBatchNonBlocking(batch);
+            if (result && result.queuedOffline) {
+                showToast(`📶 Guardado en iPhone (+20 pts): ${employeeData.fullName}`);
+            } else {
+                showToast(`✅ Asistencia completa (+20 pts): ${employeeData.fullName}`);
+            }
         } catch (error) {
             console.error('Error marcando asistencia:', error);
+            if (att) {
+                attendanceByEmp.set(employeeId, att);
+            } else {
+                attendanceByEmp.delete(employeeId);
+            }
+            saveLocalDayAttendance(selectedDate, attendanceByEmp);
             updateEmployeeCardStatus(employeeId, att ? att.status : null, att && att.count);
-            alert(`No se guardó la asistencia de ${employeeData.fullName}. Revisa tu conexión e intenta de nuevo.`);
+            alert(`No se guardó la asistencia de ${employeeData.fullName}.`);
         } finally {
             pendingSaves.delete(employeeId);
             paintStatuses();
         }
     }
 
-    // Borra la asistencia del día (subcolección + top-level + feedback de ese
-    // día) y resta 20 pts por cada asistencia completa.
-    async function removeAttendance(employeeId, selectedDate) {
+    // Borra la asistencia del día sin colgarse si hay mala señal
+    async function removeAttendance(employeeId, selectedDate, knownDocId) {
         const empRef = db.collection('employees').doc(employeeId);
+        const batch = db.batch();
+
+        if (knownDocId) {
+            // Si ya conocemos el docId (lo más común), borrado directo sin necesidad de esperar 3 lecturas de red
+            batch.delete(empRef.collection('attendance').doc(knownDocId));
+            batch.delete(db.collection('attendances').doc(knownDocId));
+            batch.update(empRef, { points: firebase.firestore.FieldValue.increment(-20) });
+            await commitBatchNonBlocking(batch);
+            return;
+        }
+
         const [subSnap, topSnap, fbSnap] = await Promise.all([
-            empRef.collection('attendance').where('date', '==', selectedDate).get(),
-            db.collection('attendances').where('employeeId', '==', employeeId).where('date', '==', selectedDate).get(),
-            empRef.collection('feedback').where('date', '==', selectedDate).get()
+            getCollectionResilient(empRef.collection('attendance').where('date', '==', selectedDate), 1800),
+            getCollectionResilient(db.collection('attendances').where('employeeId', '==', employeeId).where('date', '==', selectedDate), 1800),
+            getCollectionResilient(empRef.collection('feedback').where('date', '==', selectedDate), 1800)
         ]);
 
-        const batch = db.batch();
         let pointsToDeduct = 0;
         subSnap.forEach(doc => {
             if (doc.data().status === 'completed') pointsToDeduct += 20;
@@ -753,12 +900,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pointsToDeduct > 0) {
             batch.update(empRef, { points: firebase.firestore.FieldValue.increment(-pointsToDeduct) });
         }
-        await batch.commit();
+        await commitBatchNonBlocking(batch);
     }
 
-    // Helper: Toast Notification
     function showToast(message) {
-        // Crear elemento toast si no existe
         let toast = document.getElementById('toast');
         if (!toast) {
             toast = document.createElement('div');
@@ -779,14 +924,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // CONFIGURACIÓN DEL RECORRIDO SEMANAL
-    // 0 = Domingo, 1 = Lunes, ... 6 = Sábado
-    // NOTA: El sistema intentará coincidir estos nombres con los de la base de datos (ignorando mayúsculas/acentos)
     const WEEKLY_ROUTE = {
         1: [ // LUNES
             'PLANTA FÍSICA',
             'ADMISIONES',
             'DIRECCION DE PERSONAL',
-            'TESORERIA', // Único agregado aquí
+            'TESORERIA',
             'COMPRAS',
             'EDUCACIÓN CONTINUA',
             'EGRESADOS',
@@ -797,13 +940,13 @@ document.addEventListener('DOMContentLoaded', () => {
         2: [ // MARTES
             'SERVICIOS ESCOLARES',
             'DIRECCIONES GENERALES',
-            'HUMANIDADES', // Tocado por usuario
-            'DEPARTAMENTO DE CIENCIAS SOCIALES', // Agregado
+            'HUMANIDADES',
+            'DEPARTAMENTO DE CIENCIAS SOCIALES',
             'IDIT',
             'PROTECCIÓN UNIVERSITARIA',
             'AIDEL',
             'SERVICIO SOCIAL',
-            'REFLEXIÓN UNIVERSITARIA', // Agregado
+            'REFLEXIÓN UNIVERSITARIA',
             'DADA',
             'PLANEACIÓN Y EVALUACIÓN',
             'CENTRO DE PARTICIPACIÓN Y DIFUSIÓN UNIVERSITARIA',
@@ -839,45 +982,37 @@ document.addEventListener('DOMContentLoaded', () => {
         5: [ // VIERNES
             'VILLAS IBERO',
             'PREPARATORIA IBERO',
-            // --- NUEVOS DE VIERNES ---
             'MARKETING',
             'DIRECCION DE COMUNICACION INSTITUCIONAL',
             'DEFENSORIA DE LOS DERECHOS UNIVERSITARIOS',
             'IBERO ACTIVATE',
-            'NUTRICIÓN', // Agregado
+            'NUTRICIÓN',
             'LAINES',
             'OFICINA DE ATEN TECNOLOGICA'
         ]
     };
 
-    // Configuración específica de Horarios para Martes (y Jueves si aplica)
     const TUESDAY_SCHEDULE_MAP = [
         { name: 'SERVICIOS ESCOLARES', time: '10:00 - 10:20' },
-        { name: 'DIRECCIONES GENERALES', time: '10:20 - 11:00' }, // Incluye Humanidades, C. Sociales
+        { name: 'DIRECCIONES GENERALES', time: '10:20 - 11:00' },
         { name: 'IDIT', time: '11:00 - 11:20' },
         { name: 'PROTECCION UNIVERSITARIA', time: '11:20 - 11:40' },
-        { name: 'AIDEL', time: '11:40 - 12:00' }, // Incluye Serv Social, Reflexión, DADA
-        { name: 'PLANEACIÓN Y EVALUACIÓN', time: '12:00 - 12:30' }, // Incluye Centro Part.
+        { name: 'AIDEL', time: '11:40 - 12:00' },
+        { name: 'PLANEACIÓN Y EVALUACIÓN', time: '12:00 - 12:30' },
         { name: 'MEDIOS UNIVERSITARIOS', time: '12:30 - 13:00' }
     ];
 
-    function getTimeSlot(index, dayIndex, areaName, routeMap) {
-        // Lógica especial para Martes (2) y Jueves (4)
+    function getTimeSlot(index, dayIndex, areaName) {
         if (dayIndex === 2 || dayIndex === 4) {
-            // Encontrar el líder del grupo para asignar horario
             const norm = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
             const name = norm(areaName);
 
-            // Definir mapping líder -> tiempo
-            // Usamos 'includes' para ser flexibles
             if (name.includes('servicios escolares')) return TUESDAY_SCHEDULE_MAP[0].time;
 
-            // JUEVES: Preparatoria IBERO en lugar de Direcciones Generales
             if (dayIndex === 4) {
                 if (name.includes('preparatoria ibero')) return '10:20 - 11:00';
                 if (name.includes('humanidades') || name.includes('ciencias sociales')) return '10:20 - 11:00';
             } else {
-                // MARTES: Direcciones Generales con Humanidades y C. Sociales
                 if (name.includes('direcciones generales') || name.includes('humanidades') || name.includes('ciencias sociales')) return TUESDAY_SCHEDULE_MAP[1].time;
             }
 
@@ -887,32 +1022,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (name.includes('planeacion') || name.includes('centro de participacion')) return TUESDAY_SCHEDULE_MAP[5].time;
             if (name.includes('medios universitarios')) return TUESDAY_SCHEDULE_MAP[6].time;
 
-            return '13:00+'; // Fallback
+            return '13:00+';
         }
 
-        // Lógica estándar para otros días (Lunes, Miércoles, Viernes...)
-        /* ... existing standard logic ... */
         const startHour = 10;
         const durationMinutes = 20;
         const startDate = new Date();
         startDate.setHours(startHour, 0, 0, 0);
 
-        // Aquí el 'index' es puramente secuencial en la lista renderizada...
-        // Pero para Viernes agrupado (Nutrición+Laines), necesitamos que compartan.
-        // Como 'index' incrementa por CADA botón, si imprimimos 2 botones, el segundo tendría +20min.
-        // FIX: Usar un mapa de "Slots usados" o lógica de grupo.
-        // Simplificación: Si es Vie (5) y es Nutrición o Laines, forzamos slot.
-
-        if (dayIndex === 5) { // Viernes
-            // 0: VILLAS
-            // 1: PREPARATORIA
-            // 2: MARKETING
-            // 3: DIR COMUNICACION
-            // 4: DEFENSORIA
-            // 5: IBERO ACTIVATE
-            // 6: NUTRICION + LAINES (Mismo slot)
-            // 7: OFICINA ATEN TEC
-
+        if (dayIndex === 5) {
             const norm = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
             const n = norm(areaName);
 
@@ -926,19 +1044,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (n.includes('oficina de aten')) return '12:20 - 12:40';
         }
 
-        // Estándar (Mon/Wed) - Asumimos índice lineal simple por ahora,
-        // pero idealmente deberíamos aplicar la misma lógica de mapa si hay agrupaciones.
-        // Para Lunes/Miercoles hay grupo (Salud/Humanidades), tratemos de arreglarlo también.
-
-        if (dayIndex === 1 || dayIndex === 3) {
-            // ... Logic for Mon/Wed grouping ... (Simplificado: index-based funciona si están al final)
-            const slotStart = new Date(startDate.getTime() + index * durationMinutes * 60000);
-            const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60000);
-            const formatTime = (date) => date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            return `${formatTime(slotStart)} - ${formatTime(slotEnd)}`;
-        }
-
-        // Fallback Default
         const slotStart = new Date(startDate.getTime() + index * durationMinutes * 60000);
         const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60000);
         const formatTime = (date) => date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -949,38 +1054,55 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('area-buttons-container');
         if (!container) return;
 
-        // Semáforo en paralelo: los botones salen sin esperarlo y se colorean
-        // en cuanto llega.
-        const recencyPromise = getAreaRecency();
-        let lastRecency = null;
-        recencyPromise.then(r => { lastRecency = r; applyRecency(container, r); });
+        // 1. Pintar áreas AL INSTANTE desde caché o semilla (0 ms)
+        let cached = readCache(CACHE_AREAS);
+        if (!cached || !cached.length) {
+            cached = Array.isArray(seed.areas) && seed.areas.length ? seed.areas : null;
+        } else if (Array.isArray(seed.areas) && seed.areas.length > cached.length) {
+            const byId = new Map(cached.map(a => [a.id, a]));
+            seed.areas.forEach(a => { if (!byId.has(a.id)) byId.set(a.id, a); });
+            cached = [...byId.values()];
+            writeCache(CACHE_AREAS, cached);
+        }
 
-        // Áreas guardadas en el navegador: se pintan al instante y luego se
-        // actualizan con las del servidor.
-        const cached = readCache(CACHE_AREAS);
-        if (cached && cached.length) renderAreas(cached);
+        const initialRecency = readCache(CACHE_RECENCY) || seed.recency || null;
+        if (cached && cached.length) {
+            renderAreas(cached);
+            if (initialRecency) applyRecency(container, initialRecency);
+        }
 
+        // 2. Actualizar áreas desde Firestore (con fallback rápido si la señal está débil)
         try {
-            const snapshot = await db.collection('areas').get();
-            const fresh = [];
-            snapshot.forEach(doc => fresh.push({ id: doc.id, name: doc.data().name || '' }));
-            const changed = JSON.stringify(fresh) !== JSON.stringify(cached);
-            writeCache(CACHE_AREAS, fresh);
-            if (changed) {
-                renderAreas(fresh);
-                if (lastRecency) applyRecency(container, lastRecency);
+            const snapshot = await getCollectionResilient(db.collection('areas'), 2000);
+            if (snapshot && !snapshot.empty) {
+                const fresh = [];
+                snapshot.forEach(doc => fresh.push({ id: doc.id, name: doc.data().name || '' }));
+                const changed = JSON.stringify(fresh) !== JSON.stringify(cached);
+                writeCache(CACHE_AREAS, fresh);
+                if (changed || !cached) {
+                    renderAreas(fresh);
+                    const rec = readCache(CACHE_RECENCY) || seed.recency;
+                    if (rec) applyRecency(container, rec);
+                }
             }
         } catch (error) {
-            console.error('Error cargando áreas:', error);
-            if (!cached) container.innerHTML = '<div style="color: #ef4444;">Error al cargar áreas</div>';
+            console.warn('Usando áreas en caché local (sin señal):', error);
         }
+
+        // 3. Refrescar semáforo de 30 días en segundo plano (después de 1.2s para no saturar Wi-Fi débil)
+        setTimeout(() => {
+            getAreaRecency().then(r => {
+                if (r) applyRecency(container, r);
+            });
+        }, 1200);
 
         function renderAreas(areaDocs) {
             container.innerHTML = '';
+            areaNameMap = new Map();
+            areaDocs.forEach(a => areaNameMap.set(a.id, a.name));
 
-            // Deduplicar por nombre normalizado, agrupando todos los IDs
             const normalize = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-            const grouped = new Map(); // normName -> { id, name, allIds[] }
+            const grouped = new Map();
 
             areaDocs.forEach(doc => {
                 const data = { name: doc.name };
@@ -993,11 +1115,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             let areas = [...grouped.values()];
-
-            // 1. Identificar Día Actual
-            // FORCE CHANGE FOR TESTING: const today = 2;
             const today = new Date().getDay();
-
 
             const todaysRoute = WEEKLY_ROUTE[today] || [];
             const routeMap = new Map();
@@ -1029,21 +1147,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Apply Grouping overrides to Sort Key (_routeIndex)
             inRouteAreas.forEach(area => {
                 let effectiveIndex = area._routeIndex;
                 const name = normalize(area.name);
 
-                // ... (Grouping Logic from previous step: reuse SAME logic to keep order) ...
                 const isMonWed = (today === 1 || today === 3);
                 const isTueThu = (today === 2 || today === 4);
                 const isFri = (today === 5);
 
-                // Reuse valid grouping logic from Step 276
                 if (isTueThu) {
                     if (name.includes('humanidades') || name.includes('ciencias sociales')) {
                         const leaderIndex = inRouteAreas.findIndex(a => normalize(a.name).includes('direcciones generales'));
-                        if (leaderIndex !== -1) effectiveIndex = inRouteAreas[leaderIndex]._routeIndex; // Use route index of leader
+                        if (leaderIndex !== -1) effectiveIndex = inRouteAreas[leaderIndex]._routeIndex;
                     }
                     if (name.includes('servicio social') || name.includes('reflexion') || name.includes('dada')) {
                         const leaderIndex = inRouteAreas.findIndex(a => normalize(a.name).includes('aidel'));
@@ -1070,28 +1185,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 area._effectiveSort = effectiveIndex;
             });
 
-            // Sort by effective index
             inRouteAreas.sort((a, b) => a._effectiveSort - b._effectiveSort);
             otherAreas.sort((a, b) => a.name.localeCompare(b.name));
 
-            // Render - ALWAYS show both groups
-            // 1. First render today's route areas (with time)
             if (inRouteAreas.length > 0) {
                 inRouteAreas.forEach((area, index) => {
-                    // Pass explicit arguments to new getTimeSlot
-                    const timeSlot = getTimeSlot(index, today, area.name, null);
+                    const timeSlot = getTimeSlot(index, today, area.name);
                     createAreaButton(area, container, timeSlot);
                 });
             }
 
-            // 2. Then add separator if we have both groups
             if (inRouteAreas.length > 0 && otherAreas.length > 0) {
                 const separator = document.createElement('div');
                 separator.style.cssText = 'width: 100%; border-top: 2px solid #e5e7eb; margin: 1rem 0; grid-column: 1 / -1;';
                 container.appendChild(separator);
             }
 
-            // 3. Finally render other areas
             if (otherAreas.length > 0) {
                 otherAreas.forEach(area => {
                     createAreaButton(area, container);
@@ -1102,7 +1211,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.innerHTML = '<div style="color: #999; width: 100%; text-align: center;">No hay áreas registradas</div>';
             }
 
-            // Conservar el área que estaba abierta al repintar
             const current = areaDropdown.value;
             if (current) {
                 container.querySelectorAll('.area-btn').forEach(b => {
@@ -1112,7 +1220,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Pinta el semáforo (verde/amarillo/rojo) sobre los botones ya creados
     function applyRecency(container, recency) {
         container.querySelectorAll('.area-btn').forEach(btn => {
             let lastDate = null;
@@ -1129,21 +1236,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function createAreaButton(area, container, timeSlot = null) {
         const allIds = area.allIds || [area.id];
 
-        // El color del semáforo lo pone applyRecency() cuando llega
         const btn = document.createElement('button');
         btn.className = 'area-btn';
         btn.dataset.id = area.id;
         btn.dataset.allIds = allIds.join(',');
 
-        // Icono por defecto
         const iconContent = '<i class="fa-solid fa-building"></i>';
 
         const safeName = window.SecurityUtils
             ? window.SecurityUtils.escapeHTML(area.name)
             : area.name;
 
-        // Layout: Nombre arriba, Horario (si existe) pequeño al lado o abajo
-        // Usaremos flex en CSS, aquí solo estructura HTML
         let html = `<div style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.2;">
                         <span>${iconContent} ${safeName}</span>`;
 
@@ -1154,7 +1257,6 @@ document.addEventListener('DOMContentLoaded', () => {
         html += `</div>`;
 
         btn.innerHTML = html;
-        // Ajustar estilo del botón para permitir dos líneas
         btn.style.alignItems = 'center';
 
         btn.addEventListener('click', () => {
@@ -1165,7 +1267,6 @@ document.addEventListener('DOMContentLoaded', () => {
         container.appendChild(btn);
     }
 
-    // Helper: Week Number
     function getWeekNumber(d) {
         d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
         d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -1174,9 +1275,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return weekNo;
     }
 
-    // Mark "No Attendance" - When admin visits area but nobody shows up
     window.markNoAttendance = async function () {
-        const areaId = areaDropdown.value; // Note: This might need update if using buttons, but let's keep it safe for now as we have a hidden input
+        const areaId = areaDropdown.value;
         const sessionType = document.getElementById('session-type').value;
 
         if (!areaId) {
@@ -1184,17 +1284,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Get area name
-        // Since we are using buttons now, we need to get the name differently if the select is hidden/empty
-        // However, the hidden input is updated with ID. To get name, we might need to find the button or store it.
-        // For now let's try to get it from the select if populated, or find the active button.
         let areaName = 'Área Desconocida';
         const activeBtn = document.querySelector('.area-btn.active');
         if (activeBtn) {
             areaName = activeBtn.innerText.trim();
         } else {
             const areaSelect = document.getElementById('area-dropdown');
-            if (areaSelect && areaSelect.options.length > 0 && areaSelect.selectedIndex >= 0) {
+            if (areaSelect && areaSelect.options && areaSelect.options.length > 0 && areaSelect.selectedIndex >= 0) {
                 areaName = areaSelect.options[areaSelect.selectedIndex].text;
             }
         }
@@ -1206,9 +1302,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `Sesión: ${sessionType}\n\n` +
             `Esto quedará registrado para fines de seguimiento.`;
 
-        if (!confirm(confirmMsg)) {
-            return;
-        }
+        if (!confirm(confirmMsg)) return;
 
         const btn = document.getElementById('btn-no-attendance');
         const originalHTML = btn.innerHTML;
@@ -1216,8 +1310,9 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
 
         try {
-            // Create a special record in a "no_attendance_logs" collection
-            await db.collection('no_attendance_logs').add({
+            const batch = db.batch();
+            const docRef = db.collection('no_attendance_logs').doc();
+            batch.set(docRef, {
                 areaId: areaId,
                 areaName: areaName,
                 date: selectedDate,
@@ -1227,10 +1322,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 year: currentDate.getFullYear(),
                 adminEmail: auth.currentUser ? auth.currentUser.email : 'unknown'
             });
+            await commitBatchNonBlocking(batch);
 
             showToast(`✓ Registrado: Sin asistencia en ${areaName}`);
 
-            // Optional: Show a visual confirmation
             const emptyState = document.getElementById('empty-state');
             if (emptyState) {
                 emptyState.innerHTML = `
@@ -1243,7 +1338,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 emptyState.style.display = 'block';
                 employeeList.innerHTML = '';
             }
-
         } catch (error) {
             console.error('Error registrando sin asistencia:', error);
             alert('Error al guardar el registro. Intenta de nuevo.');

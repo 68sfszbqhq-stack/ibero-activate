@@ -1,37 +1,132 @@
-// Lógica de Pase de Lista Extemporáneo
-// Permite marcar asistencias para fechas pasadas
+// Lógica de Pase de Lista Extemporáneo (Offline-First)
+// Permite marcar asistencias para fechas pasadas usando caché local + semilla instantánea
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Verificar autenticación
     auth.onAuthStateChanged(user => {
-        if (!user) {
+        if (!user && navigator.onLine) {
             window.location.href = 'login.html';
         }
     });
 
-    // Elementos DOM
     const dateDisplay = document.getElementById('current-date');
     const datePicker = document.getElementById('date-picker');
     const areaDropdown = document.getElementById('area-dropdown');
     const employeeList = document.getElementById('employee-list');
     const emptyState = document.getElementById('empty-state');
 
-    // Variable para la fecha seleccionada
     let currentDate = null;
-
-    // Inicializar fecha sin restricción de máximo (permite fechas pasadas y futuras)
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 
-    // Cargar Áreas
+    const CACHE_EMPLOYEES = 'ia_cache_employees_v2';
+    const CACHE_AREAS = 'ia_cache_areas_v2';
+    const CACHE_DAILY_ATT_PREFIX = 'ia_cache_att_day_';
+    const seed = window.IA_OFFLINE_SEED || {};
+
+    function readCache(key) {
+        try {
+            const raw = localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) { return null; }
+    }
+    function writeCache(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* ignore */ }
+    }
+
+    async function getCollectionResilient(collectionRef, timeoutMs = 2200) {
+        return new Promise((resolve, reject) => {
+            let done = false;
+            const timer = setTimeout(async () => {
+                if (done) return;
+                try {
+                    const cacheSnap = await collectionRef.get({ source: 'cache' });
+                    if (!done && !cacheSnap.empty) {
+                        done = true;
+                        resolve(cacheSnap);
+                    }
+                } catch (_) { /* ignore */ }
+            }, timeoutMs);
+
+            collectionRef.get().then(snap => {
+                clearTimeout(timer);
+                if (!done) { done = true; resolve(snap); }
+            }).catch(async err => {
+                clearTimeout(timer);
+                if (done) return;
+                try {
+                    const cacheSnap = await collectionRef.get({ source: 'cache' });
+                    done = true;
+                    resolve(cacheSnap);
+                } catch (_) {
+                    done = true;
+                    reject(err);
+                }
+            });
+        });
+    }
+
+    function commitBatchNonBlocking(batch) {
+        return new Promise((resolve, reject) => {
+            let resolvedToUI = false;
+            const uiTimer = setTimeout(() => {
+                if (!resolvedToUI) {
+                    resolvedToUI = true;
+                    resolve({ queuedOffline: true });
+                }
+            }, 1200);
+
+            batch.commit().then(() => {
+                clearTimeout(uiTimer);
+                if (!resolvedToUI) {
+                    resolvedToUI = true;
+                    resolve({ queuedOffline: false });
+                }
+            }).catch(err => {
+                clearTimeout(uiTimer);
+                if (!resolvedToUI) {
+                    resolvedToUI = true;
+                    reject(err);
+                }
+            });
+        });
+    }
+
+    let allEmployees = readCache(CACHE_EMPLOYEES);
+    if (!allEmployees || !allEmployees.length) {
+        allEmployees = Array.isArray(seed.employees) && seed.employees.length ? seed.employees : null;
+    } else if (Array.isArray(seed.employees) && seed.employees.length > allEmployees.length) {
+        const byId = new Map(allEmployees.map(e => [e.id, e]));
+        seed.employees.forEach(e => { if (!byId.has(e.id)) byId.set(e.id, e); });
+        allEmployees = [...byId.values()].sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+        writeCache(CACHE_EMPLOYEES, allEmployees);
+    }
+
+    getCollectionResilient(db.collection('employees'), 2200).then(snap => {
+        if (!snap || snap.empty) return;
+        const list = [];
+        snap.forEach(doc => {
+            const d = doc.data();
+            list.push({
+                id: doc.id,
+                fullName: d.fullName || d.name || '',
+                accountNumber: String(d.accountNumber || ''),
+                areaId: d.areaId || ''
+            });
+        });
+        list.sort((a, b) => a.fullName.localeCompare(b.fullName));
+        allEmployees = list;
+        writeCache(CACHE_EMPLOYEES, list);
+        if (currentDate && areaDropdown.value) loadEmployees();
+    }).catch(() => {});
+
+    // Cargar Áreas inmediatamente
     loadAreas();
 
-    // Event Listeners
     areaDropdown.addEventListener('change', loadEmployees);
     datePicker.addEventListener('change', (e) => {
         if (e.target.value) {
-            currentDate = new Date(e.target.value + 'T12:00:00'); // Mediodía para evitar problemas de zona horaria
+            currentDate = new Date(e.target.value + 'T12:00:00');
             updateDateDisplay();
-            loadEmployees(); // Recargar empleados para la nueva fecha
+            loadEmployees();
         }
     });
 
@@ -45,25 +140,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadAreas() {
+        let cached = readCache(CACHE_AREAS);
+        if (!cached || !cached.length) {
+            cached = Array.isArray(seed.areas) && seed.areas.length ? seed.areas : null;
+        }
+        if (cached && cached.length) {
+            populateAreaSelect(cached);
+        }
+
         try {
-            const snapshot = await db.collection('areas').get();
+            const snapshot = await getCollectionResilient(db.collection('areas'), 2000);
+            if (snapshot && !snapshot.empty) {
+                const fresh = [];
+                snapshot.forEach(doc => fresh.push({ id: doc.id, name: doc.data().name || '' }));
+                writeCache(CACHE_AREAS, fresh);
+                populateAreaSelect(fresh);
+            }
+        } catch (error) {
+            console.warn('Usando áreas en caché local para pase extemporáneo:', error);
+        }
+
+        function populateAreaSelect(areaDocs) {
+            const prevValue = areaDropdown.value;
             areaDropdown.innerHTML = '<option value="">-- Seleccione un área --</option>';
 
-            // Deduplicar por nombre normalizado
-            const normalize = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-            const grouped = new Map(); // normName -> { name, ids[] }
+            const normalize = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+            const grouped = new Map();
 
-            snapshot.forEach(doc => {
-                const area = doc.data();
-                const normName = normalize(area.name);
+            areaDocs.forEach(doc => {
+                const normName = normalize(doc.name);
                 if (grouped.has(normName)) {
                     grouped.get(normName).ids.push(doc.id);
                 } else {
-                    grouped.set(normName, { name: area.name, ids: [doc.id] });
+                    grouped.set(normName, { name: doc.name, ids: [doc.id] });
                 }
             });
 
-            // Ordenar alfabéticamente por nombre visible
             const sorted = [...grouped.values()].sort((a, b) => a.name.localeCompare(b.name));
 
             sorted.forEach(group => {
@@ -72,17 +184,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 option.textContent = group.name;
                 areaDropdown.appendChild(option);
             });
-        } catch (error) {
-            console.error('Error cargando áreas:', error);
+
+            if (prevValue) areaDropdown.value = prevValue;
         }
     }
 
+    let attendanceByEmp = new Map();
+
     async function loadEmployees() {
         const areaValue = areaDropdown.value;
+        employeeList.innerHTML = '';
 
-        employeeList.innerHTML = ''; // Limpiar lista
-
-        // Validar que se haya seleccionado fecha y área
         if (!currentDate) {
             emptyState.style.display = 'block';
             emptyState.innerHTML = `
@@ -103,48 +215,54 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Ocultar empty state y mostrar loading
         emptyState.style.display = 'none';
-        employeeList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem;"></i><br><br>Cargando empleados...</div>';
-
         const areaIds = areaValue.includes(',') ? areaValue.split(',') : [areaValue];
+        const selectedDate = currentDate.toISOString().split('T')[0];
 
+        // 1. Pintar trabajadores al instante desde memoria/caché/semilla
+        let employees = (allEmployees || []).filter(e => areaIds.includes(e.areaId));
+        employees.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+
+        if (employees.length === 0) {
+            employeeList.innerHTML = '<div class="no-data">No hay empleados en esta área</div>';
+            return;
+        }
+
+        const cachedDay = readCache(CACHE_DAILY_ATT_PREFIX + selectedDate) || {};
+        attendanceByEmp = new Map(Object.entries(cachedDay));
+
+        employees.forEach(emp => {
+            const st = attendanceByEmp.get(emp.id);
+            createEmployeeCard(emp.id, emp, st ? st.status : null);
+        });
+
+        // 2. Consultar asistencias de esa fecha en una sola consulta top-level (en vez de N consultas individuales)
         try {
-            // 1. Obtener empleados del área (soporta múltiples IDs con 'in')
-            const snapshot = await db.collection('employees')
-                .where('areaId', 'in', areaIds)
-                .get();
+            const snap = await getCollectionResilient(
+                db.collection('attendances').where('date', '==', selectedDate),
+                2200
+            );
+            if (snap) {
+                const map = new Map();
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    if (d.employeeId) {
+                        map.set(d.employeeId, { status: d.status || 'completed', docId: doc.id });
+                    }
+                });
+                attendanceByEmp = map;
+                const obj = {};
+                map.forEach((v, k) => { obj[k] = v; });
+                writeCache(CACHE_DAILY_ATT_PREFIX + selectedDate, obj);
 
-            employeeList.innerHTML = ''; // Limpiar mensaje de carga
-
-            if (snapshot.empty) {
-                employeeList.innerHTML = '<div class="no-data">No hay empleados en esta área</div>';
-                return;
+                employeeList.querySelectorAll('.employee-card').forEach(card => {
+                    const empId = card.dataset.id;
+                    const entry = attendanceByEmp.get(empId);
+                    paintCard(card, entry ? entry.status : null);
+                });
             }
-
-            // Convertir a array y ordenar en cliente
-            let employees = [];
-            snapshot.forEach(doc => {
-                employees.push({ id: doc.id, ...doc.data() });
-            });
-
-            employees.sort((a, b) => a.fullName.localeCompare(b.fullName));
-
-            // 2. Asistencia de cada empleado en la FECHA SELECCIONADA
-            //    (consultas en paralelo, antes iban una por una)
-            const selectedDate = currentDate.toISOString().split('T')[0];
-            const statuses = await Promise.all(employees.map(emp =>
-                db.collection('employees').doc(emp.id).collection('attendance')
-                    .where('date', '==', selectedDate).get()
-                    .then(snap => snap.empty ? null : snap.docs[0].data().status || 'active')
-            ));
-
-            // 3. Renderizar tarjetas
-            employees.forEach((emp, i) => createEmployeeCard(emp.id, emp, statuses[i]));
-
         } catch (error) {
-            console.error('Error cargando empleados:', error);
-            employeeList.innerHTML = '<div class="error">Error al cargar datos</div>';
+            console.warn('Mostrando estado en caché para fecha:', selectedDate, error);
         }
     }
 
@@ -164,13 +282,10 @@ document.addEventListener('DOMContentLoaded', () => {
         card.querySelector('p').textContent = `#${emp.accountNumber}`;
         paintCard(card, status);
 
-        // Click Event: Toggle Asistencia
         card.addEventListener('click', () => toggleAttendance(card, id, emp));
-
         employeeList.appendChild(card);
     }
 
-    // Igual que el pase de lista: dos palomitas = completa; una = registro viejo
     function paintCard(card, status) {
         card.dataset.status = status || 'absent';
         card.classList.toggle('selected', !!status);
@@ -181,8 +296,6 @@ document.addEventListener('DOMContentLoaded', () => {
         card.querySelector('.card-icon').innerHTML = icon;
     }
 
-    // Un toque = asistencia completa (dos palomitas, +20 pts), como en el pase
-    // de lista. Tocar a alguien que ya tiene dos la quita y resta los puntos.
     async function toggleAttendance(card, employeeId, employeeData) {
         if (card.classList.contains('processing')) return;
 
@@ -191,6 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const areaValue = areaDropdown.value;
         const areaId = employeeData.areaId || areaValue.split(',')[0];
         const empRef = db.collection('employees').doc(employeeId);
+        const existingEntry = attendanceByEmp.get(employeeId);
 
         if (currentStatus === 'completed') {
             const ok = confirm(`⚠️ ¿Quitar la asistencia del ${selectedDate} de ${employeeData.fullName}?\n\nSe le restan los 20 puntos que ganó.`);
@@ -198,64 +312,64 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         card.classList.add('processing');
-        paintCard(card, currentStatus === 'completed' ? null : 'completed'); // al instante
+        paintCard(card, currentStatus === 'completed' ? null : 'completed');
 
         try {
-            // Registros de ese día (subcolección, top-level y feedback)
-            const [subSnap, topSnap, fbSnap] = await Promise.all([
-                empRef.collection('attendance').where('date', '==', selectedDate).get(),
-                db.collection('attendances').where('employeeId', '==', employeeId).where('date', '==', selectedDate).get(),
-                empRef.collection('feedback').where('date', '==', selectedDate).get()
-            ]);
             const batch = db.batch();
 
             if (currentStatus === 'completed') {
-                // QUITAR
-                let pointsToDeduct = 0;
-                subSnap.forEach(doc => {
-                    if (doc.data().status === 'completed') pointsToDeduct += 20;
-                    batch.delete(doc.ref);
-                    batch.delete(db.collection('attendances').doc(doc.id));
-                });
-                topSnap.forEach(doc => batch.delete(doc.ref));
-                fbSnap.forEach(doc => batch.delete(doc.ref));
-                if (pointsToDeduct > 0) {
-                    batch.update(empRef, { points: firebase.firestore.FieldValue.increment(-pointsToDeduct) });
+                if (existingEntry && existingEntry.docId) {
+                    batch.delete(empRef.collection('attendance').doc(existingEntry.docId));
+                    batch.delete(db.collection('attendances').doc(existingEntry.docId));
+                    batch.update(empRef, { points: firebase.firestore.FieldValue.increment(-20) });
+                } else {
+                    const [subSnap, topSnap, fbSnap] = await Promise.all([
+                        getCollectionResilient(empRef.collection('attendance').where('date', '==', selectedDate), 1800),
+                        getCollectionResilient(db.collection('attendances').where('employeeId', '==', employeeId).where('date', '==', selectedDate), 1800),
+                        getCollectionResilient(empRef.collection('feedback').where('date', '==', selectedDate), 1800)
+                    ]);
+                    let pointsToDeduct = 0;
+                    subSnap.forEach(doc => {
+                        if (doc.data().status === 'completed') pointsToDeduct += 20;
+                        batch.delete(doc.ref);
+                        batch.delete(db.collection('attendances').doc(doc.id));
+                    });
+                    topSnap.forEach(doc => batch.delete(doc.ref));
+                    fbSnap.forEach(doc => batch.delete(doc.ref));
+                    if (pointsToDeduct > 0) {
+                        batch.update(empRef, { points: firebase.firestore.FieldValue.increment(-pointsToDeduct) });
+                    }
                 }
-                await batch.commit();
+                attendanceByEmp.delete(employeeId);
+                const obj = {};
+                attendanceByEmp.forEach((v, k) => { obj[k] = v; });
+                writeCache(CACHE_DAILY_ATT_PREFIX + selectedDate, obj);
+
+                await commitBatchNonBlocking(batch);
                 showToast(`❌ Asistencia eliminada: ${employeeData.fullName}`);
                 return;
             }
 
-            // MARCAR (sin palomita, o completar una sola de antes)
-            let attendanceId;
-            if (!subSnap.empty) {
-                const existing = subSnap.docs[0];
-                attendanceId = existing.id;
-                batch.update(existing.ref, { status: 'completed' });
-                topSnap.forEach(doc => batch.update(doc.ref, { status: 'completed' }));
-            } else {
-                // El periodo sale de la FECHA (puede ser de un periodo pasado)
-                const periodId = window.Periods
-                    ? await window.Periods.getPeriodIdForDate(selectedDate)
-                    : null;
-                const subRef = empRef.collection('attendance').doc();
-                attendanceId = subRef.id;
-                const attendanceData = {
-                    employeeId: employeeId,
-                    employeeName: employeeData.fullName,
-                    areaId: areaId,
-                    date: selectedDate,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    status: 'completed',
-                    weekNumber: getWeekNumber(currentDate),
-                    year: currentDate.getFullYear(),
-                    periodId: periodId,
-                    isLate: true // Marcar como asistencia extemporánea
-                };
-                batch.set(subRef, attendanceData);
-                batch.set(db.collection('attendances').doc(attendanceId), attendanceData);
-            }
+            // MARCAR ASISTENCIA EXTEMPORÁNEA
+            const periodId = window.Periods
+                ? await window.Periods.getPeriodIdForDate(selectedDate)
+                : null;
+            const subRef = empRef.collection('attendance').doc();
+            const attendanceId = subRef.id;
+            const attendanceData = {
+                employeeId: employeeId,
+                employeeName: employeeData.fullName,
+                areaId: areaId,
+                date: selectedDate,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                status: 'completed',
+                weekNumber: getWeekNumber(currentDate),
+                year: currentDate.getFullYear(),
+                periodId: periodId,
+                isLate: true
+            };
+            batch.set(subRef, attendanceData);
+            batch.set(db.collection('attendances').doc(attendanceId), attendanceData);
 
             batch.update(empRef, {
                 points: firebase.firestore.FieldValue.increment(20),
@@ -271,21 +385,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 autoGenerated: true
             });
 
-            await batch.commit();
-            showToast(`✅ Asistencia completa (+20 pts): ${employeeData.fullName}`);
+            attendanceByEmp.set(employeeId, { status: 'completed', docId: attendanceId });
+            const obj = {};
+            attendanceByEmp.forEach((v, k) => { obj[k] = v; });
+            writeCache(CACHE_DAILY_ATT_PREFIX + selectedDate, obj);
+
+            const res = await commitBatchNonBlocking(batch);
+            if (res && res.queuedOffline) {
+                showToast(`📶 Guardado en iPhone (+20 pts): ${employeeData.fullName}`);
+            } else {
+                showToast(`✅ Asistencia completa (+20 pts): ${employeeData.fullName}`);
+            }
 
         } catch (error) {
             console.error('Error actualizando asistencia:', error);
-            paintCard(card, currentStatus === 'absent' ? null : currentStatus); // regresar
+            paintCard(card, currentStatus === 'absent' ? null : currentStatus);
             showToast('❌ No se guardó. Revisa tu conexión e intenta de nuevo.');
         } finally {
             card.classList.remove('processing');
         }
     }
 
-    // Helper: Toast Notification
     function showToast(message) {
-        // Crear elemento toast si no existe
         let toast = document.getElementById('toast');
         if (!toast) {
             toast = document.createElement('div');
@@ -305,7 +426,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { toast.style.opacity = '0'; }, 3000);
     }
 
-    // Helper: Week Number
     function getWeekNumber(d) {
         d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
         d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));

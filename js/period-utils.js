@@ -19,8 +19,38 @@
 (function () {
     'use strict';
 
+    const STORAGE_KEY_PERIODS = 'ia_cache_periods_v1';
     let _activePeriodCache = null;   // { id, ...data }
     let _activePeriodPromise = null; // dedup de peticiones concurrentes
+
+    function readStoredPeriods() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY_PERIODS);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed) && parsed.length) return parsed;
+            }
+        } catch (e) { /* ignore */ }
+        if (window.IA_OFFLINE_SEED && Array.isArray(window.IA_OFFLINE_SEED.periods) && window.IA_OFFLINE_SEED.periods.length) {
+            return window.IA_OFFLINE_SEED.periods;
+        }
+        return [];
+    }
+
+    function writeStoredPeriods(list) {
+        try {
+            if (Array.isArray(list) && list.length) {
+                localStorage.setItem(STORAGE_KEY_PERIODS, JSON.stringify(list));
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    function withTimeout(promise, ms) {
+        return new Promise((resolve, reject) => {
+            const t = setTimeout(() => reject(new Error('timeout')), ms);
+            promise.then(v => { clearTimeout(t); resolve(v); }, err => { clearTimeout(t); reject(err); });
+        });
+    }
 
     // Metadatos de cada temporada (etiqueta, icono, color)
     const SEASON_LABELS = {
@@ -31,16 +61,25 @@
     };
 
     // Devuelve TODOS los periodos, del más reciente al más antiguo.
+    // Con mala señal usa caché local o semilla en ≤2s para no colgar la pantalla.
     async function getAllPeriods() {
+        const fallback = readStoredPeriods();
         try {
-            const snap = await db.collection('periods').get();
+            const snap = await withTimeout(db.collection('periods').get(), 2200);
             const periods = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            // Orden por fecha de inicio descendente (client-side para no exigir índice)
             periods.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
-            return periods;
+            if (periods.length) writeStoredPeriods(periods);
+            return periods.length ? periods : fallback;
         } catch (e) {
-            console.error('[periods] Error listando periodos:', e);
-            return [];
+            try {
+                const cacheSnap = await db.collection('periods').get({ source: 'cache' });
+                if (!cacheSnap.empty) {
+                    const periods = cacheSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    periods.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+                    return periods;
+                }
+            } catch (_) { /* ignore */ }
+            return fallback;
         }
     }
 
@@ -50,26 +89,32 @@
         if (_activePeriodCache && !force) return _activePeriodCache;
         if (_activePeriodPromise && !force) return _activePeriodPromise;
 
+        // Si tenemos respaldo local y no se pide forzar red, responder rápido y refrescar detrás
+        const stored = readStoredPeriods();
+        const storedActive = stored.find(p => p.isActive) || stored[0] || null;
+        if (storedActive && !force) {
+            _activePeriodCache = storedActive;
+            // Actualizar en segundo plano sin bloquear
+            db.collection('periods').get().then(snap => {
+                if (!snap.empty) {
+                    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    list.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+                    writeStoredPeriods(list);
+                    const active = list.find(p => p.isActive) || list[0] || null;
+                    if (active) _activePeriodCache = active;
+                }
+            }).catch(() => {});
+            return _activePeriodCache;
+        }
+
         _activePeriodPromise = (async () => {
             try {
-                const snap = await db.collection('periods')
-                    .where('isActive', '==', true)
-                    .limit(1)
-                    .get();
-
-                if (!snap.empty) {
-                    const doc = snap.docs[0];
-                    _activePeriodCache = { id: doc.id, ...doc.data() };
-                    return _activePeriodCache;
-                }
-
-                // Fallback: el periodo más reciente
                 const all = await getAllPeriods();
-                _activePeriodCache = all[0] || null;
+                _activePeriodCache = all.find(p => p.isActive) || all[0] || null;
                 return _activePeriodCache;
             } catch (e) {
                 console.error('[periods] Error obteniendo periodo activo:', e);
-                return null;
+                return storedActive;
             } finally {
                 _activePeriodPromise = null;
             }
