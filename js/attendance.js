@@ -2,15 +2,18 @@
 // Muestra áreas, rutas, semáforo y colaboradores en 0 ms incluso sin señal de Wi-Fi,
 // y encola los pases de lista sin quedarse colgado cuando la red está lenta ("lie-fi").
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Verificar autenticación (no redirigir en falso si aún está cargando o sin red)
-    let authChecked = false;
-    auth.onAuthStateChanged(user => {
-        authChecked = true;
-        if (!user && navigator.onLine) {
-            window.location.href = 'login.html';
-        }
-    });
+function initAttendanceApp() {
+    if (window.__iaAttendanceInitialized) return;
+    window.__iaAttendanceInitialized = true;
+
+    // Verificar autenticación (solo si Firebase ya cargó; si no, las áreas y empleados siguen visibles)
+    if (typeof auth !== 'undefined' && auth && typeof auth.onAuthStateChanged === 'function') {
+        auth.onAuthStateChanged(user => {
+            if (!user && navigator.onLine) {
+                window.location.href = 'login.html';
+            }
+        });
+    }
 
     // Elementos DOM
     const dateDisplay = document.getElementById('current-date');
@@ -355,11 +358,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function selectArea(areaIdOrIds, btnElement) {
         const hiddenInput = document.getElementById('area-dropdown');
         if (hiddenInput) hiddenInput.value = areaIdOrIds;
+        const quickSelect = document.getElementById('mobile-area-select');
+        if (quickSelect && quickSelect.value !== areaIdOrIds) quickSelect.value = areaIdOrIds;
 
         document.querySelectorAll('.area-btn').forEach(b => b.classList.remove('active'));
         if (btnElement) btnElement.classList.add('active');
 
         loadEmployees();
+        if (employeeList && window.innerWidth <= 900) {
+            setTimeout(() => employeeList.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+        }
     }
 
     // Asistencias del día: empleadoId -> { status, docId, count }
@@ -1211,6 +1219,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.innerHTML = '<div style="color: #999; width: 100%; text-align: center;">No hay áreas registradas</div>';
             }
 
+            // Sincronizar también el selector rápido móvil (#mobile-area-select)
+            const quickSelect = document.getElementById('mobile-area-select');
+            if (quickSelect) {
+                const prevVal = quickSelect.value || areaDropdown.value;
+                quickSelect.innerHTML = '<option value="">-- Toca aquí para elegir Área rápido --</option>';
+                const allSorted = [...areas].sort((a, b) => a.name.localeCompare(b.name));
+                allSorted.forEach(a => {
+                    const opt = document.createElement('option');
+                    opt.value = (a.allIds || [a.id]).join(',');
+                    opt.textContent = a.name;
+                    quickSelect.appendChild(opt);
+                });
+                if (prevVal) quickSelect.value = prevVal;
+            }
+
             const current = areaDropdown.value;
             if (current) {
                 container.querySelectorAll('.area-btn').forEach(b => {
@@ -1346,4 +1369,10 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.innerHTML = originalHTML;
         }
     };
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAttendanceApp);
+} else {
+    initAttendanceApp();
+}
