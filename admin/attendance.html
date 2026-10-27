@@ -214,10 +214,7 @@
 
             <div class="filters-bar">
                 <div class="filter-group">
-                    <label for="mobile-area-select">Seleccionar Área / Departamento</label>
-                    <select id="mobile-area-select" style="margin-bottom: 0.75rem; font-weight: 600;">
-                        <option value="">-- Toca aquí para elegir Área rápido (36 áreas) --</option>
-                    </select>
+                    <label for="area-dropdown">Seleccionar Área / Departamento</label>
                     <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center; font-size:0.8rem; color:#6b7280; margin:0 0 0.6rem;">
                         <span style="font-weight:600;">Semáforo:</span>
                         <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#10b981; vertical-align:middle; margin-right:4px;"></span>Pase de lista en la semana (≤7 días)</span>
@@ -296,7 +293,6 @@ window.IA_OFFLINE_SEED = {"generatedAt":"2026-10-26T23:36:16.565Z","areas":[{"id
             var seed = window.IA_OFFLINE_SEED;
             if (!seed || !seed.areas) return;
             var container = document.getElementById("area-buttons-container");
-            var quickSelect = document.getElementById("mobile-area-select");
             var hiddenInput = document.getElementById("area-dropdown");
             var empList = document.getElementById("employee-list");
             var emptyState = document.getElementById("empty-state");
@@ -314,34 +310,6 @@ window.IA_OFFLINE_SEED = {"generatedAt":"2026-10-26T23:36:16.565Z","areas":[{"id
             var uniqueAreas = Array.from(grouped.values()).sort(function(a, b) {
                 return a.name.localeCompare(b.name);
             });
-
-            if (quickSelect && quickSelect.options.length <= 1) {
-                uniqueAreas.forEach(function(a) {
-                    var opt = document.createElement("option");
-                    opt.value = a.allIds.join(",");
-                    opt.textContent = a.name;
-                    quickSelect.appendChild(opt);
-                });
-                quickSelect.addEventListener("change", function() {
-                    var val = quickSelect.value;
-                    if (hiddenInput) {
-                        hiddenInput.value = val;
-                        hiddenInput.dispatchEvent(new Event("change"));
-                    }
-                    if (container) {
-                        container.querySelectorAll(".area-btn").forEach(function(b) {
-                            b.classList.toggle("active", b.dataset.allIds === val);
-                        });
-                    }
-                    // Fallback inmediato si attendance.js aún no termina de iniciar
-                    if (val && empList && empList.children.length === 0) {
-                        renderFallbackEmployees(val);
-                    }
-                    if (empList && val) {
-                        empList.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }
-                });
-            }
 
             function renderFallbackEmployees(areaIdsCsv) {
                 if (!empList || !seed.employees) return;
@@ -378,7 +346,6 @@ window.IA_OFFLINE_SEED = {"generatedAt":"2026-10-26T23:36:16.565Z","areas":[{"id
                     btn.innerHTML = "<div style=\"display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;\"><span><i class=\"fa-solid fa-building\"></i> " + a.name + "</span></div>";
                     btn.addEventListener("click", function() {
                         var val = a.allIds.join(",");
-                        if (quickSelect) quickSelect.value = val;
                         if (hiddenInput) {
                             hiddenInput.value = val;
                             hiddenInput.dispatchEvent(new Event("change"));
@@ -401,11 +368,11 @@ window.IA_OFFLINE_SEED = {"generatedAt":"2026-10-26T23:36:16.565Z","areas":[{"id
     </script>
 
     <!-- Security Utils y lógica principal -->
-    <script defer src="../js/security-utils.js?v=8"></script>
-    <script defer src="../js/firebase-config.js?v=8"></script>
-    <script defer src="../js/roles.js?v=8"></script>
-    <script defer src="../js/period-utils.js?v=8"></script>
-    <script defer src="../js/attendance.js?v=8"></script>
+    <script defer src="../js/security-utils.js?v=9"></script>
+    <script defer src="../js/firebase-config.js?v=9"></script>
+    <script defer src="../js/roles.js?v=9"></script>
+    <script defer src="../js/period-utils.js?v=9"></script>
+    <script defer src="../js/attendance.js?v=9"></script>
 
     <!-- QR Code Script -->
     <script>
