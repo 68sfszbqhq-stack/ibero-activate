@@ -47,6 +47,85 @@ function initAttendanceApp() {
     // Semilla integrada en js/offline-seed.js como respaldo inmediato si localStorage está vacío
     const seed = window.IA_OFFLINE_SEED || {};
 
+    // CONFIGURACIÓN DEL RECORRIDO SEMANAL (declarado al inicio para que renderAreas síncrono lo tenga en 0ms)
+    const WEEKLY_ROUTE = {
+        1: [ // LUNES
+            'PLANTA FÍSICA',
+            'ADMISIONES',
+            'DIRECCION DE PERSONAL',
+            'TESORERIA',
+            'COMPRAS',
+            'EDUCACIÓN CONTINUA',
+            'EGRESADOS',
+            'DEPARTAMENTO CIENCIAS DE LA SALUD',
+            'HUMANIDADES',
+            'INSTITUTO DE INVESTIGACIONES EN MEDIO AMBIENTE'
+        ],
+        2: [ // MARTES
+            'SERVICIOS ESCOLARES',
+            'DIRECCIONES GENERALES',
+            'HUMANIDADES',
+            'DEPARTAMENTO DE CIENCIAS SOCIALES',
+            'IDIT',
+            'PROTECCIÓN UNIVERSITARIA',
+            'AIDEL',
+            'SERVICIO SOCIAL',
+            'REFLEXIÓN UNIVERSITARIA',
+            'DADA',
+            'PLANEACIÓN Y EVALUACIÓN',
+            'CENTRO DE PARTICIPACIÓN Y DIFUSIÓN UNIVERSITARIA',
+            'MEDIOS UNIVERSITARIOS'
+        ],
+        3: [ // MIÉRCOLES
+            'PLANTA FÍSICA',
+            'ADMISIONES',
+            'DIRECCION DE PERSONAL',
+            'TESORERIA',
+            'FORMACIÓN DE PROFESORES',
+            'EDUCACIÓN CONTINUA',
+            'EGRESADOS',
+            'DEPARTAMENTO CIENCIAS DE LA SALUD',
+            'HUMANIDADES',
+            'INSTITUTO DE INVESTIGACIONES EN MEDIO AMBIENTE'
+        ],
+        4: [ // JUEVES
+            'SERVICIOS ESCOLARES',
+            'PREPARATORIA IBERO',
+            'HUMANIDADES',
+            'DEPARTAMENTO DE CIENCIAS SOCIALES',
+            'IDIT',
+            'PROTECCIÓN UNIVERSITARIA',
+            'AIDEL',
+            'SERVICIO SOCIAL',
+            'REFLEXIÓN UNIVERSITARIA',
+            'DADA',
+            'PLANEACIÓN Y EVALUACIÓN',
+            'CENTRO DE PARTICIPACIÓN Y DIFUSIÓN UNIVERSITARIA',
+            'MEDIOS UNIVERSITARIOS'
+        ],
+        5: [ // VIERNES
+            'VILLAS IBERO',
+            'PREPARATORIA IBERO',
+            'MARKETING',
+            'DIRECCION DE COMUNICACION INSTITUCIONAL',
+            'DEFENSORIA DE LOS DERECHOS UNIVERSITARIOS',
+            'IBERO ACTIVATE',
+            'NUTRICIÓN',
+            'LAINES',
+            'OFICINA DE ATEN TECNOLOGICA'
+        ]
+    };
+
+    const TUESDAY_SCHEDULE_MAP = [
+        { name: 'SERVICIOS ESCOLARES', time: '10:00 - 10:20' },
+        { name: 'DIRECCIONES GENERALES', time: '10:20 - 11:00' },
+        { name: 'IDIT', time: '11:00 - 11:20' },
+        { name: 'PROTECCION UNIVERSITARIA', time: '11:20 - 11:40' },
+        { name: 'AIDEL', time: '11:40 - 12:00' },
+        { name: 'PLANEACIÓN Y EVALUACIÓN', time: '12:00 - 12:30' },
+        { name: 'MEDIOS UNIVERSITARIOS', time: '12:30 - 13:00' }
+    ];
+
     // Periodo (temporada) activo
     let activePeriodId = null;
     let activePeriod = null;
@@ -928,85 +1007,6 @@ function initAttendanceApp() {
         toast.style.opacity = '1';
         setTimeout(() => { toast.style.opacity = '0'; }, 3000);
     }
-
-    // CONFIGURACIÓN DEL RECORRIDO SEMANAL
-    const WEEKLY_ROUTE = {
-        1: [ // LUNES
-            'PLANTA FÍSICA',
-            'ADMISIONES',
-            'DIRECCION DE PERSONAL',
-            'TESORERIA',
-            'COMPRAS',
-            'EDUCACIÓN CONTINUA',
-            'EGRESADOS',
-            'DEPARTAMENTO CIENCIAS DE LA SALUD',
-            'HUMANIDADES',
-            'INSTITUTO DE INVESTIGACIONES EN MEDIO AMBIENTE'
-        ],
-        2: [ // MARTES
-            'SERVICIOS ESCOLARES',
-            'DIRECCIONES GENERALES',
-            'HUMANIDADES',
-            'DEPARTAMENTO DE CIENCIAS SOCIALES',
-            'IDIT',
-            'PROTECCIÓN UNIVERSITARIA',
-            'AIDEL',
-            'SERVICIO SOCIAL',
-            'REFLEXIÓN UNIVERSITARIA',
-            'DADA',
-            'PLANEACIÓN Y EVALUACIÓN',
-            'CENTRO DE PARTICIPACIÓN Y DIFUSIÓN UNIVERSITARIA',
-            'MEDIOS UNIVERSITARIOS'
-        ],
-        3: [ // MIÉRCOLES
-            'PLANTA FÍSICA',
-            'ADMISIONES',
-            'DIRECCION DE PERSONAL',
-            'TESORERIA',
-            'FORMACIÓN DE PROFESORES',
-            'EDUCACIÓN CONTINUA',
-            'EGRESADOS',
-            'DEPARTAMENTO CIENCIAS DE LA SALUD',
-            'HUMANIDADES',
-            'INSTITUTO DE INVESTIGACIONES EN MEDIO AMBIENTE'
-        ],
-        4: [ // JUEVES
-            'SERVICIOS ESCOLARES',
-            'PREPARATORIA IBERO',
-            'HUMANIDADES',
-            'DEPARTAMENTO DE CIENCIAS SOCIALES',
-            'IDIT',
-            'PROTECCIÓN UNIVERSITARIA',
-            'AIDEL',
-            'SERVICIO SOCIAL',
-            'REFLEXIÓN UNIVERSITARIA',
-            'DADA',
-            'PLANEACIÓN Y EVALUACIÓN',
-            'CENTRO DE PARTICIPACIÓN Y DIFUSIÓN UNIVERSITARIA',
-            'MEDIOS UNIVERSITARIOS'
-        ],
-        5: [ // VIERNES
-            'VILLAS IBERO',
-            'PREPARATORIA IBERO',
-            'MARKETING',
-            'DIRECCION DE COMUNICACION INSTITUCIONAL',
-            'DEFENSORIA DE LOS DERECHOS UNIVERSITARIOS',
-            'IBERO ACTIVATE',
-            'NUTRICIÓN',
-            'LAINES',
-            'OFICINA DE ATEN TECNOLOGICA'
-        ]
-    };
-
-    const TUESDAY_SCHEDULE_MAP = [
-        { name: 'SERVICIOS ESCOLARES', time: '10:00 - 10:20' },
-        { name: 'DIRECCIONES GENERALES', time: '10:20 - 11:00' },
-        { name: 'IDIT', time: '11:00 - 11:20' },
-        { name: 'PROTECCION UNIVERSITARIA', time: '11:20 - 11:40' },
-        { name: 'AIDEL', time: '11:40 - 12:00' },
-        { name: 'PLANEACIÓN Y EVALUACIÓN', time: '12:00 - 12:30' },
-        { name: 'MEDIOS UNIVERSITARIOS', time: '12:30 - 13:00' }
-    ];
 
     function getTimeSlot(index, dayIndex, areaName) {
         if (dayIndex === 2 || dayIndex === 4) {

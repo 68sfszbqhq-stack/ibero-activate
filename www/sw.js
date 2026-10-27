@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ibero-activate-v9';
+const CACHE_NAME = 'ibero-activate-v10';
 const ASSETS_TO_CACHE = [
     './',
     'index.html',
@@ -84,13 +84,13 @@ self.addEventListener('fetch', (event) => {
 function fetchAndCache(request) {
     return fetch(request).then((response) => {
         if (response && (response.ok || response.type === 'opaque')) {
-            const responseClone = response.clone();
+            const responseClone1 = response.clone();
+            const cleanUrl = request.url.split('?')[0];
+            const responseClone2 = cleanUrl !== request.url ? response.clone() : null;
             caches.open(CACHE_NAME).then(cache => {
-                cache.put(request, responseClone);
-                // Si tiene ?v=..., actualizar también la entrada base sin query string
-                const cleanUrl = request.url.split('?')[0];
-                if (cleanUrl !== request.url) {
-                    cache.put(cleanUrl, response.clone());
+                cache.put(request, responseClone1);
+                if (responseClone2) {
+                    cache.put(cleanUrl, responseClone2);
                 }
             });
         }
