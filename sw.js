@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ibero-activate-v10';
+const CACHE_NAME = 'ibero-activate-v11';
 const ASSETS_TO_CACHE = [
     './',
     'index.html',
