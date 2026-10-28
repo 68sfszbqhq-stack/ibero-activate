@@ -327,12 +327,131 @@
             align-items: center;
             gap: 8px;
         }
-        .aviso-final { text-align: center; max-width: 580px; }
-        .aviso-final h2 { font-size: 3.4rem; font-weight: 900; color: var(--accent); }
-        .aviso-final p { font-size: 1.35rem; margin: 12px 0 26px; color: var(--text); line-height: 1.45; }
+        .aviso-final { text-align: center; max-width: 640px; width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+        .aviso-final h2 { font-size: 2.8rem; font-weight: 900; color: var(--accent); line-height: 1.1; }
+        .aviso-final p { font-size: 1.2rem; margin: 10px 0 18px; color: var(--text); line-height: 1.45; }
         .teclas { font-size: .82rem; color: var(--muted); margin-top: 12px; }
         kbd { background: var(--line); border-radius: 4px; padding: 2px 6px; font-family: monospace; color: #fff; }
         #error-conexion { position: fixed; top: 0; left: 0; right: 0; background: #b91c1c; color: #fff; padding: 10px; text-align: center; font-weight: 700; z-index: 99; }
+
+        /* Selector de Área y Modal de Ranking Semanal */
+        .caja-area-input {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .input-area {
+            width: 100%;
+            font: inherit;
+            font-size: .95rem;
+            font-weight: 700;
+            padding: 9px 12px;
+            border-radius: 9px;
+            border: 1px solid var(--line);
+            background: var(--bg);
+            color: var(--text);
+        }
+        .input-area:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+        .modal-ranking {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 70px rgba(0,0,0,.75);
+            overflow: hidden;
+        }
+        .cab-ranking {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .cab-ranking h2 { font-size: 1.5rem; font-weight: 900; color: var(--accent); }
+        .banner-ganador {
+            margin: 14px 22px 0;
+            padding: 14px 18px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(34, 197, 94, 0.15));
+            border: 1px solid rgba(251, 191, 36, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .banner-ganador .titulo-g { font-size: .75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); font-weight: 800; }
+        .banner-ganador .nombre-g { font-size: 1.45rem; font-weight: 900; color: #fff; }
+        .banner-ganador .meta-g { font-size: .9rem; color: #cbd5e1; font-weight: 600; }
+        .barra-filtros-rank {
+            padding: 12px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .cuerpo-ranking {
+            padding: 0 22px 18px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .tabla-rank {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .9rem;
+        }
+        .tabla-rank th {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 2px solid var(--line);
+            color: var(--muted);
+            font-size: .75rem;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+        .tabla-rank td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(38, 56, 89, 0.6);
+            vertical-align: middle;
+        }
+        .tabla-rank tr.fila-1 td { background: rgba(251, 191, 36, 0.12); font-weight: 700; }
+        .tabla-rank tr.fila-2 td { background: rgba(148, 163, 184, 0.08); }
+        .tabla-rank tr.fila-3 td { background: rgba(249, 115, 22, 0.08); }
+        .medalla { font-size: 1.2rem; font-weight: 900; }
+        .tiempo-badge {
+            font-variant-numeric: tabular-nums;
+            background: var(--bg);
+            border: 1px solid var(--line);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 800;
+            color: var(--accent);
+        }
+        .toast-guardado {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #16a34a;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 800;
+            box-shadow: 0 10px 30px rgba(0,0,0,.5);
+            z-index: 95;
+            transition: opacity .25s;
+        }
 
         /* ---------- CONTROL EN CELULAR (MODO A CIEGAS - CUERDA INDIVIDUAL) ---------- */
         #control {
@@ -570,6 +689,7 @@
                 <button class="btn-cam activo" id="cam-aerea" title="Vista aérea cenital exclusiva para el líder">🦅 Vista Aérea (Líder)</button>
                 <button class="btn-cam" id="cam-inclinada" title="Vista 3D en diagonal para apreciar la altura de la torre">📐 Vista 3D</button>
                 <button class="btn-cam" id="cam-orbitar" title="Girar cámara alrededor de la torre">🔄 Orbitar</button>
+                <button class="btn-cam" id="btn-abrir-ranking-hud" style="border-color:var(--accent);color:var(--accent)">🏆 Ranking Semanal</button>
             </div>
         </div>
 
@@ -578,6 +698,45 @@
             <span id="estado-gancho-txt">🪝 Lleva el gancho sobre el Cubo #1</span>
             <div class="barra-enganche"><div id="barra-enganche-fill"></div></div>
         </div>
+
+        <!-- Lista de las 35 Áreas Oficiales de IBERO Puebla -->
+        <datalist id="lista-areas-ibero">
+            <option value="Admisiones"></option>
+            <option value="AIDEL"></option>
+            <option value="Atención Tecnológica"></option>
+            <option value="Ciencias de la Salud"></option>
+            <option value="Ciencias e Ingenierías"></option>
+            <option value="Ciencias Sociales"></option>
+            <option value="Clínica de Nutrición"></option>
+            <option value="Compras"></option>
+            <option value="Comunicación Institucional"></option>
+            <option value="DADA"></option>
+            <option value="Defensoría Derechos"></option>
+            <option value="Dirección de Personal"></option>
+            <option value="Direcciones Generales"></option>
+            <option value="Educación Continua"></option>
+            <option value="Educación Virtual"></option>
+            <option value="Egresados"></option>
+            <option value="Humanidades"></option>
+            <option value="IBERO Actívate"></option>
+            <option value="IDIT"></option>
+            <option value="Innovación e Internacionalización"></option>
+            <option value="LAINES"></option>
+            <option value="Marketing"></option>
+            <option value="Medio Ambiente"></option>
+            <option value="Medios Universitarios"></option>
+            <option value="Negocios"></option>
+            <option value="Participación y Difusión"></option>
+            <option value="Planeación y Evaluación"></option>
+            <option value="Planta Física"></option>
+            <option value="Prepa IBERO"></option>
+            <option value="Protección Universitaria"></option>
+            <option value="Reflexión Universitaria"></option>
+            <option value="Servicio Social"></option>
+            <option value="Servicios Escolares"></option>
+            <option value="Tesorería"></option>
+            <option value="Villas IBERO"></option>
+        </datalist>
 
         <!-- Sala de Espera (Lobby) -->
         <div id="capa-lobby" class="capa">
@@ -593,14 +752,17 @@
                     <p class="instr">
                         <b>1 Líder</b> mira esta vista aérea 3D. <b>Los demás integrantes</b> entran con su celular y reciben <b>una cuerda en distinta dirección</b>, ¡pero <b>no pueden ver los cubos</b>!
                     </p>
-                    <div class="reglas-clave">
-                        <div>🗣️ <b>El Líder dirige por voz:</b><br><i>"¡Juanito jala más! ¡María suelta cuerda!"</i></div>
-                        <div>🪝 <b>Objetivo en equipo:</b><br>Enganchar cada cubo y apilar las <b>10 piezas</b> en el centro.</div>
+
+                    <div class="caja-area-input" style="margin-bottom:14px">
+                        <label class="etiqueta" for="input-area-lobby">🏢 Área / Departamento que realiza este intento</label>
+                        <input id="input-area-lobby" class="input-area" list="lista-areas-ibero" placeholder="Ej. Compras, Tesorería, Servicios Escolares…" autocomplete="off">
                     </div>
+
                     <div class="etiqueta">Integrantes conectados (cada uno toma una cuerda alrededor del círculo)</div>
                     <div class="chips-lobby" id="chips-jugadores"></div>
-                    <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap">
+                    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
                         <button class="btn-grande" id="btn-empezar">¡Construir Torre!</button>
+                        <button class="btn" id="btn-abrir-ranking-lobby" style="flex:0 0 auto; padding:16px 20px; font-size:1rem; border-color:var(--accent); color:var(--accent)">🏆 Ver Ranking Semanal</button>
                         <span id="cuantos" style="color:var(--muted); font-weight:600"></span>
                     </div>
                     <p class="teclas">
@@ -610,12 +772,63 @@
             </div>
         </div>
 
-        <!-- Aviso Final (Victoria / Caída) -->
+        <!-- Aviso Final (Victoria / Guardado de Intento) -->
         <div id="capa-aviso" class="capa oculto">
             <div class="aviso-final">
                 <h2 id="aviso-titulo"></h2>
                 <p id="aviso-texto"></p>
-                <button class="btn-grande" id="aviso-boton"></button>
+                <div class="caja-area-input" style="margin-bottom:18px; text-align:left">
+                    <label class="etiqueta" for="input-area-final">🏢 Confirmar Área / Equipo para el Ranking Semanal</label>
+                    <div style="display:flex; gap:8px">
+                        <input id="input-area-final" class="input-area" list="lista-areas-ibero" placeholder="Nombre del Área (ej. Admisiones)" autocomplete="off">
+                        <button class="btn" id="btn-actualizar-area-final" style="flex:0 0 auto; background:var(--green); color:#052e16; border:none">💾 Guardar Área</button>
+                    </div>
+                </div>
+                <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap">
+                    <button class="btn-grande" id="aviso-boton" style="padding:14px 28px; font-size:1.2rem"></button>
+                    <button class="btn" id="btn-ver-ranking-final" style="flex:0 0 auto; padding:14px 22px; font-size:1.05rem; border-color:var(--accent); color:var(--accent)">🏆 Ver Quién Va Ganando</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Ranking Semanal y Ganador de la Semana -->
+        <div id="capa-ranking" class="capa oculto">
+            <div class="modal-ranking">
+                <div class="cab-ranking">
+                    <div>
+                        <h2>🏆 Ranking Semanal por Áreas · Torre 3D</h2>
+                        <div class="etiqueta" id="subtitulo-semana-rank">Semana actual</div>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap">
+                        <button class="btn" id="btn-exportar-csv" style="flex:0 0 auto">📥 Exportar Excel (CSV)</button>
+                        <button class="btn" id="btn-cerrar-ranking" style="flex:0 0 auto; background:#ef4444; border-color:#ef4444; color:#fff">✕ Cerrar</button>
+                    </div>
+                </div>
+
+                <div class="banner-ganador" id="banner-ganador-semana">
+                    <div>
+                        <div class="titulo-g">👑 Primer Lugar / Ganador de la Semana</div>
+                        <div class="nombre-g" id="ganador-nombre">Sin intentos registrados aún</div>
+                        <div class="meta-g" id="ganador-detalle">Guarda el primer intento de un área para inaugurar el marcador semanal.</div>
+                    </div>
+                    <div style="text-align:right">
+                        <span class="tiempo-badge" id="ganador-tiempo" style="font-size:1.3rem; padding:6px 14px">—</span>
+                    </div>
+                </div>
+
+                <div class="barra-filtros-rank">
+                    <div style="display:flex; gap:6px">
+                        <button class="btn-cam activo" id="tab-rank-areas">🥇 Posiciones por Área (Mejor Intento)</button>
+                        <button class="btn-cam" id="tab-rank-sesiones">📋 Todas las Sesiones / Intentos</button>
+                    </div>
+                    <div style="display:flex; gap:6px; align-items:center">
+                        <span class="etiqueta">Periodo:</span>
+                        <button class="btn-cam activo" id="filtro-semana-actual">Esta Semana</button>
+                        <button class="btn-cam" id="filtro-historico">Histórico Completo</button>
+                    </div>
+                </div>
+
+                <div class="cuerpo-ranking" id="contenedor-tabla-ranking"></div>
             </div>
         </div>
     </div>
@@ -627,6 +840,11 @@
                 <div class="etiqueta">Sala de la Grúa</div>
                 <div class="codigo" id="codigo-chico">····</div>
             </div>
+        </div>
+
+        <div class="caja-area-input">
+            <label class="etiqueta" for="input-area-panel">🏢 Área en turno</label>
+            <input id="input-area-panel" class="input-area" list="lista-areas-ibero" placeholder="Ej. Compras, Tesorería…" autocomplete="off">
         </div>
 
         <div>
@@ -645,11 +863,15 @@
         </div>
 
         <div class="botones-host">
-            <button class="btn" id="btn-centrar-todas">⚖️ Nivelar cuerdas (50%)</button>
-            <button class="btn" id="btn-reiniciar">↺ Reiniciar torre</button>
+            <button class="btn" id="btn-guardar-intento" style="background:var(--green); color:#052e16; border:none; flex-basis:100%">💾 Guardar intento del área</button>
+            <button class="btn" id="btn-abrir-ranking-panel" style="border-color:var(--accent); color:var(--accent); flex-basis:100%">🏆 Ranking de la Semana</button>
+            <button class="btn" id="btn-centrar-todas">⚖️ Nivelar (50%)</button>
+            <button class="btn" id="btn-reiniciar">↺ Reiniciar</button>
         </div>
     </aside>
 </div>
+
+<div id="toast-guardado" class="toast-guardado oculto"></div>
 
 <!-- ================= CONTROL EN CELULAR (CUERDA A CIEGAS) ================= -->
 <div id="control" class="oculto">
@@ -767,8 +989,10 @@ function iniciarHost() {
     const LETRAS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
     let sala = null;
     try { sala = sessionStorage.getItem('torre_sala'); } catch (e) {}
-    if (!sala) {
-        sala = Array.from({ length: 4 }, () => LETRAS[Math.floor(Math.random() * LETRAS.length)]).join('');
+    if (!sala || sala === 'RANK') {
+        do {
+            sala = Array.from({ length: 4 }, () => LETRAS[Math.floor(Math.random() * LETRAS.length)]).join('');
+        } while (sala === 'RANK');
         try { sessionStorage.setItem('torre_sala', sala); } catch (e) {}
     }
     const salaRef = rtdb.ref('laberinto/' + sala);
@@ -1210,8 +1434,363 @@ function iniciarHost() {
         salaRef.child('teclas').set(nuevoTeclas);
     }
 
+    // ============================================================
+    // REGISTRO DE SESIONES POR ÁREA Y RANKING SEMANAL (NUBE + LOCAL)
+    // ============================================================
+    const CLAVE_HISTORIAL_LOCAL = 'torre_historial_v1';
+    const rankingRef = rtdb.ref('laberinto/RANK/intentos'); // 'RANK' cumple /^[A-HJ-NP-Z]{4}$/ en database.rules.json
+    let sesionesGuardadas = [];
+    let ultimoIntentoId = null;
+    let vistaRanking = 'areas';     // 'areas' | 'sesiones'
+    let filtroPeriodo = 'semana';   // 'semana' | 'historico'
+
+    const inputAreaLobby = document.getElementById('input-area-lobby');
+    const inputAreaPanel = document.getElementById('input-area-panel');
+    const inputAreaFinal = document.getElementById('input-area-final');
+
+    let areaActual = leer('torre_ultima_area') || '';
+    function sincronizarInputsArea(valor) {
+        areaActual = valor;
+        guardar('torre_ultima_area', areaActual);
+        if (inputAreaLobby && inputAreaLobby.value !== valor) inputAreaLobby.value = valor;
+        if (inputAreaPanel && inputAreaPanel.value !== valor) inputAreaPanel.value = valor;
+        if (inputAreaFinal && inputAreaFinal.value !== valor) inputAreaFinal.value = valor;
+    }
+    sincronizarInputsArea(areaActual);
+    [inputAreaLobby, inputAreaPanel, inputAreaFinal].forEach(inp => {
+        if (!inp) return;
+        inp.addEventListener('input', () => sincronizarInputsArea(inp.value));
+    });
+
+    // Calcula el lunes de la semana de una fecha para agrupar intentos de la misma semana
+    function obtenerClaveSemana(fechaMs) {
+        const d = new Date(fechaMs || Date.now());
+        const dia = d.getDay(); // 0 dom .. 6 sab
+        const diffLunes = (dia === 0 ? -6 : 1) - dia;
+        const lunes = new Date(d.getFullYear(), d.getMonth(), d.getDate() + diffLunes);
+        const y = lunes.getFullYear();
+        const m = String(lunes.getMonth() + 1).padStart(2, '0');
+        const day = String(lunes.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
+    function textoRangoSemana(claveLunes) {
+        const [y, m, d] = claveLunes.split('-').map(Number);
+        const lunes = new Date(y, m - 1, d);
+        const viernes = new Date(y, m - 1, d + 4);
+        const fmt = f => f.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+        return `Semana del ${fmt(lunes)} al ${fmt(viernes)} (${y})`;
+    }
+
+    function cargarHistorialLocal() {
+        try {
+            const raw = localStorage.getItem(CLAVE_HISTORIAL_LOCAL);
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) { return []; }
+    }
+
+    function guardarHistorialLocal(lista) {
+        try { localStorage.setItem(CLAVE_HISTORIAL_LOCAL, JSON.stringify(lista)); } catch (e) {}
+    }
+
+    function fusionarSesiones(remotasObj) {
+        const mapa = new Map();
+        cargarHistorialLocal().forEach(s => { if (s && s.id) mapa.set(s.id, s); });
+        if (remotasObj && typeof remotasObj === 'object') {
+            Object.entries(remotasObj).forEach(([id, s]) => {
+                if (s && typeof s === 'object') mapa.set(id, { ...s, id });
+            });
+        }
+        sesionesGuardadas = Array.from(mapa.values()).sort((a, b) => (b.fechaMs || 0) - (a.fechaMs || 0));
+        guardarHistorialLocal(sesionesGuardadas);
+        if (!document.getElementById('capa-ranking').classList.contains('oculto')) {
+            renderizarModalRanking();
+        }
+    }
+
+    // Escuchar ranking compartido en tiempo real
+    rankingRef.on('value', snap => {
+        fusionarSesiones(snap.val() || {});
+    });
+    fusionarSesiones({});
+
+    function mostrarToast(msg) {
+        const t = document.getElementById('toast-guardado');
+        t.textContent = msg;
+        t.classList.remove('oculto');
+        clearTimeout(mostrarToast._timer);
+        mostrarToast._timer = setTimeout(() => t.classList.add('oculto'), 3200);
+    }
+
+    const formatearReloj = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    const formatearRelojPreciso = s => {
+        const min = Math.floor(s / 60);
+        const seg = Math.floor(s % 60);
+        const dec = Math.floor((s - Math.floor(s)) * 10);
+        return `${min}:${String(seg).padStart(2, '0')}.${dec}`;
+    };
+
+    function registrarSesionActual(motivo = 'manual') {
+        const ahoraMs = Date.now();
+        const nombreArea = (areaActual || '').trim() || 'Área sin nombre';
+        const participantes = jugadores.length
+            ? jugadores.map(j => j.nombre)
+            : cuerdas.map(c => c.nombreCorto);
+
+        const id = (motivo === 'actualizar_final' && ultimoIntentoId)
+            ? ultimoIntentoId
+            : 'int_' + ahoraMs + '_' + Math.random().toString(36).slice(2, 6);
+
+        ultimoIntentoId = id;
+        const tiempoSeg = Math.max(0.1, Math.round(tiempoPartida * 10) / 10);
+        const registro = {
+            id,
+            area: nombreArea,
+            piezas: indiceCuboActual,
+            totalPiezas: TOTAL_PIEZAS,
+            completada: indiceCuboActual >= TOTAL_PIEZAS,
+            tiempoSeg,
+            tiempoTexto: formatearRelojPreciso(tiempoSeg),
+            caidas,
+            integrantes: participantes.slice(0, 14),
+            numIntegrantes: participantes.length,
+            fechaMs: ahoraMs,
+            fechaTexto: new Date(ahoraMs).toLocaleString('es-MX', {
+                weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+            }),
+            semana: obtenerClaveSemana(ahoraMs)
+        };
+
+        // Guardar en local y en Firebase Realtime Database
+        const locales = cargarHistorialLocal().filter(x => x.id !== id);
+        locales.unshift(registro);
+        guardarHistorialLocal(locales);
+        try { rankingRef.child(id).set(registro); } catch (e) {}
+        fusionarSesiones( null );
+
+        mostrarToast(`✅ Guardado: ${registro.area} (${registro.piezas}/10 en ${registro.tiempoTexto})`);
+        return registro;
+    }
+
+    // Comparador oficial para saber quién ganó la semana:
+    // 1. Mayor cantidad de piezas apiladas (10/10 gana sobre 8/10)
+    // 2. Menor tiempo en segundos (más rápido gana)
+    // 3. Menor número de caídas
+    function compararIntentos(a, b) {
+        if ((b.piezas || 0) !== (a.piezas || 0)) return (b.piezas || 0) - (a.piezas || 0);
+        if ((a.tiempoSeg || 999999) !== (b.tiempoSeg || 999999)) return (a.tiempoSeg || 999999) - (b.tiempoSeg || 999999);
+        return (a.caidas || 0) - (b.caidas || 0);
+    }
+
+    function renderizarModalRanking() {
+        const semanaActual = obtenerClaveSemana(Date.now());
+        document.getElementById('subtitulo-semana-rank').textContent =
+            filtroPeriodo === 'semana' ? textoRangoSemana(semanaActual) : 'Histórico de todas las semanas registradas';
+
+        const filtradas = filtroPeriodo === 'semana'
+            ? sesionesGuardadas.filter(s => s.semana === semanaActual)
+            : [...sesionesGuardadas];
+
+        // Agrupar mejor intento por Área para coronar al ganador
+        const mejorPorArea = new Map();
+        filtradas.forEach(s => {
+            const claveArea = (s.area || 'Área sin nombre').trim().toUpperCase();
+            const previo = mejorPorArea.get(claveArea);
+            if (!previo || compararIntentos(s, previo) < 0) {
+                mejorPorArea.set(claveArea, {
+                    ...s,
+                    intentosTotalesArea: (previo ? previo.intentosTotalesArea : 0) + 1
+                });
+            } else {
+                previo.intentosTotalesArea = (previo.intentosTotalesArea || 1) + 1;
+            }
+        });
+
+        const rankingAreas = Array.from(mejorPorArea.values()).sort(compararIntentos);
+        const ganador = rankingAreas[0];
+
+        const elNomG = document.getElementById('ganador-nombre');
+        const elDetG = document.getElementById('ganador-detalle');
+        const elTmpG = document.getElementById('ganador-tiempo');
+
+        if (ganador) {
+            elNomG.textContent = `🥇 ${ganador.area}`;
+            elDetG.textContent = `Torre: ${ganador.piezas}/${ganador.totalPiezas || 10} piezas · ${ganador.caidas || 0} caídas · Equipo: ${(ganador.integrantes || []).join(', ') || 'Demo'}`;
+            elTmpG.textContent = `⏱️ ${ganador.tiempoTexto || formatearRelojPreciso(ganador.tiempoSeg || 0)}`;
+        } else {
+            elNomG.textContent = 'Sin intentos registrados en este periodo';
+            elDetG.textContent = 'Escribe el nombre del área y guarda un intento para ver quién lidera la semana.';
+            elTmpG.textContent = '—';
+        }
+
+        const cont = document.getElementById('contenedor-tabla-ranking');
+        if (!filtradas.length) {
+            cont.innerHTML = `<div style="padding:36px;text-align:center;color:var(--muted)">Aún no hay sesiones registradas en este periodo.</div>`;
+            return;
+        }
+
+        if (vistaRanking === 'areas') {
+            let html = `
+                <table class="tabla-rank">
+                    <thead>
+                        <tr>
+                            <th>Lugar</th>
+                            <th>Área / Departamento</th>
+                            <th>Mejor Torre</th>
+                            <th>Mejor Tiempo</th>
+                            <th>Caídas</th>
+                            <th>Intentos</th>
+                            <th>Integrantes del Récord</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            rankingAreas.forEach((r, idx) => {
+                const medalla = idx === 0 ? '🥇 1º' : idx === 1 ? '🥈 2º' : idx === 2 ? '🥉 3º' : `#${idx + 1}`;
+                const claseFila = idx === 0 ? 'fila-1' : idx === 1 ? 'fila-2' : idx === 2 ? 'fila-3' : '';
+                html += `
+                    <tr class="${claseFila}">
+                        <td class="medalla">${medalla}</td>
+                        <td style="font-weight:800;color:#fff">${r.area}</td>
+                        <td><b>${r.piezas}/${r.totalPiezas || 10}</b> ${r.piezas >= 10 ? '🏆' : ''}</td>
+                        <td><span class="tiempo-badge">${r.tiempoTexto || formatearRelojPreciso(r.tiempoSeg || 0)}</span></td>
+                        <td>${r.caidas || 0}</td>
+                        <td>${r.intentosTotalesArea || 1}</td>
+                        <td style="color:var(--muted);font-size:.82rem">${(r.integrantes || []).join(', ')}</td>
+                    </tr>
+                `;
+            });
+            html += `</tbody></table>`;
+            cont.innerHTML = html;
+        } else {
+            const ordenadasTiempo = [...filtradas].sort(compararIntentos);
+            let html = `
+                <table class="tabla-rank">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Fecha / Hora</th>
+                            <th>Área</th>
+                            <th>Piezas</th>
+                            <th>Tiempo</th>
+                            <th>Caídas</th>
+                            <th>Integrantes</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            ordenadasTiempo.forEach((s, idx) => {
+                html += `
+                    <tr>
+                        <td><b>#${idx + 1}</b></td>
+                        <td style="color:var(--muted);font-size:.82rem">${s.fechaTexto || ''}</td>
+                        <td style="font-weight:800;color:#fff">${s.area}</td>
+                        <td><b>${s.piezas}/${s.totalPiezas || 10}</b></td>
+                        <td><span class="tiempo-badge">${s.tiempoTexto || formatearRelojPreciso(s.tiempoSeg || 0)}</span></td>
+                        <td>${s.caidas || 0}</td>
+                        <td style="color:var(--muted);font-size:.82rem">${(s.integrantes || []).join(', ')}</td>
+                        <td><button class="btn-mini btn-borrar-sesion" data-id="${s.id}" title="Borrar intento">🗑️</button></td>
+                    </tr>
+                `;
+            });
+            html += `</tbody></table>`;
+            cont.innerHTML = html;
+            cont.querySelectorAll('.btn-borrar-sesion').forEach(b => {
+                b.onclick = () => {
+                    const idBorrar = b.dataset.id;
+                    const loc = cargarHistorialLocal().filter(x => x.id !== idBorrar);
+                    guardarHistorialLocal(loc);
+                    try { rankingRef.child(idBorrar).remove(); } catch (e) {}
+                    fusionarSesiones(null);
+                };
+            });
+        }
+    }
+
+    function abrirModalRanking() {
+        renderizarModalRanking();
+        document.getElementById('capa-ranking').classList.remove('oculto');
+    }
+
+    function exportarRankingCSV() {
+        if (!sesionesGuardadas.length) {
+            mostrarToast('No hay sesiones para exportar todavía');
+            return;
+        }
+        const filas = [
+            ['Posicion', 'Semana', 'Fecha', 'Area', 'Piezas_Apiladas', 'Tiempo_Segundos', 'Tiempo_Formato', 'Caidas', 'Integrantes']
+        ];
+        const ordenadas = [...sesionesGuardadas].sort(compararIntentos);
+        ordenadas.forEach((s, i) => {
+            filas.push([
+                i + 1,
+                s.semana || '',
+                (s.fechaTexto || '').replace(/,/g, ' '),
+                `"${(s.area || '').replace(/"/g, '""')}"`,
+                `${s.piezas}/${s.totalPiezas || 10}`,
+                s.tiempoSeg || 0,
+                s.tiempoTexto || '',
+                s.caidas || 0,
+                `"${(s.integrantes || []).join(' | ').replace(/"/g, '""')}"`
+            ]);
+        });
+        const csv = '\uFEFF' + filas.map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `ranking-torre-3d-${obtenerClaveSemana(Date.now())}.csv`;
+        a.click();
+    }
+
+    document.getElementById('btn-abrir-ranking-hud').onclick = abrirModalRanking;
+    document.getElementById('btn-abrir-ranking-lobby').onclick = abrirModalRanking;
+    document.getElementById('btn-abrir-ranking-panel').onclick = abrirModalRanking;
+    document.getElementById('btn-ver-ranking-final').onclick = abrirModalRanking;
+    document.getElementById('btn-cerrar-ranking').onclick = () => document.getElementById('capa-ranking').classList.add('oculto');
+    document.getElementById('btn-exportar-csv').onclick = exportarRankingCSV;
+
+    document.getElementById('tab-rank-areas').onclick = () => {
+        vistaRanking = 'areas';
+        document.getElementById('tab-rank-areas').classList.add('activo');
+        document.getElementById('tab-rank-sesiones').classList.remove('activo');
+        renderizarModalRanking();
+    };
+    document.getElementById('tab-rank-sesiones').onclick = () => {
+        vistaRanking = 'sesiones';
+        document.getElementById('tab-rank-sesiones').classList.add('activo');
+        document.getElementById('tab-rank-areas').classList.remove('activo');
+        renderizarModalRanking();
+    };
+    document.getElementById('filtro-semana-actual').onclick = () => {
+        filtroPeriodo = 'semana';
+        document.getElementById('filtro-semana-actual').classList.add('activo');
+        document.getElementById('filtro-historico').classList.remove('activo');
+        renderizarModalRanking();
+    };
+    document.getElementById('filtro-historico').onclick = () => {
+        filtroPeriodo = 'historico';
+        document.getElementById('filtro-historico').classList.add('activo');
+        document.getElementById('filtro-semana-actual').classList.remove('activo');
+        renderizarModalRanking();
+    };
+
+    document.getElementById('btn-guardar-intento').onclick = () => {
+        if (fase !== 'jugando' && indiceCuboActual === 0 && tiempoPartida < 1) {
+            mostrarToast('Inicia la partida primero para registrar el intento del área');
+            return;
+        }
+        registrarSesionActual('manual');
+    };
+
+    document.getElementById('btn-actualizar-area-final').onclick = () => {
+        sincronizarInputsArea(inputAreaFinal.value);
+        registrarSesionActual('actualizar_final');
+    };
+
     function empezarPartida() {
         if (!audio) { try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+        ultimoIntentoId = null;
         document.getElementById('capa-lobby').classList.add('oculto');
         document.getElementById('capa-aviso').classList.add('oculto');
         fase = 'jugando';
@@ -1224,11 +1803,12 @@ function iniciarHost() {
         salaRef.child('fase').set('fin');
         modoCamara = 'orbitar';
         sonar('victoria');
+        const reg = registrarSesionActual('victoria');
         document.getElementById('aviso-titulo').textContent = '¡Torre de 10 Piezas Completada! 🏆';
         document.getElementById('aviso-texto').textContent =
-            `Excelente comunicación del líder y precisión del equipo en ${formatearReloj(tiempoPartida)} con ${caidas} caída${caidas === 1 ? '' : 's'}.`;
+            `Área: ${reg.area} · Tiempo oficial: ${reg.tiempoTexto} con ${caidas} caída${caidas === 1 ? '' : 's'}. ¡Ya quedó guardado en el Ranking Semanal!`;
         const b = document.getElementById('aviso-boton');
-        b.textContent = 'Construir otra torre';
+        b.textContent = 'Siguiente Intento / Otra Área';
         b.onclick = () => {
             modoCamara = 'aerea';
             actualizarBotonesCamara();
@@ -1236,8 +1816,6 @@ function iniciarHost() {
         };
         document.getElementById('capa-aviso').classList.remove('oculto');
     }
-
-    const formatearReloj = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
     // Controles de cámara del líder
     function actualizarBotonesCamara() {
@@ -1251,11 +1829,12 @@ function iniciarHost() {
 
     document.getElementById('btn-empezar').onclick = empezarPartida;
     document.getElementById('btn-centrar-todas').onclick = nivelarTodasLasCuerdas;
-    document.getElementById('btn-reiniciar').onclick = () => { if (fase === 'jugando') reiniciarTorre(); };
+    document.getElementById('btn-reiniciar').onclick = () => { if (fase === 'jugando') { ultimoIntentoId = null; reiniciarTorre(); } };
 
-    // Teclado para probar en laptop sin celulares
+    // Teclado para probar en laptop sin celulares (se ignora si se está escribiendo el nombre del área)
     const teclasApretadas = new Set();
     addEventListener('keydown', ev => {
+        if (ev.target && (ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA')) return;
         const k = ev.key.toLowerCase();
         if (k >= '1' && k <= '9') {
             cuerdaSeleccionadaTeclado = Math.min(cuerdas.length - 1, parseInt(k, 10) - 1);
