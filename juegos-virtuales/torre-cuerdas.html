@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Torre de 10 Piezas · Grúa 3D con Cuerdas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Firebase Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <!-- QRCode & Three.js r128 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #070d19;
+            --panel: #111a2e;
+            --panel-2: #192540;
+            --line: #263859;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --accent: #fbbf24;
+            --green: #22c55e;
+            --red: #ef4444;
+            --blue: #38bdf8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        html, body { height: 100%; background: var(--bg); color: var(--text); overflow: hidden; }
+        button { font: inherit; cursor: pointer; }
+        .oculto { display: none !important; }
+
+        /* ---------- PANTALLA DEL LÍDER (HOST 3D) ---------- */
+        #host { display: grid; grid-template-columns: 1fr 370px; height: 100vh; }
+        #zona-3d { position: relative; width: 100%; height: 100%; overflow: hidden; background: radial-gradient(circle at center, #132038 0%, #070d19 100%); }
+        #escena-3d { width: 100%; height: 100%; display: block; }
+
+        /* Etiquetas flotantes 3D de cada integrante alrededor del círculo */
+        #capa-etiquetas { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+        .tag-jugador {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            background: rgba(11, 18, 32, 0.92);
+            border: 2px solid var(--c, #fbbf24);
+            border-radius: 12px;
+            padding: 6px 10px;
+            min-width: 124px;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,.55);
+            transition: transform .1s, box-shadow .1s;
+        }
+        .tag-jugador.jalando-fuerte {
+            box-shadow: 0 0 22px var(--c, #fbbf24);
+        }
+        .tag-jugador .nom {
+            font-weight: 900;
+            font-size: .92rem;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+        .tag-jugador .barra {
+            height: 6px;
+            background: rgba(255,255,255,.14);
+            border-radius: 99px;
+            margin: 4px 0;
+            overflow: hidden;
+        }
+        .tag-jugador .barra > i {
+            display: block;
+            height: 100%;
+            background: var(--c, #fbbf24);
+            width: 50%;
+            transition: width .08s;
+        }
+        .tag-jugador .orden {
+            font-size: .73rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-top: 2px;
+        }
+        .orden.mas { background: rgba(34, 197, 94, 0.22); color: #4ade80; border: 1px solid rgba(34,197,94,.45); }
+        .orden.menos { background: rgba(239, 68, 68, 0.22); color: #f87171; border: 1px solid rgba(239,68,68,.45); }
+        .orden.ok { background: rgba(148, 163, 184, 0.16); color: #cbd5e1; }
+
+        /* HUD superior sobre la vista aérea */
+        .hud-top {
+            position: absolute;
+            top: 14px;
+            left: 16px;
+            right: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            z-index: 3;
+            pointer-events: none;
+        }
+        .hud-caja {
+            pointer-events: auto;
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 10px 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.4);
+        }
+        .hud-mision {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .badge-fase {
+            background: var(--accent);
+            color: #111;
+            font-weight: 900;
+            font-size: .8rem;
+            padding: 5px 10px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+        .hud-voz {
+            max-width: 580px;
+            font-size: .98rem;
+            line-height: 1.35;
+        }
+        .hud-voz b { color: var(--accent); }
+
+        .controles-camara {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .btn-cam {
+            background: var(--panel-2);
+            color: var(--text);
+            border: 1px solid var(--line);
+            padding: 7px 11px;
+            border-radius: 9px;
+            font-size: .8rem;
+            font-weight: 700;
+        }
+        .btn-cam.activo {
+            background: var(--accent);
+            color: #111;
+            border-color: var(--accent);
+        }
+
+        /* Indicador inferior de altura/enganche */
+        .hud-bottom {
+            position: absolute;
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: .9rem;
+            font-weight: 700;
+            pointer-events: none;
+        }
+        .barra-enganche {
+            width: 140px;
+            height: 10px;
+            background: #1e293b;
+            border-radius: 99px;
+            overflow: hidden;
+            border: 1px solid #334155;
+        }
+        .barra-enganche > div {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #fbbf24, #22c55e);
+            transition: width .08s;
+        }
+
+        /* Panel lateral del líder */
+        #panel {
+            background: var(--panel);
+            border-left: 1px solid var(--line);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            overflow-y: auto;
+            z-index: 4;
+        }
+        .sala-mini { display: flex; gap: 12px; align-items: center; }
+        .sala-mini .qr-chico { background: #fff; padding: 6px; border-radius: 8px; flex-shrink: 0; }
+        .codigo { font-size: 1.9rem; font-weight: 900; letter-spacing: 5px; color: var(--accent); }
+        .etiqueta { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .stat { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 6px; text-align: center; }
+        .stat b { display: block; font-size: 1.35rem; font-weight: 900; margin-top: 2px; }
+
+        /* Visualizador vertical de los 10 pisos de la torre */
+        .torre-progreso {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 4px;
+            margin-top: 6px;
+        }
+        .piso-ind {
+            height: 22px;
+            border-radius: 5px;
+            background: var(--bg);
+            border: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .72rem;
+            font-weight: 800;
+            color: var(--muted);
+        }
+        .piso-ind.actual {
+            border-color: var(--accent);
+            color: var(--accent);
+            animation: pulso 1s infinite alternate;
+        }
+        .piso-ind.listo {
+            background: var(--green);
+            border-color: var(--green);
+            color: #052e16;
+        }
+        @keyframes pulso { from { opacity: .6; } to { opacity: 1; transform: scale(1.05); } }
+
+        /* Lista de integrantes y sus cuerdas en el panel del líder */
+        .lista-cuerdas {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            max-height: 340px;
+            overflow-y: auto;
+        }
+        .item-cuerda {
+            background: var(--bg);
+            border: 1px solid var(--line);
+            border-left: 5px solid var(--c, #fbbf24);
+            border-radius: 10px;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .item-cuerda .fila-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+        }
+        .item-cuerda .nombre-j {
+            font-weight: 800;
+            font-size: .9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .item-cuerda .pct-j {
+            font-weight: 900;
+            font-size: .85rem;
+            color: var(--accent);
+            font-variant-numeric: tabular-nums;
+        }
+        .item-cuerda .controles-mini {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-mini {
+            background: var(--panel-2);
+            color: var(--text);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-size: .75rem;
+            font-weight: 800;
+        }
+        .btn-mini:hover { filter: brightness(1.2); }
+
+        .botones-host { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+        .btn { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); padding: 9px 12px; border-radius: 10px; font-weight: 700; font-size: .85rem; flex: 1; }
+        .btn:hover { filter: brightness(1.18); }
+        .btn-grande { background: var(--accent); color: #111; font-size: 1.45rem; font-weight: 900; padding: 16px 40px; border-radius: 16px; border: none; box-shadow: 0 8px 25px rgba(251, 191, 36, 0.35); }
+        .btn-grande:hover { filter: brightness(1.08); }
+
+        /* Capas de Lobby y Victoria */
+        .capa { position: absolute; inset: 0; background: rgba(7, 13, 25, 0.93); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 10; padding: 24px; }
+        .lobby { display: grid; grid-template-columns: auto 1fr; gap: 36px; align-items: center; max-width: 1060px; width: 100%; }
+        .lobby h1 { font-size: 2.9rem; font-weight: 900; color: var(--accent); line-height: 1.06; margin-bottom: 10px; }
+        .lobby .qr-grande { background: #fff; padding: 14px; border-radius: 16px; display: inline-block; }
+        .lobby .instr { color: #cbd5e1; font-size: 1.05rem; margin: 10px 0 16px; line-height: 1.55; }
+        .lobby .reglas-clave {
+            background: rgba(25, 37, 64, 0.75);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            font-size: .9rem;
+            color: #e2e8f0;
+        }
+        .url-sala { font-size: .82rem; color: var(--muted); word-break: break-all; margin-top: 8px; max-width: 260px; }
+        .chips-lobby { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 18px; min-height: 38px; }
+        .chip-j {
+            background: var(--panel-2);
+            border: 2px solid var(--c, #fbbf24);
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-weight: 800;
+            font-size: .9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .aviso-final { text-align: center; max-width: 580px; }
+        .aviso-final h2 { font-size: 3.4rem; font-weight: 900; color: var(--accent); }
+        .aviso-final p { font-size: 1.35rem; margin: 12px 0 26px; color: var(--text); line-height: 1.45; }
+        .teclas { font-size: .82rem; color: var(--muted); margin-top: 12px; }
+        kbd { background: var(--line); border-radius: 4px; padding: 2px 6px; font-family: monospace; color: #fff; }
+        #error-conexion { position: fixed; top: 0; left: 0; right: 0; background: #b91c1c; color: #fff; padding: 10px; text-align: center; font-weight: 700; z-index: 99; }
+
+        /* ---------- CONTROL EN CELULAR (MODO A CIEGAS - CUERDA INDIVIDUAL) ---------- */
+        #control {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            background: radial-gradient(circle at top, #172542 0%, #070d19 100%);
+        }
+        .cab-control {
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--line);
+            background: rgba(17, 26, 46, 0.9);
+        }
+        .cab-control b { font-size: 1.15rem; font-weight: 900; }
+        #estado-juego { font-size: .85rem; color: var(--accent); font-weight: 700; text-align: right; }
+
+        .formulario {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 24px 20px;
+            gap: 14px;
+            text-align: center;
+            max-width: 420px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .formulario h1 { font-size: 2rem; font-weight: 900; color: var(--accent); }
+        .formulario input {
+            font: inherit;
+            font-size: 1.3rem;
+            padding: 16px;
+            border-radius: 12px;
+            border: 2px solid var(--line);
+            background: var(--panel);
+            color: var(--text);
+            text-align: center;
+        }
+        .mensaje-espera {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+            font-size: 1.25rem;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        /* Interfaz de Cuerda a Ciegas */
+        #panel-cuerda {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 12px 16px 18px;
+            gap: 10px;
+            overflow: hidden;
+        }
+        .aviso-ciego {
+            background: rgba(251, 191, 36, 0.12);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            color: #fde68a;
+            border-radius: 12px;
+            padding: 8px 12px;
+            text-align: center;
+            font-size: .86rem;
+            font-weight: 600;
+            line-height: 1.35;
+        }
+        .selector-cuerdas-prop {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+        }
+        .tab-cuerda {
+            flex: 1;
+            padding: 8px;
+            border-radius: 10px;
+            border: 2px solid var(--line);
+            background: var(--panel);
+            color: var(--text);
+            font-weight: 800;
+            font-size: .85rem;
+        }
+        .tab-cuerda.activa {
+            border-color: var(--c, var(--accent));
+            background: rgba(255,255,255,.08);
+        }
+
+        .zona-cuerda-interactiva {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 110px 1fr;
+            gap: 14px;
+            align-items: stretch;
+            min-height: 0;
+        }
+        .carril-cuerda {
+            position: relative;
+            background: #09101f;
+            border: 2px solid var(--line);
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            touch-action: none;
+        }
+        #canvas-cuerda {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .etiqueta-carril {
+            z-index: 2;
+            font-size: .7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            background: rgba(9, 16, 31, 0.8);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+        .nudo-arrastre {
+            position: absolute;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 76px;
+            height: 44px;
+            border-radius: 14px;
+            background: var(--mi-color, #fbbf24);
+            color: #111;
+            font-weight: 900;
+            font-size: .95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 18px rgba(0,0,0,.6);
+            border: 3px solid #fff;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        .botones-jalar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            justify-content: space-between;
+        }
+        .lectura-tension {
+            background: var(--panel);
+            border: 2px solid var(--mi-color, #fbbf24);
+            border-radius: 16px;
+            padding: 10px;
+            text-align: center;
+        }
+        .lectura-tension .num-grande {
+            font-size: 2.5rem;
+            font-weight: 900;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+        .lectura-tension .sub {
+            font-size: .78rem;
+            color: var(--muted);
+            margin-top: 4px;
+            font-weight: 700;
+        }
+        .btn-accion-cuerda {
+            flex: 1;
+            border: none;
+            border-radius: 18px;
+            font-size: 1.25rem;
+            font-weight: 900;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            color: #111;
+            box-shadow: 0 6px 0 rgba(0,0,0,.4);
+            transition: transform .05s;
+            touch-action: none;
+        }
+        .btn-accion-cuerda:active, .btn-accion-cuerda.on {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0,0,0,.4);
+        }
+        .btn-jalar-mas { background: #22c55e; color: #052e16; }
+        .btn-jalar-menos { background: #f97316; color: #270902; }
+        .btn-templar {
+            background: var(--panel-2);
+            color: var(--text);
+            border: 1px solid var(--line);
+            padding: 10px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: .9rem;
+        }
+    </style>
+</head>
+<body>
+
+<div id="error-conexion" class="oculto"></div>
+
+<!-- ================= PANTALLA DEL LÍDER (VISTA AÉREA 3D) ================= -->
+<div id="host" class="oculto">
+    <div id="zona-3d">
+        <canvas id="escena-3d"></canvas>
+        <div id="capa-etiquetas"></div>
+
+        <!-- HUD Superior para el Líder -->
+        <div class="hud-top">
+            <div class="hud-caja hud-mision">
+                <span class="badge-fase" id="badge-objetivo">CUBO #1</span>
+                <div class="hud-voz" id="texto-guia-lider">
+                    Dirige a tu equipo por nombre: <b>"¡Juanito jala más, María jala menos!"</b> para centrar el gancho.
+                </div>
+            </div>
+            <div class="hud-caja controles-camara">
+                <button class="btn-cam activo" id="cam-aerea" title="Vista aérea cenital exclusiva para el líder">🦅 Vista Aérea (Líder)</button>
+                <button class="btn-cam" id="cam-inclinada" title="Vista 3D en diagonal para apreciar la altura de la torre">📐 Vista 3D</button>
+                <button class="btn-cam" id="cam-orbitar" title="Girar cámara alrededor de la torre">🔄 Orbitar</button>
+            </div>
+        </div>
+
+        <!-- HUD Inferior de progreso de enganche / colocación -->
+        <div class="hud-bottom">
+            <span id="estado-gancho-txt">🪝 Lleva el gancho sobre el Cubo #1</span>
+            <div class="barra-enganche"><div id="barra-enganche-fill"></div></div>
+        </div>
+
+        <!-- Sala de Espera (Lobby) -->
+        <div id="capa-lobby" class="capa">
+            <div class="lobby">
+                <div style="text-align:center">
+                    <div class="qr-grande" id="qr-grande"></div>
+                    <div class="etiqueta" style="margin-top:14px">Código de sala</div>
+                    <div class="codigo" id="codigo-grande">····</div>
+                    <div class="url-sala" id="url-sala"></div>
+                </div>
+                <div>
+                    <h1>Torre 3D a Ciegas<br><span style="font-size:1.75rem;color:#f8fafc">La Grúa de 10 Piezas</span></h1>
+                    <p class="instr">
+                        <b>1 Líder</b> mira esta vista aérea 3D. <b>Los demás integrantes</b> entran con su celular y reciben <b>una cuerda en distinta dirección</b>, ¡pero <b>no pueden ver los cubos</b>!
+                    </p>
+                    <div class="reglas-clave">
+                        <div>🗣️ <b>El Líder dirige por voz:</b><br><i>"¡Juanito jala más! ¡María suelta cuerda!"</i></div>
+                        <div>🪝 <b>Objetivo en equipo:</b><br>Enganchar cada cubo y apilar las <b>10 piezas</b> en el centro.</div>
+                    </div>
+                    <div class="etiqueta">Integrantes conectados (cada uno toma una cuerda alrededor del círculo)</div>
+                    <div class="chips-lobby" id="chips-jugadores"></div>
+                    <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap">
+                        <button class="btn-grande" id="btn-empezar">¡Construir Torre!</button>
+                        <span id="cuantos" style="color:var(--muted); font-weight:600"></span>
+                    </div>
+                    <p class="teclas">
+                        Probar en laptop sin celulares: selecciona cuerda con <kbd>1</kbd>–<kbd>8</kbd> y ajusta tensión con <kbd>↑</kbd>/<kbd>↓</kbd>, o usa <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aviso Final (Victoria / Caída) -->
+        <div id="capa-aviso" class="capa oculto">
+            <div class="aviso-final">
+                <h2 id="aviso-titulo"></h2>
+                <p id="aviso-texto"></p>
+                <button class="btn-grande" id="aviso-boton"></button>
+            </div>
+        </div>
+    </div>
+
+    <aside id="panel">
+        <div class="sala-mini">
+            <div class="qr-chico" id="qr-chico"></div>
+            <div>
+                <div class="etiqueta">Sala de la Grúa</div>
+                <div class="codigo" id="codigo-chico">····</div>
+            </div>
+        </div>
+
+        <div>
+            <div class="etiqueta">Progreso de la Torre (10 Piezas)</div>
+            <div class="torre-progreso" id="torre-progreso"></div>
+            <div class="stats" style="margin-top:8px">
+                <div class="stat"><span class="etiqueta">Torre</span><b id="st-piezas">0/10</b></div>
+                <div class="stat"><span class="etiqueta">Tiempo</span><b id="st-tiempo">0:00</b></div>
+                <div class="stat"><span class="etiqueta">Caídas</span><b id="st-caidas">0</b></div>
+            </div>
+        </div>
+
+        <div style="flex:1; display:flex; flex-direction:column; min-height:0">
+            <div class="etiqueta" style="margin-bottom:6px">Cuerdas de los Integrantes</div>
+            <div class="lista-cuerdas" id="lista-cuerdas"></div>
+        </div>
+
+        <div class="botones-host">
+            <button class="btn" id="btn-centrar-todas">⚖️ Nivelar cuerdas (50%)</button>
+            <button class="btn" id="btn-reiniciar">↺ Reiniciar torre</button>
+        </div>
+    </aside>
+</div>
+
+<!-- ================= CONTROL EN CELULAR (CUERDA A CIEGAS) ================= -->
+<div id="control" class="oculto">
+    <div class="cab-control">
+        <b id="mi-nombre">Tu Cuerda</b>
+        <span id="estado-juego">Conectando…</span>
+    </div>
+
+    <form class="formulario" id="form-nombre">
+        <h1>🪝 Grúa 3D<br>Torre de 10 Piezas</h1>
+        <p style="color:var(--muted)">Sala <b id="sala-control" style="color:var(--text)"></b></p>
+        <input id="input-nombre" maxlength="14" placeholder="Tu nombre (ej. Juanito)" autocomplete="off" required>
+        <button class="btn-grande" type="submit">Tomar mi cuerda</button>
+    </form>
+
+    <div class="mensaje-espera oculto" id="espera"></div>
+
+    <div id="panel-cuerda" class="oculto">
+        <div class="aviso-ciego" id="aviso-ciego-rol">
+            🙈 <b>Vas a ciegas:</b> No puedes ver los cubos. Escucha al <b>Líder</b> cuando diga tu nombre para jalar más o soltar cuerda.
+        </div>
+
+        <div class="selector-cuerdas-prop oculto" id="selector-cuerdas-prop"></div>
+
+        <div class="zona-cuerda-interactiva">
+            <div class="carril-cuerda" id="carril-cuerda">
+                <canvas id="canvas-cuerda"></canvas>
+                <span class="etiqueta-carril">SOLTAR (0%)</span>
+                <div class="nudo-arrastre" id="nudo-arrastre">50%</div>
+                <span class="etiqueta-carril">JALAR (100%)</span>
+            </div>
+
+            <div class="botones-jalar">
+                <div class="lectura-tension" id="caja-lectura">
+                    <div class="etiqueta" id="dir-cuerda-txt">CUERDA NORTE</div>
+                    <div class="num-grande" id="num-tension">50%</div>
+                    <div class="sub">Tensión actual de tu cuerda</div>
+                </div>
+
+                <button type="button" class="btn-accion-cuerda btn-jalar-mas" id="btn-mas">
+                    <span style="font-size:1.9rem">💪🔼</span>
+                    <span>¡JALAR MÁS!</span>
+                    <small style="font-size:.75rem;opacity:.85">(Aumentar tensión)</small>
+                </button>
+
+                <button type="button" class="btn-accion-cuerda btn-jalar-menos" id="btn-menos">
+                    <span style="font-size:1.9rem">🖐️🔽</span>
+                    <span>JALAR MENOS</span>
+                    <small style="font-size:.75rem;opacity:.85">(Aflojar / soltar cuerda)</small>
+                </button>
+
+                <button type="button" class="btn-templar" id="btn-medio">
+                    ⚖️ Dejar a media tensión (50%)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN DE FIREBASE REALTIME DATABASE
+// ============================================================
+firebase.initializeApp({
+    apiKey: "AIzaSyCqQq-bXpNRwVDTlVjj27JWHEenmEUZUp4",
+    authDomain: "pausas-activas-ibero-2026.firebaseapp.com",
+    databaseURL: "https://pausas-activas-ibero-2026-default-rtdb.firebaseio.com",
+    projectId: "pausas-activas-ibero-2026",
+    appId: "1:358840395060:web:470d2d4a79db1d8a4f7161"
+});
+const rtdb = firebase.database();
+const URL_PUBLICA = 'https://68sfszbqhq-stack.github.io/ibero-activate/juegos-virtuales/torre-cuerdas.html';
+
+const TOTAL_PIEZAS = 10;
+const RADIO_ARENA = 7.2;     // Radio donde se paran los integrantes con sus cuerdas
+const COLORES_CUERDAS = [
+    '#ef4444', '#38bdf8', '#22c55e', '#fbbf24',
+    '#a855f7', '#f97316', '#ec4899', '#14b8a6',
+    '#eab308', '#6366f1', '#10b981', '#f43f5e'
+];
+const COLORES_CUBOS = [
+    0xef4444, 0xf97316, 0xfbbf24, 0x84cc16, 0x22c55e,
+    0x14b8a6, 0x06b6d4, 0x3b82f6, 0x8b5cf6, 0xec4899
+];
+
+const params = new URLSearchParams(location.search);
+const salaParam = (params.get('sala') || '').toUpperCase();
+if (salaParam) iniciarControl(salaParam); else iniciarHost();
+
+function guardar(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function leer(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+
+function vigilarConexion() {
+    const aviso = document.getElementById('error-conexion');
+    let yaConecto = false;
+    setTimeout(() => {
+        if (yaConecto) return;
+        aviso.textContent = 'No se pudo conectar con la base de datos en tiempo real. Revisa tu conexión a internet.';
+        aviso.classList.remove('oculto');
+    }, 10000);
+    rtdb.ref('.info/connected').on('value', s => {
+        if (s.val()) { yaConecto = true; aviso.classList.add('oculto'); }
+        else if (yaConecto) { aviso.textContent = 'Reconectando con la sala…'; aviso.classList.remove('oculto'); }
+    });
+}
+
+// ============================================================
+// HOST (VISTA AÉREA 3D EXCLUSIVA DEL LÍDER)
+// ============================================================
+function iniciarHost() {
+    document.getElementById('host').classList.remove('oculto');
+    vigilarConexion();
+
+    // Usamos el nodo laberinto/{sala} para compatibilidad inmediata con las reglas RTDB desplegadas
+    const LETRAS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    let sala = null;
+    try { sala = sessionStorage.getItem('torre_sala'); } catch (e) {}
+    if (!sala) {
+        sala = Array.from({ length: 4 }, () => LETRAS[Math.floor(Math.random() * LETRAS.length)]).join('');
+        try { sessionStorage.setItem('torre_sala', sala); } catch (e) {}
+    }
+    const salaRef = rtdb.ref('laberinto/' + sala);
+    salaRef.onDisconnect().remove();
+    salaRef.update({ creada: firebase.database.ServerValue.TIMESTAMP, modo: 'torre3d' });
+
+    const base = location.protocol === 'file:' ? URL_PUBLICA : location.origin + location.pathname;
+    const urlJugador = base + '?sala=' + sala;
+    new QRCode(document.getElementById('qr-grande'), { text: urlJugador, width: 240, height: 240 });
+    new QRCode(document.getElementById('qr-chico'), { text: urlJugador, width: 80, height: 80 });
+    document.getElementById('codigo-grande').textContent = sala;
+    document.getElementById('codigo-chico').textContent = sala;
+    document.getElementById('url-sala').textContent = urlJugador;
+
+    // Audio sintetizado WebAudio
+    let audio = null;
+    function sonar(tipo) {
+        if (!audio) return;
+        const t = audio.currentTime;
+        const secuencias = {
+            enganche: [[440, 0], [587, .09], [880, .18]],
+            apilar: [[523, 0], [659, .08], [784, .16], [1047, .25]],
+            caida: [[380, 0], [290, .12], [190, .25]],
+            victoria: [[523, 0], [659, .1], [784, .2], [1047, .32], [1318, .45]]
+        }[tipo] || [];
+        secuencias.forEach(([f, d]) => {
+            const o = audio.createOscillator(), g = audio.createGain();
+            o.type = tipo === 'caida' ? 'sawtooth' : 'triangle';
+            o.frequency.value = f;
+            g.gain.setValueAtTime(.18, t + d);
+            g.gain.exponentialRampToValueAtTime(.001, t + d + .22);
+            o.connect(g).connect(audio.destination);
+            o.start(t + d);
+            o.stop(t + d + .24);
+        });
+    }
+
+    // ============================================================
+    // ESCENA 3D (THREE.JS)
+    // ============================================================
+    const canvas = document.getElementById('escena-3d');
+    const zona3d = document.getElementById('zona-3d');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x08101f);
+
+    const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 100);
+    let modoCamara = 'aerea'; // 'aerea' | 'inclinada' | 'orbitar'
+    let anguloOrbita = 0;
+
+    // Luces
+    const ambLight = new THREE.AmbientLight(0xdbeafe, 0.72);
+    scene.add(ambLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.95);
+    dirLight.position.set(6, 18, 8);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 1;
+    dirLight.shadow.camera.far = 35;
+    const dCam = 10;
+    dirLight.shadow.camera.left = -dCam;
+    dirLight.shadow.camera.right = dCam;
+    dirLight.shadow.camera.top = dCam;
+    dirLight.shadow.camera.bottom = -dCam;
+    scene.add(dirLight);
+
+    // Plataforma circular de juego
+    const pisoGeo = new THREE.CylinderGeometry(RADIO_ARENA + 0.6, RADIO_ARENA + 0.9, 0.4, 64);
+    const pisoMat = new THREE.MeshStandardMaterial({ color: 0x152238, roughness: 0.85, metalness: 0.1 });
+    const pisoMesh = new THREE.Mesh(pisoGeo, pisoMat);
+    pisoMesh.position.y = -0.2;
+    pisoMesh.receiveShadow = true;
+    scene.add(pisoMesh);
+
+    // Anillos guía en el piso para ayudar a la vista aérea del líder
+    [1.8, 3.8, 5.6, RADIO_ARENA].forEach((r, idx) => {
+        const ringGeo = new THREE.RingGeometry(r - 0.04, r + 0.04, 64);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: idx === 0 ? 0xfbbf24 : 0x334155,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: idx === 0 ? 0.55 : 0.45
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.01;
+        scene.add(ring);
+    });
+
+    // Pedestal central donde se levanta la Torre de 10 piezas
+    const baseTorreGeo = new THREE.CylinderGeometry(0.95, 1.15, 0.24, 32);
+    const baseTorreMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5, metalness: 0.4 });
+    const baseTorre = new THREE.Mesh(baseTorreGeo, baseTorreMat);
+    baseTorre.position.y = 0.12;
+    baseTorre.receiveShadow = true;
+    scene.add(baseTorre);
+
+    // Anillo luminoso de objetivo (muestra dónde enganchar o dónde centrar)
+    const targetRingGeo = new THREE.RingGeometry(0.62, 0.82, 48);
+    const targetRingMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+    const targetRing = new THREE.Mesh(targetRingGeo, targetRingMat);
+    targetRing.rotation.x = -Math.PI / 2;
+    targetRing.position.y = 0.03;
+    scene.add(targetRing);
+
+    // Conjunto del Gancho Central (Aro metálico + gancho inferior + láser de plomada)
+    const ganchoGroup = new THREE.Group();
+    const aroGeo = new THREE.TorusGeometry(0.42, 0.075, 16, 36);
+    const metalMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.7, roughness: 0.25 });
+    const aroMesh = new THREE.Mesh(aroGeo, metalMat);
+    aroMesh.rotation.x = Math.PI / 2;
+    aroMesh.castShadow = true;
+    ganchoGroup.add(aroMesh);
+
+    const vastagoGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.45, 12);
+    const vastagoMesh = new THREE.Mesh(vastagoGeo, metalMat);
+    vastagoMesh.position.y = -0.22;
+    ganchoGroup.add(vastagoMesh);
+
+    const garfioGeo = new THREE.TorusGeometry(0.16, 0.045, 12, 24, Math.PI * 1.35);
+    const garfioMesh = new THREE.Mesh(garfioGeo, metalMat);
+    garfioMesh.position.y = -0.46;
+    garfioMesh.rotation.z = Math.PI * 0.8;
+    ganchoGroup.add(garfioMesh);
+    scene.add(ganchoGroup);
+
+    // Sombra/Láser vertical bajo el gancho para que el líder vea exactamente dónde apunta en vista aérea
+    const laserGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -10, 0)]);
+    const laserMat = new THREE.LineDashedMaterial({ color: 0x38bdf8, dashSize: 0.2, gapSize: 0.12 });
+    const laserLine = new THREE.Line(laserGeo, laserMat);
+    laserLine.computeLineDistances();
+    scene.add(laserLine);
+
+    const miraPisoGeo = new THREE.RingGeometry(0.18, 0.28, 32);
+    const miraPisoMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide });
+    const miraPiso = new THREE.Mesh(miraPisoGeo, miraPisoMat);
+    miraPiso.rotation.x = -Math.PI / 2;
+    miraPiso.position.y = 0.04;
+    scene.add(miraPiso);
+
+    // Función para crear un cubo numerado con su argolla superior para enganchar
+    const TAM_CUBO = 0.78;
+    function crearCubo3D(numero, colorHex) {
+        const grupo = new THREE.Group();
+
+        // Textura con el número de pieza (1..10) en las caras
+        const cnv = document.createElement('canvas');
+        cnv.width = 128; cnv.height = 128;
+        const c = cnv.getContext('2d');
+        c.fillStyle = '#' + colorHex.toString(16).padStart(6, '0');
+        c.fillRect(0, 0, 128, 128);
+        c.strokeStyle = 'rgba(255,255,255,0.45)';
+        c.lineWidth = 10;
+        c.strokeRect(5, 5, 118, 118);
+        c.fillStyle = '#ffffff';
+        c.font = '900 62px Inter, sans-serif';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(String(numero), 64, 68);
+
+        const tex = new THREE.CanvasTexture(cnv);
+        const geo = new THREE.BoxGeometry(TAM_CUBO, TAM_CUBO, TAM_CUBO);
+        const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.35, metalness: 0.1 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        grupo.add(mesh);
+
+        // Argolla metálica arriba del cubo para que el gancho la sostenga
+        const argollaGeo = new THREE.TorusGeometry(0.16, 0.035, 12, 24);
+        const argollaMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.8, roughness: 0.2 });
+        const argolla = new THREE.Mesh(argollaGeo, argollaMat);
+        argolla.position.y = TAM_CUBO / 2 + 0.12;
+        grupo.add(argolla);
+
+        return grupo;
+    }
+
+    // ============================================================
+    // GESTIÓN DE INTEGRANTES Y CUERDAS RADIALES
+    // ============================================================
+    let jugadores = [];           // [{ id, nombre, entro }]
+    let cuerdas = [];             // [{ idx, idJugador, nombre, angulo, color, tension, posteMesh, lineaCuerda, tagEl }]
+    let tensionesRemotas = {};    // idJugador -> { idxCuerda: valor 0..100 }
+    let tensionesLocales = {};    // idxCuerda -> valor 0..100 (para pruebas con teclado o ajuste del líder)
+    let cuerdaSeleccionadaTeclado = 0;
+
+    const grupoCuerdas3D = new THREE.Group();
+    scene.add(grupoCuerdas3D);
+    const capaEtiquetas = document.getElementById('capa-etiquetas');
+
+    // Nombres de respaldo cuando se prueba con menos de 4 personas
+    const NOMBRES_DEMO = ['Juanito', 'María', 'Pedro', 'Ana'];
+
+    function reconstruirCuerdas() {
+        // Limpiar geometrías previas
+        while (grupoCuerdas3D.children.length) {
+            grupoCuerdas3D.remove(grupoCuerdas3D.children[0]);
+        }
+        capaEtiquetas.innerHTML = '';
+
+        // Si hay 3 o más jugadores, ¡cada integrante tiene su propia cuerda en una dirección distinta!
+        // Si hay 0, 1 o 2 jugadores (ej. probando), creamos 4 cuerdas para cubrir los 360° y repartimos.
+        const totalCuerdas = Math.max(4, jugadores.length);
+        cuerdas = [];
+        const asignacionPorJugador = {};
+
+        for (let i = 0; i < totalCuerdas; i++) {
+            const angulo = (i / totalCuerdas) * Math.PI * 2 - Math.PI / 2; // empieza al Norte (-90°)
+            const color = COLORES_CUERDAS[i % COLORES_CUERDAS.length];
+            const jug = jugadores.length ? jugadores[i % jugadores.length] : null;
+            const nombreMostrar = jug
+                ? (jugadores.length < 4 ? `${jug.nombre} (#${i + 1})` : jug.nombre)
+                : `${NOMBRES_DEMO[i % NOMBRES_DEMO.length]} (Tecla ${i + 1})`;
+
+            if (jug) {
+                (asignacionPorJugador[jug.id] = asignacionPorJugador[jug.id] || []).push({
+                    idx: i,
+                    color,
+                    etiqueta: `Cuerda #${i + 1} (${Math.round(((i / totalCuerdas) * 360))}°)`
+                });
+            }
+
+            // Poste 3D en la orilla donde está parado el integrante
+            const px = Math.cos(angulo) * RADIO_ARENA;
+            const pz = Math.sin(angulo) * RADIO_ARENA;
+            const posteGeo = new THREE.CylinderGeometry(0.18, 0.22, 1.3, 16);
+            const posteMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: 0.4 });
+            const posteMesh = new THREE.Mesh(posteGeo, posteMat);
+            posteMesh.position.set(px, 0.65, pz);
+            posteMesh.castShadow = true;
+            grupoCuerdas3D.add(posteMesh);
+
+            // Línea 3D de la cuerda (con puntos intermedios para simular tensión/curvatura)
+            const pts = Array.from({ length: 12 }, () => new THREE.Vector3(px, 1.2, pz));
+            const lineaGeo = new THREE.BufferGeometry().setFromPoints(pts);
+            const lineaMat = new THREE.LineBasicMaterial({ color: new THREE.Color(color), linewidth: 3 });
+            const lineaCuerda = new THREE.Line(lineaGeo, lineaMat);
+            grupoCuerdas3D.add(lineaCuerda);
+
+            // Etiqueta flotante HTML sobre el poste 3D para que el líder vea el nombre claramente
+            const tagEl = document.createElement('div');
+            tagEl.className = 'tag-jugador';
+            tagEl.style.setProperty('--c', color);
+            tagEl.innerHTML = `
+                <div class="nom">${nombreMostrar}</div>
+                <div class="barra"><i style="width:50%"></i></div>
+                <div class="orden ok">50% · Mantén</div>
+            `;
+            capaEtiquetas.appendChild(tagEl);
+
+            cuerdas.push({
+                idx: i,
+                idJugador: jug ? jug.id : null,
+                nombre: nombreMostrar,
+                nombreCorto: jug ? jug.nombre : NOMBRES_DEMO[i % NOMBRES_DEMO.length],
+                angulo,
+                dx: Math.cos(angulo),
+                dz: Math.sin(angulo),
+                px,
+                pz,
+                color,
+                tension: 50,
+                posteMesh,
+                lineaCuerda,
+                tagEl
+            });
+        }
+
+        salaRef.child('asignacion').set(asignacionPorJugador);
+        actualizarLobbyJugadores();
+        renderListaPanelCuerdas();
+    }
+
+    function actualizarLobbyJugadores() {
+        const cont = document.getElementById('chips-jugadores');
+        cont.innerHTML = '';
+        if (!jugadores.length) {
+            cont.innerHTML = '<span style="color:var(--muted)">Esperando integrantes con su celular… (o inicia ya para probar con teclado)</span>';
+        } else {
+            jugadores.forEach((j, idx) => {
+                const chip = document.createElement('div');
+                chip.className = 'chip-j';
+                chip.style.setProperty('--c', COLORES_CUERDAS[idx % COLORES_CUERDAS.length]);
+                chip.innerHTML = `<span>🪢</span><span>${j.nombre}</span>`;
+                cont.appendChild(chip);
+            });
+        }
+        const n = jugadores.length;
+        document.getElementById('cuantos').textContent =
+            n === 0 ? 'Modo demo con 4 cuerdas (Juanito, María, Pedro, Ana)'
+            : n < 3 ? `${n} integrante${n === 1 ? '' : 's'} (se reparten 4 cuerdas)`
+            : `${n} integrantes · 1 cuerda por persona en ${n} direcciones`;
+    }
+
+    function renderListaPanelCuerdas() {
+        const cont = document.getElementById('lista-cuerdas');
+        cont.innerHTML = '';
+        cuerdas.forEach((c, idx) => {
+            const div = document.createElement('div');
+            div.className = 'item-cuerda';
+            div.id = `panel-cuerda-${idx}`;
+            div.style.setProperty('--c', c.color);
+            div.innerHTML = `
+                <div class="fila-top">
+                    <span class="nombre-j"><span>#${idx + 1}</span> ${c.nombreCorto}</span>
+                    <span class="pct-j" id="pct-cuerda-${idx}">50%</span>
+                </div>
+                <div class="controles-mini">
+                    <span class="orden ok" id="orden-panel-${idx}" style="flex:1;text-align:center">Mantener</span>
+                    <button class="btn-mini" data-idx="${idx}" data-delta="-8" title="Aflojar cuerda">-</button>
+                    <button class="btn-mini" data-idx="${idx}" data-delta="8" title="Jalar más">+</button>
+                </div>
+            `;
+            cont.appendChild(div);
+        });
+        cont.querySelectorAll('.btn-mini').forEach(b => {
+            b.onclick = () => {
+                const i = Number(b.dataset.idx);
+                const d = Number(b.dataset.delta);
+                const actual = obtenerTensionCuerda(cuerdas[i]);
+                tensionesLocales[i] = Math.max(0, Math.min(100, actual + d));
+            };
+        });
+    }
+
+    function obtenerTensionCuerda(c) {
+        if (c.idJugador && tensionesRemotas[c.idJugador] && typeof tensionesRemotas[c.idJugador][c.idx] === 'number') {
+            return Math.max(0, Math.min(100, tensionesRemotas[c.idJugador][c.idx]));
+        }
+        if (typeof tensionesLocales[c.idx] === 'number') {
+            return Math.max(0, Math.min(100, tensionesLocales[c.idx]));
+        }
+        return 50;
+    }
+
+    salaRef.child('jugadores').on('value', snap => {
+        const v = snap.val() || {};
+        jugadores = Object.entries(v)
+            .filter(([, j]) => j && j.nombre)
+            .map(([id, j]) => ({ id, nombre: j.nombre, entro: j.entro || 0 }))
+            .sort((a, b) => a.entro - b.entro);
+        reconstruirCuerdas();
+    });
+
+    salaRef.child('teclas').on('value', snap => {
+        tensionesRemotas = snap.val() || {};
+    });
+
+    // ============================================================
+    // ESTADO DE LA TORRE DE 10 PIEZAS Y FÍSICA DEL GANCHO
+    // ============================================================
+    let fase = 'lobby';           // 'lobby' | 'jugando' | 'fin'
+    let indiceCuboActual = 0;     // 0..9 (10 piezas)
+    let llevandoCubo = false;     // false = ir a enganchar cubo; true = llevar cubo a la torre central
+    let progresoAccion = 0;       // 0..1 para enganchar o para soltar en la torre
+    let caidas = 0;
+    let inicioPartida = 0;
+    let tiempoPartida = 0;
+
+    const gancho = { x: 0, y: 3.4, z: 0, vx: 0, vz: 0 };
+    let cubosApilados = [];       // [{ mesh, x, y, z }]
+    let cuboActivo = null;        // { mesh, x, y, z, num }
+
+    function actualizarIndicadorPisos() {
+        const cont = document.getElementById('torre-progreso');
+        cont.innerHTML = '';
+        for (let i = 0; i < TOTAL_PIEZAS; i++) {
+            const d = document.createElement('div');
+            d.className = 'piso-ind' + (i < indiceCuboActual ? ' listo' : i === indiceCuboActual ? ' actual' : '');
+            d.textContent = i + 1;
+            cont.appendChild(d);
+        }
+        document.getElementById('st-piezas').textContent = `${indiceCuboActual}/${TOTAL_PIEZAS}`;
+    }
+
+    function generarSiguienteCubo() {
+        if (cuboActivo && cuboActivo.mesh) {
+            scene.remove(cuboActivo.mesh);
+        }
+        if (indiceCuboActual >= TOTAL_PIEZAS) {
+            ganarPartida();
+            return;
+        }
+        // Posición aleatoria en el anillo intermedio (radio 2.5 a 4.4)
+        const ang = (indiceCuboActual * 2.39996) + (Math.random() * 0.5 - 0.25); // ángulo áureo para variar direcciones
+        const dist = 2.6 + (indiceCuboActual % 3) * 0.75;
+        const cx = Math.cos(ang) * dist;
+        const cz = Math.sin(ang) * dist;
+
+        const mesh = crearCubo3D(indiceCuboActual + 1, COLORES_CUBOS[indiceCuboActual % COLORES_CUBOS.length]);
+        mesh.position.set(cx, TAM_CUBO / 2, cz);
+        scene.add(mesh);
+
+        cuboActivo = {
+            num: indiceCuboActual + 1,
+            mesh,
+            x: cx,
+            y: TAM_CUBO / 2,
+            z: cz
+        };
+        llevandoCubo = false;
+        progresoAccion = 0;
+        actualizarIndicadorPisos();
+        salaRef.child('progreso').set({ pieza: indiceCuboActual + 1, estado: 'enganchar' });
+    }
+
+    function reiniciarTorre() {
+        cubosApilados.forEach(c => scene.remove(c.mesh));
+        cubosApilados = [];
+        if (cuboActivo && cuboActivo.mesh) scene.remove(cuboActivo.mesh);
+        cuboActivo = null;
+        indiceCuboActual = 0;
+        llevandoCubo = false;
+        progresoAccion = 0;
+        caidas = 0;
+        document.getElementById('st-caidas').textContent = '0';
+        gancho.x = 0; gancho.z = 0; gancho.vx = 0; gancho.vz = 0;
+        nivelarTodasLasCuerdas();
+        inicioPartida = performance.now();
+        generarSiguienteCubo();
+    }
+
+    function nivelarTodasLasCuerdas() {
+        tensionesLocales = {};
+        const nuevoTeclas = {};
+        cuerdas.forEach(c => {
+            if (c.idJugador) {
+                nuevoTeclas[c.idJugador] = nuevoTeclas[c.idJugador] || {};
+                nuevoTeclas[c.idJugador][c.idx] = 50;
+            }
+        });
+        salaRef.child('teclas').set(nuevoTeclas);
+    }
+
+    function empezarPartida() {
+        if (!audio) { try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+        document.getElementById('capa-lobby').classList.add('oculto');
+        document.getElementById('capa-aviso').classList.add('oculto');
+        fase = 'jugando';
+        salaRef.child('fase').set('jugando');
+        reiniciarTorre();
+    }
+
+    function ganarPartida() {
+        fase = 'fin';
+        salaRef.child('fase').set('fin');
+        modoCamara = 'orbitar';
+        sonar('victoria');
+        document.getElementById('aviso-titulo').textContent = '¡Torre de 10 Piezas Completada! 🏆';
+        document.getElementById('aviso-texto').textContent =
+            `Excelente comunicación del líder y precisión del equipo en ${formatearReloj(tiempoPartida)} con ${caidas} caída${caidas === 1 ? '' : 's'}.`;
+        const b = document.getElementById('aviso-boton');
+        b.textContent = 'Construir otra torre';
+        b.onclick = () => {
+            modoCamara = 'aerea';
+            actualizarBotonesCamara();
+            empezarPartida();
+        };
+        document.getElementById('capa-aviso').classList.remove('oculto');
+    }
+
+    const formatearReloj = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+    // Controles de cámara del líder
+    function actualizarBotonesCamara() {
+        document.getElementById('cam-aerea').classList.toggle('activo', modoCamara === 'aerea');
+        document.getElementById('cam-inclinada').classList.toggle('activo', modoCamara === 'inclinada');
+        document.getElementById('cam-orbitar').classList.toggle('activo', modoCamara === 'orbitar');
+    }
+    document.getElementById('cam-aerea').onclick = () => { modoCamara = 'aerea'; actualizarBotonesCamara(); };
+    document.getElementById('cam-inclinada').onclick = () => { modoCamara = 'inclinada'; actualizarBotonesCamara(); };
+    document.getElementById('cam-orbitar').onclick = () => { modoCamara = 'orbitar'; actualizarBotonesCamara(); };
+
+    document.getElementById('btn-empezar').onclick = empezarPartida;
+    document.getElementById('btn-centrar-todas').onclick = nivelarTodasLasCuerdas;
+    document.getElementById('btn-reiniciar').onclick = () => { if (fase === 'jugando') reiniciarTorre(); };
+
+    // Teclado para probar en laptop sin celulares
+    const teclasApretadas = new Set();
+    addEventListener('keydown', ev => {
+        const k = ev.key.toLowerCase();
+        if (k >= '1' && k <= '9') {
+            cuerdaSeleccionadaTeclado = Math.min(cuerdas.length - 1, parseInt(k, 10) - 1);
+        }
+        teclasApretadas.add(k);
+    });
+    addEventListener('keyup', ev => teclasApretadas.delete(ev.key.toLowerCase()));
+
+    function ajustarTamano3D() {
+        const w = zona3d.clientWidth;
+        const h = zona3d.clientHeight;
+        renderer.setSize(w, h);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+    }
+    addEventListener('resize', ajustarTamano3D);
+
+    // ============================================================
+    // BUCLE DE SIMULACIÓN 3D Y ASISTENTE DE VOZ PARA EL LÍDER
+    // ============================================================
+    function pasoSimulacion(dt, ahora) {
+        // Teclado local (W/S/A/D o flechas)
+        if (cuerdas.length) {
+            const velT = 42 * dt;
+            if (teclasApretadas.has('arrowup')) {
+                const c = cuerdas[cuerdaSeleccionadaTeclado] || cuerdas[0];
+                tensionesLocales[c.idx] = Math.min(100, obtenerTensionCuerda(c) + velT);
+            }
+            if (teclasApretadas.has('arrowdown')) {
+                const c = cuerdas[cuerdaSeleccionadaTeclado] || cuerdas[0];
+                tensionesLocales[c.idx] = Math.max(0, obtenerTensionCuerda(c) - velT);
+            }
+            // W/D/S/A jalan las 4 direcciones principales directamente para prueba rápida
+            const mapaWSAD = { w: 0, d: Math.floor(cuerdas.length * 0.25), s: Math.floor(cuerdas.length * 0.5), a: Math.floor(cuerdas.length * 0.75) };
+            for (const [tecla, idxDir] of Object.entries(mapaWSAD)) {
+                if (teclasApretadas.has(tecla) && cuerdas[idxDir]) {
+                    tensionesLocales[idxDir] = Math.min(100, obtenerTensionCuerda(cuerdas[idxDir]) + velT);
+                    const opuesta = (idxDir + Math.floor(cuerdas.length / 2)) % cuerdas.length;
+                    if (cuerdas[opuesta]) {
+                        tensionesLocales[opuesta] = Math.max(0, obtenerTensionCuerda(cuerdas[opuesta]) - velT * 0.7);
+                    }
+                }
+            }
+        }
+
+        // Calcular resultante de fuerzas de todas las cuerdas
+        let fx = 0, fz = 0, sumaTension = 0;
+        const n = cuerdas.length || 1;
+        cuerdas.forEach(c => {
+            c.tension = obtenerTensionCuerda(c);
+            sumaTension += c.tension;
+            // Cada cuerda jala desde el centro hacia el poste del integrante (dx, dz)
+            const fuerza = (c.tension - 50) / 50; // -1 a +1 respecto al equilibrio de 50%
+            fx += c.dx * fuerza;
+            fz += c.dz * fuerza;
+        });
+
+        // Posición objetivo horizontal del gancho según el equilibrio de tensiones
+        const escalaAlcance = (RADIO_ARENA * 0.78) / Math.max(1, n * 0.36);
+        const targetX = Math.max(-RADIO_ARENA * 0.76, Math.min(RADIO_ARENA * 0.76, fx * escalaAlcance));
+        const targetZ = Math.max(-RADIO_ARENA * 0.76, Math.min(RADIO_ARENA * 0.76, fz * escalaAlcance));
+
+        // Inercia suave de grúa colgante
+        gancho.vx += (targetX - gancho.x) * 6.5 * dt;
+        gancho.vz += (targetZ - gancho.z) * 6.5 * dt;
+        gancho.vx *= Math.pow(0.12, dt);
+        gancho.vz *= Math.pow(0.12, dt);
+        gancho.x += gancho.vx * dt * 3.2;
+        gancho.z += gancho.vz * dt * 3.2;
+
+        // Altura de la torre actual
+        const alturaTorre = 0.24 + cubosApilados.length * TAM_CUBO;
+        const alturaCrucero = Math.max(3.1, alturaTorre + 1.55);
+
+        // Coordenada objetivo actual (el cubo por enganchar o el centro de la torre)
+        let objX = 0, objZ = 0, radioTolerancia = 0.58;
+        if (cuboActivo) {
+            if (!llevandoCubo) {
+                objX = cuboActivo.x;
+                objZ = cuboActivo.z;
+                radioTolerancia = 0.56;
+            } else {
+                // El centro de la torre (o el último cubo apilado)
+                const ultimo = cubosApilados[cubosApilados.length - 1];
+                objX = ultimo ? ultimo.x * 0.4 : 0;
+                objZ = ultimo ? ultimo.z * 0.4 : 0;
+                // A mayor piso, requiere centrar con un poco más de cuidado
+                radioTolerancia = Math.max(0.36, 0.58 - cubosApilados.length * 0.018);
+            }
+        }
+
+        // Anillo guía en el objetivo
+        targetRing.position.set(objX, llevandoCubo ? alturaTorre + 0.02 : 0.03, objZ);
+        targetRing.material.color.setHex(llevandoCubo ? 0x22c55e : 0xfbbf24);
+        const escalaPulso = 1 + Math.sin(ahora / 180) * 0.08;
+        targetRing.scale.set(escalaPulso, escalaPulso, 1);
+
+        if (fase === 'jugando' && cuboActivo) {
+            tiempoPartida = (performance.now() - inicioPartida) / 1000;
+            document.getElementById('st-tiempo').textContent = formatearReloj(tiempoPartida);
+
+            const distAlObjetivo = Math.hypot(gancho.x - objX, gancho.z - objZ);
+            const velocidadGancho = Math.hypot(gancho.vx, gancho.vz);
+
+            if (distAlObjetivo < radioTolerancia && velocidadGancho < 0.85) {
+                // Está centrado sobre el objetivo: el gancho desciende para enganchar o apilar
+                const velProgreso = llevandoCubo ? 0.48 : 0.58;
+                progresoAccion = Math.min(1, progresoAccion + dt * velProgreso);
+
+                const alturaMeta = llevandoCubo
+                    ? (alturaTorre + TAM_CUBO + 0.48)
+                    : (TAM_CUBO + 0.55);
+                gancho.y = alturaCrucero - (alturaCrucero - alturaMeta) * progresoAccion;
+
+                if (progresoAccion >= 1) {
+                    if (!llevandoCubo) {
+                        // ¡Cubo enganchado!
+                        llevandoCubo = true;
+                        progresoAccion = 0;
+                        sonar('enganche');
+                        salaRef.child('progreso').set({
+                            pieza: indiceCuboActual + 1,
+                            estado: 'centrar',
+                            ts: firebase.database.ServerValue.TIMESTAMP
+                        });
+                    } else {
+                        // ¡Cubo colocado sobre la torre!
+                        const desalineacion = Math.hypot(gancho.x - objX, gancho.z - objZ);
+                        if (desalineacion > radioTolerancia * 0.92) {
+                            // Se resbaló del borde
+                            caidas++;
+                            document.getElementById('st-caidas').textContent = caidas;
+                            llevandoCubo = false;
+                            progresoAccion = 0;
+                            sonar('caida');
+                        } else {
+                            const posY = 0.24 + cubosApilados.length * TAM_CUBO + TAM_CUBO / 2;
+                            cuboActivo.mesh.position.set(gancho.x, posY, gancho.z);
+                            cuboActivo.mesh.rotation.set(0, 0, 0);
+                            cubosApilados.push({
+                                mesh: cuboActivo.mesh,
+                                x: gancho.x,
+                                y: posY,
+                                z: gancho.z
+                            });
+                            cuboActivo = null;
+                            indiceCuboActual++;
+                            sonar('apilar');
+                            generarSiguienteCubo();
+                        }
+                    }
+                }
+            } else {
+                progresoAccion = Math.max(0, progresoAccion - dt * 0.9);
+                gancho.y += (alturaCrucero - gancho.y) * Math.min(1, dt * 6);
+            }
+
+            // Si lleva el cubo colgado del gancho, actualizar posición y balanceo 3D del cubo
+            if (llevandoCubo && cuboActivo) {
+                cuboActivo.mesh.position.set(gancho.x, gancho.y - 0.58 - TAM_CUBO / 2, gancho.z);
+                cuboActivo.mesh.rotation.z = -gancho.vx * 0.18;
+                cuboActivo.mesh.rotation.x = gancho.vz * 0.18;
+            }
+        } else {
+            gancho.y = alturaCrucero;
+        }
+
+        // Actualizar posición 3D del gancho y láser de plomada
+        ganchoGroup.position.set(gancho.x, gancho.y, gancho.z);
+        ganchoGroup.rotation.z = -gancho.vx * 0.12;
+        ganchoGroup.rotation.x = gancho.vz * 0.12;
+
+        const posLaser = laserLine.geometry.attributes.position;
+        posLaser.setXYZ(0, gancho.x, gancho.y - 0.45, gancho.z);
+        posLaser.setXYZ(1, gancho.x, 0.04, gancho.z);
+        posLaser.needsUpdate = true;
+        laserLine.computeLineDistances();
+        miraPiso.position.set(gancho.x, 0.04, gancho.z);
+
+        // Actualizar geometría 3D de cada cuerda e indicaciones de voz para el líder
+        const vecFaltaX = objX - gancho.x;
+        const vecFaltaZ = objZ - gancho.z;
+        const distFalta = Math.hypot(vecFaltaX, vecFaltaZ);
+
+        let mejorMas = null, maxDot = 0.22;
+        let mejorMenos = null, minDot = -0.22;
+
+        cuerdas.forEach((c, idx) => {
+            // Curva de la cuerda desde el poste del jugador hasta el aro del gancho
+            const attr = c.lineaCuerda.geometry.attributes.position;
+            const comba = Math.max(0.04, (100 - c.tension) / 100 * 0.65);
+            for (let s = 0; s < 12; s++) {
+                const t = s / 11;
+                const lx = c.px + (gancho.x - c.px) * t;
+                const lz = c.pz + (gancho.z - c.pz) * t;
+                const ly = 1.2 + (gancho.y - 1.2) * t - Math.sin(t * Math.PI) * comba;
+                attr.setXYZ(s, lx, ly, lz);
+            }
+            attr.needsUpdate = true;
+
+            // Qué tanto apunta la cuerda de este integrante hacia donde necesita ir el gancho
+            const dot = distFalta > 0.12 ? (c.dx * vecFaltaX + c.dz * vecFaltaZ) / distFalta : 0;
+            if (dot > maxDot && c.tension < 95) { maxDot = dot; mejorMas = c; }
+            if (dot < minDot && c.tension > 5) { minDot = dot; mejorMenos = c; }
+
+            // Actualizar etiqueta 3D y fila en el panel
+            let claseOrden = 'ok', textoOrden = 'Mantén ahí';
+            if (distFalta > radioTolerancia * 0.65) {
+                if (dot > 0.35 && c.tension < 95) { claseOrden = 'mas'; textoOrden = '¡JALA MÁS! ▲'; }
+                else if (dot < -0.35 && c.tension > 5) { claseOrden = 'menos'; textoOrden = 'JALA MENOS ▼'; }
+            }
+
+            c.tagEl.classList.toggle('jalando-fuerte', c.tension > 65);
+            c.tagEl.querySelector('.barra > i').style.width = `${Math.round(c.tension)}%`;
+            const ordEl = c.tagEl.querySelector('.orden');
+            ordEl.className = `orden ${claseOrden}`;
+            ordEl.textContent = `${Math.round(c.tension)}% · ${textoOrden}`;
+
+            const pctPanel = document.getElementById(`pct-cuerda-${idx}`);
+            const ordPanel = document.getElementById(`orden-panel-${idx}`);
+            if (pctPanel) pctPanel.textContent = `${Math.round(c.tension)}%`;
+            if (ordPanel) {
+                ordPanel.className = `orden ${claseOrden}`;
+                ordPanel.textContent = textoOrden;
+            }
+        });
+
+        // Actualizar banner superior de guía para el líder
+        const badgeObj = document.getElementById('badge-objetivo');
+        const guiaTxt = document.getElementById('texto-guia-lider');
+        const estadoGanchoTxt = document.getElementById('estado-gancho-txt');
+        const barraFill = document.getElementById('barra-enganche-fill');
+
+        badgeObj.textContent = `PIEZA ${ Math.min(TOTAL_PIEZAS, indiceCuboActual + 1) } / ${TOTAL_PIEZAS}`;
+        barraFill.style.width = `${Math.round(progresoAccion * 100)}%`;
+
+        if (cuboActivo) {
+            if (progresoAccion > 0.05) {
+                estadoGanchoTxt.textContent = llevandoCubo
+                    ? `🎯 ¡Quieto ahí! Bajando Cubo #${cuboActivo.num} a la torre (${Math.round(progresoAccion * 100)}%)`
+                    : `🪝 ¡No se muevan! Enganchando Cubo #${cuboActivo.num} (${Math.round(progresoAccion * 100)}%)`;
+                guiaTxt.innerHTML = `🗣️ Dile a todos: <b>"¡Mantengan sus cuerdas firmes ahí mismo!"</b>`;
+            } else {
+                estadoGanchoTxt.textContent = llevandoCubo
+                    ? `🏗️ Lleva el Cubo #${cuboActivo.num} al centro de la Torre`
+                    : `🪝 Lleva el gancho hacia el Cubo #${cuboActivo.num} para engancharlo`;
+
+                if (mejorMas && mejorMenos) {
+                    guiaTxt.innerHTML = `🗣️ Sugerencia para el Líder: <b>"¡${mejorMas.nombreCorto} jala más!"</b> y <b>"¡${mejorMenos.nombreCorto} jala menos!"</b>`;
+                } else if (mejorMas) {
+                    guiaTxt.innerHTML = `🗣️ Sugerencia para el Líder: <b>"¡${mejorMas.nombreCorto} jala más tu cuerda!"</b>`;
+                } else if (mejorMenos) {
+                    guiaTxt.innerHTML = `🗣️ Sugerencia para el Líder: <b>"¡${mejorMenos.nombreCorto} suelta / jala menos!"</b>`;
+                } else {
+                    guiaTxt.innerHTML = `🗣️ <b>¡Muy cerca!</b> Ajusten suave para centrar el gancho.`;
+                }
+            }
+        }
+    }
+
+    function actualizarCamaraYEtiquetas(dt) {
+        if (modoCamara === 'aerea') {
+            // Vista Aérea Cenital del Líder (ve todas las cuerdas en 360° y los cubos desde arriba)
+            camera.position.lerp(new THREE.Vector3(0, 17.8, 2.2), Math.min(1, dt * 6));
+            camera.lookAt(0, 0.8, 0);
+        } else if (modoCamara === 'inclinada') {
+            // Vista Aérea 3D Inclinada para apreciar la altura de los 10 cubos y el gancho
+            camera.position.lerp(new THREE.Vector3(0, 12.5, 11.8), Math.min(1, dt * 6));
+            camera.lookAt(0, 2.0, 0);
+        } else {
+            anguloOrbita += dt * 0.55;
+            camera.position.set(Math.cos(anguloOrbita) * 13.5, 9.5, Math.sin(anguloOrbita) * 13.5);
+            camera.lookAt(0, 2.4, 0);
+        }
+
+        // Proyectar coordenadas 3D de cada poste a pantalla para las etiquetas con el nombre de cada integrante
+        const w = zona3d.clientWidth;
+        const h = zona3d.clientHeight;
+        cuerdas.forEach(c => {
+            const v = new THREE.Vector3(c.px * 1.06, 1.55, c.pz * 1.06);
+            v.project(camera);
+            const sx = (v.x * 0.5 + 0.5) * w;
+            const sy = (-v.y * 0.5 + 0.5) * h;
+            c.tagEl.style.left = `${ Math.max(68, Math.min(w - 68, sx)) }px`;
+            c.tagEl.style.top = `${ Math.max(62, Math.min(h - 42, sy)) }px`;
+        });
+    }
+
+    // Inicialización de escena y bucle
+    ajustarTamano3D();
+    reconstruirCuerdas();
+    reiniciarTorre();
+    salaRef.child('fase').set('lobby');
+
+    let anterior = performance.now();
+    function bucle(ahora) {
+        const dt = Math.min(0.05, (ahora - anterior) / 1000);
+        anterior = ahora;
+        pasoSimulacion(dt, ahora);
+        actualizarCamaraYEtiquetas(dt);
+        renderer.render(scene, camera);
+        requestAnimationFrame(bucle);
+    }
+    requestAnimationFrame(bucle);
+}
+
+// ============================================================
+// CONTROL EN CELULAR (CUERDA INDIVIDUAL A CIEGAS)
+// ============================================================
+function iniciarControl(sala) {
+    document.getElementById('control').classList.remove('oculto');
+    document.getElementById('sala-control').textContent = sala;
+    vigilarConexion();
+
+    if (!/^[A-HJ-NP-Z]{4}$/.test(sala)) {
+        document.getElementById('form-nombre').classList.add('oculto');
+        mostrarEspera('Ese código de sala no es válido.<br>Vuelve a escanear el código QR de la pantalla del líder.');
+        return;
+    }
+
+    let miId = leer('torre_id');
+    if (!miId) { miId = Math.random().toString(36).slice(2, 12); guardar('torre_id', miId); }
+    const salaRef = rtdb.ref('laberinto/' + sala);
+    const yoRef = salaRef.child('jugadores/' + miId);
+    const misTensionesRef = salaRef.child('teclas/' + miId);
+
+    let miNombre = leer('torre_nombre') || '';
+    let misCuerdas = [];         // [{ idx, color, etiqueta }]
+    let indiceActiva = 0;
+    let tensiones = {};          // idx -> 0..100
+    let fase = null;
+
+    const input = document.getElementById('input-nombre');
+    input.value = miNombre;
+
+    document.getElementById('form-nombre').onsubmit = ev => {
+        ev.preventDefault();
+        miNombre = input.value.trim().slice(0, 14);
+        if (!miNombre) return;
+        guardar('torre_nombre', miNombre);
+        document.getElementById('form-nombre').classList.add('oculto');
+        document.getElementById('mi-nombre').textContent = miNombre;
+        conectar();
+        pedirPantallaEncendida();
+    };
+
+    function mostrarEspera(html) {
+        const el = document.getElementById('espera');
+        el.innerHTML = html;
+        el.classList.remove('oculto');
+        document.getElementById('panel-cuerda').classList.add('oculto');
+    }
+
+    function registrarme() {
+        yoRef.onDisconnect().remove();
+        misTensionesRef.onDisconnect().remove();
+        yoRef.set({ nombre: miNombre, entro: firebase.database.ServerValue.TIMESTAMP });
+    }
+
+    function conectar() {
+        mostrarEspera('Conectando tu cuerda con la grúa…');
+
+        salaRef.child('fase').on('value', s => {
+            const antes = fase;
+            fase = s.val();
+            const textos = {
+                lobby: 'En espera del líder',
+                jugando: '🙈 Escucha al Líder',
+                fin: '🏆 ¡Torre completada!'
+            };
+            document.getElementById('estado-juego').textContent = textos[fase] || '';
+            if (!fase) {
+                mostrarEspera('Esperando la pantalla del líder…<br><small>Si se cerró, vuelve a escanear el QR.</small>');
+            } else if (!antes) {
+                registrarme();
+            }
+        });
+
+        salaRef.child('asignacion/' + miId).on('value', s => {
+            misCuerdas = s.val() || [];
+            if (!misCuerdas.length) {
+                if (fase) mostrarEspera('Conectado.<br>Recibiendo tu cuerda…');
+                return;
+            }
+            indiceActiva = 0;
+            misCuerdas.forEach(c => {
+                if (typeof tensiones[c.idx] !== 'number') {
+                    tensiones[c.idx] = 50;
+                    misTensionesRef.child(String(c.idx)).set(50);
+                }
+            });
+            document.getElementById('espera').classList.add('oculto');
+            document.getElementById('panel-cuerda').classList.remove('oculto');
+            renderSelectorCuerdas();
+            actualizarVistaCuerda();
+        });
+
+        // Vibrar cuando el equipo engancha o apila un cubo
+        salaRef.child('progreso').on('value', s => {
+            const p = s.val();
+            if (!p) return;
+            if (navigator.vibrate) navigator.vibrate(p.estado === 'centrar' ? [40, 60, 80] : 40);
+            const av = document.getElementById('aviso-ciego-rol');
+            if (p.estado === 'centrar') {
+                av.innerHTML = `🪝 <b>¡Cubo #${p.pieza} enganchado!</b> Escucha al Líder para centrarlo sobre la torre.`;
+            } else {
+                av.innerHTML = `🙈 <b>Pieza #${p.pieza} de 10:</b> No puedes ver los cubos. Sigue las órdenes del <b>Líder</b>.`;
+            }
+        });
+
+        // Si el líder nivela todas las cuerdas a 50%
+        misTensionesRef.on('value', s => {
+            const val = s.val();
+            if (!val) return;
+            Object.entries(val).forEach(([k, v]) => {
+                if (typeof v === 'number') tensiones[Number(k)] = v;
+            });
+            actualizarVistaCuerda();
+        });
+    }
+
+    function renderSelectorCuerdas() {
+        const sel = document.getElementById('selector-cuerdas-prop');
+        sel.innerHTML = '';
+        if (misCuerdas.length <= 1) {
+            sel.classList.add('oculto');
+            return;
+        }
+        sel.classList.remove('oculto');
+        misCuerdas.forEach((c, idx) => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'tab-cuerda' + (idx === indiceActiva ? ' activa' : '');
+            b.style.setProperty('--c', c.color);
+            b.textContent = c.etiqueta;
+            b.onclick = () => {
+                indiceActiva = idx;
+                renderSelectorCuerdas();
+                actualizarVistaCuerda();
+            };
+            sel.appendChild(b);
+        });
+    }
+
+    function fijarTension(nuevoValor) {
+        const activa = misCuerdas[indiceActiva];
+        if (!activa) return;
+        const v = Math.round(Math.max(0, Math.min(100, nuevoValor)));
+        if (tensiones[activa.idx] === v) return;
+        tensiones[activa.idx] = v;
+        if (navigator.vibrate && (v === 0 || v === 50 || v === 100)) navigator.vibrate(12);
+        actualizarVistaCuerda();
+        misTensionesRef.child(String(activa.idx)).set(v);
+    }
+
+    function actualizarVistaCuerda() {
+        const activa = misCuerdas[indiceActiva];
+        if (!activa) return;
+        const v = typeof tensiones[activa.idx] === 'number' ? tensiones[activa.idx] : 50;
+
+        document.getElementById('mi-nombre').style.color = activa.color;
+        document.getElementById('panel-cuerda').style.setProperty('--mi-color', activa.color);
+        document.getElementById('dir-cuerda-txt').textContent = activa.etiqueta.toUpperCase();
+        document.getElementById('num-tension').textContent = `${v}%`;
+
+        const nudo = document.getElementById('nudo-arrastre');
+        nudo.textContent = `${v}%`;
+        nudo.style.top = `${12 + (v / 100) * 76}%`;
+
+        dibujarCuerdaCanvas(v, activa.color);
+    }
+
+    function dibujarCuerdaCanvas(tension, color) {
+        const cnv = document.getElementById('canvas-cuerda');
+        const rect = cnv.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        cnv.width = rect.width;
+        cnv.height = rect.height;
+        const ctx = cnv.getContext('2d');
+        ctx.clearRect(0, 0, cnv.width, cnv.height);
+
+        const cx = cnv.width / 2;
+        const amplitudOndas = (100 - tension) * 0.14;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 6 + (tension / 100) * 6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        for (let y = 0; y <= cnv.height; y += 6) {
+            const x = cx + Math.sin(y * 0.08) * amplitudOndas;
+            if (y === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    // Deslizar el dedo sobre la cuerda vertical
+    const carril = document.getElementById('carril-cuerda');
+    let arrastrando = false;
+    function actualizarPorToque(ev) {
+        const r = carril.getBoundingClientRect();
+        const pct = ((ev.clientY - r.top) / r.height) * 100;
+        fijarTension(pct);
+    }
+    carril.addEventListener('pointerdown', ev => {
+        arrastrando = true;
+        try { carril.setPointerCapture(ev.pointerId); } catch (e) {}
+        actualizarPorToque(ev);
+    });
+    carril.addEventListener('pointermove', ev => {
+        if (arrastrando) actualizarPorToque(ev);
+    });
+    carril.addEventListener('pointerup', () => { arrastrando = false; });
+    carril.addEventListener('pointercancel', () => { arrastrando = false; });
+
+    // Botones JALAR MÁS (+) y JALAR MENOS (-) con soporte de mantener presionado
+    function configurarBotonContinuo(idBoton, deltaPaso) {
+        const btn = document.getElementById(idBoton);
+        let timer = null;
+        const parar = () => {
+            btn.classList.remove('on');
+            if (timer) { clearInterval(timer); timer = null; }
+        };
+        btn.addEventListener('pointerdown', ev => {
+            ev.preventDefault();
+            try { btn.setPointerCapture(ev.pointerId); } catch (e) {}
+            btn.classList.add('on');
+            const activa = misCuerdas[indiceActiva];
+            if (activa) fijarTension((tensiones[activa.idx] ?? 50) + deltaPaso);
+            if (navigator.vibrate) navigator.vibrate(15);
+            timer = setInterval(() => {
+                const act = misCuerdas[indiceActiva];
+                if (act) fijarTension((tensiones[act.idx] ?? 50) + deltaPaso * 0.8);
+            }, 95);
+        });
+        btn.addEventListener('pointerup', parar);
+        btn.addEventListener('pointercancel', parar);
+        btn.addEventListener('lostpointercapture', parar);
+        btn.addEventListener('contextmenu', ev => ev.preventDefault());
+    }
+
+    configurarBotonContinuo('btn-mas', 6);
+    configurarBotonContinuo('btn-menos', -6);
+    document.getElementById('btn-medio').onclick = () => fijarTension(50);
+
+    async function pedirPantallaEncendida() {
+        try { if (navigator.wakeLock) await navigator.wakeLock.request('screen'); } catch (e) {}
+    }
+}
+</script>
+</body>
+</html>
