@@ -285,3 +285,23 @@ que a nadie le toque avanzar solo). Niveles en ASCII en `NIVELES`
 - Al cerrar la pestaña de la pantalla, la sala se borra sola (`onDisconnect`).
 - Se prueba sin celulares con el teclado: Q W E / A D / Z X C o flechas.
 - No toca puntos, asistencias ni nada de la gamificación.
+
+## Pausas en línea con movimiento (`juegos-virtuales/`)
+
+Tres juegos para pausas activas por Zoom/Teams (17-nov-2026). José comparte la
+pantalla (con sonido), cada quien escanea el QR y **el acelerómetro de su
+celular** detecta el movimiento. Sin login, sin puntos de IBERO Actívate.
+
+| Archivo | Juego |
+|---|---|
+| `carrera-energia.html` | Equipos (2-4); cada repetición empuja al equipo. Avance = **promedio** por persona, para que los equipos chicos compitan. Movimientos en `MOVS` con su umbral `alto`. |
+| `estatua-extrema.html` | Postura quieta con el celular al pecho; si el sensor pasa el umbral 250 ms seguidos, queda fuera. Si caen todos en la ronda, nadie sale. Sensibilidad en `SENS`. |
+| `reflejos-oficina.html` | Orden con o sin "IBERO dice"; ~30 % trampas. Puntos en `puntosAcierto()`; trampa −50, aguantarla +30. |
+| `ritmo-video.html` | Videos de ritmo de YouTube en grande (lista `BASE`) y campo para pegar otros links (se guardan en el navegador). |
+
+- Base común en `js/movimiento-comun.js` (sala, QR, sensor `MOV.Sensor`, entrada del celular) y `css/movimiento.css`.
+- Usan Realtime Database bajo `laberinto/{SALA}`, igual que la Torre, para no tener que desplegar reglas nuevas. Campo `juego` = `carrera` | `estatua` | `reflejos`.
+- La sala se borra al cerrar o recargar la pestaña de la pantalla (`pagehide`), **no** con `onDisconnect`, para que un parpadeo del internet no borre a todos. Al recargar, los celulares se vuelven a anotar solos.
+- Sin sensor (computadora, permiso negado) el celular muestra un botón y se juega "con honor".
+- iPhone pide permiso de movimiento: se pide en el toque de "¡Estoy listo!", antes de cualquier `await`.
+- Pruebas con jsdom y celulares simulados: en el scratchpad de la sesión del 17-nov (no se guardaron en el repo).

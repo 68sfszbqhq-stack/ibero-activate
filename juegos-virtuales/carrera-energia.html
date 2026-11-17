@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Carrera de Energía</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="stylesheet" href="css/movimiento.css">
+<style>
+    .eq-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+    .eq-col { background: var(--panel); border-radius: 14px; padding: 12px; border-top: 5px solid var(--c); }
+    .eq-tit { font-weight: 900; font-size: 1.15rem; margin-bottom: 8px; display: flex; justify-content: space-between; }
+    .eq-tit span { color: var(--muted); }
+
+    #juego { display: grid; grid-template-columns: 1fr 280px; gap: 18px; flex: 1; }
+    .centro { display: flex; flex-direction: column; gap: 14px; }
+    .cabeza { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px; background: var(--panel); border-radius: 18px; padding: 16px 24px; }
+    .cabeza .cartel { text-align: left; display: flex; align-items: center; gap: 18px; }
+    .cabeza .emoji { font-size: clamp(3rem, 7vw, 5.5rem); }
+    .pistas { display: flex; flex-direction: column; gap: 12px; flex: 1; justify-content: center; }
+    .pista { position: relative; height: 92px; border-radius: 16px; background: repeating-linear-gradient(90deg, #172238 0 60px, #1a2740 60px 120px); border: 2px solid var(--c); overflow: hidden; }
+    .pista .nombre { position: absolute; left: 14px; top: 8px; font-weight: 900; color: var(--c); font-size: 1.05rem; text-shadow: 0 1px 2px #000; }
+    .pista .valor { position: absolute; left: 14px; bottom: 8px; font-weight: 700; color: var(--muted); font-size: .9rem; }
+    .pista .meta { position: absolute; right: 0; top: 0; bottom: 0; width: 26px; background: repeating-conic-gradient(#fff 0 25%, #111 0 50%) 0 0 / 13px 13px; opacity: .85; }
+    .pista .corredor { position: absolute; top: 50%; transform: translate(-50%, -50%) scaleX(-1); font-size: 3.4rem; transition: left .5s ease-out; filter: drop-shadow(0 0 12px var(--c)); }
+    .pista.lider { box-shadow: 0 0 26px var(--c); }
+    .pista.lider .corredor { animation: latido .6s infinite; }
+    .lado { background: var(--panel); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .lado h3 { font-size: 1rem; font-weight: 900; }
+    .podio-eq li { border-left: 6px solid var(--c); }
+    @media (max-width: 900px) { #juego { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- ================= PANTALLA ================= -->
+<div class="host oculto" id="host">
+    <div class="barra">
+        <h1>🏁 Carrera de Energía <small>IBERO Actívate</small></h1>
+        <span class="etiqueta" id="cuantos">0 jugadores</span>
+        <div class="mini"><div class="qr-blanco" id="qr-chico"></div><div><div class="etiqueta">Sala</div><div class="codigo" id="codigo-chico">····</div></div></div>
+    </div>
+    <div class="escenario">
+        <div class="lobby" id="lobby">
+            <div class="col-qr">
+                <div class="qr-blanco" id="qr-grande"></div>
+                <div class="etiqueta">Código de sala</div>
+                <div class="codigo" id="codigo-grande">····</div>
+                <div class="url" id="url"></div>
+            </div>
+            <div>
+                <h2>¡Escanea y únete a tu equipo!</h2>
+                <p class="pasos">1. Escanea el QR con la cámara del celular.<br>
+                2. Escribe tu nombre y toca <b>¡Estoy listo!</b> (permite el movimiento).<br>
+                3. Cada repetición que hagas con el celular en la mano <b>empuja a tu equipo</b> hacia la meta.</p>
+                <div class="ajustes">
+                    <div class="ajuste"><span class="etiqueta">Equipos</span><div id="aj-equipos"></div></div>
+                    <div class="ajuste"><span class="etiqueta">Rondas</span><div id="aj-rondas"></div></div>
+                    <div class="ajuste"><span class="etiqueta">Segundos por ronda</span><div id="aj-dur"></div></div>
+                </div>
+                <div class="eq-cols" id="equipos-lobby"></div>
+                <p class="pasos" style="margin-top:10px">Clic en un nombre para cambiarlo de equipo. 👆 = juega con botón (sin sensor).</p>
+                <button class="btn-grande" id="btn-empezar" disabled>¡Arrancar carrera!</button>
+            </div>
+        </div>
+
+        <div id="juego" class="oculto">
+            <div class="centro">
+                <div class="cabeza">
+                    <div class="cartel">
+                        <div class="emoji" id="j-emoji">🏁</div>
+                        <div>
+                            <span class="fase" id="j-fase">Prepárate</span>
+                            <div class="grande" id="j-mov">—</div>
+                            <div class="tip" id="j-tip"></div>
+                        </div>
+                    </div>
+                    <div style="text-align:center">
+                        <div class="cuenta" id="j-cuenta">0</div>
+                        <div class="etiqueta" id="j-ronda">Ronda 1 de 4</div>
+                    </div>
+                </div>
+                <div class="pistas" id="pistas"></div>
+            </div>
+            <div class="lado">
+                <h3>⚡ Más energía</h3>
+                <ol class="tabla" id="mvp"></ol>
+                <p class="pasos" style="font-size:.85rem">El avance de cada equipo es el <b>promedio</b> de repeticiones por persona: los equipos chicos también pueden ganar.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="final oculto" id="final">
+        <h2 id="f-titulo">🏆</h2>
+        <ol class="tabla podio-eq" id="f-equipos"></ol>
+        <h3 class="etiqueta">MVP de energía</h3>
+        <ol class="tabla" id="f-mvp"></ol>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+            <button class="btn-grande" id="f-otra">Otra carrera</button>
+            <button class="btn" id="f-sala">Volver a la sala</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================= CELULAR ================= -->
+<div class="control oculto" id="control"></div>
+
+<script src="js/movimiento-comun.js"></script>
+<script>
+const EQUIPOS = [
+    { n: 'Rojo',     e: '🔥', c: '#ef4444' },
+    { n: 'Azul',     e: '🌊', c: '#3b82f6' },
+    { n: 'Verde',    e: '🌿', c: '#22c55e' },
+    { n: 'Amarillo', e: '⚡', c: '#eab308' }
+];
+// alto = qué tan fuerte debe ser el movimiento para contar una repetición (m/s²).
+// Las sentadillas con el celular en el pecho mueven poco; el boxeo, mucho.
+const MOVS = [
+    { n: 'Sentadillas',        e: '🏋️', t: 'Celular en el pecho con las dos manos. Baja y sube.',    alto: 2.0, pausa: 450 },
+    { n: 'Trote en el lugar',  e: '🏃', t: 'Celular en la mano. ¡Rodillas arriba!',                  alto: 3.0, pausa: 260 },
+    { n: 'Jumping jacks',      e: '⭐', t: 'Celular en la mano. Abre y cierra brazos y piernas.',    alto: 4.0, pausa: 380 },
+    { n: 'Boxeo al aire',      e: '🥊', t: 'Celular bien agarrado. Golpes rápidos al frente.',       alto: 5.0, pausa: 200 },
+    { n: 'Saltitos',           e: '🦘', t: 'Celular en el pecho. Saltos suaves en el lugar.',        alto: 3.5, pausa: 320 },
+    { n: 'Rodilla al codo',    e: '🔁', t: 'Celular en la mano. Rodilla contraria al codo.',         alto: 3.0, pausa: 380 }
+];
+const PREP_MS = 6000, DESCANSO_MS = 12000;
+
+if (MOV.sala) control(); else host();
+
+// =====================================================================
+// PANTALLA
+// =====================================================================
+function host() {
+    MOV.$('host').classList.remove('oculto');
+    MOV.vigilarConexion();
+    const { sala, ref, url } = MOV.crearSala('carrera');
+    MOV.borrarAlSalir(ref);
+    MOV.qr(MOV.$('qr-grande'), url, 240);
+    MOV.qr(MOV.$('qr-chico'), url, 64);
+    MOV.$('codigo-grande').textContent = sala;
+    MOV.$('codigo-chico').textContent = sala;
+    MOV.$('url').textContent = url;
+
+    const cfg = { equipos: 2, rondas: 4, dur: 30 };
+    MOV.segmento(MOV.$('aj-equipos'), [2, 3, 4].map(v => ({ v, t: v })), cfg.equipos, v => { cfg.equipos = v; asignar(true); pintarLobby(); });
+    MOV.segmento(MOV.$('aj-rondas'), [3, 4, 5, 6].map(v => ({ v, t: v })), cfg.rondas, v => { cfg.rondas = v; });
+    MOV.segmento(MOV.$('aj-dur'), [20, 30, 45].map(v => ({ v, t: v + ' s' })), cfg.dur, v => { cfg.dur = v; });
+
+    let jugadores = {}, energia = {}, estado = { fase: 'lobby' }, orden = [], partida = 0;
+    ref.child('estado').set(estado);
+
+    ref.child('jugadores').on('value', s => {
+        jugadores = {};
+        Object.entries(s.val() || {}).forEach(([id, j]) => { if (j && j.nombre) jugadores[id] = j; });
+        asignar(false);
+        pintarLobby();
+    });
+    const leerEnergia = s => { energia[s.key] = Number(s.val()) || 0; };
+    ref.child('energia').on('child_added', leerEnergia);
+    ref.child('energia').on('child_changed', leerEnergia);
+    ref.child('energia').on('child_removed', s => { delete energia[s.key]; });
+
+    // Reparte a quien no tiene equipo en el que tenga menos gente.
+    // todos=true vuelve a repartir a todos (al cambiar el número de equipos).
+    function asignar(todos) {
+        const ids = Object.keys(jugadores).sort((a, b) => (jugadores[a].entro || 0) - (jugadores[b].entro || 0));
+        const cuenta = Array(cfg.equipos).fill(0);
+        const upd = {};
+        if (!todos) ids.forEach(id => { const e = jugadores[id].equipo; if (e != null && e < cfg.equipos) cuenta[e]++; });
+        ids.forEach(id => {
+            const e = jugadores[id].equipo;
+            if (todos || e == null || e >= cfg.equipos) {
+                const min = cuenta.indexOf(Math.min(...cuenta));
+                cuenta[min]++;
+                if (e !== min) upd[id + '/equipo'] = min;
+                jugadores[id].equipo = min;
+            }
+        });
+        if (Object.keys(upd).length) ref.child('jugadores').update(upd);
+    }
+
+    function pintarLobby() {
+        const ids = Object.keys(jugadores);
+        MOV.$('cuantos').textContent = ids.length + (ids.length === 1 ? ' jugador' : ' jugadores');
+        MOV.$('btn-empezar').disabled = ids.length === 0;
+        MOV.$('equipos-lobby').innerHTML = EQUIPOS.slice(0, cfg.equipos).map((eq, i) => {
+            const suyos = ids.filter(id => jugadores[id].equipo === i);
+            return `<div class="eq-col" style="--c:${eq.c}">
+                <div class="eq-tit">${eq.e} ${eq.n} <span>${suyos.length}</span></div>
+                <div class="chips">${suyos.map(id => `<span class="chip click ${jugadores[id].conectado === false ? 'off' : ''}" style="--c:${eq.c}" data-id="${id}">${MOV.esc(jugadores[id].nombre)}${jugadores[id].sensor === false ? ' 👆' : ''}</span>`).join('')}</div>
+            </div>`;
+        }).join('');
+    }
+    MOV.$('equipos-lobby').addEventListener('click', e => {
+        const c = e.target.closest('[data-id]'); if (!c) return;
+        const id = c.dataset.id;
+        ref.child('jugadores/' + id + '/equipo').set(((jugadores[id].equipo || 0) + 1) % cfg.equipos);
+    });
+
+    // ---------- Puntaje ----------
+    const meta = () => cfg.rondas * cfg.dur * 0.8;   // ~0.8 repeticiones por segundo
+    function marcador() {
+        return EQUIPOS.slice(0, cfg.equipos).map((eq, i) => {
+            const miembros = Object.keys(jugadores).filter(id => jugadores[id].equipo === i);
+            const activos = miembros.filter(id => jugadores[id].conectado !== false || energia[id] > 0);
+            const total = miembros.reduce((a, id) => a + (energia[id] || 0), 0);
+            return { ...eq, i, total, prom: activos.length ? total / activos.length : 0 };
+        });
+    }
+    function topIndividual(n) {
+        return Object.keys(energia).filter(id => jugadores[id] && energia[id] > 0)
+            .sort((a, b) => energia[b] - energia[a]).slice(0, n)
+            .map(id => ({ nombre: jugadores[id].nombre, pts: energia[id], eq: EQUIPOS[jugadores[id].equipo] || EQUIPOS[0] }));
+    }
+
+    // ---------- Flujo del juego ----------
+    function ponerEstado(e) { estado = e; ref.child('estado').set(e); }
+    function prep(r) { ponerEstado({ fase: 'prep', partida, ronda: r, rondas: cfg.rondas, mov: orden[r % orden.length], hasta: MOV.ahora() + PREP_MS }); }
+
+    function empezar() {
+        partida = Date.now();
+        orden = MOV.barajar(MOVS.map((_, i) => i));
+        energia = {};
+        ref.child('energia').remove();
+        MOV.$('lobby').classList.add('oculto');
+        MOV.$('final').classList.add('oculto');
+        MOV.$('juego').classList.remove('oculto');
+        MOV.$('pistas').innerHTML = EQUIPOS.slice(0, cfg.equipos).map((eq, i) => `
+            <div class="pista" id="pista-${i}" style="--c:${eq.c}">
+                <div class="nombre">${eq.e} Equipo ${eq.n}</div>
+                <div class="valor" id="valor-${i}">0</div>
+                <div class="meta"></div>
+                <div class="corredor" id="corredor-${i}" style="left:6%">🏃</div>
+            </div>`).join('');
+        prep(0);
+    }
+    MOV.$('btn-empezar').onclick = empezar;
+    MOV.$('f-otra').onclick = empezar;
+    MOV.$('f-sala').onclick = () => {
+        ponerEstado({ fase: 'lobby' });
+        MOV.$('final').classList.add('oculto');
+        MOV.$('juego').classList.add('oculto');
+        MOV.$('lobby').classList.remove('oculto');
+    };
+
+    let ultimoSeg = null;
+    setInterval(() => {
+        if (!['prep', 'ronda', 'descanso'].includes(estado.fase)) return;
+        const seg = MOV.segundos(estado.hasta);
+        if (seg !== ultimoSeg && seg > 0 && ((estado.fase === 'prep' && seg <= 3) || (estado.fase === 'ronda' && seg <= 5))) MOV.sonar('tic');
+        ultimoSeg = seg;
+        if (MOV.ahora() < estado.hasta) return;
+        if (estado.fase === 'prep') {
+            MOV.sonar('go');
+            ponerEstado({ ...estado, fase: 'ronda', hasta: MOV.ahora() + cfg.dur * 1000 });
+        } else if (estado.fase === 'ronda') {
+            MOV.sonar('fin');
+            if (estado.ronda + 1 < estado.rondas) ponerEstado({ ...estado, fase: 'descanso', hasta: MOV.ahora() + DESCANSO_MS });
+            else { ponerEstado({ ...estado, fase: 'fin', hasta: 0 }); setTimeout(mostrarFinal, 1500); }  // espera las últimas repeticiones
+        } else if (estado.fase === 'descanso') prep(estado.ronda + 1);
+    }, 200);
+
+    setInterval(pintarJuego, 250);
+    function pintarJuego() {
+        if (MOV.$('juego').classList.contains('oculto')) return;
+        const m = MOVS[estado.mov] || MOVS[0];
+        const textos = { prep: 'Prepárate', ronda: '¡A moverse!', descanso: 'Descanso 💧', fin: '¡Meta!' };
+        MOV.$('j-fase').textContent = textos[estado.fase] || '';
+        MOV.$('j-fase').style.background = estado.fase === 'ronda' ? 'var(--ok)' : '';
+        const marc = marcador();
+        const lider = marc.slice().sort((a, b) => b.prom - a.prom)[0];
+        if (estado.fase === 'descanso') {
+            const sig = MOVS[orden[(estado.ronda + 1) % orden.length]];
+            MOV.$('j-emoji').textContent = '💧';
+            MOV.$('j-mov').textContent = lider && lider.prom > 0 ? `Va ganando: ${lider.e} ${lider.n}` : 'Respira…';
+            MOV.$('j-tip').textContent = `Sigue: ${sig.e} ${sig.n}`;
+        } else {
+            MOV.$('j-emoji').textContent = m.e;
+            MOV.$('j-mov').textContent = m.n;
+            MOV.$('j-tip').textContent = m.t;
+        }
+        MOV.$('j-cuenta').textContent = estado.hasta ? MOV.segundos(estado.hasta) : '🏁';
+        MOV.$('j-ronda').textContent = `Ronda ${(estado.ronda || 0) + 1} de ${estado.rondas || cfg.rondas}`;
+        marc.forEach(t => {
+            const pos = Math.min(1, t.prom / meta());
+            const c = MOV.$('corredor-' + t.i), p = MOV.$('pista-' + t.i);
+            if (!c) return;
+            c.style.left = (6 + pos * 84) + '%';
+            p.classList.toggle('lider', t === lider && t.prom > 0);
+            MOV.$('valor-' + t.i).textContent = `${t.prom.toFixed(1)} rep/persona · ${t.total} en total`;
+        });
+        MOV.$('mvp').innerHTML = topIndividual(6).map((j, k) =>
+            `<li><span class="n">${k + 1}</span><span class="nom">${j.eq.e} ${MOV.esc(j.nombre)}</span><span class="pts">${j.pts}</span></li>`).join('')
+            || '<li><span class="nom" style="color:var(--muted)">Aún nadie se mueve…</span></li>';
+    }
+
+    function mostrarFinal() {
+        const marc = marcador().sort((a, b) => b.prom - a.prom);
+        const med = ['🥇', '🥈', '🥉', '4°'];
+        MOV.$('f-titulo').textContent = marc[0] && marc[0].prom > 0 ? `🏆 ¡Gana el Equipo ${marc[0].n}!` : '🏁 ¡Fin de la carrera!';
+        MOV.$('f-equipos').innerHTML = marc.map((t, k) =>
+            `<li style="--c:${t.c}"><span class="n">${med[k]}</span><span class="nom">${t.e} ${t.n}</span><span class="pts">${t.prom.toFixed(1)} rep/persona</span></li>`).join('');
+        MOV.$('f-mvp').innerHTML = topIndividual(5).map((j, k) =>
+            `<li><span class="n">${k + 1}</span><span class="nom">${j.eq.e} ${MOV.esc(j.nombre)}</span><span class="pts">${j.pts} rep</span></li>`).join('');
+        MOV.$('final').classList.remove('oculto');
+        MOV.sonar('fin');
+    }
+}
+
+// =====================================================================
+// CELULAR
+// =====================================================================
+function control() {
+    MOV.unirse({ juego: 'carrera', titulo: 'Carrera de Energía', emoji: '🏁', alListo: jugar });
+}
+
+function jugar({ salaRef, id, yoRef, nombre, sensor, conSensor }) {
+    const caja = MOV.$('control');
+    caja.innerHTML = `
+        <div class="yo" id="c-equipo">${MOV.esc(nombre)}</div>
+        <span class="fase" id="c-fase">En la sala</span>
+        <div class="emoji-titulo" id="c-emoji">⏳</div>
+        <h1 id="c-mov">Mira la pantalla</h1>
+        <p class="msg" id="c-tip">Cuando arranque la carrera, muévete con el celular en la mano.</p>
+        <div class="cuenta" id="c-cuenta"></div>
+        <div class="contador" id="c-num">0</div>
+        <div class="etiqueta">tus repeticiones</div>
+        <div class="medidor" id="c-med"><i></i></div>
+        <button class="btn-tap oculto" id="c-tap">¡Una más!</button>
+        <p class="nota-honor oculto" id="c-honor">Tu aparato no tiene sensor de movimiento: toca el botón en cada repetición que hagas. ¡Con honor! 😉</p>`;
+
+    let estado = { fase: 'lobby' }, total = 0, partida = null, escrito = -1;
+    const energiaRef = salaRef.child('energia/' + id);
+
+    yoRef.child('equipo').on('value', s => {
+        const eq = EQUIPOS[s.val()];
+        if (!eq) return;
+        caja.style.setProperty('--c', eq.c);
+        MOV.$('c-equipo').textContent = `${eq.e} ${nombre} · Equipo ${eq.n}`;
+    });
+
+    salaRef.child('estado').on('value', s => {
+        estado = s.val() || { fase: 'lobby' };
+        if (estado.partida && estado.partida !== partida) { partida = estado.partida; total = 0; escrito = -1; MOV.$('c-num').textContent = 0; }
+        const m = MOVS[estado.mov];
+        if (m) { sensor.alto = m.alto; sensor.bajo = m.alto * .4; sensor.pausa = m.pausa; }
+        pintar();
+    });
+
+    function sumar() {
+        if (estado.fase !== 'ronda' || MOV.ahora() > estado.hasta) return;
+        total++;
+        MOV.$('c-num').textContent = total;
+        if (navigator.vibrate) navigator.vibrate(12);
+    }
+
+    if (conSensor) {
+        sensor.alRep = sumar;
+        const barra = MOV.$('c-med').firstElementChild;
+        sensor.alMover = s => { barra.style.width = Math.min(100, s / sensor.alto * 70) + '%'; };
+    } else {
+        MOV.$('c-med').classList.add('oculto');
+        MOV.$('c-tap').classList.remove('oculto');
+        MOV.$('c-honor').classList.remove('oculto');
+        let ultimo = 0;
+        MOV.$('c-tap').addEventListener('pointerdown', e => {
+            e.preventDefault();
+            const t = performance.now();
+            if (t - ultimo < 300) return;   // nadie hace más de 3 por segundo
+            ultimo = t; sumar();
+        });
+    }
+
+    // Se manda el total, no cada repetición: menos escrituras y nada se pierde.
+    setInterval(() => { if (partida && total !== escrito) { escrito = total; energiaRef.set(total); } }, 500);
+
+    function pintar() {
+        const m = MOVS[estado.mov];
+        const f = estado.fase;
+        const fase = { lobby: 'En la sala', prep: 'Prepárate', ronda: '¡A moverse!', descanso: 'Descanso', fin: '¡Terminó!' };
+        MOV.$('c-fase').textContent = fase[f] || '';
+        MOV.$('c-fase').style.background = f === 'ronda' ? 'var(--ok)' : '';
+        if ((f === 'prep' || f === 'ronda') && m) {
+            MOV.$('c-emoji').textContent = m.e; MOV.$('c-mov').textContent = m.n; MOV.$('c-tip').textContent = m.t;
+        } else if (f === 'descanso') {
+            MOV.$('c-emoji').textContent = '💧'; MOV.$('c-mov').textContent = 'Respira'; MOV.$('c-tip').textContent = 'Mira en la pantalla cómo va tu equipo.';
+        } else if (f === 'fin') {
+            MOV.$('c-emoji').textContent = '🏆'; MOV.$('c-mov').textContent = `¡Hiciste ${total}!`; MOV.$('c-tip').textContent = 'Mira en la pantalla qué equipo ganó.';
+        } else {
+            MOV.$('c-emoji').textContent = '⏳'; MOV.$('c-mov').textContent = 'Mira la pantalla'; MOV.$('c-tip').textContent = 'Cuando arranque la carrera, muévete con el celular en la mano.';
+        }
+    }
+    setInterval(() => {
+        const f = estado.fase;
+        MOV.$('c-cuenta').textContent = (f === 'prep' || f === 'ronda' || f === 'descanso') ? MOV.segundos(estado.hasta) : '';
+    }, 250);
+}
+</script>
+</body>
+</html>

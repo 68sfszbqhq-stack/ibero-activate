@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Reflejos de Oficina</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="stylesheet" href="css/movimiento.css">
+<style>
+    :root { --acento: #fb923c; }
+    #juego { display: grid; grid-template-columns: 1fr 300px; gap: 18px; flex: 1; }
+    .escena { background: var(--panel); border-radius: 22px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; min-height: 60vh; transition: background .15s; }
+    .escena.orden { background: #7c2d12; }
+    .escena.trampa-rev { background: #3b0764; }
+    .escena .dice { font-size: clamp(1.4rem, 3vw, 2.4rem); font-weight: 900; color: var(--acento); letter-spacing: 1px; }
+    .escena .emoji { font-size: clamp(5rem, 13vw, 10rem); line-height: 1; }
+    .escena.orden .emoji { animation: latido .4s infinite; }
+    .nombres { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 900px; }
+    .lado { background: var(--panel); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .lado h3 { font-size: 1rem; font-weight: 900; }
+    .racha { color: #fb923c; font-size: .85rem; }
+    .delta { font-size: 3rem; font-weight: 900; }
+    @media (max-width: 900px) { #juego { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="host oculto" id="host">
+    <div class="barra">
+        <h1>⚡ Reflejos de Oficina <small>IBERO Actívate</small></h1>
+        <span class="etiqueta" id="cuantos">0 jugadores</span>
+        <div class="mini"><div class="qr-blanco" id="qr-chico"></div><div><div class="etiqueta">Sala</div><div class="codigo" id="codigo-chico">····</div></div></div>
+    </div>
+    <div class="escenario">
+        <div class="lobby" id="lobby">
+            <div class="col-qr">
+                <div class="qr-blanco" id="qr-grande"></div>
+                <div class="etiqueta">Código de sala</div>
+                <div class="codigo" id="codigo-grande">····</div>
+                <div class="url" id="url"></div>
+            </div>
+            <div>
+                <h2>¿Quién tiene los reflejos más rápidos?</h2>
+                <p class="pasos">1. Escanea el QR y toca <b>¡Estoy listo!</b> (permite el movimiento).<br>
+                2. Con el celular en la mano, <b>quieto</b>, espera la orden.<br>
+                3. Si dice <b>"IBERO dice…"</b>, ¡hazlo ya! Entre más rápido, más puntos.<br>
+                4. Si <b>no</b> dice "IBERO dice"… ¡es trampa! No te muevas. 😈</p>
+                <div class="ajustes">
+                    <div class="ajuste"><span class="etiqueta">Rondas</span><div id="aj-rondas"></div></div>
+                </div>
+                <div class="chips" id="chips-lobby"></div>
+                <p class="pasos" style="margin-top:10px">👆 = juega con botón (sin sensor).</p>
+                <button class="btn-grande" id="btn-empezar" disabled>¡Empezar!</button>
+            </div>
+        </div>
+
+        <div id="juego" class="oculto">
+            <div class="escena" id="escena">
+                <span class="fase" id="j-ronda">Ronda 1</span>
+                <div class="dice" id="j-dice"></div>
+                <div class="emoji" id="j-emoji">👀</div>
+                <div class="cartel"><div class="grande" id="j-texto">Quietos…</div></div>
+                <div class="tip" id="j-tip" style="color:var(--muted);font-size:1.2rem"></div>
+                <div class="nombres" id="j-nombres"></div>
+            </div>
+            <div class="lado">
+                <h3>🏆 Tabla</h3>
+                <ol class="tabla" id="tabla"></ol>
+            </div>
+        </div>
+    </div>
+
+    <div class="final oculto" id="final">
+        <h2 id="f-titulo">🏆</h2>
+        <ol class="tabla" id="f-lista"></ol>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+            <button class="btn-grande" id="f-otra">Otra vez</button>
+            <button class="btn" id="f-sala">Volver a la sala</button>
+        </div>
+    </div>
+</div>
+
+<div class="control oculto" id="control"></div>
+
+<script src="js/movimiento-comun.js"></script>
+<script>
+const ORDENES = [
+    { t: '¡Manos arriba!',     e: '🙌' },
+    { t: '¡Gira!',             e: '🔄' },
+    { t: '¡Agáchate!',         e: '⬇️' },
+    { t: '¡Salta!',            e: '🦘' },
+    { t: '¡Boxea!',            e: '🥊' },
+    { t: '¡Toca el piso!',     e: '🖐️' },
+    { t: '¡Rodilla arriba!',   e: '🦵' },
+    { t: '¡Brazos al frente!', e: '🫸' },
+    { t: '¡Paso al costado!',  e: '↔️' },
+    { t: '¡Saluda al cielo!',  e: '☀️' }
+];
+const VENTANA_MS = 2500;        // tiempo para reaccionar
+const RESULTADO_MS = 4500;
+const ESPERA_MS = () => 2200 + Math.random() * 2600;   // nadie sabe cuándo viene
+const UMBRAL = { acc: 4.5, rot: 220 };
+
+if (MOV.sala) control(); else host();
+
+// Puntos: reaccionar a tiempo = 50 + hasta 100 por velocidad + 10 por racha.
+// Caer en la trampa = -50. Aguantar la trampa = +30.
+function puntosAcierto(ms, racha) { return 50 + Math.max(0, Math.round(100 - ms / 25)) + 10 * Math.min(racha, 10); }
+
+// =====================================================================
+// PANTALLA
+// =====================================================================
+function host() {
+    MOV.$('host').classList.remove('oculto');
+    MOV.vigilarConexion();
+    const { sala, ref, url } = MOV.crearSala('reflejos');
+    MOV.borrarAlSalir(ref);
+    MOV.qr(MOV.$('qr-grande'), url, 240);
+    MOV.qr(MOV.$('qr-chico'), url, 64);
+    MOV.$('codigo-grande').textContent = sala;
+    MOV.$('codigo-chico').textContent = sala;
+    MOV.$('url').textContent = url;
+
+    const cfg = { rondas: 12 };
+    MOV.segmento(MOV.$('aj-rondas'), [8, 12, 16].map(v => ({ v, t: v })), cfg.rondas, v => { cfg.rondas = v; });
+
+    let jugadores = {}, estado = { fase: 'lobby' }, partida = 0, plan = [], marcador = {}, resumen = null;
+    ref.child('estado').set(estado);
+
+    ref.child('jugadores').on('value', s => {
+        jugadores = {};
+        Object.entries(s.val() || {}).forEach(([id, j]) => { if (j && j.nombre) jugadores[id] = j; });
+        const ids = Object.keys(jugadores);
+        MOV.$('cuantos').textContent = ids.length + (ids.length === 1 ? ' jugador' : ' jugadores');
+        MOV.$('btn-empezar').disabled = ids.length === 0;
+        MOV.$('chips-lobby').innerHTML = ids.map(id =>
+            `<span class="chip ${jugadores[id].conectado === false ? 'off' : ''}" style="--c:#c2410c">${MOV.esc(jugadores[id].nombre)}${jugadores[id].sensor === false ? ' 👆' : ''}</span>`).join('');
+    });
+
+    // Plan de rondas: ~30 % trampas, nunca en las dos primeras ni más de dos seguidas.
+    function hacerPlan(n) {
+        const out = [];
+        let seguidas = 0, ultima = -1;
+        for (let i = 0; i < n; i++) {
+            let trampa = i >= 2 && seguidas < 2 && Math.random() < .3;
+            seguidas = trampa ? seguidas + 1 : 0;
+            let idx; do { idx = Math.floor(Math.random() * ORDENES.length); } while (idx === ultima);
+            ultima = idx;
+            out.push({ idx, dice: !trampa });
+        }
+        return out;
+    }
+
+    function ponerEstado(e) { estado = e; ref.child('estado').set(e); }
+    function empezar() {
+        partida = Date.now();
+        plan = hacerPlan(cfg.rondas);
+        marcador = {};
+        ref.child('marcador').remove();
+        ref.child('resp').remove();
+        MOV.$('lobby').classList.add('oculto');
+        MOV.$('final').classList.add('oculto');
+        MOV.$('juego').classList.remove('oculto');
+        pintarTabla();
+        espera(0);
+    }
+    function espera(n) { resumen = null; ponerEstado({ fase: 'espera', partida, n, rondas: plan.length, hasta: MOV.ahora() + ESPERA_MS() }); }
+    MOV.$('btn-empezar').onclick = empezar;
+    MOV.$('f-otra').onclick = empezar;
+    MOV.$('f-sala').onclick = () => {
+        ponerEstado({ fase: 'lobby' });
+        MOV.$('final').classList.add('oculto');
+        MOV.$('juego').classList.add('oculto');
+        MOV.$('lobby').classList.remove('oculto');
+    };
+
+    let calificando = false;
+    setInterval(() => {
+        if (!['espera', 'orden', 'resultado'].includes(estado.fase) || calificando) return;
+        if (MOV.ahora() < estado.hasta) return;
+        if (estado.fase === 'espera') {
+            const p = plan[estado.n];
+            MOV.sonar('go');
+            ponerEstado({ ...estado, fase: 'orden', idx: p.idx, dice: p.dice, hasta: MOV.ahora() + VENTANA_MS });
+        } else if (estado.fase === 'orden') {
+            calificando = true;
+            // Medio segundo extra para que lleguen las respuestas en camino.
+            setTimeout(() => calificar().finally(() => { calificando = false; }), 500);
+        } else if (estado.fase === 'resultado') {
+            if (estado.n + 1 < plan.length) espera(estado.n + 1);
+            else { ponerEstado({ ...estado, fase: 'fin', hasta: 0 }); mostrarFinal(); }
+        }
+    }, 150);
+
+    async function calificar() {
+        const s = await ref.child('resp/' + partida + '_' + estado.n).once('value');
+        const resp = s.val() || {};
+        const ids = Object.keys(jugadores);
+        const movieron = Object.keys(resp).filter(id => jugadores[id] && resp[id] <= VENTANA_MS);
+        ids.forEach(id => { marcador[id] = marcador[id] || { pts: 0, racha: 0, mejor: 0 }; });
+        if (estado.dice) {
+            ids.forEach(id => {
+                const m = marcador[id];
+                if (movieron.includes(id)) { m.racha++; m.pts += puntosAcierto(resp[id], m.racha - 1); }
+                else m.racha = 0;
+                m.mejor = Math.max(m.mejor, m.racha);
+            });
+            const rapidos = movieron.sort((a, b) => resp[a] - resp[b]);
+            resumen = { tipo: 'dice', rapidos: rapidos.slice(0, 5).map(id => ({ nombre: jugadores[id].nombre, ms: resp[id] })), cuantos: movieron.length, total: ids.length };
+            MOV.sonar('punto');
+        } else {
+            ids.forEach(id => {
+                const m = marcador[id];
+                if (movieron.includes(id)) { m.pts = Math.max(0, m.pts - 50); m.racha = 0; }
+                else if (jugadores[id].conectado !== false) { m.pts += 30; m.racha++; m.mejor = Math.max(m.mejor, m.racha); }
+            });
+            resumen = { tipo: 'trampa', cayeron: movieron.map(id => jugadores[id].nombre) };
+            MOV.sonar(movieron.length ? 'error' : 'punto');
+        }
+        ref.child('marcador').set(marcador);
+        ponerEstado({ ...estado, fase: 'resultado', hasta: MOV.ahora() + RESULTADO_MS });
+        pintarTabla();
+    }
+
+    function ranking() {
+        return Object.keys(marcador).filter(id => jugadores[id])
+            .sort((a, b) => marcador[b].pts - marcador[a].pts)
+            .map(id => ({ id, nombre: jugadores[id].nombre, ...marcador[id] }));
+    }
+    function pintarTabla() {
+        MOV.$('tabla').innerHTML = ranking().slice(0, 10).map((j, k) =>
+            `<li><span class="n">${k + 1}</span><span class="nom">${MOV.esc(j.nombre)} ${j.racha >= 3 ? `<span class="racha">🔥${j.racha}</span>` : ''}</span><span class="pts">${j.pts}</span></li>`).join('')
+            || '<li><span class="nom" style="color:var(--muted)">Todos en 0… ¡a reaccionar!</span></li>';
+    }
+
+    setInterval(() => {
+        if (MOV.$('juego').classList.contains('oculto')) return;
+        const esc = MOV.$('escena'), f = estado.fase;
+        MOV.$('j-ronda').textContent = `Ronda ${(estado.n || 0) + 1} de ${estado.rondas || cfg.rondas}`;
+        esc.classList.toggle('orden', f === 'orden' && estado.dice);
+        esc.classList.toggle('trampa-rev', f === 'resultado' && !estado.dice);
+        const o = ORDENES[estado.idx] || ORDENES[0];
+        if (f === 'espera') {
+            MOV.$('j-dice').textContent = '';
+            MOV.$('j-emoji').textContent = '👀';
+            MOV.$('j-texto').textContent = 'Quietos… celular en la mano';
+            MOV.$('j-tip').textContent = 'Solo vale si dice "IBERO dice"';
+            MOV.$('j-nombres').innerHTML = '';
+        } else if (f === 'orden') {
+            // La trampa se ve igual que una orden de verdad, solo le falta "IBERO dice".
+            MOV.$('j-dice').textContent = estado.dice ? 'IBERO dice:' : '';
+            MOV.$('j-emoji').textContent = o.e;
+            MOV.$('j-texto').textContent = o.t;
+            MOV.$('j-tip').textContent = '';
+            esc.classList.add('orden');
+        } else if (f === 'resultado' && resumen) {
+            if (resumen.tipo === 'dice') {
+                MOV.$('j-dice').textContent = '⚡ Los más rápidos';
+                MOV.$('j-emoji').textContent = resumen.cuantos ? '🏎️' : '🐢';
+                MOV.$('j-texto').textContent = `${resumen.cuantos} de ${resumen.total} reaccionaron`;
+                MOV.$('j-tip').textContent = '';
+                MOV.$('j-nombres').innerHTML = resumen.rapidos.map((r, k) =>
+                    `<span class="chip" style="--c:#fb923c">${['🥇', '🥈', '🥉', '4°', '5°'][k]} ${MOV.esc(r.nombre)} · ${(r.ms / 1000).toFixed(2)} s</span>`).join('');
+            } else {
+                MOV.$('j-dice').textContent = '😈 ¡ERA TRAMPA!';
+                MOV.$('j-emoji').textContent = resumen.cayeron.length ? '😂' : '🧠';
+                MOV.$('j-texto').textContent = resumen.cayeron.length ? `Cayeron ${resumen.cayeron.length}` : '¡Nadie cayó! +30 para todos';
+                MOV.$('j-tip').textContent = 'No decía "IBERO dice"';
+                MOV.$('j-nombres').innerHTML = resumen.cayeron.slice(0, 12).map(n => `<span class="chip" style="--c:#a855f7">${MOV.esc(n)}</span>`).join('');
+            }
+        }
+    }, 120);
+
+    function mostrarFinal() {
+        const r = ranking();
+        const rachaMax = r.slice().sort((a, b) => b.mejor - a.mejor)[0];
+        MOV.$('f-titulo').textContent = r[0] ? `🏆 ¡${r[0].nombre} tiene los mejores reflejos!` : '🏆 ¡Fin!';
+        MOV.$('f-lista').innerHTML = r.slice(0, 6).map((j, k) =>
+            `<li><span class="n">${['🥇', '🥈', '🥉', '4°', '5°', '6°'][k]}</span><span class="nom">${MOV.esc(j.nombre)}</span><span class="pts">${j.pts}</span></li>`).join('')
+            + (rachaMax && rachaMax.mejor >= 3 ? `<li><span class="n">🔥</span><span class="nom">Mejor racha: ${MOV.esc(rachaMax.nombre)}</span><span class="pts">${rachaMax.mejor} seguidas</span></li>` : '');
+        MOV.$('final').classList.remove('oculto');
+        MOV.sonar('fin');
+    }
+}
+
+// =====================================================================
+// CELULAR
+// =====================================================================
+function control() {
+    MOV.unirse({ juego: 'reflejos', titulo: 'Reflejos de Oficina', emoji: '⚡', alListo: jugar });
+}
+
+function jugar({ salaRef, id, nombre, sensor, conSensor }) {
+    const caja = MOV.$('control');
+    caja.style.setProperty('--c', '#fb923c');
+    caja.innerHTML = `
+        <div class="yo">⚡ ${MOV.esc(nombre)}</div>
+        <span class="fase" id="c-fase">En la sala</span>
+        <div class="dice" id="c-dice" style="font-weight:900;color:var(--acento);font-size:1.3rem"></div>
+        <div class="emoji-titulo" id="c-emoji" style="font-size:6rem">⏳</div>
+        <h1 id="c-texto">Mira la pantalla</h1>
+        <p class="msg" id="c-tip">Celular en la mano. Cuando diga "IBERO dice", ¡muévete rápido!</p>
+        <div class="delta" id="c-delta"></div>
+        <div class="contador" id="c-pts" style="font-size:3rem">0</div>
+        <div class="etiqueta">tus puntos <span id="c-racha"></span></div>
+        <button class="btn-tap oculto" id="c-tap">¡YA!</button>`;
+
+    let estado = { fase: 'lobby' }, clave = null, armado = false, t0 = 0, ultimoFuerte = 0, adelantado = false;
+    let pts = 0, deltaTxt = '';
+
+    salaRef.child('marcador/' + id).on('value', s => {
+        const m = s.val() || { pts: 0, racha: 0 };
+        const d = m.pts - pts;
+        if (estado.fase === 'resultado' || estado.fase === 'orden') deltaTxt = d > 0 ? `+${d} ${d >= 120 ? '⚡' : '✅'}` : d < 0 ? `${d} 😅` : '';
+        pts = m.pts;
+        MOV.$('c-pts').textContent = pts;
+        MOV.$('c-racha').textContent = m.racha >= 2 ? `· 🔥 racha ${m.racha}` : '';
+        pintar();
+    });
+
+    salaRef.child('estado').on('value', s => {
+        const antes = estado.fase;
+        estado = s.val() || { fase: 'lobby' };
+        if (estado.partida && antes === 'lobby') { pts = 0; }
+        if (estado.fase === 'orden') {
+            const k = estado.partida + '_' + estado.n;
+            if (k !== clave) {
+                clave = k; t0 = performance.now(); armado = true; deltaTxt = '';
+                adelantado = t0 - ultimoFuerte < 500;   // ya venía moviéndose: no vale
+                if (navigator.vibrate) navigator.vibrate(30);
+            }
+        } else armado = false;
+        if (estado.fase === 'espera') deltaTxt = '';
+        pintar();
+    });
+
+    function responder() {
+        if (!armado) return;
+        armado = false;
+        if (adelantado) { deltaTxt = '¡Te adelantaste! 🙃'; pintar(); return; }
+        const ms = Math.round(performance.now() - t0);
+        salaRef.child('resp/' + clave + '/' + id).set(ms);
+        MOV.$('c-tip').textContent = `Reaccionaste en ${(ms / 1000).toFixed(2)} s`;
+    }
+
+    if (conSensor) {
+        sensor.alMover = (s, rot) => {
+            const fuerte = s > UMBRAL.acc || rot > UMBRAL.rot;
+            if (!fuerte) return;
+            if (estado.fase === 'orden') responder();
+            else ultimoFuerte = performance.now();
+        };
+    } else {
+        MOV.$('c-tap').classList.remove('oculto');
+        MOV.$('c-tap').addEventListener('pointerdown', e => { e.preventDefault(); responder(); });
+    }
+
+    function pintar() {
+        const f = estado.fase, o = ORDENES[estado.idx];
+        const set = (d, e, t, tip) => { MOV.$('c-dice').textContent = d; MOV.$('c-emoji').textContent = e; MOV.$('c-texto').textContent = t; if (tip != null) MOV.$('c-tip').textContent = tip; };
+        MOV.$('c-fase').textContent = { lobby: 'En la sala', espera: 'Quieto…', orden: '¡AHORA!', resultado: 'Resultado', fin: 'Fin' }[f] || '';
+        caja.style.background = f === 'orden' ? '#7c2d12' : '';   // igual en trampa, para no delatarla
+        MOV.$('c-delta').textContent = deltaTxt;
+        if (f === 'espera') set('', '👀', 'Quieto…', 'Espera la orden con el celular en la mano.');
+        else if (f === 'orden' && o) set(estado.dice ? 'IBERO dice:' : '', o.e, o.t, null);
+        else if (f === 'resultado') set(estado.dice ? '' : '😈 ¡Era trampa!', estado.dice ? '📊' : '😈', 'Mira la pantalla', null);
+        else if (f === 'fin') set('', '🏆', `Terminaste con ${pts}`, 'Mira en la pantalla quién ganó.');
+        else set('', '⏳', 'Mira la pantalla', 'Celular en la mano. Cuando diga "IBERO dice", ¡muévete rápido!');
+    }
+}
+</script>
+</body>
+</html>

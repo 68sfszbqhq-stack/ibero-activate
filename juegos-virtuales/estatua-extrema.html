@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Estatua Extrema</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="stylesheet" href="css/movimiento.css">
+<style>
+    :root { --acento: #67e8f9; }
+    #juego { display: flex; flex-direction: column; gap: 16px; flex: 1; }
+    .cabeza { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; background: var(--panel); border-radius: 18px; padding: 16px 24px; }
+    .cabeza .cartel { text-align: left; display: flex; gap: 18px; align-items: center; }
+    .resumen { display: flex; gap: 12px; }
+    .resumen div { background: var(--bg); border-radius: 12px; padding: 8px 16px; text-align: center; }
+    .resumen b { display: block; font-size: 2rem; font-weight: 900; }
+    .estatuas { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; align-content: start; }
+    .est { background: var(--panel); border: 2px solid #0e7490; border-radius: 14px; padding: 10px; text-align: center; font-weight: 800; transition: opacity .3s; }
+    .est .ico { font-size: 2rem; line-height: 1.1; }
+    .est .nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .est.viva { box-shadow: 0 0 14px rgba(103, 232, 249, .35); }
+    .est.cayo { border-color: var(--mal); background: #3b1018; animation: sacudida .5s; }
+    .est.fuera { opacity: .35; border-color: var(--line); }
+    .congelado { filter: drop-shadow(0 0 18px #67e8f9); }
+</style>
+</head>
+<body>
+
+<div class="host oculto" id="host">
+    <div class="barra">
+        <h1>🧊 Estatua Extrema <small>IBERO Actívate</small></h1>
+        <span class="etiqueta" id="cuantos">0 jugadores</span>
+        <div class="mini"><div class="qr-blanco" id="qr-chico"></div><div><div class="etiqueta">Sala</div><div class="codigo" id="codigo-chico">····</div></div></div>
+    </div>
+    <div class="escenario">
+        <div class="lobby" id="lobby">
+            <div class="col-qr">
+                <div class="qr-blanco" id="qr-grande"></div>
+                <div class="etiqueta">Código de sala</div>
+                <div class="codigo" id="codigo-grande">····</div>
+                <div class="url" id="url"></div>
+            </div>
+            <div>
+                <h2>¿Quién aguanta más sin moverse?</h2>
+                <p class="pasos">1. Escanea el QR y toca <b>¡Estoy listo!</b> (permite el movimiento).<br>
+                2. Haz la postura que salga en pantalla con el <b>celular pegado al pecho</b>.<br>
+                3. Si tu celular siente que te moviste, <b>quedas fuera</b>. Gana el último en pie.<br>
+                Si caen <b>todos</b> en la misma ronda, nadie sale. 😉</p>
+                <div class="ajustes">
+                    <div class="ajuste"><span class="etiqueta">Rondas</span><div id="aj-rondas"></div></div>
+                    <div class="ajuste"><span class="etiqueta">Sensibilidad</span><div id="aj-sens"></div></div>
+                </div>
+                <div class="chips" id="chips-lobby"></div>
+                <p class="pasos" style="margin-top:10px">👆 = juega con botón (sin sensor), con honor.</p>
+                <button class="btn-grande" id="btn-empezar" disabled>¡Congélense!</button>
+            </div>
+        </div>
+
+        <div id="juego" class="oculto">
+            <div class="cabeza">
+                <div class="cartel">
+                    <div class="emoji" id="j-emoji">🧊</div>
+                    <div>
+                        <span class="fase" id="j-fase">Prepárate</span>
+                        <div class="grande" id="j-pos">—</div>
+                        <div class="tip" id="j-tip"></div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:18px;align-items:center">
+                    <div class="resumen">
+                        <div><b id="j-vivos">0</b><span class="etiqueta">en pie</span></div>
+                        <div><b id="j-cayeron">0</b><span class="etiqueta">cayeron</span></div>
+                    </div>
+                    <div style="text-align:center">
+                        <div class="cuenta" id="j-cuenta">0</div>
+                        <div class="etiqueta" id="j-ronda">Ronda 1</div>
+                    </div>
+                </div>
+            </div>
+            <div class="estatuas" id="estatuas"></div>
+        </div>
+    </div>
+
+    <div class="final oculto" id="final">
+        <h2 id="f-titulo">🏆</h2>
+        <ol class="tabla" id="f-lista"></ol>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+            <button class="btn-grande" id="f-otra">Otra vez</button>
+            <button class="btn" id="f-sala">Volver a la sala</button>
+        </div>
+    </div>
+</div>
+
+<div class="control oculto" id="control"></div>
+
+<script src="js/movimiento-comun.js"></script>
+<script>
+const POSTURAS = [
+    { n: 'Flamingo',              e: '🦩', t: 'Una pierna. Celular pegado al pecho con las dos manos.' },
+    { n: 'Silla invisible',       e: '🪑', t: 'Media sentadilla, espalda recta. Celular en el pecho.' },
+    { n: 'Puntas de pie',         e: '🩰', t: 'Sube a puntas y quédate ahí. Celular en el pecho.' },
+    { n: 'Árbol',                 e: '🌳', t: 'Una pierna, la planta del otro pie en el tobillo o la pantorrilla.' },
+    { n: 'Avión',                 e: '✈️', t: 'Inclínate al frente con una pierna atrás. Celular en el pecho.' },
+    { n: 'Estatua de la libertad', e: '🗽', t: 'Brazo arriba con el celular en la mano, como antorcha. ¡Que no tiemble!' },
+    { n: 'Zancada congelada',     e: '🧍', t: 'Un pie adelante, rodillas flexionadas. Celular en el pecho.' }
+];
+// Umbrales de movimiento: acc en m/s², rot en grados/s.
+const SENS = {
+    suave:  { acc: 2.2, rot: 70 },
+    normal: { acc: 1.4, rot: 45 },
+    ninja:  { acc: 0.9, rot: 28 }
+};
+const PREP_MS = 7000, DESCANSO_MS = 9000, GRACIA_MS = 1500;
+const duracion = r => Math.min(40, 15 + r * 5) * 1000;
+
+if (MOV.sala) control(); else host();
+
+// =====================================================================
+// PANTALLA
+// =====================================================================
+function host() {
+    MOV.$('host').classList.remove('oculto');
+    MOV.vigilarConexion();
+    const { sala, ref, url } = MOV.crearSala('estatua');
+    MOV.borrarAlSalir(ref);
+    MOV.qr(MOV.$('qr-grande'), url, 240);
+    MOV.qr(MOV.$('qr-chico'), url, 64);
+    MOV.$('codigo-grande').textContent = sala;
+    MOV.$('codigo-chico').textContent = sala;
+    MOV.$('url').textContent = url;
+
+    const cfg = { rondas: 5, sens: 'normal' };
+    MOV.segmento(MOV.$('aj-rondas'), [4, 5, 6].map(v => ({ v, t: v })), cfg.rondas, v => { cfg.rondas = v; });
+    MOV.segmento(MOV.$('aj-sens'), [{ v: 'suave', t: 'Suave' }, { v: 'normal', t: 'Normal' }, { v: 'ninja', t: 'Ninja 🥷' }], cfg.sens, v => { cfg.sens = v; });
+
+    let jugadores = {}, estado = { fase: 'lobby' }, partida = 0, orden = [];
+    let vivos = new Set(), cayeronRonda = new Set(), eliminadoEn = {};
+    ref.child('estado').set(estado);
+
+    ref.child('jugadores').on('value', s => {
+        jugadores = {};
+        Object.entries(s.val() || {}).forEach(([id, j]) => { if (j && j.nombre) jugadores[id] = j; });
+        const ids = Object.keys(jugadores);
+        MOV.$('cuantos').textContent = ids.length + (ids.length === 1 ? ' jugador' : ' jugadores');
+        MOV.$('btn-empezar').disabled = ids.length === 0;
+        MOV.$('chips-lobby').innerHTML = ids.map(id =>
+            `<span class="chip ${jugadores[id].conectado === false ? 'off' : ''}" style="--c:#0e7490">${MOV.esc(jugadores[id].nombre)}${jugadores[id].sensor === false ? ' 👆' : ''}</span>`).join('');
+        pintarEstatuas();
+    });
+
+    let caidasRef = null;
+    function escucharCaidas(r) {
+        if (caidasRef) caidasRef.off();
+        caidasRef = ref.child('caidas/' + partida + '_' + r);
+        caidasRef.on('child_added', s => {
+            if (estado.fase !== 'ronda' || !vivos.has(s.key) || cayeronRonda.has(s.key)) return;
+            cayeronRonda.add(s.key);
+            MOV.sonar('caida');
+            pintarEstatuas();
+        });
+    }
+
+    function ponerEstado(e) { estado = e; ref.child('estado').set(e); }
+
+    function empezar() {
+        partida = Date.now();
+        orden = MOV.barajar(POSTURAS.map((_, i) => i));
+        vivos = new Set(Object.keys(jugadores).filter(id => jugadores[id].conectado !== false));
+        eliminadoEn = {};
+        ref.child('caidas').remove();
+        MOV.$('lobby').classList.add('oculto');
+        MOV.$('final').classList.add('oculto');
+        MOV.$('juego').classList.remove('oculto');
+        prep(0);
+    }
+    function prep(r) {
+        cayeronRonda = new Set();
+        const vivosObj = {}; vivos.forEach(id => { vivosObj[id] = true; });
+        ref.child('vivos').set(vivosObj);
+        escucharCaidas(r);
+        ponerEstado({ fase: 'prep', partida, ronda: r, rondas: cfg.rondas, pos: orden[r % orden.length], sens: cfg.sens, hasta: MOV.ahora() + PREP_MS });
+        pintarEstatuas();
+    }
+    MOV.$('btn-empezar').onclick = empezar;
+    MOV.$('f-otra').onclick = empezar;
+    MOV.$('f-sala').onclick = () => {
+        ponerEstado({ fase: 'lobby' });
+        MOV.$('final').classList.add('oculto');
+        MOV.$('juego').classList.add('oculto');
+        MOV.$('lobby').classList.remove('oculto');
+    };
+
+    let ultimoSeg = null, mensaje = '';
+    setInterval(() => {
+        if (!['prep', 'ronda', 'descanso'].includes(estado.fase)) return;
+        const seg = MOV.segundos(estado.hasta);
+        if (seg !== ultimoSeg && seg > 0 && seg <= 3 && estado.fase !== 'descanso') MOV.sonar('tic');
+        ultimoSeg = seg;
+        if (MOV.ahora() < estado.hasta) return;
+        if (estado.fase === 'prep') {
+            MOV.sonar('go');
+            const dur = duracion(estado.ronda);
+            ponerEstado({ ...estado, fase: 'ronda', inicio: MOV.ahora(), dur, hasta: MOV.ahora() + dur });
+        } else if (estado.fase === 'ronda') {
+            cerrarRonda();
+        } else if (estado.fase === 'descanso') prep(estado.ronda + 1);
+    }, 200);
+
+    function cerrarRonda() {
+        const cayeron = [...cayeronRonda].filter(id => vivos.has(id));
+        if (cayeron.length && cayeron.length === vivos.size) {
+            mensaje = '¡Cayeron todos! Nadie sale esta vez 😅';
+        } else {
+            cayeron.forEach(id => { vivos.delete(id); eliminadoEn[id] = estado.ronda; });
+            mensaje = cayeron.length ? `Cayeron ${cayeron.length}. ¡Quedan ${vivos.size}!` : '¡Nadie se movió! 🧊';
+        }
+        MOV.sonar('fin');
+        if (vivos.size <= 1 || estado.ronda + 1 >= estado.rondas) {
+            ponerEstado({ ...estado, fase: 'fin', hasta: 0 });
+            mostrarFinal();
+        } else {
+            ponerEstado({ ...estado, fase: 'descanso', hasta: MOV.ahora() + DESCANSO_MS, mensaje });
+        }
+        pintarEstatuas();
+    }
+
+    function pintarEstatuas() {
+        if (MOV.$('juego').classList.contains('oculto')) return;
+        const ids = Object.keys(jugadores);
+        const lista = ids.slice().sort((a, b) => (vivos.has(b) - vivos.has(a)) || jugadores[a].nombre.localeCompare(jugadores[b].nombre));
+        MOV.$('estatuas').innerHTML = lista.map(id => {
+            const vivo = vivos.has(id), cayo = cayeronRonda.has(id) && vivo;
+            const ico = cayo ? '💥' : vivo ? '🧊' : '👻';
+            return `<div class="est ${cayo ? 'cayo' : vivo ? 'viva' : 'fuera'}"><div class="ico">${ico}</div><div class="nom">${MOV.esc(jugadores[id].nombre)}</div></div>`;
+        }).join('');
+        const enPie = [...vivos].filter(id => !cayeronRonda.has(id)).length;
+        MOV.$('j-vivos').textContent = estado.fase === 'descanso' ? vivos.size : enPie;
+        MOV.$('j-cayeron').textContent = estado.fase === 'descanso' ? 0 : cayeronRonda.size;
+    }
+
+    setInterval(() => {
+        if (MOV.$('juego').classList.contains('oculto')) return;
+        const p = POSTURAS[estado.pos] || POSTURAS[0];
+        const textos = { prep: 'Toma la postura…', ronda: '¡Congelados!', descanso: 'Descansa', fin: 'Fin' };
+        MOV.$('j-fase').textContent = textos[estado.fase] || '';
+        MOV.$('j-fase').style.background = estado.fase === 'ronda' ? '#0e7490' : '';
+        if (estado.fase === 'descanso') {
+            MOV.$('j-emoji').textContent = '😮‍💨';
+            MOV.$('j-pos').textContent = mensaje;
+            const sig = POSTURAS[orden[(estado.ronda + 1) % orden.length]];
+            MOV.$('j-tip').textContent = `Sigue: ${sig.e} ${sig.n}`;
+            MOV.$('j-emoji').classList.remove('congelado');
+        } else {
+            MOV.$('j-emoji').textContent = p.e;
+            MOV.$('j-pos').textContent = p.n;
+            MOV.$('j-tip').textContent = p.t;
+            MOV.$('j-emoji').classList.toggle('congelado', estado.fase === 'ronda');
+        }
+        MOV.$('j-cuenta').textContent = estado.hasta ? MOV.segundos(estado.hasta) : '🏆';
+        MOV.$('j-ronda').textContent = `Ronda ${(estado.ronda || 0) + 1} de ${estado.rondas || cfg.rondas}`;
+    }, 250);
+
+    function mostrarFinal() {
+        const ganadores = [...vivos].filter(id => jugadores[id]);
+        const resto = Object.keys(eliminadoEn).filter(id => jugadores[id]).sort((a, b) => eliminadoEn[b] - eliminadoEn[a]);
+        MOV.$('f-titulo').textContent = ganadores.length === 1 ? `🏆 ¡${jugadores[ganadores[0]].nombre} es la estatua más firme!`
+            : ganadores.length ? `🏆 ¡${ganadores.length} estatuas invencibles!` : '🏆 ¡Fin!';
+        const filas = ganadores.map(id => `<li><span class="n">🥇</span><span class="nom">${MOV.esc(jugadores[id].nombre)}</span><span class="pts">¡En pie!</span></li>`)
+            .concat(resto.slice(0, 6).map(id => `<li><span class="n">👻</span><span class="nom">${MOV.esc(jugadores[id].nombre)}</span><span class="pts">cayó en la ronda ${eliminadoEn[id] + 1}</span></li>`));
+        MOV.$('f-lista').innerHTML = filas.join('');
+        MOV.$('final').classList.remove('oculto');
+    }
+}
+
+// =====================================================================
+// CELULAR
+// =====================================================================
+function control() {
+    MOV.unirse({ juego: 'estatua', titulo: 'Estatua Extrema', emoji: '🧊', alListo: jugar });
+}
+
+function jugar({ salaRef, id, nombre, sensor, conSensor }) {
+    const caja = MOV.$('control');
+    caja.style.setProperty('--c', '#67e8f9');
+    caja.innerHTML = `
+        <div class="yo">🧊 ${MOV.esc(nombre)}</div>
+        <span class="fase" id="c-fase">En la sala</span>
+        <div class="emoji-titulo" id="c-emoji">⏳</div>
+        <h1 id="c-pos">Mira la pantalla</h1>
+        <p class="msg" id="c-tip">Cuando empiece, pega el celular al pecho y no te muevas.</p>
+        <div class="cuenta" id="c-cuenta"></div>
+        <div class="medidor" id="c-med"><i></i></div>
+        <div class="etiqueta" id="c-med-txt">tu temblor</div>
+        <button class="btn-tap oculto" id="c-tap" style="--c:var(--mal)">Me moví 😅</button>
+        <p class="nota-honor oculto" id="c-honor">Tu aparato no tiene sensor: si te mueves, toca el botón. ¡Con honor! 😉</p>`;
+
+    let estado = { fase: 'lobby' }, vivo = false, cai = false, exceso = 0, ultimoT = 0;
+    let rondaClave = null;
+
+    salaRef.child('vivos/' + id).on('value', s => { vivo = !!s.val(); pintar(); });
+    salaRef.child('estado').on('value', s => {
+        estado = s.val() || { fase: 'lobby' };
+        const clave = estado.partida + '_' + estado.ronda;
+        if (clave !== rondaClave) { rondaClave = clave; cai = false; exceso = 0; }
+        pintar();
+    });
+
+    function caer() {
+        if (cai || !vivo || estado.fase !== 'ronda') return;
+        cai = true;
+        salaRef.child('caidas/' + rondaClave + '/' + id).set(Math.max(0, MOV.ahora() - estado.inicio));
+        if (navigator.vibrate) navigator.vibrate([80, 60, 80]);
+        pintar();
+    }
+
+    if (conSensor) {
+        const barra = MOV.$('c-med').firstElementChild;
+        sensor.alMover = (s, rot) => {
+            const u = SENS[estado.sens] || SENS.normal;
+            const nivel = Math.max(s / u.acc, rot / u.rot);   // 1 = justo en el límite
+            barra.style.width = Math.min(100, nivel * 100) + '%';
+            barra.style.background = nivel >= 1 ? 'var(--mal)' : nivel > .6 ? '#eab308' : 'var(--c)';
+            const t = performance.now(), dt = ultimoT ? t - ultimoT : 0;
+            ultimoT = t;
+            if (estado.fase !== 'ronda' || !vivo || cai) { exceso = 0; return; }
+            if (MOV.ahora() - estado.inicio < GRACIA_MS) return;
+            // Hay que pasarse del límite un cuarto de segundo seguido: un pico suelto no cuenta.
+            exceso = nivel >= 1 ? exceso + dt : Math.max(0, exceso - dt);
+            if (exceso > 250) caer();
+        };
+    } else {
+        MOV.$('c-med').classList.add('oculto');
+        MOV.$('c-med-txt').classList.add('oculto');
+        MOV.$('c-tap').classList.remove('oculto');
+        MOV.$('c-honor').classList.remove('oculto');
+        MOV.$('c-tap').addEventListener('click', caer);
+    }
+
+    function pintar() {
+        const p = POSTURAS[estado.pos];
+        const f = estado.fase;
+        const set = (e, t, tip) => { MOV.$('c-emoji').textContent = e; MOV.$('c-pos').textContent = t; MOV.$('c-tip').textContent = tip; };
+        MOV.$('c-fase').textContent = { lobby: 'En la sala', prep: 'Toma la postura', ronda: '¡Congelado!', descanso: 'Descansa', fin: 'Fin' }[f] || '';
+        MOV.$('c-fase').style.background = f === 'ronda' ? '#0e7490' : '';
+        caja.style.background = cai && f === 'ronda' ? '#3b1018' : '';
+        if (f === 'lobby') set('⏳', 'Mira la pantalla', 'Cuando empiece, pega el celular al pecho y no te muevas.');
+        else if (f === 'fin') set(vivo ? '🏆' : '👏', vivo ? '¡Quedaste en pie!' : '¡Buen intento!', 'Mira el resultado en la pantalla.');
+        else if (f === 'descanso') set(vivo ? '🧊' : '👻', vivo ? '¡Sigues en pie!' : 'Eres fantasma', 'Afloja piernas y brazos. Viene otra postura.');
+        else if (cai) set('💥', '¡Te moviste!', vivo ? 'Mantén la postura igual: tu cuerpo lo agradece.' : '');
+        else if (p) set(p.e, p.n, vivo ? p.t : '👻 Eres fantasma: haz la postura igual, ¡cuenta para tu pausa!');
+    }
+    setInterval(() => {
+        const f = estado.fase;
+        MOV.$('c-cuenta').textContent = (f === 'prep' || f === 'ronda' || f === 'descanso') ? MOV.segundos(estado.hasta) : '';
+    }, 250);
+}
+</script>
+</body>
+</html>

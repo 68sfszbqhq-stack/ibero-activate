@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ritmo en Video</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/movimiento.css">
+<style>
+    :root { --acento: #f472b6; }
+    .envoltura { max-width: 1280px; margin: 0 auto; padding: 20px 16px 40px; display: flex; flex-direction: column; gap: 18px; }
+    .reproductor { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 18px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+    .reproductor iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .vacio { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--muted); text-align: center; padding: 20px; }
+    .vacio .emoji { font-size: 4rem; }
+    .acciones { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .acciones input { flex: 1; min-width: 220px; padding: 12px 14px; border-radius: 10px; border: 2px solid var(--line); background: var(--panel); color: var(--text); font-size: 1rem; }
+    .lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+    .tarjeta { background: var(--panel); border: 2px solid transparent; border-radius: 14px; overflow: hidden; cursor: pointer; text-align: left; color: var(--text); padding: 0; position: relative; }
+    .tarjeta:hover { border-color: var(--line); }
+    .tarjeta.on { border-color: var(--acento); box-shadow: 0 0 18px rgba(244,114,182,.4); }
+    .tarjeta img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
+    .tarjeta .info { padding: 10px 12px; }
+    .tarjeta .tit { font-weight: 800; font-size: .95rem; line-height: 1.25; }
+    .tarjeta .sub { color: var(--muted); font-size: .8rem; margin-top: 4px; }
+    .tarjeta .quitar { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.7); color: #fff; border: none; border-radius: 8px; padding: 2px 8px; font-weight: 700; }
+    .aviso { color: var(--muted); font-size: .9rem; line-height: 1.5; }
+    .error { color: #fca5a5; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="barra">
+    <h1>🎵 Ritmo en Video <small>IBERO Actívate</small></h1>
+    <a class="btn" href="index.html" style="text-decoration:none">← Juegos</a>
+</div>
+
+<div class="envoltura">
+    <div class="reproductor" id="reproductor">
+        <div class="vacio"><div class="emoji">🎬</div><div>Elige un video de abajo.<br>Comparte esta pestaña <b>con sonido</b> y que todos sigan los gestos al ritmo.</div></div>
+    </div>
+    <div class="acciones">
+        <button class="btn-grande" id="btn-completa" disabled>⛶ Pantalla completa</button>
+        <input id="nuevo" placeholder="Pega aquí el link de otro video de YouTube…">
+        <button class="btn" id="btn-agregar">+ Agregar</button>
+    </div>
+    <p class="aviso" id="msg">Tip: en Zoom o Teams, al compartir pantalla marca <b>"Compartir sonido"</b> o la música no les llegará.</p>
+    <div class="lista" id="lista"></div>
+</div>
+
+<script>
+// Videos de ritmo y percusión corporal más vistos en YouTube (revisados el 17-nov-2026:
+// los ocho permiten reproducirse dentro de otra página).
+const BASE = [
+    { id: 'L08AppEe8ww', t: 'RETO - Ritmo de manos ¿Te atreves?',           c: 'María José Sánchez Parra · 13 M vistas' },
+    { id: 'H1rFDZ5Lf3I', t: 'Clap clap sound - percusión corporal',          c: 'La profe de música emmd · 11 M vistas' },
+    { id: 'uzXpvILRMog', t: 'Uptown Funk - con percusión corporal',          c: 'Cristina Esteban · 5.9 M vistas' },
+    { id: 'y8Dr6Oj7_oI', t: 'Ejercicio rítmico (coordinación corporal) Básico', c: 'CREA música · 3.6 M vistas' },
+    { id: 'xshgioG7zjE', t: 'Ritmograma - We Will Rock You',                 c: 'Canal del Profe · 3 M vistas' },
+    { id: 'D0J5DneSHxI', t: 'Ejercicio rítmico - Another One Bites the Dust', c: 'Tato Guerra · 778 mil vistas' },
+    { id: '-CIbtmVcA_w', t: 'Ejercicio de coordinación y gimnasia cerebral', c: 'CREA música · 588 mil vistas' },
+    { id: 'Hj1qGk-dQ3M', t: 'Do the Gesture on Beat (brain break)',          c: 'OT Closet · 337 mil vistas' }
+];
+const CLAVE = 'ritmo_video_extra';
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function leerExtra() { try { return JSON.parse(localStorage.getItem(CLAVE)) || []; } catch (e) { return []; } }
+function guardarExtra(v) { try { localStorage.setItem(CLAVE, JSON.stringify(v)); } catch (e) {} }
+
+// Acepta youtu.be/ID, watch?v=ID, shorts/ID, embed/ID o el ID suelto.
+function sacarId(texto) {
+    const t = texto.trim();
+    if (/^[\w-]{11}$/.test(t)) return t;
+    const m = t.match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([\w-]{11})/);
+    return m ? m[1] : null;
+}
+
+let actual = null;
+function pintar() {
+    const extra = leerExtra();
+    const todos = extra.map(v => ({ ...v, propio: true })).concat(BASE);
+    $('lista').innerHTML = todos.map(v => `
+        <button class="tarjeta ${v.id === actual ? 'on' : ''}" data-id="${esc(v.id)}">
+            <img src="https://i.ytimg.com/vi/${esc(v.id)}/hqdefault.jpg" alt="" loading="lazy">
+            <div class="info"><div class="tit">${esc(v.t)}</div><div class="sub">${esc(v.c)}</div></div>
+            ${v.propio ? `<span class="quitar" data-quitar="${esc(v.id)}" title="Quitar">✕</span>` : ''}
+        </button>`).join('');
+}
+
+function reproducir(id) {
+    actual = id;
+    $('reproductor').innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0&modestbranding=1&playsinline=1"
+        allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen title="Video"></iframe>`;
+    $('btn-completa').disabled = false;
+    pintar();
+    $('reproductor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+$('lista').addEventListener('click', e => {
+    const q = e.target.closest('[data-quitar]');
+    if (q) {
+        e.stopPropagation();
+        guardarExtra(leerExtra().filter(v => v.id !== q.dataset.quitar));
+        pintar();
+        return;
+    }
+    const t = e.target.closest('[data-id]');
+    if (t) reproducir(t.dataset.id);
+});
+
+$('btn-agregar').onclick = async () => {
+    const id = sacarId($('nuevo').value);
+    const msg = $('msg');
+    if (!id) { msg.innerHTML = '<span class="error">Ese link no parece de YouTube.</span>'; return; }
+    let t = 'Video agregado', c = 'Agregado por ti';
+    try {
+        const r = await fetch('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent('https://www.youtube.com/watch?v=' + id));
+        if (r.ok) { const d = await r.json(); t = d.title; c = d.author_name; }
+    } catch (e) {}
+    const extra = leerExtra().filter(v => v.id !== id);
+    extra.unshift({ id, t, c });
+    guardarExtra(extra);
+    $('nuevo').value = '';
+    msg.textContent = 'Listo, quedó al inicio de la lista (se guarda en este navegador).';
+    reproducir(id);
+};
+$('nuevo').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-agregar').click(); });
+
+$('btn-completa').onclick = () => {
+    const el = $('reproductor');
+    (el.requestFullscreen || el.webkitRequestFullscreen || function () {}).call(el);
+};
+
+const inicial = new URLSearchParams(location.search).get('v');
+pintar();
+if (inicial && sacarId(inicial)) reproducir(sacarId(inicial));
+</script>
+</body>
+</html>
