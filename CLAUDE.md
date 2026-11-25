@@ -286,6 +286,24 @@ que a nadie le toque avanzar solo). Niveles en ASCII en `NIVELES`
 - Se prueba sin celulares con el teclado: Q W E / A D / Z X C o flechas.
 - No toca puntos, asistencias ni nada de la gamificación.
 
+## Laberinto Carrera (`juegos-virtuales/laberinto-carrera.html`)
+
+Versión **competitiva** del Laberinto a 8 Manos (25-nov-2026). El cooperativo
+no se tocó. Cada celular maneja **su propia bola** (color y nombre) con un
+joystick de 8 direcciones; las bolas no chocan entre sí.
+
+- **10 niveles** en `NIVELES` (mismo formato ASCII). Los 4 del cooperativo más
+  Zigzag, Las islas, La espiral, Dos caminos, Pasillo de hoyos (solo se cruza en
+  diagonal) y Gran final. Al cambiar un mapa, comprobar que tenga camino de S a M:
+  un hoyo en un pasillo de una casilla lo bloquea.
+- El primero en llegar gana el nivel; los demás tienen `SEG_CIERRE` (10 s).
+  Puntos en `PUNTOS` (10 · 7 · 5) y `PUNTOS_LLEGAR` (3) del 4.º en adelante.
+- Misma Realtime Database bajo `laberinto/{sala}` con `juego: 'carrera'`. El
+  celular solo escribe `dir/{id}` cuando cambia de dirección; la pantalla
+  publica `info/{id}` (color, puntos, lugar). La sala se borra en `pagehide`.
+- Probar: flechas/WASD crean una bola "Teclado". Con `?prueba` en la dirección
+  queda `window.prueba.llegar(id)` para simular llegadas.
+
 ## Pausas en línea con movimiento (`juegos-virtuales/`)
 
 Tres juegos para pausas activas por Zoom/Teams (17-nov-2026). José comparte la
