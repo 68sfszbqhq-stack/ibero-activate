@@ -381,7 +381,6 @@ const RADIO = 0.32, RADIO_HOYO = 0.38;
 // ============================================================
 const params = new URLSearchParams(location.search);
 const salaParam = (params.get('sala') || '').toUpperCase();
-if (salaParam) iniciarControl(salaParam); else iniciarHost();
 
 function guardar(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 function leer(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -429,6 +428,9 @@ function esGroseria(t) {
 }
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const reloj = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+// Arranca hasta aquí, cuando ya existen todas las listas de arriba
+if (salaParam) iniciarControl(salaParam); else iniciarHost();
 
 function vigilarConexion() {
     const aviso = document.getElementById('error-conexion');
