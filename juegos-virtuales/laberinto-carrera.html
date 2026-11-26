@@ -542,8 +542,8 @@ function iniciarHost() {
             return;
         }
         const d = direccionDe(j);
-        const vel = NIVELES[nivel].velocidad;
-        const k = Math.min(1, dt * 7);
+        const vel = NIVELES[nivel].velocidad * 1.4;
+        const k = Math.min(1, dt * 12);
         b.vx += ((d ? d.dx : 0) * vel - b.vx) * k;
         b.vy += ((d ? d.dy : 0) * vel - b.vy) * k;
         const n = Math.ceil(Math.max(Math.abs(b.vx), Math.abs(b.vy)) * dt / 0.05) || 1;
@@ -714,13 +714,13 @@ function iniciarHost() {
     // --- Dibujo ---
     function dibujar(ahora) {
         if (!mapa) return;
-        ctx.fillStyle = '#1c2740';
+        ctx.fillStyle = '#c08a52';
         ctx.fillRect(0, 0, ancho, alto);
         for (let y = 0; y < alto; y++) for (let x = 0; x < ancho; x++) {
             const ch = mapa[y][x];
             if (ch === '#') {
-                ctx.fillStyle = '#56698f'; ctx.fillRect(x, y, 1, 1);
-                ctx.fillStyle = '#3b4b6b'; ctx.fillRect(x, y + .82, 1, .18);
+                ctx.fillStyle = '#6b4423'; ctx.fillRect(x, y, 1, 1);
+                ctx.fillStyle = '#4a2c14'; ctx.fillRect(x, y + .82, 1, .18);
             } else if (ch === 'o') {
                 const g = ctx.createRadialGradient(x + .5, y + .5, .05, x + .5, y + .5, .44);
                 g.addColorStop(0, '#000'); g.addColorStop(.75, '#05080f'); g.addColorStop(1, 'rgba(0,0,0,0)');
