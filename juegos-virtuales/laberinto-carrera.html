@@ -59,6 +59,9 @@
         kbd { background: var(--line); border-radius: 4px; padding: 1px 6px; font-family: monospace; }
 
         #cuenta-grande { font-size: 14rem; font-weight: 900; color: var(--accent); text-shadow: 0 10px 40px rgba(0,0,0,.6); }
+        #reloj-cierre { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); z-index: 4; min-width: 190px; text-align: center; font-size: 7rem; font-weight: 900; line-height: 1.1; color: #fff; background: rgba(0,0,0,.6); border: 5px solid var(--accent); border-radius: 28px; padding: 4px 34px; text-shadow: 0 6px 20px rgba(0,0,0,.6); font-variant-numeric: tabular-nums; }
+        #reloj-cierre.urgente { color: #ef4444; border-color: #ef4444; animation: latir .5s ease-in-out infinite; }
+        @keyframes latir { 50% { transform: translateX(-50%) scale(1.12); } }
         #banda-cierre { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #111; font-weight: 900; font-size: 1.5rem; padding: 12px 26px; border-radius: 999px; z-index: 4; box-shadow: 0 10px 30px rgba(0,0,0,.4); white-space: nowrap; }
 
         .resultado { text-align: center; max-width: 900px; width: 100%; }
@@ -102,6 +105,7 @@
     <div id="zona-juego">
         <canvas id="lienzo"></canvas>
         <div id="banda-cierre" class="oculto"></div>
+        <div id="reloj-cierre" class="oculto"></div>
 
         <div id="capa-lobby" class="capa">
             <div class="lobby">
@@ -476,6 +480,7 @@ function iniciarHost() {
     let nivel = 0, mapa, ancho, alto, salida, meta;
     let inicioNivel = 0, tiempoNivel = 0, finCierre = 0, llegadas = [];
     let audio = null;
+    let distMeta = null, ultimoSeg = -1;
 
     function ponerFase(f) {
         fase = f;
@@ -493,12 +498,25 @@ function iniciarHost() {
             if (ch === 'M') meta = { x: x + .5, y: y + .5 };
         }));
         llegadas = [];
+        distMeta = mapa.map(f => f.map(() => Infinity));
+        const cola = [[Math.floor(meta.x), Math.floor(meta.y)]];
+        distMeta[cola[0][1]][cola[0][0]] = 0;
+        while (cola.length) {
+            const [cx, cy] = cola.shift();
+            [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => {
+                const nx = cx + dx, ny = cy + dy;
+                if (mapa[ny] && mapa[ny][nx] && mapa[ny][nx] !== '#' && distMeta[ny][nx] === Infinity) {
+                    distMeta[ny][nx] = distMeta[cy][cx] + 1; cola.push([nx, ny]);
+                }
+            });
+        }
         Object.values(jugadores).forEach(ponerBola);
         salaRef.child('nivel').set(i + 1);
         document.getElementById('st-nivel').textContent = `${i + 1}/${NIVELES.length}`;
         document.getElementById('nombre-nivel').textContent = n.nombre;
         document.getElementById('st-tiempo').textContent = '0:00';
         document.getElementById('banda-cierre').classList.add('oculto');
+        document.getElementById('reloj-cierre').classList.add('oculto');
         ajustarLienzo();
         pintarListas();
     }
@@ -583,14 +601,33 @@ function iniciarHost() {
         tiempoNivel = (performance.now() - inicioNivel) / 1000;
         document.getElementById('st-tiempo').textContent = reloj(tiempoNivel);
         Object.values(jugadores).forEach(j => moverBola(j, dt));
+        if (fase === 'jugando') {
+            // ¿Qué tan cerca está el que va adelante? (casillas por el camino)
+            let d = Infinity;
+            Object.values(jugadores).forEach(j => {
+                const b = j.bola;
+                if (!b || b.lugar || b.cayendo) return;
+                const v = distMeta[Math.floor(b.y)] && distMeta[Math.floor(b.y)][Math.floor(b.x)];
+                if (v < d) d = v;
+            });
+            const cerca = d === Infinity ? 0 : Math.max(0, Math.min(1, 1 - d / 8));
+            musica.objetivo = 150 + 90 * cerca;
+        }
         if (fase === 'cierre') {
-            const falta = Math.ceil((finCierre - performance.now()) / 1000);
+            const falta = Math.max(0, Math.ceil((finCierre - performance.now()) / 1000));
             const primero = jugadores[llegadas[0].id];
             const banda = document.getElementById('banda-cierre');
             banda.classList.remove('oculto');
-            banda.textContent = `🏁 ${primero ? primero.nombre : ''} llegó · ${Math.max(0, falta)} s para los demás`;
+            banda.textContent = `🏁 ${primero ? primero.nombre : ''} llegó · ¡apúrense los demás!`;
+            const cajaReloj = document.getElementById('reloj-cierre');
+            cajaReloj.classList.remove('oculto');
+            cajaReloj.classList.toggle('urgente', falta <= 3);
+            cajaReloj.textContent = `⏱ ${falta}`;
+            if (falta !== ultimoSeg) { ultimoSeg = falta; if (falta > 0) sonar(falta <= 3 ? 'urgente' : 'tic'); }
+            musica.objetivo = falta <= 3 ? 270 : 240;
             if (falta <= 0) terminarNivel();
         }
+        musica.bpm += (musica.objetivo - musica.bpm) * Math.min(1, dt * 2);
     }
 
     function cuentaYJugar() {
@@ -606,6 +643,8 @@ function iniciarHost() {
                 num.textContent = '¡YA!'; sonar('meta');
                 inicioNivel = performance.now();
                 ponerFase('jugando');
+                ultimoSeg = -1;
+                musica.iniciar();
                 setTimeout(() => capa.classList.add('oculto'), 600);
             }
         };
@@ -615,6 +654,8 @@ function iniciarHost() {
     function terminarNivel() {
         if (fase === 'resultado' || fase === 'fin') return;
         document.getElementById('banda-cierre').classList.add('oculto');
+        document.getElementById('reloj-cierre').classList.add('oculto');
+        musica.parar();
         const ultimo = nivel === NIVELES.length - 1;
         ponerFase(ultimo ? 'fin' : 'resultado');
         publicarTodos();
@@ -698,7 +739,7 @@ function iniciarHost() {
     function sonar(tipo) {
         if (!audio) return;
         const t = audio.currentTime;
-        const notas = { caida: [[440, 0], [330, .1], [220, .2]], bandera: [[660, 0], [880, .08]], tic: [[520, 0]],
+        const notas = { caida: [[440, 0], [330, .1], [220, .2]], bandera: [[660, 0], [880, .08]], tic: [[520, 0]], urgente: [[988, 0], [988, .12]],
             meta: [[523, 0], [659, .12], [784, .24], [1047, .36]] }[tipo];
         notas.forEach(([f, d]) => {
             const o = audio.createOscillator(), g = audio.createGain();
@@ -710,6 +751,46 @@ function iniciarHost() {
             o.start(t + d); o.stop(t + d + .25);
         });
     }
+
+    // --- Música de fondo (melodía original estilo videojuego de 8 bits) ---
+    // Cada número es una nota (69 = La); el segundo, cuántos octavos dura.
+    const MELODIA = [[76,1],[76,1],[79,1],[81,2],[79,1],[76,1],[74,1],
+                     [72,2],[74,1],[76,1],[74,2],[72,1],[71,1],
+                     [69,1],[72,1],[76,1],[81,1],[79,2],[77,1],[76,1],
+                     [74,2],[77,1],[76,1],[71,2],[76,2]];
+    const BAJOS = [45, 41, 48, 40];   // La, Fa, Do, Mi (uno por compás)
+    const PARTITURA = [];
+    { let pos = 0; MELODIA.forEach(([n, l]) => { PARTITURA[pos] = [n, l]; pos += l; }); }
+    const musica = {
+        bpm: 150, objetivo: 150, activo: false, paso: 0, prox: 0, timer: null,
+        iniciar() {
+            if (!audio) return;
+            this.parar();
+            this.activo = true; this.paso = 0; this.bpm = this.objetivo = 150;
+            this.prox = audio.currentTime + .05;
+            this.timer = setInterval(() => this.programar(), 25);
+        },
+        parar() { this.activo = false; clearInterval(this.timer); },
+        nota(midi, t, dur, tipo, vol) {
+            const o = audio.createOscillator(), g = audio.createGain();
+            o.type = tipo; o.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+            g.gain.setValueAtTime(vol, t);
+            g.gain.exponentialRampToValueAtTime(.001, t + dur);
+            o.connect(g).connect(audio.destination);
+            o.start(t); o.stop(t + dur + .02);
+        },
+        programar() {
+            if (!this.activo) return;
+            while (this.prox < audio.currentTime + .12) {
+                const octavo = 60 / this.bpm / 2, i = this.paso % 32;
+                const m = PARTITURA[i];
+                if (m) this.nota(m[0], this.prox, m[1] * octavo * .9, 'square', .045);
+                const raiz = BAJOS[Math.floor(i / 8)];
+                this.nota(raiz + (i % 2 ? 12 : 0), this.prox, octavo * .8, 'triangle', .12);
+                this.prox += octavo; this.paso++;
+            }
+        }
+    };
 
     // --- Dibujo ---
     function dibujar(ahora) {
