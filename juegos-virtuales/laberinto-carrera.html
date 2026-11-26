@@ -119,7 +119,9 @@
                     <h1>Laberinto<br>Carrera 🏁</h1>
                     <p class="instr">Escanea el QR. <b>Cada quien tiene su propia bola</b> y la mueve con el joystick del celular.
                         Gana el nivel quien llegue primero a la meta; los demás tienen <b>10 segundos</b> para alcanzarlo.
-                        ¡Cuidado con los hoyos! <b>10 niveles</b>, puntos 10 · 7 · 5 · 3.</p>
+                        ¡Cuidado con los hoyos! <b>10 niveles</b>, puntos 10 · 7 · 5 · 3.<br>
+                        🪙 Cada moneda vale <b>+1</b>. 🎁 Las cajas dan un poder: ⚡ turbo, 🛡️ escudo contra hoyos o 🧊 congelar a los demás.
+                        Quien va en último lugar arranca cada nivel con 🛡️ escudo.</p>
                     <div id="lista-lobby"></div>
                     <div style="margin-top:22px; display:flex; gap:16px; align-items:center; flex-wrap:wrap">
                         <button class="btn-grande" id="btn-empezar">¡Empezar!</button>
@@ -437,7 +439,9 @@ function iniciarHost() {
         const j = jugadores[id];
         if (!j || id === 'teclado') return;
         const lugar = lista().findIndex(x => x.id === id) + 1;
-        salaRef.child('info/' + id).set({ color: j.color, pts: j.pts, lugar, llego: j.bola && j.bola.lugar || 0 });
+        const b = j.bola || {};
+        const poder = b.lento > 0 ? 'hielo' : b.turbo > 0 ? 'turbo' : b.escudo ? 'escudo' : '';
+        salaRef.child('info/' + id).set({ color: j.color, pts: j.pts, lugar, llego: b.lugar || 0, poder });
     }
     const publicarTodos = () => Object.keys(jugadores).forEach(publicarInfo);
 
@@ -481,6 +485,12 @@ function iniciarHost() {
     let inicioNivel = 0, tiempoNivel = 0, finCierre = 0, llegadas = [];
     let audio = null;
     let distMeta = null, ultimoSeg = -1;
+    let objetos = [], avisos = [];   // monedas y cajas del nivel · textos flotantes
+    const PODERES = {
+        turbo:  { emoji: '⚡', txt: '¡TURBO!', color: '#facc15' },
+        escudo: { emoji: '🛡️', txt: '¡ESCUDO!', color: '#38bdf8' },
+        hielo:  { emoji: '🧊', txt: '¡CONGELÓ A TODOS!', color: '#a5f3fc' }
+    };
 
     function ponerFase(f) {
         fase = f;
@@ -511,6 +521,17 @@ function iniciarHost() {
             });
         }
         Object.values(jugadores).forEach(ponerBola);
+        colocarObjetos(i);
+        avisos = [];
+        // Ayuda: quien va en último lugar arranca con escudo
+        const js = Object.values(jugadores);
+        if (js.length >= 2) {
+            const min = Math.min(...js.map(j => j.pts)), max = Math.max(...js.map(j => j.pts));
+            if (min < max) js.filter(j => j.pts === min).forEach(j => {
+                j.bola.escudo = true;
+                aviso(j.bola.x, j.bola.y, '🛡️ ¡Escudo de ayuda!', '#38bdf8');
+            });
+        }
         salaRef.child('nivel').set(i + 1);
         document.getElementById('st-nivel').textContent = `${i + 1}/${NIVELES.length}`;
         document.getElementById('nombre-nivel').textContent = n.nombre;
@@ -519,13 +540,59 @@ function iniciarHost() {
         document.getElementById('reloj-cierre').classList.add('oculto');
         ajustarLienzo();
         pintarListas();
+        publicarTodos();
+    }
+
+    // Monedas (muchas junto a los hoyos, para tentar) y cajas sorpresa.
+    // Siempre en los mismos lugares para cada nivel, así "Repetir nivel" es justo.
+    function colocarObjetos(i) {
+        let semilla = (i + 1) * 9301;
+        const azar = () => (semilla = (semilla * 16807) % 2147483647) / 2147483647;
+        const libres = [];
+        mapa.forEach((fila, y) => fila.forEach((ch, x) => {
+            if (ch !== '.' || distMeta[y][x] === Infinity || distMeta[y][x] < 2) return;
+            if (Math.hypot(x + .5 - salida.x, y + .5 - salida.y) < 2.5) return;
+            const cercaHoyo = [[1,0],[-1,0],[0,1],[0,-1]].some(([dx, dy]) => mapa[y + dy] && mapa[y + dy][x + dx] === 'o');
+            libres.push({ x, y, cercaHoyo, r: azar() });
+        }));
+        libres.sort((a, b) => a.r - b.r);
+        objetos = [];
+        const lejos = c => objetos.every(o => Math.abs(o.x - (c.x + .5)) + Math.abs(o.y - (c.y + .5)) >= 3);
+        const poner = (c, tipo) => objetos.push({ tipo, x: c.x + .5, y: c.y + .5, activo: true, vuelve: 0 });
+        const nCajas = libres.length > 90 ? 3 : 2, nMonedas = Math.min(10, Math.max(5, Math.round(libres.length / 10)));
+        libres.forEach(c => { if (objetos.length < nCajas && lejos(c)) poner(c, 'caja'); });
+        libres.filter(c => c.cercaHoyo).forEach(c => { if (objetos.length < nCajas + Math.ceil(nMonedas / 2) && lejos(c)) poner(c, 'moneda'); });
+        libres.forEach(c => { if (objetos.length < nCajas + nMonedas && lejos(c)) poner(c, 'moneda'); });
+    }
+
+    function aviso(x, y, txt, color) { avisos.push({ x, y, txt, color, t: performance.now() }); }
+
+    function agarrar(j, o) {
+        const b = j.bola;
+        if (o.tipo === 'moneda') {
+            o.activo = false;
+            j.pts += 1; b.monedas++;
+            sonar('moneda');
+            aviso(o.x, o.y, '+1', '#facc15');
+        } else {
+            o.activo = false; o.vuelve = 8;   // la caja reaparece a los 8 s
+            const tipo = ['turbo', 'escudo', 'hielo'][Math.floor(Math.random() * 3)];
+            if (tipo === 'turbo') b.turbo = 4;
+            if (tipo === 'escudo') b.escudo = true;
+            if (tipo === 'hielo') Object.values(jugadores).forEach(o2 => { if (o2 !== j && o2.bola && !o2.bola.lugar) o2.bola.lento = 3; });
+            sonar('poder');
+            aviso(b.x, b.y, `${PODERES[tipo].emoji} ${PODERES[tipo].txt}`, PODERES[tipo].color);
+            if (tipo === 'hielo') publicarTodos();
+        }
+        publicarInfo(j.id);
+        pintarListas();
     }
 
     // Todas salen del mismo punto, apenas separadas para que se distingan.
     function ponerBola(j) {
         const k = Object.keys(jugadores).indexOf(j.id);
         const ang = k * 2.4, r = k ? .08 : 0;
-        j.bola = { x: salida.x + Math.cos(ang) * r, y: salida.y + Math.sin(ang) * r, vx: 0, vy: 0, cayendo: 0, respawn: { ...salida }, lugar: 0, caidas: 0 };
+        j.bola = { x: salida.x + Math.cos(ang) * r, y: salida.y + Math.sin(ang) * r, vx: 0, vy: 0, cayendo: 0, respawn: { ...salida }, lugar: 0, caidas: 0, monedas: 0, turbo: 0, lento: 0, escudo: false, inmune: 0 };
     }
 
     function ajustarLienzo() {
@@ -554,13 +621,16 @@ function iniciarHost() {
     function moverBola(j, dt) {
         const b = j.bola;
         if (!b || b.lugar) return;
+        const antes = (b.turbo > 0) + '' + (b.lento > 0);
+        b.turbo = Math.max(0, b.turbo - dt); b.lento = Math.max(0, b.lento - dt); b.inmune = Math.max(0, b.inmune - dt);
+        if (antes !== (b.turbo > 0) + '' + (b.lento > 0)) publicarInfo(j.id);
         if (b.cayendo) {
             b.cayendo += dt;
             if (b.cayendo > .7) { b.x = b.respawn.x; b.y = b.respawn.y; b.vx = b.vy = 0; b.cayendo = 0; }
             return;
         }
         const d = direccionDe(j);
-        const vel = NIVELES[nivel].velocidad * 1.4;
+        const vel = NIVELES[nivel].velocidad * 1.4 * (b.turbo > 0 ? 1.5 : 1) * (b.lento > 0 ? .45 : 1);
         const k = Math.min(1, dt * 12);
         b.vx += ((d ? d.dx : 0) * vel - b.vx) * k;
         b.vy += ((d ? d.dy : 0) * vel - b.vy) * k;
@@ -575,9 +645,15 @@ function iniciarHost() {
         for (let y = ty - 1; y <= ty + 1; y++) for (let x = tx - 1; x <= tx + 1; x++) {
             const ch = mapa[y] && mapa[y][x];
             const dd = Math.hypot(b.x - (x + .5), b.y - (y + .5));
-            if (ch === 'o' && dd < RADIO_HOYO && !b.cayendo) { b.cayendo = .001; b.vx = b.vy = 0; b.caidas++; sonar('caida'); }
+            if (ch === 'o' && dd < RADIO_HOYO && !b.cayendo && !b.inmune) {
+                if (b.escudo) {   // el escudo te salva una vez y te deja cruzar
+                    b.escudo = false; b.inmune = 1.2;
+                    sonar('escudo'); aviso(b.x, b.y, '🛡️ ¡Salvado!', '#38bdf8'); publicarInfo(j.id);
+                } else { b.cayendo = .001; b.vx = b.vy = 0; b.caidas++; sonar('caida'); }
+            }
             if (ch === 'C' && dd < .5 && (b.respawn.x !== x + .5 || b.respawn.y !== y + .5)) { b.respawn = { x: x + .5, y: y + .5 }; sonar('bandera'); }
         }
+        if (!b.cayendo) objetos.forEach(o => { if (o.activo && Math.hypot(b.x - o.x, b.y - o.y) < .5) agarrar(j, o); });
         if (Math.hypot(b.x - meta.x, b.y - meta.y) < .5) llegar(j);
     }
 
@@ -601,6 +677,7 @@ function iniciarHost() {
         tiempoNivel = (performance.now() - inicioNivel) / 1000;
         document.getElementById('st-tiempo').textContent = reloj(tiempoNivel);
         Object.values(jugadores).forEach(j => moverBola(j, dt));
+        objetos.forEach(o => { if (!o.activo && o.tipo === 'caja' && (o.vuelve -= dt) <= 0) o.activo = true; });
         if (fase === 'jugando') {
             // ¿Qué tan cerca está el que va adelante? (casillas por el camino)
             let d = Infinity;
@@ -721,6 +798,7 @@ function iniciarHost() {
         if (fase !== 'jugando' && fase !== 'cierre') return;
         // Quita los puntos que se dieron en este intento
         llegadas.forEach((l, i) => { const j = jugadores[l.id]; if (j) j.pts -= PUNTOS[i] || PUNTOS_LLEGAR; });
+        Object.values(jugadores).forEach(j => { if (j.bola) j.pts -= j.bola.monedas; });
         cargarNivel(nivel); publicarTodos(); cuentaYJugar();
     };
 
@@ -739,7 +817,8 @@ function iniciarHost() {
     function sonar(tipo) {
         if (!audio) return;
         const t = audio.currentTime;
-        const notas = { caida: [[440, 0], [330, .1], [220, .2]], bandera: [[660, 0], [880, .08]], tic: [[520, 0]], urgente: [[988, 0], [988, .12]],
+        const notas = { caida: [[440, 0], [330, .1], [220, .2]], bandera: [[660, 0], [880, .08]], tic: [[520, 0]], moneda: [[1319, 0], [1760, .06]],
+            poder: [[523, 0], [784, .06], [1047, .12], [1568, .18]], escudo: [[300, 0], [600, .08], [900, .16]], urgente: [[988, 0], [988, .12]],
             meta: [[523, 0], [659, .12], [784, .24], [1047, .36]] }[tipo];
         notas.forEach(([f, d]) => {
             const o = audio.createOscillator(), g = audio.createGain();
@@ -813,6 +892,16 @@ function iniciarHost() {
                 ctx.beginPath(); ctx.arc(x + .5, y + .5, .38, 0, 7); ctx.stroke();
             }
         }
+        objetos.forEach((o, k) => {
+            if (!o.activo) return;
+            const sube = Math.sin(ahora / 300 + k) * .06;
+            if (o.tipo === 'moneda') {
+                const ancho = Math.abs(Math.cos(ahora / 400 + k)) * .22 + .06;   // gira
+                ctx.fillStyle = '#b45309'; ctx.beginPath(); ctx.ellipse(o.x, o.y + sube + .03, ancho, .28, 0, 0, 7); ctx.fill();
+                ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.ellipse(o.x, o.y + sube, ancho, .28, 0, 0, 7); ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); ctx.ellipse(o.x - ancho * .3, o.y + sube - .1, ancho * .25, .07, 0, 0, 7); ctx.fill();
+            } else emoji('🎁', o.x, o.y + sube, .62);
+        });
         const latido = .45 + Math.sin(ahora / 250) * .06;
         const gm = ctx.createRadialGradient(meta.x, meta.y, .05, meta.x, meta.y, latido + .25);
         gm.addColorStop(0, '#FFD700'); gm.addColorStop(.6, 'rgba(255,215,0,.5)'); gm.addColorStop(1, 'rgba(255,215,0,0)');
@@ -831,9 +920,21 @@ function iniciarHost() {
             const gp = ctx.createRadialGradient(b.x - r * .35, b.y - r * .35, r * .1, b.x, b.y, r);
             gp.addColorStop(0, '#ffffff'); gp.addColorStop(.3, j.color); gp.addColorStop(1, sombra(j.color));
             ctx.fillStyle = gp; ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, 7); ctx.fill();
+            ctx.lineWidth = .07;
+            if (b.escudo || b.inmune) { ctx.strokeStyle = `rgba(56,189,248,${.6 + Math.sin(ahora / 120) * .3})`; ctx.beginPath(); ctx.arc(b.x, b.y, r + .1, 0, 7); ctx.stroke(); }
+            if (b.turbo > 0) { ctx.strokeStyle = '#facc15'; ctx.beginPath(); ctx.arc(b.x, b.y, r + .18 + Math.sin(ahora / 60) * .04, 0, 7); ctx.stroke(); }
+            if (b.lento > 0) { ctx.fillStyle = 'rgba(165,243,252,.55)'; ctx.beginPath(); ctx.arc(b.x, b.y, r + .06, 0, 7); ctx.fill(); emoji('❄️', b.x, b.y, .4); }
         });
         // Nombres al final, para que ninguna bola los tape
         js.forEach(j => { if (!j.bola.cayendo) texto(j.nombre, j.bola.x, j.bola.y - .52, .3, j.color); });
+        // Textos flotantes (+1, poderes): suben y se desvanecen en 1.4 s
+        avisos = avisos.filter(a => ahora - a.t < 1400);
+        avisos.forEach(a => {
+            const p = (ahora - a.t) / 1400;
+            ctx.globalAlpha = 1 - p * p;
+            texto(a.txt, a.x, a.y - .7 - p * .9, .42, a.color);
+            ctx.globalAlpha = 1;
+        });
     }
     function sombra(hex) {
         const n = parseInt(hex.slice(1), 16);
@@ -937,14 +1038,19 @@ function iniciarControl(sala) {
             document.getElementById('cel-pts').textContent = i.pts;
             document.getElementById('cel-lugar').textContent = i.lugar ? i.lugar + '.º' : '–';
             llegue = i.llego;
+            if (navigator.vibrate && i.pts > ultimosPts && ultimosPts >= 0) navigator.vibrate(40);
+            if (navigator.vibrate && i.poder && i.poder !== miPoder) navigator.vibrate([60, 40, 60]);
+            ultimosPts = i.pts; miPoder = i.poder || '';
             pintarAviso();
         });
     }
-    let llegue = 0;
+    let llegue = 0, ultimosPts = -1, miPoder = '';
+    const TXT_PODER = { turbo: '⚡ ¡TURBO! Vas más rápido', escudo: '🛡️ Tienes ESCUDO: te salva de un hoyo', hielo: '🧊 ¡Te congelaron! Vas lento' };
     function pintarAviso() {
         const a = document.getElementById('aviso-cel');
         if (fase === 'lobby') a.textContent = 'Mira la pantalla: tu bola es de este color';
         else if (llegue && (fase === 'jugando' || fase === 'cierre')) a.textContent = `¡Llegaste ${llegue}.º! 🎉`;
+        else if (miPoder && (fase === 'jugando' || fase === 'cierre' || fase === 'cuenta')) a.textContent = TXT_PODER[miPoder];
         else if (fase === 'jugando' || fase === 'cierre') a.textContent = 'Arrastra el círculo para mover tu bola';
         else a.textContent = '';
     }
